@@ -1,0 +1,24 @@
+/config/config.php
+/uploads/**
+!/uploads/.gitkeep
+!/uploads/.htaccess
+!/uploads/events/
+!/uploads/events/.gitkeep
+# Curated demo photos matched to migration/seed-demo-data.php by event slug —
+# fixtures under version control, not arbitrary/untrusted user uploads (those
+# stay gitignored, per the /uploads/** rule above).
+!/uploads/events/nyege-nyege-festival-2026.jpg
+!/uploads/events/bushfire-beats-weekender.jpg
+!/uploads/events/blankets-and-wine.jpg
+!/uploads/events/afrochella-nights.jpg
+!/uploads/events/afrotech-summit-kampala.jpg
+!/uploads/events/makerere-innovation-week.jpg
+!/uploads/events/alex-muhangi-comedy-store.jpg
+!/uploads/events/uganda-cranes-vs-kenya.jpg
+!/uploads/events/kingdom-encounter-conference.jpg
+!/uploads/events/lagos-fashion-week.jpg
+!/uploads/events/kampala-art-market.jpg
+!/uploads/events/family-fun-day-botanical-gardens.jpg
+/storage/**
+!/storage/.gitkeep
+.DS_Store

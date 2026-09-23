@@ -1,0 +1,17 @@
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+<symbol id="ic-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="12" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.7" fill="none"/></symbol>
+<symbol id="ic-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.4" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+<symbol id="ic-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 5-3 8-7 9.5-4-1.5-7-4.5-7-9.5V6l7-3z" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-heart" viewBox="0 0 24 24"><path d="M12 20s-7.6-4.6-9.9-9.4C.6 6.6 2.9 3.5 6.3 3.5c2 0 3.6 1.1 4.4 2.7.8-1.6 2.4-2.7 4.4-2.7 3.4 0 5.7 3.1 4.2 7.1C19.6 15.4 12 20 12 20z" stroke="currentColor" stroke-width="1.6" fill="none"/></symbol>
+<symbol id="ic-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.4" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="6" cy="12" r="2.4" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="18" cy="19" r="2.4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.1 10.8l7.8-4.1M8.1 13.2l7.8 4.1" stroke="currentColor" stroke-width="1.6"/></symbol>
+<symbol id="ic-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="17" cy="16" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/></symbol>
+<symbol id="ic-briefcase" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.7" fill="none"/></symbol>
+<symbol id="ic-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M12 3v18M3 12h18M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.2" opacity="0.6"/></symbol>
+<symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs>
+</svg>

@@ -1,0 +1,7 @@
+# Defense in depth: this directory should only ever contain images that
+# passed handle_event_banner_upload()'s getimagesize() check, but never
+# trust that alone — block any script execution here regardless.
+<FilesMatch "\.(php|phar|phtml|pht)$">
+    Require all denied
+</FilesMatch>
+php_flag engine off
