@@ -4,7 +4,6 @@ $pageDescription = 'Find concerts, conferences, comedy and festivals across Ugan
 $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
-$heroPhotoEvent = get_hero_carousel_events(1)[0] ?? null;
 $upcoming = upcoming_events_with_organizer(6);
 $categoryCounts = get_category_counts();
 $categoryIcons = [
@@ -14,13 +13,12 @@ $categoryIcons = [
 ?>
 
 <section class="home-hero">
-  <?php if ($heroPhotoEvent && !empty($heroPhotoEvent['banner_image'])): ?>
-    <img class="home-hero-bg" src="<?= htmlspecialchars($heroPhotoEvent['banner_image']) ?>" alt="">
-  <?php endif; ?>
-  <div class="home-hero-scrim"></div>
+  <div class="home-hero-noise"></div>
+  <div class="home-hero-glow home-hero-glow-a"></div>
+  <div class="home-hero-glow home-hero-glow-b"></div>
   <div class="home-hero-content">
-    <div class="home-hero-eyebrow">Uganda's events, all in one place</div>
-    <h1>Connecting Uganda&rsquo;s events.</h1>
+    <div class="home-hero-eyebrow"><span class="hero-dot"></span>Uganda's events, all in one place</div>
+    <h1 class="split-heading" data-split>Connecting Uganda&rsquo;s events.</h1>
     <p>Easy to search &mdash; just enter a keyword, or pick a category.</p>
     <form class="home-search" action="/search.php" method="get">
       <div class="home-search-field home-search-field-q">
@@ -43,7 +41,7 @@ $categoryIcons = [
 
 <div class="cat-strip wrap">
   <?php foreach (EVENT_CATEGORIES as $cat): ?>
-    <a class="cat-card" href="/search.php?category=<?= urlencode($cat) ?>">
+    <a class="cat-card reveal" href="/search.php?category=<?= urlencode($cat) ?>">
       <span class="cat-ring"><svg width="26" height="26"><use href="#<?= $categoryIcons[$cat] ?>"/></svg></span>
       <span class="cat-name"><?= htmlspecialchars($cat) ?></span>
       <span class="cat-count"><?= $categoryCounts[$cat] ?> Event<?= $categoryCounts[$cat] === 1 ? '' : 's' ?></span>
@@ -66,7 +64,7 @@ $categoryIcons = [
           $price = format_money($event['min_price'] ?? null, $event['min_price_currency'] ?? 'UGX');
           $priceLabel = $price === 'Free entry' ? $price : 'From ' . $price;
       ?>
-        <div class="evt-card">
+        <div class="evt-card reveal">
           <a class="evt-art" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
             <?php if (!empty($event['banner_image'])): ?>
               <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
@@ -95,7 +93,10 @@ $categoryIcons = [
 <?php endif; ?>
 
 <div class="pullquote-band">
+  <div class="band-shape band-shape-a"></div>
+  <div class="band-shape band-shape-b"></div>
   <span class="eyebrow">For organizers</span>
+  <div class="band-stat" data-count="90" data-suffix="%">0%</div>
   <h2>Keep 90% of every sale. Get paid the same day.</h2>
   <p>10% commission, only when you sell. No setup fees, no surprises.</p>
 </div>
@@ -106,8 +107,8 @@ $categoryIcons = [
     <h2>Every ticket, properly kept.</h2>
     <p>Whichever side of the door you're on, obitickets is built to make it simple.</p>
     <div class="classic-cta-btns">
-      <a class="btn btn-purple btn-lg" href="/">Browse events</a>
-      <a class="btn btn-line btn-lg" href="/signup.php">Start selling &mdash; it's free</a>
+      <span class="magnetic"><a class="btn btn-purple btn-lg" href="/">Browse events</a></span>
+      <span class="magnetic"><a class="btn btn-line btn-lg" href="/signup.php">Start selling &mdash; it's free</a></span>
     </div>
   </div>
 </div>

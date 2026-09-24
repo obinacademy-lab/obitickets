@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // Sticky nav gains a shadow once the page scrolls past the top
+  var siteNav = document.querySelector('.site-nav');
+  if (siteNav) {
+    var onNavScroll = function () {
+      siteNav.classList.toggle('scrolled', window.scrollY > 8);
+    };
+    window.addEventListener('scroll', onNavScroll, { passive: true });
+    onNavScroll();
+  }
+
   // FAQ accordion
   document.querySelectorAll('.faq-q').forEach(function (q) {
     q.addEventListener('click', function () {
