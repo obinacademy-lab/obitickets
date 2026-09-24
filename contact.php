@@ -95,7 +95,7 @@ include __DIR__ . '/includes/header.php';
         <div class="contact-info-list">
           <div class="contact-info-item">
             <div class="ic"><svg width="18" height="18"><use href="#ic-share"/></svg></div>
-            <div><h4>Email</h4><p><a href="mailto:hello@obitickets.demo">hello@obitickets.demo</a></p></div>
+            <div><h4>Email</h4><p><a href="mailto:info@obitickets.site">info@obitickets.site</a></p></div>
           </div>
           <div class="contact-info-item">
             <div class="ic"><svg width="18" height="18"><use href="#ic-briefcase"/></svg></div>
