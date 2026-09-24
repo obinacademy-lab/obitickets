@@ -16,5 +16,7 @@
 <symbol id="ic-cross" viewBox="0 0 24 24"><path d="M12 3v18M6 9h12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
 <symbol id="ic-hanger" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M12 6.5v2M3 17l9-7 9 7M3 17h18" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="ic-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M14.5 20c.3-2.6 2.3-4.6 4.5-4.9" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
 </defs>
 </svg>

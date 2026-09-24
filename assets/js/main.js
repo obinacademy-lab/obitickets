@@ -9,6 +9,37 @@ document.addEventListener('DOMContentLoaded', function () {
     onNavScroll();
   }
 
+  // Mobile/tablet nav drawer
+  var navToggle = document.getElementById('navToggle');
+  var navDrawer = document.getElementById('navDrawer');
+  var navBackdrop = document.getElementById('navBackdrop');
+  var navDrawerClose = document.getElementById('navDrawerClose');
+  if (navToggle && navDrawer && navBackdrop) {
+    function openNavDrawer() {
+      navDrawer.classList.add('open');
+      navBackdrop.classList.add('open');
+      document.body.classList.add('nav-open');
+      navDrawer.setAttribute('aria-hidden', 'false');
+      navToggle.setAttribute('aria-expanded', 'true');
+    }
+    function closeNavDrawer() {
+      navDrawer.classList.remove('open');
+      navBackdrop.classList.remove('open');
+      document.body.classList.remove('nav-open');
+      navDrawer.setAttribute('aria-hidden', 'true');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
+    navToggle.addEventListener('click', openNavDrawer);
+    navBackdrop.addEventListener('click', closeNavDrawer);
+    if (navDrawerClose) navDrawerClose.addEventListener('click', closeNavDrawer);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeNavDrawer();
+    });
+    navDrawer.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', closeNavDrawer);
+    });
+  }
+
   // FAQ accordion
   document.querySelectorAll('.faq-q').forEach(function (q) {
     q.addEventListener('click', function () {

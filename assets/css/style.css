@@ -45,6 +45,28 @@ button{font-family:inherit; cursor:pointer;}
 .nav-links{display:flex; align-items:center; gap:28px; margin-left:auto; font-size:0.93rem; font-weight:600;}
 .nav-links a.ghost{color:var(--ink); opacity:0.78;}
 .nav-links a.ghost:hover{opacity:1;}
+
+.nav-toggle{display:none; align-items:center; justify-content:center; width:40px; height:40px; margin-left:auto; border-radius:10px; color:var(--ink); background:transparent; flex:none;}
+.nav-toggle:hover{background:var(--purple-tint);}
+
+.nav-backdrop{position:fixed; inset:0; background:rgba(20,10,35,0.4); opacity:0; pointer-events:none; transition:opacity .35s var(--ease); z-index:90;}
+.nav-backdrop.open{opacity:1; pointer-events:auto;}
+
+.nav-drawer{position:fixed; top:0; right:0; bottom:0; width:min(320px,86vw); background:var(--surface); box-shadow:var(--shadow-lg); z-index:100; display:flex; flex-direction:column; padding:22px 22px 28px; overflow-y:auto; transform:translateX(100%); transition:transform .4s var(--ease);}
+.nav-drawer.open{transform:translateX(0);}
+.nav-drawer-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;}
+.nav-drawer-close{display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:50%; color:var(--muted); background:transparent; flex:none;}
+.nav-drawer-close:hover{background:var(--purple-tint); color:var(--ink);}
+.nav-drawer-links{display:flex; flex-direction:column; gap:2px;}
+.nav-drawer-links a{padding:15px 4px; font-weight:600; font-size:1rem; color:var(--ink); border-bottom:1px solid var(--line);}
+.nav-drawer-links a.btn{border-bottom:none; margin-top:16px; text-align:center;}
+
+body.nav-open{overflow:hidden;}
+
+@media (max-width:900px){
+  .nav-links{display:none;}
+  .nav-toggle{display:flex;}
+}
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:12px; font-weight:700; font-size:0.9rem; border:1px solid transparent; padding:11px 22px; transition:box-shadow .18s ease, transform .18s ease, border-color .18s ease; white-space:nowrap;}
 .btn:active{transform:scale(0.98);}
 .btn-purple{background:var(--purple); color:#fff;}
@@ -713,7 +735,6 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 }
 @media (max-width:640px){
   .wrap{padding:0 18px;}
-  .nav-links a.ghost{display:none;}
   .event-hero{min-height:240px;}
   .event-hero-inner{padding:22px;}
   .event-grid{grid-template-columns:1fr 1fr; gap:14px;}

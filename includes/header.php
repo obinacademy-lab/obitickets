@@ -58,5 +58,41 @@ if (!isset($pageDescription)) {
         <a class="btn btn-purple" href="/signup.php">Sign up</a>
       <?php endif; ?>
     </div>
+    <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
+      <svg width="22" height="22"><use href="#ic-menu"/></svg>
+    </button>
   </div>
 </nav>
+
+<div class="nav-backdrop" id="navBackdrop"></div>
+<aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+  <div class="nav-drawer-head">
+    <a class="logo" href="/">
+      <svg class="logo-mark" viewBox="0 0 34 34">
+        <rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/>
+        <circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/>
+        <circle cx="17" cy="9.6" r="2" fill="var(--purple)" stroke="#fff" stroke-width="1.6"/>
+      </svg>
+      obitickets
+    </a>
+    <button type="button" class="nav-drawer-close" id="navDrawerClose" aria-label="Close menu">
+      <svg width="20" height="20"><use href="#ic-x"/></svg>
+    </button>
+  </div>
+  <div class="nav-drawer-links">
+    <a href="/">Browse events</a>
+    <a href="/my-events.php">Sell tickets</a>
+    <a href="/about.php">About Us</a>
+    <a href="/contact.php">Contact Us</a>
+    <?php if ($authUser): ?>
+      <?php if ($authUser['role'] === 'ADMIN'): ?>
+        <a href="/admin.php">Admin</a>
+      <?php endif; ?>
+      <a href="/dashboard.php">Hi, <?= htmlspecialchars(explode(' ', $authUser['name'])[0]) ?></a>
+      <a class="btn btn-purple btn-block" href="/logout.php">Log out</a>
+    <?php else: ?>
+      <a href="/login.php">Log in</a>
+      <a class="btn btn-purple btn-block" href="/signup.php">Sign up</a>
+    <?php endif; ?>
+  </div>
+</aside>
