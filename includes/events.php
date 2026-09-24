@@ -119,6 +119,27 @@ function category_emoji(string $category): string
     return $map[$category] ?? '🎟️';
 }
 
+/**
+ * Live count of upcoming published events per category, for the homepage's
+ * category strip. Every category from EVENT_CATEGORIES is always present
+ * (zero-filled first) — a category with no upcoming events shows "0
+ * Events" rather than disappearing from the strip.
+ */
+function get_category_counts(): array
+{
+    $counts = array_fill_keys(EVENT_CATEGORIES, 0);
+    $stmt = db()->query("
+        SELECT category, COUNT(*) AS cnt
+        FROM events
+        WHERE status = 'PUBLISHED' AND starts_at >= NOW()
+        GROUP BY category
+    ");
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[$row['category']] = (int) $row['cnt'];
+    }
+    return $counts;
+}
+
 /** Feeds the homepage's scrolling "ON SALE NOW" ticker strip. */
 /**
  * The events the homepage's hero carousel rotates through. Prefers
@@ -166,6 +187,27 @@ function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
     $sql .= ' ORDER BY e.starts_at ASC LIMIT ' . (int) $limit;
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
+/**
+ * Same row shape as upcoming_events(), plus the organizer's display name —
+ * only the homepage's event cards need this (for the avatar-initials
+ * badge), so a dedicated query rather than growing the shared EVENT_SELECT
+ * for every other caller that doesn't need it.
+ */
+function upcoming_events_with_organizer(int $limit = 6): array
+{
+    $stmt = db()->prepare("
+        SELECT " . EVENT_SELECT . ", COALESCE(op.org_name, u.name) AS organizer_name
+        FROM events e
+        JOIN users u ON u.id = e.organizer_id
+        LEFT JOIN organizer_profiles op ON op.user_id = u.id
+        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW()
+        ORDER BY e.starts_at ASC
+        LIMIT " . (int) $limit
+    );
+    $stmt->execute();
     return $stmt->fetchAll();
 }
 

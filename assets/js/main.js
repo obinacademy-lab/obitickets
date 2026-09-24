@@ -114,4 +114,16 @@ document.addEventListener('DOMContentLoaded', function () {
       el.form.submit();
     });
   });
+
+  // Homepage upcoming-events row: arrow buttons scroll one card-width at a time
+  document.querySelectorAll('.evt-section').forEach(function (section) {
+    var row = section.querySelector('.evt-row');
+    if (!row) return;
+    section.querySelectorAll('.evt-arrow').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var dir = parseInt(btn.getAttribute('data-dir'), 10) || 1;
+        row.scrollBy({ left: dir * 290, behavior: 'smooth' });
+      });
+    });
+  });
 });

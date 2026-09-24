@@ -1,68 +1,98 @@
 <?php
 $pageTitle = 'obitickets — Ticketing Made Simple';
 $pageDescription = 'Find concerts, conferences, comedy and festivals across Uganda. Buy your ticket in under a minute.';
-$bodyClass = 'classic-page spotlight-home';
+$bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
-$featured = get_hero_carousel_events(7);
-$spotlight = $featured[0] ?? null;
-$filmReel = array_slice($featured, 1, 6);
-$publishedCount = get_platform_stats()['published_events'];
+$heroPhotoEvent = get_hero_carousel_events(1)[0] ?? null;
+$upcoming = upcoming_events_with_organizer(6);
+$categoryCounts = get_category_counts();
+$categoryIcons = [
+    'Music' => 'ic-music', 'Conference' => 'ic-briefcase', 'Comedy' => 'ic-mic',
+    'Sports' => 'ic-ball', 'Faith' => 'ic-cross', 'Fashion' => 'ic-hanger', 'Community' => 'ic-people',
+];
 ?>
 
-<section class="spotlight-hero">
-  <?php if ($spotlight && !empty($spotlight['banner_image'])): ?>
-    <img class="spotlight-hero-bg" src="<?= htmlspecialchars($spotlight['banner_image']) ?>" alt="">
-  <?php elseif ($spotlight): ?>
-    <div class="spotlight-hero-fallback"><?= htmlspecialchars($spotlight['banner_emoji']) ?></div>
+<section class="home-hero">
+  <?php if ($heroPhotoEvent && !empty($heroPhotoEvent['banner_image'])): ?>
+    <img class="home-hero-bg" src="<?= htmlspecialchars($heroPhotoEvent['banner_image']) ?>" alt="">
   <?php endif; ?>
-  <div class="spotlight-scrim"></div>
-  <div class="spotlight-card-wrap">
-    <div class="spotlight-card">
-      <div class="eyebrow"><?= $publishedCount ?> events live right now</div>
-      <h1>One night. One ticket. Zero doubt.</h1>
-      <p>Real seats, real QR codes, real Mobile Money checkout.</p>
-      <form class="spotlight-search" action="/search.php" method="get">
-        <span aria-hidden="true">&#128269;</span>
+  <div class="home-hero-scrim"></div>
+  <div class="home-hero-content">
+    <div class="home-hero-eyebrow">Uganda's events, all in one place</div>
+    <h1>Connecting Uganda&rsquo;s events.</h1>
+    <p>Easy to search &mdash; just enter a keyword, or pick a category.</p>
+    <form class="home-search" action="/search.php" method="get">
+      <div class="home-search-field home-search-field-q">
+        <svg width="16" height="16"><use href="#ic-search"/></svg>
         <input type="text" name="q" placeholder="Search events, artists or venues">
-        <button type="submit">Search</button>
-      </form>
-    </div>
+      </div>
+      <div class="home-search-div"></div>
+      <div class="home-search-field">
+        <select name="category">
+          <option value="">All categories</option>
+          <?php foreach (EVENT_CATEGORIES as $cat): ?>
+            <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-purple">Search</button>
+    </form>
   </div>
 </section>
 
-<?php if ($filmReel): ?>
-<section class="filmstrip-sec">
-  <div class="filmstrip">
-    <?php foreach ($filmReel as $event): ?>
-      <a class="film-frame" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
-        <div class="film-frame-art">
-          <?php if (!empty($event['banner_image'])): ?>
-            <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-          <?php else: ?>
-            <div class="film-frame-art-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-          <?php endif; ?>
+<div class="cat-strip wrap">
+  <?php foreach (EVENT_CATEGORIES as $cat): ?>
+    <a class="cat-card" href="/search.php?category=<?= urlencode($cat) ?>">
+      <span class="cat-ring"><svg width="26" height="26"><use href="#<?= $categoryIcons[$cat] ?>"/></svg></span>
+      <span class="cat-name"><?= htmlspecialchars($cat) ?></span>
+      <span class="cat-count"><?= $categoryCounts[$cat] ?> Event<?= $categoryCounts[$cat] === 1 ? '' : 's' ?></span>
+    </a>
+  <?php endforeach; ?>
+</div>
+
+<?php if ($upcoming): ?>
+<section class="evt-section">
+  <div class="wrap">
+    <div class="evt-section-head">
+      <div><span class="eyebrow">What's on</span><h2 style="margin-top:10px;">Upcoming events</h2></div>
+      <div class="evt-nav">
+        <button type="button" class="evt-arrow" data-dir="-1" aria-label="Scroll left"><svg width="18" height="18"><use href="#ic-arrow" transform="rotate(180 12 12)"/></svg></button>
+        <button type="button" class="evt-arrow" data-dir="1" aria-label="Scroll right"><svg width="18" height="18"><use href="#ic-arrow"/></svg></button>
+      </div>
+    </div>
+    <div class="evt-row">
+      <?php foreach ($upcoming as $event):
+          $price = format_money($event['min_price'] ?? null, $event['min_price_currency'] ?? 'UGX');
+          $priceLabel = $price === 'Free entry' ? $price : 'From ' . $price;
+      ?>
+        <div class="evt-card">
+          <a class="evt-art" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
+            <?php if (!empty($event['banner_image'])): ?>
+              <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+            <?php else: ?>
+              <div class="evt-art-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+            <?php endif; ?>
+            <span class="evt-cat-pill"><?= htmlspecialchars($event['category']) ?></span>
+            <span class="evt-avatar"><?= htmlspecialchars(initials_from_name($event['organizer_name'])) ?></span>
+          </a>
+          <div class="evt-body">
+            <h3><a href="/event.php?slug=<?= urlencode($event['slug']) ?>"><?= htmlspecialchars($event['title']) ?></a></h3>
+            <div class="evt-meta"><svg width="14" height="14"><use href="#ic-cal"/></svg> <?= htmlspecialchars(date('D, M j, g:ia', strtotime($event['starts_at']))) ?></div>
+            <div class="evt-meta"><svg width="14" height="14"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></div>
+            <div class="evt-foot">
+              <a class="btn btn-line" href="/event.php?slug=<?= urlencode($event['slug']) ?>">Get Ticket</a>
+              <span class="evt-price"><?= htmlspecialchars($priceLabel) ?></span>
+            </div>
+          </div>
         </div>
-        <div class="film-cap">
-          <div class="film-cat"><?= htmlspecialchars($event['category']) ?> &middot; <?= htmlspecialchars(date('M j', strtotime($event['starts_at']))) ?></div>
-          <div class="film-ttl"><?= htmlspecialchars($event['title']) ?></div>
-        </div>
-      </a>
-    <?php endforeach; ?>
+      <?php endforeach; ?>
+    </div>
   </div>
 </section>
 <?php else: ?>
   <p style="text-align:center; padding:40px 0 80px">No events published yet — check back soon.</p>
 <?php endif; ?>
-
-<div class="wrap">
-  <div class="cat-index">
-    <a class="active" href="/search.php">All</a>
-    <?php foreach (EVENT_CATEGORIES as $cat): ?>
-      <a href="/search.php?category=<?= urlencode($cat) ?>"><?= htmlspecialchars($cat) ?></a>
-    <?php endforeach; ?>
-  </div>
-</div>
 
 <div class="pullquote-band">
   <span class="eyebrow">For organizers</span>
