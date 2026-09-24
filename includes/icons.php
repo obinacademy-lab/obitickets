@@ -18,5 +18,8 @@
 <symbol id="ic-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M14.5 20c.3-2.6 2.3-4.6 4.5-4.9" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
 <symbol id="ic-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
 <symbol id="ic-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/><path d="M12 11v5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M4.5 7l7.5 6 7.5-6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
 </defs>
 </svg>

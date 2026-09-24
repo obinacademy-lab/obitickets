@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function openNavDrawer() {
       navDrawer.classList.add('open');
       navBackdrop.classList.add('open');
+      navToggle.classList.add('open');
       document.body.classList.add('nav-open');
       navDrawer.setAttribute('aria-hidden', 'false');
       navToggle.setAttribute('aria-expanded', 'true');
@@ -25,11 +26,18 @@ document.addEventListener('DOMContentLoaded', function () {
     function closeNavDrawer() {
       navDrawer.classList.remove('open');
       navBackdrop.classList.remove('open');
+      navToggle.classList.remove('open');
       document.body.classList.remove('nav-open');
       navDrawer.setAttribute('aria-hidden', 'true');
       navToggle.setAttribute('aria-expanded', 'false');
     }
-    navToggle.addEventListener('click', openNavDrawer);
+    navToggle.addEventListener('click', function () {
+      if (navDrawer.classList.contains('open')) {
+        closeNavDrawer();
+      } else {
+        openNavDrawer();
+      }
+    });
     navBackdrop.addEventListener('click', closeNavDrawer);
     if (navDrawerClose) navDrawerClose.addEventListener('click', closeNavDrawer);
     document.addEventListener('keydown', function (e) {
