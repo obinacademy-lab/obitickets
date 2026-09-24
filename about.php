@@ -60,19 +60,25 @@ include __DIR__ . '/includes/header.php';
   </section>
 
   <section class="ah-section">
-    <div class="ah-section-head">
-      <span class="kicker reveal">Our mission</span>
-      <h2><span class="split-heading" data-split>Simple, accessible, and efficient ticketing.</span></h2>
-      <p class="reveal reveal-delay-1">Our mission is to make event ticketing simple, accessible, and efficient for organizers and attendees. We are building a platform that connects great events with the people who want to experience them.</p>
+    <div class="story-grid">
+      <div class="story-media curtain parallax" data-speed="0.1"><img src="/assets/images/about/attendee.jpg" alt="Attendee laughing at a night event"></div>
+      <div class="story-text">
+        <span class="kicker reveal">Our mission</span>
+        <h3><span class="split-heading" data-split>Simple, accessible, and efficient ticketing.</span></h3>
+        <p class="reveal reveal-delay-1">Our mission is to make event ticketing simple, accessible, and efficient for organizers and attendees. We are building a platform that connects great events with the people who want to experience them.</p>
+      </div>
     </div>
   </section>
 
   <section class="ah-section">
-    <div class="ah-section-head">
-      <span class="kicker reveal">Our vision</span>
-      <h2><span class="split-heading" data-split>Create, launch, and sell tickets without complicated technology.</span></h2>
-      <p class="reveal reveal-delay-1">We envision a future where anyone can create, launch, and sell tickets for an event without complicated technology.</p>
-      <p class="reveal reveal-delay-2 mono" style="color:var(--purple-deep); font-weight:600; margin-top:20px;">Create. Sell. Connect. Attend.</p>
+    <div class="story-grid">
+      <div class="story-media curtain parallax" data-speed="0.14"><img src="/assets/images/about/dancers.jpg" alt="Traditional dance troupe performing at a community festival in Uganda"></div>
+      <div class="story-text">
+        <span class="kicker reveal">Our vision</span>
+        <h3><span class="split-heading" data-split>Create, launch, and sell tickets without complicated technology.</span></h3>
+        <p class="reveal reveal-delay-1">We envision a future where anyone can create, launch, and sell tickets for an event without complicated technology.</p>
+        <p class="reveal reveal-delay-2 mono" style="color:var(--purple-deep); font-weight:600; margin-top:20px;">Create. Sell. Connect. Attend.</p>
+      </div>
     </div>
   </section>
 
