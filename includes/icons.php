@@ -21,5 +21,6 @@
 <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="12" cy="8.3" r="1" fill="currentColor"/><path d="M12 11v5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
 <symbol id="ic-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M4.5 7l7.5 6 7.5-6" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-phone" viewBox="0 0 24 24"><path d="M6.6 4.5c-1 0-1.9.9-1.7 1.9.6 3.6 2.4 7 5.1 9.7 2.7 2.7 6.1 4.5 9.7 5.1 1 .2 1.9-.7 1.9-1.7v-2.4c0-.8-.6-1.5-1.4-1.7l-3-.7a1.7 1.7 0 0 0-1.6.5l-1 1a13 13 0 0 1-5.4-5.4l1-1c.4-.4.6-1 .5-1.6l-.7-3a1.7 1.7 0 0 0-1.7-1.4H6.6z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs>
 </svg>
