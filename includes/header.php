@@ -45,6 +45,9 @@ if (!isset($pageDescription)) {
     <div class="nav-links">
       <a class="ghost" href="/">Browse events</a>
       <a class="ghost" href="/my-events.php">Sell tickets</a>
+      <a class="ghost" href="/about.php">About Us</a>
+      <a class="ghost" href="/contact.php">Contact Us</a>
+      <a class="ghost" href="/search.php">Find Events</a>
       <?php if ($authUser): ?>
         <?php if ($authUser['role'] === 'ADMIN'): ?>
           <a class="ghost" href="/admin.php">Admin</a>
