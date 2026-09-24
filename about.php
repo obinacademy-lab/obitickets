@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 
 $pageTitle = 'About — obitickets';
-$pageDescription = 'obitickets is a simple, honest way for Ugandan event organizers to sell tickets and get paid — and for attendees to know the ticket in their hand is real.';
+$pageDescription = 'ObiTickets is a modern event ticketing platform that makes it easier for organizers to create events, sell tickets, and connect with their audiences — all in one place.';
 $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 ?>
@@ -14,9 +14,9 @@ include __DIR__ . '/includes/header.php';
     <span class="orb orb1"></span><span class="orb orb2"></span><span class="orb orb3"></span>
     <div class="ah-hero-grid">
       <div>
-        <span class="kicker hero-in d1"><i></i>About obitickets</span>
-        <h1><span class="split-heading" data-split id="heroHeading">Ticketing shouldn't run on WhatsApp screenshots.</span></h1>
-        <p class="dek hero-in d3">A simple, honest way for Ugandan event organizers to sell tickets and get paid — and for attendees to know the ticket in their hand is real.</p>
+        <span class="kicker hero-in d1"><i></i>About Us</span>
+        <h1><span class="split-heading" data-split id="heroHeading">Ticketing Made Simple.</span></h1>
+        <p class="dek hero-in d3">ObiTickets is a modern event ticketing platform that makes it easier for organizers to create events, sell tickets, and connect with their audiences — all in one place.</p>
         <div class="ah-hero-btns hero-in d4">
           <span class="magnetic"><a class="btn btn-purple" href="/">Browse events</a></span>
           <span class="magnetic"><a class="btn btn-line" href="/signup.php">Start selling</a></span>
@@ -35,57 +35,44 @@ include __DIR__ . '/includes/header.php';
     <div class="story-grid">
       <div class="story-media curtain parallax" data-speed="0.12"><img src="/assets/images/about/crowd.jpg" alt="Crowd dancing at a night event"></div>
       <div class="story-text">
-        <span class="kicker reveal">Our story</span>
-        <h3><span class="split-heading" data-split>Built because a ticket used to mean a promise, not proof.</span></h3>
-        <p class="reveal reveal-delay-1">Most tickets in Uganda still change hands as a forwarded mobile money screenshot and a promise. Doors get disputed. Organizers chase payments days after the show.</p>
-        <p class="reveal reveal-delay-2">We built obitickets to replace that with something both sides can actually trust: a real checkout, a real QR ticket, and a scan at the door that either says yes or no.</p>
+        <span class="kicker reveal">What we do</span>
+        <h3><span class="split-heading" data-split>From conferences and workshops to concerts, trainings, festivals, networking events, and more.</span></h3>
+        <p class="reveal reveal-delay-1">ObiTickets gives organizers the tools to manage their ticketing experience while making it simple for attendees to discover and purchase tickets.</p>
       </div>
     </div>
   </section>
 
   <section class="ah-section">
-    <div class="ah-section-head">
-      <span class="kicker reveal">Why it's different</span>
-      <h2><span class="split-heading" data-split>Three things that make a ticket worth trusting.</span></h2>
-    </div>
-    <div class="principle-grid">
+    <div class="principle-grid principle-grid-2">
       <div class="principle-card reveal tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-shield"/></svg></div>
-        <h3>A ticket that can't be faked</h3>
-        <p>A unique code, generated at payment and checked once at the door. No two people can use the same one.</p>
+        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-briefcase"/></svg></div>
+        <h3>For Event Organizers</h3>
+        <p>Create and publish your event, set your ticket prices, and start selling to your audience through a simple digital platform.</p>
+        <p>ObiTickets helps you spend less time managing ticket sales manually and more time focusing on creating a successful event.</p>
       </div>
       <div class="principle-card reveal reveal-delay-1 tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-cal"/></svg></div>
-        <h3>Sold out, actually tracked</h3>
-        <p>Stock is held and checked at the moment of purchase, so two buyers can never win the same last seat.</p>
-      </div>
-      <div class="principle-card reveal reveal-delay-2 tilt-card">
         <div class="principle-ic"><svg width="20" height="20"><use href="#ic-heart"/></svg></div>
-        <h3>Built for how Uganda pays</h3>
-        <p>MTN MoMo and Airtel Money sit next to card as first-class options, not an afterthought.</p>
+        <h3>For Attendees</h3>
+        <p>Discover events, explore event details, choose your ticket, and book your experience with ease.</p>
+        <p>We make it simple to go from <strong>discovering an event to attending it.</strong></p>
       </div>
     </div>
   </section>
 
   <section class="ah-section">
     <div class="ah-section-head">
-      <span class="kicker reveal">On the ground</span>
-      <h2><span class="split-heading" data-split>What &quot;seen properly&quot; looks like.</span></h2>
-    </div>
-    <div class="moment-strip">
-      <div class="big curtain parallax" data-speed="0.08"><img src="/assets/images/about/attendee.jpg" alt="Attendee laughing at a night event"></div>
-      <div class="stack">
-        <div class="thumb curtain reveal-delay-1 parallax" data-speed="0.15"><img src="/assets/images/about/dancers.jpg" alt="Traditional dance troupe performing"></div>
-        <div class="thumb curtain reveal-delay-2 parallax" data-speed="0.15"><img src="/assets/images/about/crowd.jpg" alt="Crowd at a night event"></div>
-      </div>
+      <span class="kicker reveal">Our mission</span>
+      <h2><span class="split-heading" data-split>Simple, accessible, and efficient ticketing.</span></h2>
+      <p class="reveal reveal-delay-1">Our mission is to make event ticketing simple, accessible, and efficient for organizers and attendees. We are building a platform that connects great events with the people who want to experience them.</p>
     </div>
   </section>
 
   <section class="ah-section">
-    <div class="stat-band">
-      <div class="stat-tile reveal tilt-card"><div class="n mono" data-count="10" data-suffix="%">0%</div><div class="l">Commission, only when you sell</div></div>
-      <div class="stat-tile reveal reveal-delay-1 tilt-card"><div class="n mono">&lt;1min</div><div class="l">Average checkout time</div></div>
-      <div class="stat-tile reveal reveal-delay-2 tilt-card"><div class="n mono">UGX</div><div class="l">Currently live across Uganda</div></div>
+    <div class="ah-section-head">
+      <span class="kicker reveal">Our vision</span>
+      <h2><span class="split-heading" data-split>Create, launch, and sell tickets without complicated technology.</span></h2>
+      <p class="reveal reveal-delay-1">We envision a future where anyone can create, launch, and sell tickets for an event without complicated technology.</p>
+      <p class="reveal reveal-delay-2 mono" style="color:var(--purple-deep); font-weight:600; margin-top:20px;">Create. Sell. Connect. Attend.</p>
     </div>
   </section>
 
@@ -94,8 +81,8 @@ include __DIR__ . '/includes/header.php';
       <div class="cta-ring"></div>
       <div class="ah-cta-inner">
         <span class="kicker" style="justify-content:center">Get started</span>
-        <h2>Every ticket, seen properly.</h2>
-        <p>Whichever side of the door you're on, obitickets is built to make it simple.</p>
+        <h2>Welcome to ObiTickets.</h2>
+        <p>Your simple solution for event ticketing.</p>
         <div class="ah-cta-btns">
           <span class="magnetic"><a class="btn btn-purple" href="/">Browse events</a></span>
           <span class="magnetic"><a class="btn btn-line" href="/signup.php">Start selling &mdash; it's free</a></span>
