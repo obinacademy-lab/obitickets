@@ -26,6 +26,12 @@ define('IOTEC_CLIENT_SECRET', '');
 // once you're ready to accept real attendee payments.
 define('IOTEC_WALLET_ID', '');
 
+// --- Email (Resend — resend.com/api-keys) -----------------------------------
+// Sign up at https://resend.com, verify your sending domain (add its DNS
+// records at your domain's DNS provider), then create an API key.
+define('RESEND_API_KEY', '');
+define('EMAIL_FROM', 'obitickets <info@obitickets.site>');
+
 if (APP_ENV === 'development') {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');

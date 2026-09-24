@@ -28,11 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         create_contact_message($name, $email, $topic, $message);
-        send_email(
-            'hello@obitickets.demo',
-            'New contact message: ' . $topic,
-            "From: {$name} <{$email}>\n\n{$message}"
-        );
+        send_contact_notification_email('info@obitickets.site', $name, $email, $topic, $message);
         header('Location: /contact.php?sent=1');
         exit;
     }

@@ -31,11 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$user['id'], $tokenHash]);
 
             $resetLink = APP_URL . '/reset-password.php?token=' . $rawToken;
-            send_email(
-                $email,
-                'Reset your obitickets password',
-                "Hi {$user['name']},\n\nReset your password here (expires in 1 hour):\n{$resetLink}\n\nIf you didn't request this, you can ignore this email."
-            );
+            send_password_reset_email($email, htmlspecialchars($user['name']), $resetLink);
 
             if (APP_ENV === 'development') {
                 $devResetLink = $resetLink;
