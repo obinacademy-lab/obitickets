@@ -500,29 +500,24 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .contact-info-item p{margin-top:3px; font-size:0.86rem;}
 .contact-info-item a{color:var(--purple-deep); font-weight:600;}
 
-/* ---------- contact hero: split with photo collage ---------- */
-.contact-hero-grid{position:relative; z-index:2; display:grid; grid-template-columns:1.3fr 0.7fr; gap:56px; align-items:center; text-align:left;}
+/* ---------- contact hero: split with a single clean photo ---------- */
+.contact-hero-grid{position:relative; z-index:2; display:grid; grid-template-columns:1.15fr 0.85fr; gap:48px; align-items:center; text-align:left;}
 .contact-hero-grid .kicker{justify-content:flex-start;}
-.contact-hero-grid h1{font-size:clamp(2.4rem,4.2vw,3.2rem); margin-top:20px; text-align:left;}
-.contact-hero-grid p{max-width:460px; margin:22px 0 0; text-align:left;}
-.contact-hero-grid p + p{margin-top:14px;}
-.contact-hero-btns{display:flex; gap:14px; margin-top:32px; flex-wrap:wrap;}
+.contact-hero-grid h1{font-size:clamp(2.2rem,4vw,3rem); margin-top:16px; text-align:left;}
+.contact-hero-grid p{max-width:460px; margin:16px 0 0; text-align:left; font-size:1rem;}
+.contact-hero-grid p + p{margin-top:12px;}
+.contact-hero-btns{display:flex; gap:12px; margin-top:26px; flex-wrap:wrap;}
 .contact-hero-btns .btn svg{margin-right:2px;}
-.contact-trust-row{display:flex; gap:28px; margin-top:38px; padding-top:26px; border-top:1px solid var(--line); flex-wrap:wrap;}
-.contact-trust-item{display:flex; flex-direction:column; gap:2px;}
-.contact-trust-item .n{font-family:'Fraunces',serif; font-weight:600; font-size:1.25rem; color:var(--purple-deep);}
-.contact-trust-item .l{font-size:0.76rem; color:var(--muted-2);}
+.contact-trust-row{display:flex; gap:22px; margin-top:28px; padding-top:20px; border-top:1px solid var(--line); flex-wrap:wrap;}
+.contact-trust-item{display:flex; flex-direction:column; gap:1px;}
+.contact-trust-item .n{font-family:'Fraunces',serif; font-weight:600; font-size:1.1rem; color:var(--purple-deep);}
+.contact-trust-item .l{font-size:0.72rem; color:var(--muted-2);}
 
-.contact-photo-wrap{position:relative; max-width:300px; margin-left:auto;}
-.contact-photo-mini-ring{position:absolute; top:-26px; right:-22px; width:104px; height:104px; border-radius:50%; border:2px dashed var(--purple-tint-2); z-index:0;}
-.contact-photo-main{position:relative; z-index:1; border-radius:22px; padding:8px; background:linear-gradient(160deg, rgba(130,88,184,0.4), rgba(130,88,184,0.03)); box-shadow:0 30px 70px -26px rgba(70,33,111,0.5);}
-.contact-photo-main-inner{border-radius:15px; overflow:hidden; aspect-ratio:4/4.6;}
-.contact-photo-badge{position:absolute; left:-14px; bottom:22px; z-index:2; background:var(--surface); border:1px solid var(--line-strong); border-radius:13px; padding:10px 14px; box-shadow:0 18px 38px -18px rgba(70,33,111,0.4); display:flex; gap:9px; align-items:center;}
-.contact-photo-badge svg{width:16px; height:16px; color:var(--purple); flex:none;}
-.contact-photo-badge .n{font-weight:700; font-size:0.86rem; color:var(--purple-deep); font-family:'Fraunces',serif;}
-.contact-photo-badge .l{font-size:0.64rem; color:var(--muted-2); font-weight:600; max-width:100px; line-height:1.25;}
-.contact-photo-mini{position:absolute; z-index:2; top:-20px; right:-16px; width:82px; height:82px; border-radius:50%; overflow:hidden; border:4px solid var(--surface); box-shadow:0 14px 28px -12px rgba(28,21,38,0.35);}
-.contact-photo-mini img{width:100%; height:100%; object-fit:cover; display:block;}
+.contact-photo-card{position:relative; border-radius:20px; overflow:hidden; aspect-ratio:4/4.2; box-shadow:0 24px 60px -24px rgba(70,33,111,0.45);}
+.contact-photo-card img{width:100%; height:100%; object-fit:cover; display:block;}
+.contact-photo-caption{position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:10px; padding:16px; background:linear-gradient(0deg, rgba(20,10,35,0.72) 0%, rgba(20,10,35,0.25) 70%, transparent 100%); color:#fff; font-size:0.84rem; font-weight:600;}
+.contact-photo-avatar{width:30px; height:30px; border-radius:50%; overflow:hidden; flex:none; border:2px solid rgba(255,255,255,0.85);}
+.contact-photo-avatar img{width:100%; height:100%; object-fit:cover; display:block;}
 
 /* ---------- get in touch: banded strip ---------- */
 .touch-band{position:relative; overflow:hidden; background:var(--surface); border:1px solid var(--line); border-radius:26px; box-shadow:0 30px 70px -36px rgba(28,21,38,0.2);}
@@ -550,19 +545,20 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 
 @media (max-width:900px){
   .contact-grid{grid-template-columns:1fr;}
-  .contact-hero-grid{grid-template-columns:1fr; gap:52px;}
-  .contact-photo-wrap{margin-top:8px; margin-left:auto; margin-right:auto;}
+  .contact-hero-grid{grid-template-columns:1fr; gap:26px;}
+  .contact-photo-card{order:-1; max-width:420px; margin:0 auto; aspect-ratio:16/10;}
   .touch-band-grid{grid-template-columns:1fr;}
   .touch-band-item{border-right:none; border-bottom:1px solid var(--line);}
   .touch-band-item:last-child{border-bottom:none;}
 }
 @media (max-width:640px){
-  .contact-hero{padding:44px 0 10px;}
+  .contact-hero{padding:32px 0 6px;}
   .contact-card{padding:26px 22px;}
   .people-card{padding:28px 24px;}
-  .contact-photo-mini-ring{display:none;}
-  .contact-photo-mini{top:-18px; right:10px; width:80px; height:80px; border-width:4px;}
-  .contact-photo-badge{left:10px; padding:11px 16px;}
+  .contact-hero-grid .kicker, .contact-hero-grid h1, .contact-hero-grid p{text-align:center;}
+  .contact-hero-grid p{margin-left:auto; margin-right:auto;}
+  .contact-hero-btns{justify-content:center;}
+  .contact-trust-row{justify-content:center; text-align:center;}
 }
 
 /* ---------- team page (shares the dark-page palette above) ---------- */

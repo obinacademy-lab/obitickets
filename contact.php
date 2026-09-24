@@ -59,22 +59,18 @@ include __DIR__ . '/includes/header.php';
           <div class="contact-trust-item"><span class="n">Kampala</span><span class="l">Based in Uganda</span></div>
         </div>
       </div>
-      <div class="contact-photo-wrap">
-        <div class="contact-photo-mini-ring"></div>
-        <div class="contact-photo-main">
-          <div class="contact-photo-main-inner curtain"><img src="/assets/images/contact/agent-1.jpg" alt="An ObiTickets support team member ready to help"></div>
-          <div class="contact-photo-badge">
-            <svg width="20" height="20"><use href="#ic-shield"/></svg>
-            <div><div class="n">Always ready</div><div class="l">to help you out</div></div>
-          </div>
+      <div class="contact-photo-card">
+        <img src="/assets/images/contact/agent-1.jpg" alt="An ObiTickets support team member ready to help">
+        <div class="contact-photo-caption">
+          <span class="contact-photo-avatar"><img src="/assets/images/contact/agent-2.jpg" alt=""></span>
+          <span>Real people, always ready to help</span>
         </div>
-        <div class="contact-photo-mini"><img src="/assets/images/contact/agent-2.jpg" alt="An ObiTickets support team member on a call"></div>
       </div>
     </div>
   </section>
 
   <section class="ah-section" style="padding-top:20px">
-    <div class="touch-band reveal">
+    <div class="touch-band">
       <div class="touch-band-accent"></div>
       <div class="touch-band-grid">
         <div class="touch-band-item">
@@ -137,7 +133,7 @@ include __DIR__ . '/includes/header.php';
         </form>
       </div>
 
-      <div class="people-card reveal reveal-delay-1">
+      <div class="people-card">
         <div class="people-block-head">
           <span class="kicker"><i></i>Who we help</span>
           <h3>Event Organizers</h3>
@@ -166,5 +162,4 @@ include __DIR__ . '/includes/header.php';
 
 </div>
 
-<script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
