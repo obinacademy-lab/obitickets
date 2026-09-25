@@ -39,6 +39,7 @@ include __DIR__ . '/includes/header.php';
 <div class="event-hero-full" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
   <?php if (!empty($event['banner_image'])): ?>
     <div class="event-hero-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+      <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
       <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
     </div>
     <button class="hero-expand-btn" id="heroExpandBtn" type="button" aria-label="View banner full size" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>">
