@@ -620,8 +620,7 @@ footer p{color:rgba(255,255,255,0.7);}
 /* ---------- event page hero: full-bleed banner, tap-to-preview ---------- */
 .event-hero-full{position:relative; overflow:hidden; background:var(--purple); aspect-ratio:21/9; max-height:560px; display:flex; align-items:flex-end; opacity:0; animation:heroIn .7s var(--ease) forwards;}
 .event-hero-media{position:absolute; inset:0; overflow:hidden; cursor:zoom-in;}
-.event-hero-media img{position:absolute; top:-7%; left:-7%; width:114%; height:114%; object-fit:cover; animation:heroPan 22s ease-in-out infinite alternate;}
-@keyframes heroPan{0%{transform:translate(0,0);} 100%{transform:translate(-6.5%,-3%);}}
+.event-hero-media img{width:100%; height:100%; object-fit:cover;}
 .event-hero-full::after{content:''; position:absolute; inset:0 0 0 0; background:linear-gradient(0deg, rgba(8,5,14,0.82) 0%, rgba(8,5,14,0.42) 34%, rgba(8,5,14,0) 62%); pointer-events:none;}
 .event-hero-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
 .event-hero-count{position:absolute; top:22px; right:24px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.82rem; font-weight:700; padding:9px 18px; border-radius:100px; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5);}
