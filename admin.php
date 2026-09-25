@@ -8,6 +8,24 @@ $upcoming = get_upcoming_events_admin(5);
 $dailyRevenue = get_daily_revenue(14);
 $maxDaily = max(1, ...array_column($dailyRevenue, 'total'));
 $comparison = get_period_comparison(30);
+$recentPayouts = admin_can('payouts.view') ? array_slice(get_payouts_admin(), 0, 6) : [];
+$payoutStatusMeta = ['PENDING' => 'admin-badge-warn', 'APPROVED' => 'admin-badge-purple', 'PROCESSING' => 'admin-badge-purple', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger'];
+
+// Build an SVG line-chart path for the daily revenue trend.
+$chartDays = count($dailyRevenue);
+$chartW = 680; $chartH = 180; $padTop = 22; $padBottom = 24; $padX = 6;
+$plotW = $chartW - $padX * 2; $plotH = $chartH - $padTop - $padBottom;
+$chartPoints = [];
+foreach ($dailyRevenue as $i => $d) {
+    $x = $chartDays > 1 ? $padX + ($i * ($plotW / ($chartDays - 1))) : $padX + $plotW / 2;
+    $y = $padTop + (1 - ($d['total'] / $maxDaily)) * $plotH;
+    $chartPoints[] = ['x' => round($x, 1), 'y' => round($y, 1), 'total' => $d['total'], 'day' => $d['day'], 'peak' => $d['total'] > 0 && $d['total'] == $maxDaily];
+}
+$chartLine = '';
+foreach ($chartPoints as $i => $p) {
+    $chartLine .= ($i === 0 ? 'M' : ' L') . $p['x'] . ',' . $p['y'];
+}
+$chartArea = $chartPoints ? $chartLine . ' L' . end($chartPoints)['x'] . ',' . ($padTop + $plotH) . ' L' . $chartPoints[0]['x'] . ',' . ($padTop + $plotH) . ' Z' : '';
 
 $actionLabels = [
     'event.status_change' => 'changed the status of event', 'event.feature' => 'featured event', 'event.unfeature' => 'unfeatured event',
@@ -124,14 +142,25 @@ render_admin_head('dashboard');
         <p style="margin-top:0">No paid orders in the last 14 days yet.</p>
       </div>
     <?php else: ?>
-      <div style="display:flex; align-items:flex-end; gap:6px; height:140px;">
-        <?php foreach ($dailyRevenue as $i => $d): $isPeak = $d['total'] == $maxDaily && $maxDaily > 0; ?>
-          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;" title="<?= htmlspecialchars(date('d M', strtotime($d['day']))) ?>: UGX <?= number_format($d['total'], 0) ?>">
-            <div class="admin-chart-bar" style="animation-delay:<?= round($i * 0.02, 2) ?>s; width:100%; max-width:22px; border-radius:5px 5px 0 0; background:<?= $isPeak ? 'linear-gradient(180deg, var(--success), #158032)' : 'linear-gradient(180deg, var(--purple-light), var(--purple))' ?>; height:<?= max(3, round(($d['total'] / $maxDaily) * 110)) ?>px;"></div>
-            <span style="font-size:0.62rem; color:var(--muted-2); font-family:'IBM Plex Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($d['day']))) ?></span>
-          </div>
+      <svg viewBox="0 0 <?= $chartW ?> <?= $chartH ?>" width="100%" height="170" preserveAspectRatio="none" class="admin-line-chart">
+        <defs>
+          <linearGradient id="revChartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--purple)" stop-opacity="0.30"/>
+            <stop offset="100%" stop-color="var(--purple)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="<?= htmlspecialchars($chartArea) ?>" fill="url(#revChartGrad)" stroke="none"></path>
+        <path d="<?= htmlspecialchars($chartLine) ?>" fill="none" stroke="var(--purple)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="admin-line-path"></path>
+        <?php foreach ($chartPoints as $p): ?>
+          <?php if ($p['peak']): ?>
+            <text x="<?= $p['x'] ?>" y="<?= max(11, $p['y'] - 9) ?>" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--success); font-family:'IBM Plex Mono',monospace;">UGX <?= number_format($p['total'], 0) ?></text>
+          <?php endif; ?>
+          <circle cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="<?= $p['peak'] ? 4.5 : 3 ?>" style="fill:<?= $p['peak'] ? 'var(--success)' : 'var(--purple)' ?>; stroke:var(--surface); stroke-width:1.5;">
+            <title><?= htmlspecialchars(date('d M Y', strtotime($p['day']))) ?>: UGX <?= number_format($p['total'], 0) ?></title>
+          </circle>
+          <text x="<?= $p['x'] ?>" y="<?= $chartH - 6 ?>" text-anchor="middle" font-size="9" style="fill:var(--muted-2); font-family:'IBM Plex Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($p['day']))) ?></text>
         <?php endforeach; ?>
-      </div>
+      </svg>
     <?php endif; ?>
   </div>
 
@@ -160,6 +189,39 @@ render_admin_head('dashboard');
     <?php endif; ?>
   </div>
 </div>
+
+<?php if (admin_can('payouts.view')): ?>
+<div class="admin-card" style="margin-top:20px">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+    <h3 style="margin:0">Withdrawal requests</h3>
+    <a class="link" style="font-size:0.84rem; font-weight:700; color:var(--purple)" href="/admin-payouts.php">Manage all withdrawals &rarr;</a>
+  </div>
+  <?php if (!$recentPayouts): ?>
+    <div class="admin-empty" style="padding:28px 24px">
+      <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-cash"/></svg></div>
+      <p style="margin-top:0">No withdrawal requests yet — organizer payout requests will show up here.</p>
+    </div>
+  <?php else: ?>
+    <div class="admin-table-wrap" style="border:none; box-shadow:none;">
+      <table class="admin-table">
+        <thead><tr><th>Organizer</th><th>Amount</th><th>Method</th><th>Requested</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <?php foreach ($recentPayouts as $p): ?>
+            <tr class="<?= $p['status'] === 'PENDING' ? 'admin-row-attention' : '' ?>">
+              <td><a class="link" href="/admin-organizer-detail.php?id=<?= (int) $p['organizer_id'] ?>"><?= htmlspecialchars($p['organizer_name']) ?></a></td>
+              <td class="mono" style="font-weight:700"><?= htmlspecialchars($p['currency']) ?> <?= number_format((float) $p['amount'], 0) ?></td>
+              <td class="muted"><?= htmlspecialchars(str_replace('_', ' ', $p['method'])) ?></td>
+              <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($p['requested_at']))) ?></td>
+              <td><span class="admin-badge <?= $payoutStatusMeta[$p['status']] ?? 'admin-badge-muted' ?>"><?= $p['status'] === 'PENDING' ? '<span class="admin-badge-dot"></span>' : '' ?><?= htmlspecialchars($p['status']) ?></span></td>
+              <td><?php if ($p['status'] === 'PENDING' && admin_can('payouts.process')): ?><a class="link" style="font-weight:700" href="/admin-payouts.php">Review &rarr;</a><?php endif; ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="admin-card" style="margin-top:20px">
   <h3 style="margin-bottom:16px">Upcoming events</h3>

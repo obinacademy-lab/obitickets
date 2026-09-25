@@ -159,6 +159,19 @@
   });
 
   // ---------------------------------------------------------------
+  // Revenue line chart — draw the path in from its own true length
+  // ---------------------------------------------------------------
+  document.querySelectorAll('.admin-line-path').forEach(function (path) {
+    var len = path.getTotalLength();
+    if (reduced) { return; }
+    path.style.strokeDasharray = len;
+    path.style.strokeDashoffset = len;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { path.classList.add('is-drawn'); });
+    });
+  });
+
+  // ---------------------------------------------------------------
   // Top progress bar — perceived speed on navigation
   // ---------------------------------------------------------------
   var bar = document.getElementById('adminProgress');

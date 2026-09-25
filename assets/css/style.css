@@ -1039,9 +1039,12 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .admin-empty p{margin-top:6px; font-size:0.86rem; max-width:340px; margin-left:auto; margin-right:auto;}
 .admin-empty .btn{margin-top:18px;}
 
-/* Chart bars grow up from the baseline on load */
-@keyframes adminBarIn{from{transform:scaleY(0);} to{transform:scaleY(1);}}
-.admin-chart-bar{transform-origin:bottom; animation:adminBarIn .5s var(--admin-ease) both;}
+/* Revenue line chart draws itself in on load (dasharray/offset set from JS via getTotalLength) */
+.admin-line-chart{display:block; overflow:visible;}
+.admin-line-path{transition:none;}
+.admin-line-path.is-drawn{animation:adminLineDraw 1s var(--admin-ease) forwards;}
+@keyframes adminLineDraw{to{stroke-dashoffset:0;}}
+.admin-line-chart circle{animation:adminRowIn .4s var(--admin-ease) both; animation-delay:.6s;}
 
 .admin-pagination{display:flex; align-items:center; justify-content:center; gap:6px; margin-top:20px;}
 .admin-pagination a, .admin-pagination span{min-width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:0.84rem; font-weight:700; color:var(--ink); text-decoration:none; transition:background .14s ease;}
