@@ -180,11 +180,16 @@ a.event-tile-art:hover img{transform:scale(1.05);}
    the split hero, now the magazine-cover hero) — no page references
    the original one any more. */
 
-/* ---------- category strip (homepage grid) ---------- */
-.cat-strip{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; margin-bottom:36px;}
-.cat-chip{flex:none; display:flex; align-items:center; gap:8px; font-size:0.86rem; font-weight:600; padding:10px 18px; border-radius:100px; border:1.5px solid var(--line-strong); transition:all .25s var(--ease-back, ease);}
-.cat-chip:hover{border-color:var(--purple-light); transform:translateY(-2px);}
-.cat-chip.active{background:linear-gradient(135deg, var(--purple-light), var(--purple)); border-color:transparent; color:#fff;}
+/* ---------- category strip (homepage) ---------- */
+.cat-strip{max-width:1120px; margin:0 auto 8px; padding:44px 32px 8px; display:flex; flex-wrap:wrap; justify-content:center; gap:12px; box-sizing:border-box;}
+.cat-chip{display:flex; align-items:center; gap:10px; padding:7px 20px 7px 7px; border-radius:100px; background:#fff; border:1.5px solid var(--line); text-decoration:none; transition:background .22s var(--ease), border-color .22s var(--ease), transform .22s var(--ease-back), box-shadow .22s var(--ease);}
+.cat-chip:hover{background:var(--purple-tint); border-color:var(--purple-light); transform:translateY(-2px); box-shadow:0 10px 20px -12px rgba(91,46,143,0.35);}
+.cat-chip:hover .cat-chip-ic{background:var(--purple); color:#fff;}
+.cat-chip-ic{width:34px; height:34px; border-radius:50%; background:var(--purple-tint); color:var(--purple); display:flex; align-items:center; justify-content:center; flex:none; transition:background .22s var(--ease), color .22s var(--ease);}
+.cat-chip-label{font-weight:700; font-size:0.9rem; color:var(--ink);}
+.cat-chip.active{background:var(--purple); border-color:var(--purple);}
+.cat-chip.active .cat-chip-ic{background:rgba(255,255,255,0.2); color:#fff;}
+.cat-chip.active .cat-chip-label{color:#fff;}
 
 /* ---------- event cards (homepage grid) ---------- */
 .event-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:24px; perspective:900px;}
@@ -288,16 +293,6 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .home-search-div{width:1px; align-self:stretch; margin:6px 0; background:var(--line);}
 .home-search .btn{border-radius:100px; flex:none;}
 
-/* ---------- homepage category icon strip ---------- */
-.cat-strip{padding:48px 0 8px; display:flex; gap:28px; justify-content:center; flex-wrap:wrap;}
-.cat-card{display:flex; flex-direction:column; align-items:center; gap:8px; width:104px; text-align:center;}
-.cat-strip .reveal:nth-child(1){transition-delay:.03s;} .cat-strip .reveal:nth-child(2){transition-delay:.09s;} .cat-strip .reveal:nth-child(3){transition-delay:.15s;}
-.cat-strip .reveal:nth-child(4){transition-delay:.21s;} .cat-strip .reveal:nth-child(5){transition-delay:.27s;} .cat-strip .reveal:nth-child(6){transition-delay:.33s;} .cat-strip .reveal:nth-child(7){transition-delay:.39s;}
-.cat-ring{width:64px; height:64px; border-radius:50%; background:var(--purple-tint); color:var(--purple); display:flex; align-items:center; justify-content:center; transition:background .35s var(--ease), transform .35s var(--ease-back), box-shadow .35s var(--ease);}
-.cat-card:hover .cat-ring{background:linear-gradient(135deg, var(--purple), var(--purple-deep)); color:#fff; transform:translateY(-6px) scale(1.06); box-shadow:0 16px 30px -14px rgba(91,46,143,0.55);}
-.cat-name{font-weight:700; font-size:0.88rem; color:var(--ink);}
-.cat-count{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--muted-2);}
-
 /* ---------- homepage upcoming events row ---------- */
 .evt-section{padding:56px 0 64px;}
 .evt-section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:24px;}
@@ -355,9 +350,9 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
   .home-search-div{display:none;}
   .home-search-field{flex:1; padding:8px 10px;}
   .home-search .btn{width:100%; margin-top:4px;}
-  .cat-strip{gap:16px; padding:36px 16px 8px;}
-  .cat-card{width:78px;}
-  .cat-ring{width:52px; height:52px;}
+  .cat-strip{flex-wrap:nowrap; justify-content:flex-start; overflow-x:auto; gap:10px; padding:32px 18px 8px; margin-bottom:0; scrollbar-width:none;}
+  .cat-strip::-webkit-scrollbar{display:none;}
+  .cat-chip{flex:none;}
   .classic-cta{padding:36px 24px;}
   .pullquote-band{padding:56px 24px;}
 }

@@ -5,7 +5,6 @@ $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
 $upcoming = upcoming_events_with_organizer(6);
-$categoryCounts = get_category_counts();
 $categoryIcons = [
     'Music' => 'ic-music', 'Conference' => 'ic-briefcase', 'Comedy' => 'ic-mic',
     'Sports' => 'ic-ball', 'Faith' => 'ic-cross', 'Fashion' => 'ic-hanger', 'Community' => 'ic-people',
@@ -39,12 +38,11 @@ $categoryIcons = [
   </div>
 </section>
 
-<div class="cat-strip wrap">
+<div class="cat-strip">
   <?php foreach (EVENT_CATEGORIES as $cat): ?>
-    <a class="cat-card reveal" href="/search.php?category=<?= urlencode($cat) ?>">
-      <span class="cat-ring"><svg width="26" height="26"><use href="#<?= $categoryIcons[$cat] ?>"/></svg></span>
-      <span class="cat-name"><?= htmlspecialchars($cat) ?></span>
-      <span class="cat-count"><?= $categoryCounts[$cat] ?> Event<?= $categoryCounts[$cat] === 1 ? '' : 's' ?></span>
+    <a class="cat-chip" href="/search.php?category=<?= urlencode($cat) ?>">
+      <span class="cat-chip-ic"><svg width="16" height="16"><use href="#<?= $categoryIcons[$cat] ?>"/></svg></span>
+      <span class="cat-chip-label"><?= htmlspecialchars($cat) ?></span>
     </a>
   <?php endforeach; ?>
 </div>
