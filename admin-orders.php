@@ -9,6 +9,7 @@ $perPage = 30;
 $total = count_orders_admin($filters);
 $orders = get_orders_admin($filters, $perPage, ($page - 1) * $perPage);
 $totalPages = max(1, (int) ceil($total / $perPage));
+$statusCounts = get_order_status_counts();
 
 $statusMeta = [
     'PENDING' => 'admin-badge-warn', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger',
@@ -23,19 +24,30 @@ render_admin_head('orders');
   <div><h1>Orders</h1><p><?= $total ?> total</p></div>
 </div>
 
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $filters['status'] === '' ? ' active' : '' ?>" href="/admin-orders.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <?php foreach ($statusMeta as $val => $badgeClass): ?>
+    <a class="admin-mini-stat<?= $filters['status'] === $val ? ' active' : '' ?>" href="/admin-orders.php?status=<?= $val ?>">
+      <span class="n"><?= $statusCounts[$val] ?></span><span class="l"><?= ucfirst(strtolower($val)) ?></span>
+    </a>
+  <?php endforeach; ?>
+</div>
+
 <form class="admin-filter-bar" method="get">
+  <?php if ($filters['status'] !== ''): ?><input type="hidden" name="status" value="<?= htmlspecialchars($filters['status']) ?>"><?php endif; ?>
   <input type="text" name="q" placeholder="Search buyer, event or order #…" value="<?= htmlspecialchars($filters['q']) ?>" style="min-width:280px">
-  <select name="status" onchange="this.form.submit()">
-    <option value="">All statuses</option>
-    <?php foreach (['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED'] as $s): ?>
-      <option value="<?= $s ?>" <?= $filters['status'] === $s ? 'selected' : '' ?>><?= $s ?></option>
-    <?php endforeach; ?>
-  </select>
   <button class="btn btn-line" type="submit" style="padding:9px 18px">Search</button>
 </form>
 
 <?php if (!$orders): ?>
-  <div class="admin-empty"><svg width="40" height="40"><use href="#ic-bolt"/></svg><h3>No orders found</h3><p>Try a different search or clear your filters.</p></div>
+  <div class="admin-empty">
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-bolt"/></svg></div>
+    <h3>No orders found</h3>
+    <p>Try a different search, or clear your filters to see everything.</p>
+    <a class="btn btn-line" href="/admin-orders.php">Clear filters</a>
+  </div>
 <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">

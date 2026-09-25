@@ -578,15 +578,20 @@ function set_user_account_status(int $adminId, int $userId, string $status): voi
 // Tickets & check-in
 // =====================================================================
 
-function search_tickets_admin(string $q = '', int $limit = 100): array
+function search_tickets_admin(string $q = '', int $limit = 100, string $status = ''): array
 {
-    $where = '';
+    $where = [];
     $params = [];
     if ($q !== '') {
-        $where = 'WHERE t.ticket_code LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR e.title LIKE ?';
+        $where[] = '(t.ticket_code LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR e.title LIKE ?)';
         $like = '%' . $q . '%';
-        $params = [$like, $like, $like, $like];
+        array_push($params, $like, $like, $like, $like);
     }
+    if ($status !== '') {
+        $where[] = 't.status = ?';
+        $params[] = $status;
+    }
+    $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
     $stmt = db()->prepare("
         SELECT t.*, tt.name AS tier_name, e.title AS event_title, e.id AS event_id,
             u.name AS attendee_name, u.email AS attendee_email, o.id AS order_id
@@ -596,12 +601,23 @@ function search_tickets_admin(string $q = '', int $limit = 100): array
         JOIN events e ON e.id = tt.event_id
         JOIN orders o ON o.id = oi.order_id
         JOIN users u ON u.id = o.user_id
-        $where
+        $whereSql
         ORDER BY t.created_at DESC
         LIMIT $limit
     ");
     $stmt->execute($params);
     return $stmt->fetchAll();
+}
+
+/** Platform-wide ticket counts per status, for the Tickets page's summary strip — zero-filled. */
+function get_ticket_status_counts(): array
+{
+    $counts = array_fill_keys(['VALID', 'USED', 'CANCELLED'], 0);
+    $stmt = db()->query('SELECT status, COUNT(*) AS n FROM tickets GROUP BY status');
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[$row['status']] = (int) $row['n'];
+    }
+    return $counts;
 }
 
 function admin_check_in(int $adminId, int $ticketId): void
@@ -678,6 +694,17 @@ function count_orders_admin(array $filters = []): int
     $stmt = db()->prepare("SELECT COUNT(*) FROM orders o JOIN users u ON u.id = o.user_id JOIN events e ON e.id = o.event_id $whereSql");
     $stmt->execute($params);
     return (int) $stmt->fetchColumn();
+}
+
+/** Platform-wide order counts per status, for the Orders page's summary strip — zero-filled. */
+function get_order_status_counts(): array
+{
+    $counts = array_fill_keys(['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED'], 0);
+    $stmt = db()->query('SELECT status, COUNT(*) AS n FROM orders GROUP BY status');
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[$row['status']] = (int) $row['n'];
+    }
+    return $counts;
 }
 
 function get_order_admin_detail(int $orderId): ?array

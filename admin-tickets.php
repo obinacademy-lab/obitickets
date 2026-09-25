@@ -14,12 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($ticketId && $action === 'cancel' && admin_can('tickets.view')) {
         admin_cancel_ticket((int) $admin['id'], $ticketId);
     }
-    header('Location: /admin-tickets.php?' . http_build_query(['q' => $_GET['q'] ?? '', 'updated' => 1]));
+    header('Location: /admin-tickets.php?' . http_build_query(['q' => $_GET['q'] ?? '', 'status' => $_GET['status'] ?? '', 'updated' => 1]));
     exit;
 }
 
 $q = trim((string) ($_GET['q'] ?? ''));
-$tickets = search_tickets_admin($q, 100);
+$statusFilter = $_GET['status'] ?? '';
+$statusCounts = get_ticket_status_counts();
+$tickets = search_tickets_admin($q, 100, $statusFilter);
 $statusMeta = ['VALID' => 'admin-badge-success', 'USED' => 'admin-badge-purple', 'CANCELLED' => 'admin-badge-muted'];
 
 $pageTitle = 'Tickets';
@@ -27,18 +29,39 @@ render_admin_head('tickets');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Tickets</h1><p><?= count($tickets) ?> shown<?= $q === '' ? ' (most recent 100)' : '' ?></p></div>
+  <div><h1>Tickets</h1><p><?= count($tickets) ?> shown<?= $q === '' && $statusFilter === '' ? ' (most recent 100)' : '' ?></p></div>
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Ticket updated." hidden></span><?php endif; ?>
 
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/admin-tickets.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'VALID' ? ' active' : '' ?>" href="/admin-tickets.php?status=VALID">
+    <span class="n"><?= $statusCounts['VALID'] ?></span><span class="l">Valid</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'USED' ? ' active' : '' ?>" href="/admin-tickets.php?status=USED">
+    <span class="n"><?= $statusCounts['USED'] ?></span><span class="l">Checked in</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'CANCELLED' ? ' active' : '' ?>" href="/admin-tickets.php?status=CANCELLED">
+    <span class="n"><?= $statusCounts['CANCELLED'] ?></span><span class="l">Cancelled</span>
+  </a>
+</div>
+
 <form class="admin-filter-bar" method="get">
+  <?php if ($statusFilter !== ''): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
   <input type="text" name="q" placeholder="Search ticket code, attendee or event…" value="<?= htmlspecialchars($q) ?>" style="min-width:320px">
   <button class="btn btn-line" type="submit" style="padding:9px 18px">Search</button>
 </form>
 
 <?php if (!$tickets): ?>
-  <div class="admin-empty"><svg width="40" height="40"><use href="#ic-ticket"/></svg><h3>No tickets found</h3><p>Try a different search.</p></div>
+  <div class="admin-empty">
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-ticket"/></svg></div>
+    <h3>No tickets found</h3>
+    <p>Try a different search, or clear your filters to see everything.</p>
+    <a class="btn btn-line" href="/admin-tickets.php">Clear filters</a>
+  </div>
 <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
