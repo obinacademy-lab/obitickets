@@ -623,8 +623,14 @@ footer p{color:rgba(255,255,255,0.7);}
 /* The whole uploaded banner must always be visible, never cropped — so the
    sharp image uses object-fit:contain (shows 100% of it), and a blurred,
    cropped copy fills the letterbox space behind it for a full-bleed look. */
-.hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(35px) brightness(0.55) saturate(1.15); transform:scale(1.2);}
-#heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain;}
+.hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(35px) brightness(0.55) saturate(1.15); opacity:0; animation:heroBgIn 1s var(--ease) forwards;}
+#heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain; opacity:0; animation:heroFgIn .9s var(--ease) .15s forwards;}
+@keyframes heroBgIn{from{opacity:0; transform:scale(1.32);} to{opacity:1; transform:scale(1.2);}}
+@keyframes heroFgIn{from{opacity:0; transform:scale(1.05);} to{opacity:1; transform:scale(1);}}
+@media (prefers-reduced-motion: reduce){
+  .hero-bg-blur{opacity:1; animation:none; transform:scale(1.2);}
+  #heroBannerImg{opacity:1; animation:none; transform:none;}
+}
 .event-hero-full::after{content:''; position:absolute; inset:0 0 0 0; background:linear-gradient(0deg, rgba(8,5,14,0.82) 0%, rgba(8,5,14,0.42) 34%, rgba(8,5,14,0) 62%); pointer-events:none;}
 .event-hero-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
 .event-hero-count{position:absolute; top:22px; right:24px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.82rem; font-weight:700; padding:9px 18px; border-radius:100px; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5);}
