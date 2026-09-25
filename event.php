@@ -34,29 +34,41 @@ include __DIR__ . '/includes/header.php';
 
 <div class="wrap">
   <div class="crumb"><a href="/">Home</a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <?= htmlspecialchars($event['title']) ?></div>
+</div>
 
-  <div class="event-hero" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
-    <?php if (!empty($event['banner_image'])): ?>
-      <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-    <?php else: ?>
-      <div class="event-hero-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-    <?php endif; ?>
-    <div class="event-hero-count">&#127917; Starts in <span id="cd-text">--</span></div>
-    <div class="event-hero-inner">
-      <span class="event-hero-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
-      <h1><?= htmlspecialchars($event['title']) ?></h1>
-      <div class="event-hero-meta">
-        <span class="m"><svg width="15" height="15"><use href="#ic-cal"/></svg> <?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></span>
-        <span class="m"><svg width="15" height="15"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></span>
-      </div>
+<div class="event-hero-full" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+  <?php if (!empty($event['banner_image'])): ?>
+    <div class="event-hero-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+      <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+    </div>
+    <button class="hero-expand-btn" id="heroExpandBtn" type="button" aria-label="View banner full size" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>">
+      <svg width="16" height="16"><use href="#ic-expand"/></svg><span>View full size</span>
+    </button>
+  <?php else: ?>
+    <div class="event-hero-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+  <?php endif; ?>
+  <div class="event-hero-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
+  <div class="wrap event-hero-content">
+    <span class="event-hero-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
+    <h1><?= htmlspecialchars($event['title']) ?></h1>
+    <div class="event-hero-meta">
+      <span class="m"><svg width="15" height="15"><use href="#ic-cal"/></svg> <?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></span>
+      <span class="m"><svg width="15" height="15"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></span>
     </div>
   </div>
+</div>
 
+<div class="lightbox-overlay" id="heroLightbox">
+  <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<div class="wrap">
   <div class="event-layout">
 
     <div class="event-content">
 
-      <section>
+      <section class="reveal">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px">
           <h2>About this event</h2>
           <div style="display:flex; gap:2px; flex:none">
@@ -70,7 +82,7 @@ include __DIR__ . '/includes/header.php';
       </section>
 
       <?php if ($eventMedia): ?>
-      <section>
+      <section class="reveal">
         <h2>Event gallery</h2>
         <div class="event-gallery">
           <?php foreach ($eventMedia as $media): ?>
@@ -79,16 +91,16 @@ include __DIR__ . '/includes/header.php';
                 <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
               </div>
             <?php else: ?>
-              <a class="event-gallery-item" href="<?= htmlspecialchars($media['file_path']) ?>" target="_blank" rel="noopener">
+              <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
                 <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-              </a>
+              </button>
             <?php endif; ?>
           <?php endforeach; ?>
         </div>
       </section>
       <?php endif; ?>
 
-      <section>
+      <section class="reveal">
         <h2>Venue</h2>
         <div class="plain-row">
           <div class="ic"><svg width="20" height="20"><use href="#ic-pin"/></svg></div>
@@ -97,7 +109,7 @@ include __DIR__ . '/includes/header.php';
         </div>
       </section>
 
-      <section>
+      <section class="reveal">
         <h2>Organized by</h2>
         <div class="plain-row">
           <div class="avatar" style="width:40px;height:40px;background:var(--purple);color:#fff">
@@ -112,7 +124,7 @@ include __DIR__ . '/includes/header.php';
       </section>
 
       <?php if ($similarEvents): ?>
-      <section>
+      <section class="reveal">
         <h2>Similar events</h2>
         <div class="similar-row">
           <?php foreach ($similarEvents as $tintIndex => $simEvent) { render_shelf_card($simEvent, $tintIndex); } ?>
@@ -122,7 +134,7 @@ include __DIR__ . '/includes/header.php';
 
     </div>
 
-    <aside class="buy-panel">
+    <aside class="buy-panel reveal">
       <div class="buy-head">
         <div class="lbl">SELECT TICKETS</div>
         <h3><?= htmlspecialchars($event['title']) ?></h3>
@@ -182,3 +194,4 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
+<script src="/assets/js/cinematic.js"></script>

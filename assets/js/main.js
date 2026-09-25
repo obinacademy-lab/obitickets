@@ -79,6 +79,32 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(tick, 30000);
   }
 
+  // Banner/gallery lightbox — tap any [data-lightbox-src] element to preview
+  // the full-size image (event.php's hero banner and gallery photos).
+  var heroLightbox = document.getElementById('heroLightbox');
+  if (heroLightbox) {
+    var lightboxImg = document.getElementById('lightboxImg');
+    var lightboxClose = document.getElementById('lightboxClose');
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      heroLightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      heroLightbox.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.querySelectorAll('[data-lightbox-src]').forEach(function (el) {
+      el.addEventListener('click', function () { openLightbox(el.getAttribute('data-lightbox-src')); });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(el.getAttribute('data-lightbox-src')); }
+      });
+    });
+    lightboxClose.addEventListener('click', closeLightbox);
+    heroLightbox.addEventListener('click', function (e) { if (e.target === heroLightbox) closeLightbox(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLightbox(); });
+  }
+
   // Ticket quantity steppers — recompute the buy-panel's subtotal/fee/total
   // from each .tier's real data-price whenever a quantity changes, since
   // ticket prices now vary per event instead of being a fixed mockup number.
