@@ -48,10 +48,7 @@ include __DIR__ . '/includes/header.php';
     <div class="event-hero-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
   <?php endif; ?>
   <div class="event-hero-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
-</div>
-
-<div class="wrap">
-  <div class="event-hero-content">
+  <div class="wrap event-hero-content">
     <span class="event-hero-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
     <h1><?= htmlspecialchars($event['title']) ?></h1>
     <div class="event-hero-meta">
