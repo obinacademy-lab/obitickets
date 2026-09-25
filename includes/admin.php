@@ -138,6 +138,62 @@ function get_daily_revenue(int $days = 14): array
     return $out;
 }
 
+/**
+ * This-period vs previous-period deltas for the dashboard's KPI trend
+ * arrows — real numbers, not a hardcoded "+12%". A NULL percent means the
+ * previous period had zero to compare against (avoids a divide-by-zero
+ * reading as a fake "∞% up").
+ * @return array{revenue: array{value:float, prevValue:float, percent:?float}, tickets: array{value:int, prevValue:int, percent:?float}, orders: array{value:int, prevValue:int, percent:?float}}
+ */
+function get_period_comparison(int $days = 30): array
+{
+    $pdo = db();
+
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID' AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+    $stmt->execute([$days]);
+    $revenueNow = (float) $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID' AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) AND paid_at < DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+    $stmt->execute([$days * 2, $days]);
+    $revenuePrev = (float) $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'PAID' AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+    $stmt->execute([$days]);
+    $ordersNow = (int) $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE status = 'PAID' AND paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) AND paid_at < DATE_SUB(CURDATE(), INTERVAL ? DAY)");
+    $stmt->execute([$days * 2, $days]);
+    $ordersPrev = (int) $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM tickets t
+        JOIN order_items oi ON oi.id = t.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        WHERE o.status = 'PAID' AND o.paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    ");
+    $stmt->execute([$days]);
+    $ticketsNow = (int) $stmt->fetchColumn();
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM tickets t
+        JOIN order_items oi ON oi.id = t.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        WHERE o.status = 'PAID' AND o.paid_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY) AND o.paid_at < DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    ");
+    $stmt->execute([$days * 2, $days]);
+    $ticketsPrev = (int) $stmt->fetchColumn();
+
+    $pct = static function (float $now, float $prev): ?float {
+        if ($prev <= 0) {
+            return null;
+        }
+        return round((($now - $prev) / $prev) * 100, 1);
+    };
+
+    return [
+        'revenue' => ['value' => $revenueNow, 'prevValue' => $revenuePrev, 'percent' => $pct($revenueNow, $revenuePrev)],
+        'tickets' => ['value' => $ticketsNow, 'prevValue' => $ticketsPrev, 'percent' => $pct((float) $ticketsNow, (float) $ticketsPrev)],
+        'orders' => ['value' => $ordersNow, 'prevValue' => $ordersPrev, 'percent' => $pct((float) $ordersNow, (float) $ordersPrev)],
+    ];
+}
+
 function get_upcoming_events_admin(int $limit = 6): array
 {
     $stmt = db()->prepare("
