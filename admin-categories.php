@@ -42,8 +42,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$categories = get_all_categories_admin();
+$allCategories = get_all_categories_admin();
 $iconOptions = ['ic-music', 'ic-briefcase', 'ic-mic', 'ic-ball', 'ic-cross', 'ic-hanger', 'ic-people', 'ic-ticket', 'ic-cal', 'ic-bolt', 'ic-tag', 'ic-cash'];
+
+$statusCounts = ['ACTIVE' => 0, 'DISABLED' => 0];
+foreach ($allCategories as $c) {
+    $statusCounts[$c['active'] ? 'ACTIVE' : 'DISABLED']++;
+}
+
+$statusFilter = $_GET['status'] ?? '';
+$categories = $statusFilter === ''
+    ? $allCategories
+    : array_values(array_filter($allCategories, static fn ($c) => ($c['active'] ? 'ACTIVE' : 'DISABLED') === $statusFilter));
 
 $pageTitle = 'Categories';
 render_admin_head('categories');
@@ -56,7 +66,28 @@ render_admin_head('categories');
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/admin-categories.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'ACTIVE' ? ' active' : '' ?>" href="/admin-categories.php?status=ACTIVE">
+    <span class="n"><?= $statusCounts['ACTIVE'] ?></span><span class="l">Active</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'DISABLED' ? ' active' : '' ?>" href="/admin-categories.php?status=DISABLED">
+    <span class="n"><?= $statusCounts['DISABLED'] ?></span><span class="l">Disabled</span>
+  </a>
+</div>
+
 <div class="admin-grid-2">
+  <div>
+  <?php if (!$categories): ?>
+    <div class="admin-empty">
+      <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-grid"/></svg></div>
+      <h3>No categories<?= $statusFilter !== '' ? ' in this view' : ' yet' ?></h3>
+      <p><?= $statusFilter !== '' ? 'Try a different filter, or clear it to see everything.' : 'Add one to organize events on the homepage and browse filters.' ?></p>
+      <?php if ($statusFilter !== ''): ?><a class="btn btn-line" href="/admin-categories.php">Clear filter</a><?php endif; ?>
+    </div>
+  <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
       <thead><tr><th>Order</th><th>Icon</th><th>Name</th><th>Events</th><th>Status</th><th></th></tr></thead>
@@ -101,6 +132,8 @@ render_admin_head('categories');
         <?php endforeach; ?>
       </tbody>
     </table>
+  </div>
+  <?php endif; ?>
   </div>
 
   <div class="admin-card">
