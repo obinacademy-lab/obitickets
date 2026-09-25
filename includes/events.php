@@ -272,7 +272,107 @@ function format_event_date_range(string $startsAt, string $endsAt): string
 // Organizer event-management: create/edit events and their ticket types.
 // =====================================================================
 
-const EVENT_CATEGORIES = ['Music', 'Conference', 'Comedy', 'Sports', 'Faith', 'Fashion', 'Community'];
+// Names of the active rows in `event_categories`, in display order — the
+// admin Categories page manages that table; every place that used to hold a
+// hardcoded list reads this constant unchanged. events.category stays a
+// plain VARCHAR (not a foreign key), so disabling/renaming a category here
+// never touches past events.
+define('EVENT_CATEGORIES', array_column(
+    db()->query('SELECT name FROM event_categories WHERE active = 1 ORDER BY sort_order, name')->fetchAll(),
+    'name'
+));
+
+/** name => icon symbol id, for every active category — used wherever a category strip/select renders an icon. */
+function category_icon_map(): array
+{
+    static $map = null;
+    if ($map === null) {
+        $map = array_column(
+            db()->query('SELECT name, icon_key FROM event_categories WHERE active = 1 ORDER BY sort_order, name')->fetchAll(),
+            'icon_key', 'name'
+        );
+    }
+    return $map;
+}
+
+/** Every category row (active or not), for the admin Categories page. */
+function get_all_categories_admin(): array
+{
+    return db()->query('
+        SELECT c.*, (SELECT COUNT(*) FROM events e WHERE e.category = c.name) AS event_count
+        FROM event_categories c
+        ORDER BY c.sort_order, c.name
+    ')->fetchAll();
+}
+
+/** @return array{0: bool, 1: ?string} [success, errorMessage] */
+function create_category(string $name, string $iconKey): array
+{
+    $name = trim($name);
+    if ($name === '') {
+        return [false, 'Category name is required.'];
+    }
+    $stmt = db()->prepare('SELECT id FROM event_categories WHERE name = ?');
+    $stmt->execute([$name]);
+    if ($stmt->fetch()) {
+        return [false, 'A category with that name already exists.'];
+    }
+    $maxOrder = (int) db()->query('SELECT COALESCE(MAX(sort_order), 0) FROM event_categories')->fetchColumn();
+    db()->prepare('INSERT INTO event_categories (name, slug, icon_key, sort_order) VALUES (?, ?, ?, ?)')
+        ->execute([$name, slugify($name), $iconKey, $maxOrder + 1]);
+    return [true, null];
+}
+
+function update_category(int $id, string $name, string $iconKey): void
+{
+    db()->prepare('UPDATE event_categories SET name = ?, icon_key = ? WHERE id = ?')
+        ->execute([trim($name), $iconKey, $id]);
+}
+
+function set_category_active(int $id, bool $active): void
+{
+    db()->prepare('UPDATE event_categories SET active = ? WHERE id = ?')->execute([$active ? 1 : 0, $id]);
+}
+
+function reorder_category(int $id, int $direction): void
+{
+    $stmt = db()->prepare('SELECT id, sort_order FROM event_categories ORDER BY sort_order, name');
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
+    $index = null;
+    foreach ($rows as $i => $row) {
+        if ((int) $row['id'] === $id) {
+            $index = $i;
+            break;
+        }
+    }
+    $swapWith = $index !== null ? $index + $direction : null;
+    if ($swapWith === null || $swapWith < 0 || $swapWith >= count($rows)) {
+        return;
+    }
+    $a = $rows[$index];
+    $b = $rows[$swapWith];
+    db()->prepare('UPDATE event_categories SET sort_order = ? WHERE id = ?')->execute([$b['sort_order'], $a['id']]);
+    db()->prepare('UPDATE event_categories SET sort_order = ? WHERE id = ?')->execute([$a['sort_order'], $b['id']]);
+}
+
+/** @return array{0: bool, 1: ?string} [success, errorMessage] */
+function delete_category(int $id): array
+{
+    $stmt = db()->prepare('SELECT name FROM event_categories WHERE id = ?');
+    $stmt->execute([$id]);
+    $name = $stmt->fetchColumn();
+    if (!$name) {
+        return [false, 'Category not found.'];
+    }
+    $stmt = db()->prepare('SELECT COUNT(*) FROM events WHERE category = ?');
+    $stmt->execute([$name]);
+    if ((int) $stmt->fetchColumn() > 0) {
+        return [false, 'This category is used by existing events — disable it instead of deleting, or move those events to another category first.'];
+    }
+    db()->prepare('DELETE FROM event_categories WHERE id = ?')->execute([$id]);
+    return [true, null];
+}
 const EVENT_EMOJIS = ['🎵', '💼', '🎤', '🏟️', '🙏', '👗', '🎓', '🎨', '🧒', '🎉', '🎬', '⚽'];
 // obitickets currently operates in Uganda only — every ticket is priced in
 // UGX. Kept as a list (not a single constant) so a future multi-country

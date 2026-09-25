@@ -38,10 +38,10 @@ function current_user(): ?array
     if (empty($_SESSION['user_id'])) {
         return $cached = null;
     }
-    $stmt = db()->prepare('SELECT id, name, email, phone, role, created_at FROM users WHERE id = ?');
+    $stmt = db()->prepare('SELECT id, name, email, phone, role, admin_role, account_status, created_at FROM users WHERE id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch();
-    if (!$user) {
+    if (!$user || $user['account_status'] === 'SUSPENDED') {
         unset($_SESSION['user_id']);
         return $cached = null;
     }
@@ -105,16 +105,20 @@ function register_user(string $name, string $email, string $password, string $ro
  */
 function attempt_login(string $email, string $password): array
 {
-    $stmt = db()->prepare('SELECT id, password_hash FROM users WHERE email = ?');
+    $stmt = db()->prepare('SELECT id, password_hash, account_status FROM users WHERE email = ?');
     $stmt->execute([strtolower(trim($email))]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
         return [false, 'Incorrect email or password.'];
     }
+    if ($user['account_status'] === 'SUSPENDED') {
+        return [false, 'This account has been suspended. Contact support for help.'];
+    }
 
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int) $user['id'];
+    db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$user['id']]);
 
     return [true, null];
 }

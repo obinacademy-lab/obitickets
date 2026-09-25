@@ -30,10 +30,7 @@ function search_url(string $q, string $category = '', bool $freeOnly = false): s
     return '/search.php' . ($params ? '?' . http_build_query($params) : '');
 }
 
-$catStripIcons = [
-    'Music' => 'ic-music', 'Conference' => 'ic-briefcase', 'Comedy' => 'ic-mic',
-    'Sports' => 'ic-ball', 'Faith' => 'ic-cross', 'Fashion' => 'ic-hanger', 'Community' => 'ic-people',
-];
+$catStripIcons = category_icon_map();
 
 if ($category !== '') {
     $heroTitle = $category;

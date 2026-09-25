@@ -5,10 +5,7 @@ $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
 $upcoming = upcoming_events_with_organizer(6);
-$categoryIcons = [
-    'Music' => 'ic-music', 'Conference' => 'ic-briefcase', 'Comedy' => 'ic-mic',
-    'Sports' => 'ic-ball', 'Faith' => 'ic-cross', 'Fashion' => 'ic-hanger', 'Community' => 'ic-people',
-];
+$categoryIcons = category_icon_map();
 ?>
 
 <section class="home-hero">
