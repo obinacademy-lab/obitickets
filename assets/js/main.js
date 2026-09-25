@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // Footer "back to top" button
+  var footToTop = document.getElementById('footToTop');
+  if (footToTop) {
+    footToTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
   // Sticky nav gains a shadow once the page scrolls past the top
   var siteNav = document.querySelector('.site-nav');
   if (siteNav) {
