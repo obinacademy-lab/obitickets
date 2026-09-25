@@ -32,8 +32,39 @@ render_admin_head('settings');
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
+<div class="admin-kpi-grid" style="margin-bottom:20px">
+  <div class="admin-kpi-card">
+    <div class="admin-kpi-card-top">
+      <span class="lbl">Platform commission</span>
+      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-shield"/></svg></span>
+    </div>
+    <span class="num"><span data-count-to="<?= (int) round(PLATFORM_COMMISSION_RATE * 100) ?>">0</span>%</span>
+    <span class="sub">Of every paid order</span>
+  </div>
+  <div class="admin-kpi-card">
+    <div class="admin-kpi-card-top">
+      <span class="lbl">Buyer service fee</span>
+      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span>
+    </div>
+    <span class="num"><span data-count-to="<?= (int) SERVICE_FEE_PER_TICKET ?>" data-count-prefix="UGX ">0</span></span>
+    <span class="sub">Per ticket</span>
+  </div>
+  <div class="admin-kpi-card">
+    <div class="admin-kpi-card-top">
+      <span class="lbl">Payment gateway</span>
+      <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-check"/></svg></span>
+    </div>
+    <span class="num" style="font-size:1.15rem; font-family:inherit; font-weight:800">iotec</span>
+    <span class="sub">Mobile money collection</span>
+  </div>
+</div>
+
 <div class="admin-grid-2">
   <div class="admin-card">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
+      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-settings"/></svg></span>
+      <h3 style="margin:0">Platform basics</h3>
+    </div>
     <form method="post">
       <?= csrf_field() ?>
       <div class="admin-form-row"><label>Platform name</label><input type="text" name="platform_name" value="<?= htmlspecialchars($settings['platform_name'] ?? '') ?>"></div>
@@ -44,11 +75,11 @@ render_admin_head('settings');
   </div>
 
   <div class="admin-card">
-    <h3 style="margin-bottom:10px">Payment &amp; ticketing (read-only)</h3>
-    <p style="color:var(--muted-2); font-size:0.82rem; margin-bottom:14px">These live as constants in <code>includes/payments.php</code> rather than here — every past order stores its own commission/fee amount, so changing the live rate needs its own careful pass rather than a quick settings edit.</p>
-    <div class="admin-detail-row"><span class="k">Platform commission</span><span class="v mono"><?= number_format(PLATFORM_COMMISSION_RATE * 100, 0) ?>%</span></div>
-    <div class="admin-detail-row"><span class="k">Buyer service fee</span><span class="v mono">UGX <?= number_format(SERVICE_FEE_PER_TICKET, 0) ?> / ticket</span></div>
-    <div class="admin-detail-row"><span class="k">Payment gateway</span><span class="v">iotec (mobile money collection)</span></div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px">
+      <span class="admin-kpi-ic" style="background:var(--warn-bg); color:var(--warn)"><svg width="17" height="17"><use href="#ic-info"/></svg></span>
+      <h3 style="margin:0">Why rates aren't editable here</h3>
+    </div>
+    <p style="color:var(--muted-2); font-size:0.82rem; margin:10px 0 0">These live as constants in <code>includes/payments.php</code> rather than here — every past order stores its own commission/fee amount, so changing the live rate needs its own careful pass rather than a quick settings edit.</p>
   </div>
 </div>
 
