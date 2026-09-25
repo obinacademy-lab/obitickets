@@ -4,7 +4,19 @@ require_once __DIR__ . '/includes/bootstrap.php';
 require_admin_permission('customers.view');
 
 $q = trim((string) ($_GET['q'] ?? ''));
+$statusFilter = $_GET['status'] ?? '';
 $customers = get_customers_admin();
+
+$statusCounts = ['ACTIVE' => 0, 'SUSPENDED' => 0];
+foreach ($customers as $c) {
+    if (isset($statusCounts[$c['account_status']])) {
+        $statusCounts[$c['account_status']]++;
+    }
+}
+
+if ($statusFilter !== '') {
+    $customers = array_values(array_filter($customers, static fn ($c) => $c['account_status'] === $statusFilter));
+}
 if ($q !== '') {
     $customers = array_values(array_filter($customers, static fn ($c) => stripos($c['name'], $q) !== false || stripos($c['email'], $q) !== false));
 }
@@ -14,16 +26,34 @@ render_admin_head('customers');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Customers</h1><p><?= count($customers) ?> total</p></div>
+  <div><h1>Customers</h1><p><?= count($customers) ?> shown</p></div>
+</div>
+
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/admin-customers.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'ACTIVE' ? ' active' : '' ?>" href="/admin-customers.php?status=ACTIVE">
+    <span class="n"><?= $statusCounts['ACTIVE'] ?></span><span class="l">Active</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'SUSPENDED' ? ' active' : '' ?>" href="/admin-customers.php?status=SUSPENDED">
+    <span class="n"><?= $statusCounts['SUSPENDED'] ?></span><span class="l">Suspended</span>
+  </a>
 </div>
 
 <form class="admin-filter-bar" method="get">
+  <?php if ($statusFilter !== ''): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
   <input type="text" name="q" placeholder="Search name or email…" value="<?= htmlspecialchars($q) ?>">
   <button class="btn btn-line" type="submit" style="padding:9px 18px">Search</button>
 </form>
 
 <?php if (!$customers): ?>
-  <div class="admin-empty"><svg width="40" height="40"><use href="#ic-user"/></svg><h3>No customers found</h3><p>Try a different search.</p></div>
+  <div class="admin-empty">
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-user"/></svg></div>
+    <h3>No customers found</h3>
+    <p>Try a different search, or clear your filters to see everyone.</p>
+    <a class="btn btn-line" href="/admin-customers.php">Clear filters</a>
+  </div>
 <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
