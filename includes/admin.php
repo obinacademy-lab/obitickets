@@ -949,6 +949,18 @@ function get_contact_messages_admin(string $status = ''): array
     return db()->query('SELECT * FROM contact_messages ORDER BY created_at DESC')->fetchAll();
 }
 
+function get_contact_message_counts(): array
+{
+    $counts = array_fill_keys(['NEW', 'READ', 'IN_PROGRESS', 'RESOLVED'], 0);
+    $rows = db()->query('SELECT status, COUNT(*) AS n FROM contact_messages GROUP BY status')->fetchAll();
+    foreach ($rows as $row) {
+        if (isset($counts[$row['status']])) {
+            $counts[$row['status']] = (int) $row['n'];
+        }
+    }
+    return $counts;
+}
+
 function set_contact_message_status(int $adminId, int $id, string $status): void
 {
     $status = in_array($status, ['NEW', 'READ', 'IN_PROGRESS', 'RESOLVED'], true) ? $status : 'NEW';

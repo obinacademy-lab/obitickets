@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && admin_can('contact.manage')) {
 
 $statusFilter = $_GET['status'] ?? '';
 $messages = get_contact_messages_admin($statusFilter);
+$statusCounts = get_contact_message_counts();
 $statusMeta = ['NEW' => 'admin-badge-warn', 'READ' => 'admin-badge-muted', 'IN_PROGRESS' => 'admin-badge-purple', 'RESOLVED' => 'admin-badge-success'];
 
 $pageTitle = 'Contact Messages';
@@ -24,25 +25,41 @@ render_admin_head('contact');
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
-<form class="admin-filter-bar" method="get">
-  <select name="status" onchange="this.form.submit()">
-    <option value="">All statuses</option>
-    <?php foreach (['NEW', 'READ', 'IN_PROGRESS', 'RESOLVED'] as $s): ?><option value="<?= $s ?>" <?= $statusFilter === $s ? 'selected' : '' ?>><?= $s ?></option><?php endforeach; ?>
-  </select>
-</form>
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/admin-contact.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'NEW' ? ' active' : '' ?>" href="/admin-contact.php?status=NEW">
+    <span class="n"><?= $statusCounts['NEW'] ?></span><span class="l">New</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'READ' ? ' active' : '' ?>" href="/admin-contact.php?status=READ">
+    <span class="n"><?= $statusCounts['READ'] ?></span><span class="l">Read</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'IN_PROGRESS' ? ' active' : '' ?>" href="/admin-contact.php?status=IN_PROGRESS">
+    <span class="n"><?= $statusCounts['IN_PROGRESS'] ?></span><span class="l">In progress</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'RESOLVED' ? ' active' : '' ?>" href="/admin-contact.php?status=RESOLVED">
+    <span class="n"><?= $statusCounts['RESOLVED'] ?></span><span class="l">Resolved</span>
+  </a>
+</div>
 
 <?php if (!$messages): ?>
-  <div class="admin-empty"><svg width="40" height="40"><use href="#ic-mail"/></svg><h3>No messages</h3><p>Nothing submitted through the Contact Us page yet.</p></div>
+  <div class="admin-empty">
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-mail"/></svg></div>
+    <h3>No messages<?= $statusFilter !== '' ? ' in this view' : '' ?></h3>
+    <p><?= $statusFilter !== '' ? 'Try a different filter, or clear it to see everything.' : 'Nothing submitted through the Contact Us page yet.' ?></p>
+    <?php if ($statusFilter !== ''): ?><a class="btn btn-line" href="/admin-contact.php">Clear filter</a><?php endif; ?>
+  </div>
 <?php else: ?>
   <div style="display:flex; flex-direction:column; gap:14px;">
-    <?php foreach ($messages as $m): ?>
-      <div class="admin-card">
+    <?php foreach ($messages as $m): $isNew = $m['status'] === 'NEW'; ?>
+      <div class="admin-card<?= $isNew ? ' admin-row-attention' : '' ?>">
         <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:10px;">
           <div>
             <strong><?= htmlspecialchars($m['name']) ?></strong> &middot; <span class="muted"><?= htmlspecialchars($m['email']) ?></span>
             <div class="muted" style="font-size:0.8rem; margin-top:2px;"><?= htmlspecialchars($m['topic']) ?> &middot; <?= htmlspecialchars(date('d M Y, H:i', strtotime($m['created_at']))) ?></div>
           </div>
-          <span class="admin-badge <?= $statusMeta[$m['status']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars(str_replace('_', ' ', $m['status'])) ?></span>
+          <span class="admin-badge <?= $statusMeta[$m['status']] ?? 'admin-badge-muted' ?>"><?= $isNew ? '<span class="admin-badge-dot"></span>' : '' ?><?= htmlspecialchars(str_replace('_', ' ', $m['status'])) ?></span>
         </div>
         <p style="font-size:0.9rem; color:var(--ink); margin-bottom:14px;"><?= nl2br(htmlspecialchars($m['message'])) ?></p>
         <?php if (admin_can('contact.manage')): ?>

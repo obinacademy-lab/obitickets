@@ -30,24 +30,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$promos = get_promo_codes_admin();
+$allPromos = get_promo_codes_admin();
 $events = db()->query("SELECT id, title FROM events WHERE status IN ('PUBLISHED','PENDING_REVIEW','DRAFT') ORDER BY title")->fetchAll();
+
+$statusCounts = ['ACTIVE' => 0, 'INACTIVE' => 0, 'EXPIRED' => 0];
+foreach ($allPromos as $p) {
+    $expired = $p['ends_at'] && strtotime($p['ends_at']) < time();
+    if ($expired) {
+        $statusCounts['EXPIRED']++;
+    } elseif ($p['active']) {
+        $statusCounts['ACTIVE']++;
+    } else {
+        $statusCounts['INACTIVE']++;
+    }
+}
+
+$statusFilter = $_GET['status'] ?? '';
+$promos = array_values(array_filter($allPromos, static function ($p) use ($statusFilter) {
+    if ($statusFilter === '') {
+        return true;
+    }
+    $expired = $p['ends_at'] && strtotime($p['ends_at']) < time();
+    $state = $expired ? 'EXPIRED' : ($p['active'] ? 'ACTIVE' : 'INACTIVE');
+    return $state === $statusFilter;
+}));
 
 $pageTitle = 'Promo Codes';
 render_admin_head('promo');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Promo codes</h1><p><?= count($promos) ?> total</p></div>
+  <div><h1>Promo codes</h1><p><?= count($allPromos) ?> total</p></div>
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/admin-promo.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'ACTIVE' ? ' active' : '' ?>" href="/admin-promo.php?status=ACTIVE">
+    <span class="n"><?= $statusCounts['ACTIVE'] ?></span><span class="l">Active</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'INACTIVE' ? ' active' : '' ?>" href="/admin-promo.php?status=INACTIVE">
+    <span class="n"><?= $statusCounts['INACTIVE'] ?></span><span class="l">Inactive</span>
+  </a>
+  <a class="admin-mini-stat<?= $statusFilter === 'EXPIRED' ? ' active' : '' ?>" href="/admin-promo.php?status=EXPIRED">
+    <span class="n"><?= $statusCounts['EXPIRED'] ?></span><span class="l">Expired</span>
+  </a>
+</div>
+
 <div class="admin-grid-2">
   <div>
     <?php if (!$promos): ?>
-      <div class="admin-empty"><svg width="40" height="40"><use href="#ic-tag"/></svg><h3>No promo codes yet</h3><p>Create one to offer a discount platform-wide or on a specific event.</p></div>
+      <div class="admin-empty">
+        <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-tag"/></svg></div>
+        <h3>No promo codes<?= $statusFilter !== '' ? ' in this view' : ' yet' ?></h3>
+        <p><?= $statusFilter !== '' ? 'Try a different filter, or clear it to see everything.' : 'Create one to offer a discount platform-wide or on a specific event.' ?></p>
+        <?php if ($statusFilter !== ''): ?><a class="btn btn-line" href="/admin-promo.php">Clear filter</a><?php endif; ?>
+      </div>
     <?php else: ?>
       <div class="admin-table-wrap">
         <table class="admin-table">
