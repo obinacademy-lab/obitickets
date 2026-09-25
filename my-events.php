@@ -1,138 +1,167 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-$user = require_role('ORGANIZER');
+$ctx = require_organizer_access('events.view');
+$organizerId = $ctx['organizer_id'];
+$actorId = $ctx['actor_id'];
+$error = null;
 
-$withdrawError = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'withdraw') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    [$ok, $err] = request_withdrawal(
-        (int) $user['id'],
-        (float) ($_POST['amount'] ?? 0),
-        in_array($_POST['method'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY', 'BANK'], true) ? $_POST['method'] : 'MTN_MOMO',
-        (string) ($_POST['destination'] ?? '')
-    );
-    if ($ok) {
-        header('Location: /my-events.php?withdrawn=1');
-        exit;
+    if (!organizer_can($ctx, 'events.manage')) {
+        http_response_code(403);
+        exit('You do not have permission to manage events.');
     }
-    $withdrawError = $err;
+    $action = $_POST['action'] ?? '';
+    $eventId = (int) ($_POST['id'] ?? 0);
+    if ($action === 'set_status') {
+        [$ok, $err] = set_event_status_by_organizer($organizerId, $actorId, $eventId, (string) ($_POST['status'] ?? ''));
+        if (!$ok) {
+            $error = $err;
+        } else {
+            header('Location: /my-events.php?updated=1');
+            exit;
+        }
+    } elseif ($action === 'delete') {
+        [$ok, $err] = delete_event_for_organizer($organizerId, $actorId, $eventId);
+        if (!$ok) {
+            $error = $err;
+        } else {
+            header('Location: /my-events.php?updated=1');
+            exit;
+        }
+    } elseif ($action === 'duplicate') {
+        [$ok, $result] = duplicate_event_for_organizer($organizerId, $actorId, $eventId);
+        if ($ok) {
+            header('Location: /event-edit.php?id=' . $result . '&duplicated=1');
+            exit;
+        }
+        $error = (string) $result;
+    }
 }
 
-$events = get_events_for_organizer((int) $user['id']);
-$balance = get_organizer_balance((int) $user['id']);
-$pendingPayouts = get_pending_payouts_for_organizer((int) $user['id']);
+$allEvents = get_events_for_organizer($organizerId);
 
-$stmt = db()->prepare('SELECT payout_provider, payout_phone FROM organizer_profiles WHERE user_id = ?');
-$stmt->execute([$user['id']]);
-$profile = $stmt->fetch() ?: ['payout_provider' => 'MTN_MOMO', 'payout_phone' => ''];
+$statusCounts = array_fill_keys(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'SUSPENDED', 'REJECTED', 'CANCELLED'], 0);
+foreach ($allEvents as $e) {
+    if (isset($statusCounts[$e['status']])) {
+        $statusCounts[$e['status']]++;
+    }
+}
 
-$statusLabels = ['PUBLISHED' => 'Published', 'DRAFT' => 'Draft', 'CANCELLED' => 'Cancelled'];
-$payoutStatusLabels = ['PENDING' => 'Pending review', 'APPROVED' => 'Approved', 'PROCESSING' => 'Processing'];
+$statusFilter = $_GET['status'] ?? '';
+$q = trim((string) ($_GET['q'] ?? ''));
+$events = array_values(array_filter($allEvents, static function ($e) use ($statusFilter, $q) {
+    if ($statusFilter !== '' && $e['status'] !== $statusFilter) {
+        return false;
+    }
+    if ($q !== '' && stripos($e['title'], $q) === false) {
+        return false;
+    }
+    return true;
+}));
 
-$pageTitle = 'My events — obitickets';
-include __DIR__ . '/includes/header.php';
+$statusMeta = [
+    'DRAFT' => 'admin-badge-muted', 'PENDING_REVIEW' => 'admin-badge-warn', 'PUBLISHED' => 'admin-badge-success',
+    'SUSPENDED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-muted',
+];
+
+$pageTitle = 'My Events';
+render_organizer_head('my-events', $ctx);
 ?>
 
-<div class="wrap">
-  <section class="sec">
-    <div class="sec-top">
-      <h2>My events</h2>
-      <a class="btn btn-purple" href="/event-create.php">+ Create event</a>
-    </div>
-
-    <?php if (isset($_GET['created'])): ?><div class="alert alert-success">Event created.</div><?php endif; ?>
-    <?php if (isset($_GET['updated'])): ?><div class="alert alert-success">Event updated.</div><?php endif; ?>
-    <?php if (isset($_GET['withdrawn'])): ?><div class="alert alert-success">Withdrawal requested &mdash; we'll process it shortly.</div><?php endif; ?>
-    <?php if ($withdrawError): ?><div class="alert alert-error"><?= htmlspecialchars($withdrawError) ?></div><?php endif; ?>
-
-    <?php if ($balance): ?>
-      <div class="payout-card" style="margin-bottom:28px">
-        <?php foreach ($balance as $cur => $b): ?>
-          <div class="payout-card-row">
-            <div class="payout-balance">
-              <span class="lbl">Available to withdraw</span>
-              <span class="num"><?= htmlspecialchars($cur) ?> <?= number_format($b['available'], 0) ?></span>
-              <?php if ($b['pending'] > 0): ?><span class="sub"><?= htmlspecialchars($cur) ?> <?= number_format($b['pending'], 0) ?> pending withdrawal</span><?php endif; ?>
-            </div>
-            <?php if ($b['available'] > 0 && !$pendingPayouts): ?>
-              <button type="button" class="btn btn-purple" id="withdrawToggle">Request withdrawal</button>
-            <?php endif; ?>
-          </div>
-        <?php endforeach; ?>
-
-        <?php if ($pendingPayouts): ?>
-          <div class="payout-pending-list">
-            <?php foreach ($pendingPayouts as $p): ?>
-              <div class="payout-pending-row">
-                <span><?= htmlspecialchars($p['currency']) ?> <?= number_format((float) $p['amount'], 0) ?> &middot; <?= htmlspecialchars(str_replace('_', ' ', $p['method'])) ?></span>
-                <span class="tag-pill" style="background:var(--purple-tint); color:var(--purple-deep)"><?= htmlspecialchars($payoutStatusLabels[$p['status']] ?? $p['status']) ?></span>
-              </div>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-
-        <form method="post" class="payout-withdraw-form" id="withdrawForm">
-          <?= csrf_field() ?>
-          <input type="hidden" name="action" value="withdraw">
-          <div class="field-grid-2">
-            <div class="field">
-              <label>Amount (UGX)</label>
-              <input type="number" name="amount" min="1" step="1" max="<?= (float) array_sum(array_column($balance, 'available')) ?>" required>
-            </div>
-            <div class="field">
-              <label>Method</label>
-              <select name="method">
-                <option value="MTN_MOMO" <?= $profile['payout_provider'] === 'MTN_MOMO' ? 'selected' : '' ?>>MTN MoMo</option>
-                <option value="AIRTEL_MONEY" <?= $profile['payout_provider'] === 'AIRTEL_MONEY' ? 'selected' : '' ?>>Airtel Money</option>
-                <option value="BANK" <?= $profile['payout_provider'] === 'BANK' ? 'selected' : '' ?>>Bank transfer</option>
-              </select>
-            </div>
-          </div>
-          <div class="field">
-            <label>Phone number or account</label>
-            <input type="text" name="destination" value="<?= htmlspecialchars($profile['payout_phone'] ?? '') ?>" required placeholder="e.g. 0772 123 456">
-          </div>
-          <button class="btn btn-purple btn-block" type="submit">Submit withdrawal request</button>
-        </form>
-      </div>
-    <?php endif; ?>
-
-    <?php if (!$events): ?>
-      <p style="text-align:center; padding:40px 0">You haven't created any events yet &mdash; <a href="/event-create.php">create your first one</a>.</p>
-    <?php else: ?>
-      <div class="my-events-list">
-        <?php foreach ($events as $e): ?>
-          <div class="my-event-row">
-            <?php if (!empty($e['banner_image'])): ?>
-              <div class="my-event-icon" style="background-image:url('<?= htmlspecialchars($e['banner_image']) ?>'); background-size:cover; background-position:center;"></div>
-            <?php else: ?>
-              <div class="my-event-icon"><?= htmlspecialchars($e['banner_emoji']) ?></div>
-            <?php endif; ?>
-            <div class="my-event-info">
-              <h3><?= htmlspecialchars($e['title']) ?></h3>
-              <p><?= htmlspecialchars(format_event_date_range($e['starts_at'], $e['ends_at'])) ?> &middot; <?= htmlspecialchars($e['venue_name']) ?></p>
-              <div class="tag-list" style="margin-top:8px">
-                <span class="tag-pill" style="<?= $e['status'] === 'PUBLISHED' ? '' : 'background:var(--line); color:var(--muted)' ?>"><?= $statusLabels[$e['status']] ?? $e['status'] ?></span>
-                <span class="tag-pill"><?= (int) $e['tickets_sold'] ?> sold</span>
-              </div>
-              <?php if ((float) $e['gross_revenue'] > 0): ?>
-                <p style="margin-top:8px; font-size:0.82rem">
-                  <span class="mono"><?= htmlspecialchars($e['currency'] . ' ' . number_format((float) $e['gross_revenue'], 0)) ?></span> gross &middot;
-                  payout <span class="mono"><?= htmlspecialchars($e['currency'] . ' ' . number_format((float) $e['gross_revenue'] - (float) $e['commission_owed'], 0)) ?></span>
-                  <span style="color:var(--muted-2)">after 10% commission</span>
-                </p>
-              <?php endif; ?>
-            </div>
-            <div style="display:flex; gap:8px; flex:none">
-              <a class="btn btn-line" href="/checkin.php?event=<?= (int) $e['id'] ?>">Check in</a>
-              <a class="btn btn-line" href="/event-edit.php?id=<?= (int) $e['id'] ?>">Edit</a>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </section>
+<div class="admin-page-head">
+  <div><h1>My events</h1><p><?= count($allEvents) ?> total</p></div>
+  <?php if (organizer_can($ctx, 'events.manage')): ?><a class="btn btn-purple" href="/event-create.php">+ Create event</a><?php endif; ?>
 </div>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php if (isset($_GET['created'])): ?><span data-flash="Event created." hidden></span><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
+<?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
+
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/my-events.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <?php foreach ($statusMeta as $val => $badgeClass): ?>
+    <a class="admin-mini-stat<?= $statusFilter === $val ? ' active' : '' ?>" href="/my-events.php?status=<?= $val ?>">
+      <span class="n"><?= $statusCounts[$val] ?></span><span class="l"><?= htmlspecialchars(ucwords(strtolower(str_replace('_', ' ', $val)))) ?></span>
+    </a>
+  <?php endforeach; ?>
+</div>
+
+<form class="admin-filter-bar" method="get">
+  <?php if ($statusFilter !== ''): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
+  <input type="text" name="q" placeholder="Search your events…" value="<?= htmlspecialchars($q) ?>" style="min-width:260px">
+  <button class="btn btn-line" type="submit" style="padding:9px 18px">Search</button>
+</form>
+
+<?php if (!$events): ?>
+  <div class="admin-empty">
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
+    <h3>No events<?= $statusFilter !== '' || $q !== '' ? ' in this view' : ' yet' ?></h3>
+    <p><?= $statusFilter !== '' || $q !== '' ? 'Try a different filter, or clear it to see everything.' : "You haven't created any events yet." ?></p>
+    <?php if ($statusFilter !== '' || $q !== ''): ?>
+      <a class="btn btn-line" href="/my-events.php">Clear filters</a>
+    <?php elseif (organizer_can($ctx, 'events.manage')): ?>
+      <a class="btn btn-purple" href="/event-create.php">Create your first event</a>
+    <?php endif; ?>
+  </div>
+<?php else: ?>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Event</th><th>Date</th><th>Status</th><th>Sold</th><th>Revenue</th><th></th></tr></thead>
+      <tbody>
+        <?php foreach ($events as $e): ?>
+          <tr>
+            <td>
+              <div class="row-user">
+                <?php if (!empty($e['banner_image'])): ?>
+                  <span class="avatar" style="background-image:url('<?= htmlspecialchars($e['banner_image']) ?>'); background-size:cover; background-position:center;"></span>
+                <?php else: ?>
+                  <span class="avatar"><?= htmlspecialchars($e['banner_emoji']) ?></span>
+                <?php endif; ?>
+                <div><?= htmlspecialchars($e['title']) ?><br><span class="muted" style="font-weight:400; font-size:0.8rem"><?= htmlspecialchars($e['category']) ?> &middot; <?= htmlspecialchars($e['venue_name']) ?></span></div>
+              </div>
+            </td>
+            <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($e['starts_at']))) ?></td>
+            <td><span class="admin-badge <?= $statusMeta[$e['status']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars(ucwords(strtolower(str_replace('_', ' ', $e['status'])))) ?></span></td>
+            <td class="mono"><?= (int) $e['tickets_sold'] ?></td>
+            <td class="mono"><?= htmlspecialchars($e['currency'] ?? 'UGX') ?> <?= number_format((float) $e['gross_revenue'], 0) ?></td>
+            <td style="white-space:nowrap">
+              <a class="link" href="/event-edit.php?id=<?= (int) $e['id'] ?>">Edit</a>
+              &middot;
+              <a class="link" href="/event.php?slug=<?= urlencode($e['slug']) ?>" target="_blank" rel="noopener">View</a>
+              <?php if ($e['status'] === 'PUBLISHED' && organizer_can($ctx, 'checkin.use')): ?>
+                &middot;
+                <a class="link" href="/checkin.php?event=<?= (int) $e['id'] ?>">Check in</a>
+              <?php endif; ?>
+              <?php if (organizer_can($ctx, 'events.manage')): ?>
+                &middot;
+                <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="duplicate"><input type="hidden" name="id" value="<?= (int) $e['id'] ?>">
+                  <button type="submit" class="link" style="background:none; border:none; color:var(--purple); cursor:pointer; padding:0; font-weight:700">Duplicate</button></form>
+                <?php if ($e['status'] === 'DRAFT'): ?>
+                  &middot;
+                  <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="set_status"><input type="hidden" name="id" value="<?= (int) $e['id'] ?>"><input type="hidden" name="status" value="PUBLISHED">
+                    <button type="submit" class="link" style="background:none; border:none; color:var(--success); cursor:pointer; padding:0; font-weight:700">Publish</button></form>
+                  &middot;
+                  <form method="post" style="display:inline" data-confirm="Delete this draft event? This can't be undone." data-danger><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $e['id'] ?>">
+                    <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Delete</button></form>
+                <?php elseif ($e['status'] === 'PUBLISHED'): ?>
+                  &middot;
+                  <form method="post" style="display:inline" data-confirm="Unpublish this event and move it back to draft?"><?= csrf_field() ?><input type="hidden" name="action" value="set_status"><input type="hidden" name="id" value="<?= (int) $e['id'] ?>"><input type="hidden" name="status" value="DRAFT">
+                    <button type="submit" class="link" style="background:none; border:none; color:var(--muted); cursor:pointer; padding:0; font-weight:700">Unpublish</button></form>
+                  &middot;
+                  <form method="post" style="display:inline" data-confirm="Cancel this event? Ticket buyers won't be automatically refunded." data-danger><?= csrf_field() ?><input type="hidden" name="action" value="set_status"><input type="hidden" name="id" value="<?= (int) $e['id'] ?>"><input type="hidden" name="status" value="CANCELLED">
+                    <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Cancel</button></form>
+                <?php endif; ?>
+              <?php endif; ?>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+<?php endif; ?>
+
+<?php render_organizer_foot(); ?>

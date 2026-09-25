@@ -60,8 +60,8 @@ function resolve_checkout_cart(array $pending): array
             continue;
         }
         $tier = $tiersById[$tierId];
-        $available = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
-        $qty = min($qty, $available); // never let a stale cart request more than is actually left
+        $available = !empty($tier['sales_paused']) ? 0 : max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
+        $qty = min($qty, $available); // never let a stale cart request more than is actually left (paused tiers show 0 available)
         if ($qty < 1) {
             continue;
         }
@@ -131,10 +131,10 @@ function create_pending_order(
     $pdo->beginTransaction();
     try {
         foreach ($lineItems as $item) {
-            $stmt = $pdo->prepare('SELECT quantity_total, quantity_sold FROM ticket_types WHERE id = ? FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT quantity_total, quantity_sold, sales_paused FROM ticket_types WHERE id = ? FOR UPDATE');
             $stmt->execute([$item['tier_id']]);
             $row = $stmt->fetch();
-            if (!$row || ($row['quantity_sold'] + $item['quantity']) > $row['quantity_total']) {
+            if (!$row || !empty($row['sales_paused']) || ($row['quantity_sold'] + $item['quantity']) > $row['quantity_total']) {
                 throw new InsufficientTicketsException(
                     "Sorry, \"{$item['name']}\" no longer has enough tickets available. Please go back and adjust your order."
                 );

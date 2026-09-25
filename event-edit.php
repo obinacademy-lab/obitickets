@@ -1,27 +1,25 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-$user = require_role('ORGANIZER');
+$ctx = require_organizer_access('events.manage');
+$organizerId = $ctx['organizer_id'];
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 $existing = $id ? get_event_by_id($id) : null;
 
-if (!$existing || ((int) $existing['organizer_id'] !== (int) $user['id'] && $user['role'] !== 'ADMIN')) {
+if (!$existing || (int) $existing['organizer_id'] !== $organizerId) {
     http_response_code(404);
-    $pageTitle = 'Event not found — obitickets';
-    include __DIR__ . '/includes/header.php';
+    $pageTitle = 'Event not found';
+    render_organizer_head('my-events', $ctx);
     ?>
-    <div class="wrap">
-      <section class="auth-section">
-        <div class="auth-card">
-          <h1>Event not found</h1>
-          <p class="sub">This event doesn't exist, or isn't yours to edit.</p>
-          <a class="btn btn-purple btn-block btn-lg" href="/my-events.php" style="margin-top:24px">Back to my events</a>
-        </div>
-      </section>
+    <div class="admin-empty">
+      <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-x"/></svg></div>
+      <h3>Event not found</h3>
+      <p>This event doesn't exist, or isn't yours to edit.</p>
+      <a class="btn btn-purple" href="/my-events.php">Back to my events</a>
     </div>
     <?php
-    include __DIR__ . '/includes/footer.php';
+    render_organizer_foot();
     exit;
 }
 
@@ -120,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['banner_image'] = $bannerImage;
         update_event($id, $eventFields);
         replace_ticket_types($id, $validTiers);
+        log_organizer_action($organizerId, $ctx['actor_id'], 'event.update', 'event', $id);
 
         if (!$mediaWarnings) {
             header('Location: /my-events.php?updated=1');
@@ -132,33 +131,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Edit ' . $existing['title'] . ' — obitickets';
-include __DIR__ . '/includes/header.php';
+$pageTitle = 'Edit ' . $existing['title'];
+render_organizer_head('my-events', $ctx);
 ?>
 
-<div class="wrap">
-  <section class="sec" style="max-width:720px; margin:0 auto">
-    <h1>Edit event</h1>
-    <p class="sub" style="text-align:left; margin-top:8px">
-      <a href="/event.php?slug=<?= urlencode($existing['slug']) ?>">View live page</a>
-    </p>
-
-    <?php foreach ($errors as $e): ?>
-      <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
-    <?php endforeach; ?>
-    <?php if (!empty($mediaWarnings)): ?>
-      <div class="alert alert-success">Your event was saved.</div>
-      <?php foreach ($mediaWarnings as $w): ?>
-        <div class="alert alert-warn"><?= htmlspecialchars($w) ?></div>
-      <?php endforeach; ?>
-    <?php endif; ?>
-
-    <?php
-    $formAction = '/event-edit.php?id=' . $id;
-    $submitLabel = 'Save changes';
-    include __DIR__ . '/includes/organizer-event-form.php';
-    ?>
-  </section>
+<div class="admin-page-head">
+  <div><h1>Edit event</h1><p><a class="link" href="/event.php?slug=<?= urlencode($existing['slug']) ?>" target="_blank" rel="noopener">View live page &rarr;</a></p></div>
 </div>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php if (isset($_GET['duplicated'])): ?><span data-flash="Duplicated as a new draft — update the details below." hidden></span><?php endif; ?>
+
+<div class="admin-card" style="max-width:760px">
+  <?php foreach ($errors as $e): ?>
+    <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
+  <?php endforeach; ?>
+  <?php if (!empty($mediaWarnings)): ?>
+    <div class="alert alert-success">Your event was saved.</div>
+    <?php foreach ($mediaWarnings as $w): ?>
+      <div class="alert alert-warn"><?= htmlspecialchars($w) ?></div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+  <?php
+  $formAction = '/event-edit.php?id=' . $id;
+  $submitLabel = 'Save changes';
+  include __DIR__ . '/includes/organizer-event-form.php';
+  ?>
+</div>
+
+<?php render_organizer_foot(); ?>

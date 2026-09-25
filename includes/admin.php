@@ -128,6 +128,7 @@ function get_platform_stats(): array
     $stats['pending_payouts'] = (int) $pdo->query("SELECT COUNT(*) FROM payouts WHERE status IN ('PENDING','APPROVED','PROCESSING')")->fetchColumn();
     $stats['refunded_orders'] = (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'REFUNDED'")->fetchColumn();
     $stats['new_contact_messages'] = (int) $pdo->query("SELECT COUNT(*) FROM contact_messages WHERE status = 'NEW'")->fetchColumn();
+    $stats['pending_refund_requests'] = (int) $pdo->query("SELECT COUNT(*) FROM refund_requests WHERE status = 'REQUESTED'")->fetchColumn();
     $stats['revenue_by_currency'] = $pdo->query("
         SELECT currency, SUM(total_amount) AS total FROM orders WHERE status = 'PAID' GROUP BY currency ORDER BY total DESC
     ")->fetchAll();
@@ -371,6 +372,21 @@ function update_event_status_admin(int $adminId, int $eventId, string $status, ?
         ->execute([$status, $status === 'REJECTED' ? $rejectionReason : null, $eventId]);
 
     log_admin_action($adminId, 'event.status_change', 'event', $eventId, ['from' => $oldStatus, 'to' => $status, 'reason' => $rejectionReason]);
+
+    if (in_array($status, ['PUBLISHED', 'SUSPENDED', 'REJECTED'], true)) {
+        $stmt = db()->prepare('SELECT organizer_id, title FROM events WHERE id = ?');
+        $stmt->execute([$eventId]);
+        $event = $stmt->fetch();
+        if ($event) {
+            $messages = [
+                'PUBLISHED' => ['Event approved', 'Your event "' . $event['title'] . '" is now live.'],
+                'SUSPENDED' => ['Event suspended', 'Your event "' . $event['title'] . '" has been suspended.'],
+                'REJECTED' => ['Event rejected', 'Your event "' . $event['title'] . '" was rejected' . ($rejectionReason ? ': ' . $rejectionReason : '.')],
+            ];
+            [$title, $body] = $messages[$status];
+            create_notification((int) $event['organizer_id'], 'event', $title, $body, '/my-events.php');
+        }
+    }
 }
 
 function set_event_featured(int $adminId, int $eventId, bool $featured, ?string $from = null, ?string $until = null): void
@@ -846,6 +862,22 @@ function update_payout_status(int $adminId, int $payoutId, string $status): void
     db()->prepare('UPDATE payouts SET status = ?, processed_at = ?, processed_by = ? WHERE id = ?')
         ->execute([$status, $processedAt, $adminId, $payoutId]);
     log_admin_action($adminId, 'payout.status_change', 'payout', $payoutId, ['status' => $status]);
+
+    if (in_array($status, ['PAID', 'REJECTED'], true)) {
+        $stmt = db()->prepare('SELECT organizer_id, amount, currency FROM payouts WHERE id = ?');
+        $stmt->execute([$payoutId]);
+        $payout = $stmt->fetch();
+        if ($payout) {
+            $amount = $payout['currency'] . ' ' . number_format((float) $payout['amount'], 0);
+            create_notification(
+                (int) $payout['organizer_id'],
+                'payout',
+                $status === 'PAID' ? 'Payout completed' : 'Payout rejected',
+                $status === 'PAID' ? "Your withdrawal of $amount has been paid." : "Your withdrawal request of $amount was rejected.",
+                '/org-payouts.php'
+            );
+        }
+    }
 }
 
 // =====================================================================
@@ -989,6 +1021,15 @@ function set_contact_message_status(int $adminId, int $id, string $status): void
     $status = in_array($status, ['NEW', 'READ', 'IN_PROGRESS', 'RESOLVED'], true) ? $status : 'NEW';
     db()->prepare('UPDATE contact_messages SET status = ? WHERE id = ?')->execute([$status, $id]);
     log_admin_action($adminId, 'contact.status_change', 'contact_message', $id, ['status' => $status]);
+
+    if ($status === 'RESOLVED') {
+        $stmt = db()->prepare('SELECT organizer_id, topic FROM contact_messages WHERE id = ?');
+        $stmt->execute([$id]);
+        $msg = $stmt->fetch();
+        if ($msg && $msg['organizer_id']) {
+            create_notification((int) $msg['organizer_id'], 'support', 'Support response', 'Your ticket "' . $msg['topic'] . '" has been resolved.', '/org-support.php');
+        }
+    }
 }
 
 // =====================================================================

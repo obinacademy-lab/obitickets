@@ -1,7 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-$user = require_role('ORGANIZER');
+$ctx = require_organizer_access('events.manage');
+$organizerId = $ctx['organizer_id'];
 
 $errors = [];
 $event = [
@@ -66,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['starts_at'] = to_mysql_datetime($event['starts_at']);
         $eventFields['ends_at'] = to_mysql_datetime($event['ends_at']);
         $eventFields['banner_image'] = $bannerImage;
-        $eventId = create_event((int) $user['id'], $eventFields, $validTiers);
+        $eventId = create_event($organizerId, $eventFields, $validTiers);
+        log_organizer_action($organizerId, $ctx['actor_id'], 'event.create', 'event', $eventId, ['title' => $eventFields['title']]);
 
         // The event now exists, so a gallery file that fails to validate here
         // just doesn't get attached — it can never leave an orphaned upload
@@ -80,25 +82,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Create an event — obitickets';
-include __DIR__ . '/includes/header.php';
+$pageTitle = 'Create Event';
+render_organizer_head('create-event', $ctx);
 ?>
 
-<div class="wrap">
-  <section class="sec" style="max-width:720px; margin:0 auto">
-    <h1>Create your event</h1>
-    <p class="sub" style="text-align:left; margin-top:8px">Fill in the details below — you can save it as a draft and publish later.</p>
-
-    <?php foreach ($errors as $e): ?>
-      <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
-    <?php endforeach; ?>
-
-    <?php
-    $formAction = '/event-create.php';
-    $submitLabel = 'Save event';
-    include __DIR__ . '/includes/organizer-event-form.php';
-    ?>
-  </section>
+<div class="admin-page-head">
+  <div><h1>Create your event</h1><p>Fill in the details below — you can save it as a draft and publish later.</p></div>
 </div>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<div class="admin-card" style="max-width:760px">
+  <?php foreach ($errors as $e): ?>
+    <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
+  <?php endforeach; ?>
+
+  <?php
+  $formAction = '/event-create.php';
+  $submitLabel = 'Save event';
+  include __DIR__ . '/includes/organizer-event-form.php';
+  ?>
+</div>
+
+<?php render_organizer_foot(); ?>

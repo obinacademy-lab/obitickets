@@ -2,54 +2,64 @@
 declare(strict_types=1);
 
 /**
- * The admin dashboard's own shell — sidebar + topbar — deliberately separate
- * from includes/header.php (the public marketing site's nav): a SaaS admin
- * reads as a distinct, denser, more utilitarian surface, not another page of
- * the storefront. Shares style.css (same tokens/utility classes) but never
- * the public <nav>/<footer>.
+ * The organizer dashboard's own shell — sidebar + topbar — same pattern as
+ * includes/admin-layout.php (and reuses the exact same CSS classes/tokens:
+ * .admin-shell, .admin-sidebar, .admin-topbar, etc. were never actually
+ * admin-specific, just admin-first — deliberately not duplicating a parallel
+ * CSS system for a second dashboard shell).
  *
- * Usage: set $pageTitle, then render_admin_head('events'); ... render_admin_foot();
+ * Usage: set $pageTitle and $orgContext (from require_organizer_access()),
+ * then render_organizer_head('dashboard', $orgContext); ... render_organizer_foot();
  */
-function render_admin_head(string $active): void
+function render_organizer_head(string $active, array $orgContext): void
 {
-    $admin = current_user();
-    $stats = get_platform_stats();
-    $pageTitleRaw = $GLOBALS['pageTitle'] ?? 'Admin';
+    $actor = current_user();
+    $stmt = db()->prepare('SELECT org_name, verification_status FROM organizer_profiles WHERE user_id = ?');
+    $stmt->execute([$orgContext['organizer_id']]);
+    $profile = $stmt->fetch() ?: ['org_name' => $actor['name'], 'verification_status' => 'UNVERIFIED'];
+
+    $unread = count_unread_notifications((int) $actor['id']);
+    $pendingPayouts = get_pending_payouts_for_organizer($orgContext['organizer_id']);
+    $pageTitleRaw = $GLOBALS['pageTitle'] ?? 'Dashboard';
     $pageTitle = $pageTitleRaw . ' — obitickets';
 
     $sections = [
         ['label' => null, 'items' => [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => '/admin.php', 'icon' => 'ic-grid', 'perm' => 'dashboard.view'],
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => '/org.php', 'icon' => 'ic-grid', 'perm' => 'dashboard.view'],
         ]],
         ['label' => 'Events', 'items' => [
-            ['key' => 'events', 'label' => 'All Events', 'href' => '/admin-events.php', 'icon' => 'ic-cal', 'perm' => 'events.view', 'badge' => $stats['pending_events'] ?: null],
-            ['key' => 'categories', 'label' => 'Categories', 'href' => '/admin-categories.php', 'icon' => 'ic-tag', 'perm' => 'categories.manage'],
-        ]],
-        ['label' => 'Users', 'items' => [
-            ['key' => 'customers', 'label' => 'Customers', 'href' => '/admin-customers.php', 'icon' => 'ic-user', 'perm' => 'customers.view'],
-            ['key' => 'organizers', 'label' => 'Organizers', 'href' => '/admin-organizers.php', 'icon' => 'ic-briefcase', 'perm' => 'organizers.view'],
+            ['key' => 'my-events', 'label' => 'My Events', 'href' => '/my-events.php', 'icon' => 'ic-cal', 'perm' => 'events.view'],
+            ['key' => 'create-event', 'label' => 'Create Event', 'href' => '/event-create.php', 'icon' => 'ic-bolt', 'perm' => 'events.manage'],
+            ['key' => 'drafts', 'label' => 'Drafts', 'href' => '/my-events.php?status=DRAFT', 'icon' => 'ic-tag', 'perm' => 'events.view'],
         ]],
         ['label' => 'Ticketing', 'items' => [
-            ['key' => 'tickets', 'label' => 'Tickets', 'href' => '/admin-tickets.php', 'icon' => 'ic-ticket', 'perm' => 'tickets.view'],
-            ['key' => 'checkin', 'label' => 'Check-In', 'href' => '/admin-checkin.php', 'icon' => 'ic-check', 'perm' => 'tickets.checkin'],
-            ['key' => 'orders', 'label' => 'Orders', 'href' => '/admin-orders.php', 'icon' => 'ic-bolt', 'perm' => 'orders.view'],
+            ['key' => 'tickets', 'label' => 'Tickets', 'href' => '/org-tickets.php', 'icon' => 'ic-ticket', 'perm' => 'tickets.view'],
+            ['key' => 'orders', 'label' => 'Orders', 'href' => '/org-orders.php', 'icon' => 'ic-bolt', 'perm' => 'tickets.view'],
+            ['key' => 'attendees', 'label' => 'Attendees', 'href' => '/org-attendees.php', 'icon' => 'ic-people', 'perm' => 'attendees.view'],
+            ['key' => 'checkin', 'label' => 'Check-In', 'href' => '/checkin.php', 'icon' => 'ic-check', 'perm' => 'checkin.use'],
         ]],
-        ['label' => 'Finance', 'items' => [
-            ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/admin-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $stats['pending_payouts'] ?: null],
-            ['key' => 'refunds', 'label' => 'Refunds', 'href' => '/admin-refunds.php', 'icon' => 'ic-x', 'perm' => 'orders.refund', 'badge' => $stats['pending_refund_requests'] ?: null],
+        ['label' => 'Sales & Finance', 'items' => [
+            ['key' => 'sales', 'label' => 'Sales', 'href' => '/org-sales.php', 'icon' => 'ic-bolt', 'perm' => 'sales.view'],
+            ['key' => 'transactions', 'label' => 'Transactions', 'href' => '/org-transactions.php', 'icon' => 'ic-cash', 'perm' => 'transactions.view'],
+            ['key' => 'earnings', 'label' => 'Earnings', 'href' => '/org-earnings.php', 'icon' => 'ic-shield', 'perm' => 'earnings.view'],
+            ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/org-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $pendingPayouts ? count($pendingPayouts) : null],
+            ['key' => 'refunds', 'label' => 'Refunds', 'href' => '/org-refunds.php', 'icon' => 'ic-x', 'perm' => 'refunds.view'],
         ]],
         ['label' => 'Marketing', 'items' => [
-            ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/admin-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],
+            ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/org-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],
+            ['key' => 'marketing', 'label' => 'Event Sharing', 'href' => '/org-marketing.php', 'icon' => 'ic-share', 'perm' => 'marketing.view'],
+        ]],
+        ['label' => 'Analytics', 'items' => [
+            ['key' => 'analytics', 'label' => 'Analytics', 'href' => '/org-analytics.php', 'icon' => 'ic-briefcase', 'perm' => 'analytics.view'],
+        ]],
+        ['label' => 'Team', 'items' => [
+            ['key' => 'team', 'label' => 'Team Members', 'href' => '/org-team.php', 'icon' => 'ic-people', 'perm' => 'team.manage'],
         ]],
         ['label' => 'Support', 'items' => [
-            ['key' => 'contact', 'label' => 'Contact Messages', 'href' => '/admin-contact.php', 'icon' => 'ic-mail', 'perm' => 'contact.view', 'badge' => $stats['new_contact_messages'] ?: null],
-        ]],
-        ['label' => 'Security', 'items' => [
-            ['key' => 'admins', 'label' => 'Admin Users', 'href' => '/admin-admins.php', 'icon' => 'ic-shield', 'perm' => 'admins.manage'],
-            ['key' => 'audit', 'label' => 'Audit Logs', 'href' => '/admin-audit.php', 'icon' => 'ic-clock', 'perm' => 'audit.view'],
+            ['key' => 'support', 'label' => 'Support Tickets', 'href' => '/org-support.php', 'icon' => 'ic-mail', 'perm' => 'dashboard.view'],
         ]],
         ['label' => 'Settings', 'items' => [
-            ['key' => 'settings', 'label' => 'General', 'href' => '/admin-settings.php', 'icon' => 'ic-settings', 'perm' => 'settings.view'],
+            ['key' => 'settings', 'label' => 'Settings', 'href' => '/org-settings.php', 'icon' => 'ic-settings', 'perm' => 'dashboard.view'],
         ]],
     ];
 
@@ -86,9 +96,9 @@ function render_admin_head(string $active): void
   <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
   <aside class="admin-sidebar" id="adminSidebar">
     <div class="admin-logo-row">
-      <a class="admin-logo" href="/admin.php">
+      <a class="admin-logo" href="/org.php">
         <svg class="logo-mark" viewBox="0 0 34 34" width="30" height="30"><rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="var(--purple)" stroke="#fff" stroke-width="1.6"/></svg>
-        <span class="admin-logo-text">obitickets <em>admin</em></span>
+        <span class="admin-logo-text">obitickets <em>organizer</em></span>
       </a>
       <button type="button" class="admin-collapse-toggle" id="adminCollapseToggle" aria-label="Collapse sidebar">
         <svg width="15" height="15"><use href="#ic-chev" transform="rotate(180 12 12)"/></svg>
@@ -97,7 +107,7 @@ function render_admin_head(string $active): void
     <nav class="admin-nav">
       <?php foreach ($sections as $section): ?>
         <?php
-        $visibleItems = array_filter($section['items'], static fn ($item) => admin_can($item['perm']));
+        $visibleItems = array_filter($section['items'], static fn ($item) => organizer_can($orgContext, $item['perm']));
         if (!$visibleItems) {
             continue;
         }
@@ -129,20 +139,24 @@ function render_admin_head(string $active): void
           <span class="<?= $i === count($crumb) - 1 ? 'current' : '' ?>"><?= htmlspecialchars($part) ?></span>
         <?php endforeach; ?>
       </div>
-      <form class="admin-search" action="/admin-search.php" method="get">
-        <svg width="16" height="16"><use href="#ic-search"/></svg>
-        <input type="text" name="q" placeholder="Search events, organizers, customers, orders, tickets…">
-      </form>
+      <?php if ($profile['verification_status'] === 'VERIFIED'): ?>
+        <span class="admin-badge admin-badge-success" style="margin-right:10px"><svg width="11" height="11"><use href="#ic-check"/></svg> Verified</span>
+      <?php endif; ?>
+      <a class="admin-profile-btn" href="/org-notifications.php" style="position:relative; padding:8px; margin-right:4px" title="Notifications">
+        <svg width="19" height="19"><use href="#ic-bell"/></svg>
+        <?php if ($unread > 0): ?><span class="admin-nav-badge" style="position:absolute; top:2px; right:2px"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
+      </a>
       <div class="admin-profile" id="adminProfile">
         <button type="button" class="admin-profile-btn" id="adminProfileBtn">
-          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($admin['name'])) ?></span>
+          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($actor['name'])) ?></span>
           <span class="admin-profile-text">
-            <span class="admin-topbar-name"><?= htmlspecialchars($admin['name']) ?></span>
-            <span class="admin-topbar-role"><?= htmlspecialchars(ADMIN_ROLES[$admin['admin_role'] ?? ''] ?? 'Super Admin') ?></span>
+            <span class="admin-topbar-name"><?= htmlspecialchars($profile['org_name'] ?: $actor['name']) ?></span>
+            <span class="admin-topbar-role"><?= $orgContext['is_owner'] ? 'Owner' : htmlspecialchars(ORGANIZER_ROLES[$orgContext['role']] ?? 'Team member') ?></span>
           </span>
           <svg width="14" height="14" class="admin-profile-chev"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg>
         </button>
         <div class="admin-profile-menu" id="adminProfileMenu">
+          <a href="/org-settings.php">Settings</a>
           <a href="/">Back to site</a>
           <a href="/logout.php">Log out</a>
         </div>
@@ -152,7 +166,7 @@ function render_admin_head(string $active): void
     <?php
 }
 
-function render_admin_foot(): void
+function render_organizer_foot(): void
 {
     ?>
     </main>

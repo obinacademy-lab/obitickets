@@ -31,5 +31,7 @@
 <symbol id="ic-tag" viewBox="0 0 24 24"><path d="M11.6 3H5a2 2 0 0 0-2 2v6.6c0 .5.2 1 .6 1.4l9 9a2 2 0 0 0 2.8 0l6.6-6.6a2 2 0 0 0 0-2.8l-9-9a2 2 0 0 0-1.4-.6z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></symbol>
 <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="ic-check" viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><path d="M9.5 19.5a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="ic-download" viewBox="0 0 24 24"><path d="M12 3.5v12M7.5 11l4.5 4.5L16.5 11" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 17v2a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></symbol>
 </defs>
 </svg>
