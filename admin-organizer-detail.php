@@ -46,7 +46,7 @@ render_admin_head('organizers');
   </div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div style="display:flex; flex-direction:column; gap:20px;">
@@ -154,7 +154,7 @@ render_admin_head('organizers');
     <?php if (admin_can('customers.manage')): ?>
       <div class="admin-card">
         <h3 style="margin-bottom:14px">Account</h3>
-        <form method="post" onsubmit="return confirm('<?= $org['account_status'] === 'ACTIVE' ? 'Suspend' : 'Reactivate' ?> this organizer account?');">
+        <form method="post" data-confirm="<?= $org['account_status'] === 'ACTIVE' ? 'Suspend' : 'Reactivate' ?> this organizer account?" <?= $org['account_status'] === 'ACTIVE' ? 'data-danger' : '' ?>>
           <?= csrf_field() ?><input type="hidden" name="action" value="account_status">
           <input type="hidden" name="status" value="<?= $org['account_status'] === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' ?>">
           <button class="btn btn-block <?= $org['account_status'] === 'ACTIVE' ? 'btn-line' : 'btn-purple' ?>" type="submit" style="<?= $org['account_status'] === 'ACTIVE' ? 'color:var(--danger); border-color:var(--danger-border)' : '' ?>">
@@ -168,7 +168,7 @@ render_admin_head('organizers');
       <div class="admin-card">
         <h3 style="margin-bottom:4px">Record a payout</h3>
         <p style="color:var(--muted-2); font-size:0.8rem; margin-bottom:14px">Records that you paid this organizer outside the platform — it does not move money itself.</p>
-        <form method="post" onsubmit="return confirm('Record this payout?');">
+        <form method="post" data-confirm="Record this payout?">
           <?= csrf_field() ?><input type="hidden" name="action" value="payout">
           <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="1" step="1" required></div>
           <div class="admin-form-row"><label>Method</label>

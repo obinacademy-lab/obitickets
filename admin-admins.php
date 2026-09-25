@@ -38,8 +38,8 @@ render_admin_head('admins');
   <div><h1>Admin users</h1><p><?= count($admins) ?> total</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
-<?php if (($_GET['error'] ?? '') === 'self'): ?><div class="alert alert-error" style="margin-bottom:18px">You can't change your own admin role.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
+<?php if (($_GET['error'] ?? '') === 'self'): ?><span data-flash="You can't change your own admin role." data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div class="admin-table-wrap">
@@ -54,7 +54,7 @@ render_admin_head('admins');
                 <span class="admin-badge admin-badge-purple">You &middot; <?= htmlspecialchars(ADMIN_ROLES[$a['admin_role']] ?? 'Super Admin') ?></span>
               <?php else: ?>
                 <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="set_role"><input type="hidden" name="user_id" value="<?= (int) $a['id'] ?>">
-                  <select name="admin_role" class="auto-submit" onchange="if(confirm('Change this admin\'s role?')) this.form.submit();">
+                  <select name="admin_role" class="auto-submit" onfocus="this.dataset.prev=this.selectedIndex" onchange="var el=this; window.adminConfirm('Change this admin\'s role?').then(function(ok){ if(ok){ el.form.requestSubmit(); } else { el.selectedIndex=el.dataset.prev; } });">
                     <option value="" <?= empty($a['admin_role']) ? 'selected' : '' ?>>Super Admin</option>
                     <?php foreach (ADMIN_ROLES as $val => $label): ?>
                       <option value="<?= $val ?>" <?= $a['admin_role'] === $val ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
@@ -74,7 +74,7 @@ render_admin_head('admins');
   <div class="admin-card">
     <h3 style="margin-bottom:4px">Make someone an admin</h3>
     <p style="color:var(--muted-2); font-size:0.8rem; margin-bottom:14px">They must already have an obitickets account.</p>
-    <form method="post" onsubmit="return confirm('Grant admin access to this account?');">
+    <form method="post" data-confirm="Grant admin access to this account?">
       <?= csrf_field() ?><input type="hidden" name="action" value="promote">
       <div class="admin-form-row"><label>Email</label><input type="email" name="email" required placeholder="person@example.com"></div>
       <button class="btn btn-purple btn-block" type="submit">Grant admin access</button>

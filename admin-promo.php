@@ -41,8 +41,8 @@ render_admin_head('promo');
   <div><h1>Promo codes</h1><p><?= count($promos) ?> total</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error" style="margin-bottom:18px"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
+<?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div>
@@ -68,7 +68,7 @@ render_admin_head('promo');
                   <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int) $p['id'] ?>"><input type="hidden" name="active" value="<?= $p['active'] ? '' : '1' ?>">
                     <button type="submit" class="link" style="background:none; border:none; color:var(--purple); cursor:pointer; padding:0; font-weight:700"><?= $p['active'] ? 'Deactivate' : 'Activate' ?></button></form>
                   &middot;
-                  <form method="post" style="display:inline" onsubmit="return confirm('Delete this promo code?');"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                  <form method="post" style="display:inline" data-confirm="Delete this promo code?" data-danger><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
                     <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Delete</button></form>
                 </td>
               </tr>

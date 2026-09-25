@@ -23,7 +23,7 @@ render_admin_head('payouts');
   <div><h1>Organizer payouts</h1><p>Recorded here after you pay an organizer manually — there's no automated disbursement yet.</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Payout updated.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Payout updated." hidden></span><?php endif; ?>
 
 <div class="admin-kpi-grid" style="margin-bottom:24px">
   <div class="admin-kpi-card"><div class="lbl">Pending</div><span class="num">UGX <?= number_format($pending, 0) ?></span><span class="sub"><?= count(array_filter($payouts, static fn ($p) => in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true))) ?> payouts</span></div>
@@ -53,7 +53,7 @@ render_admin_head('payouts');
             <td style="white-space:nowrap">
               <?php if (admin_can('payouts.process') && in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true)): ?>
                 <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="payout_id" value="<?= (int) $p['id'] ?>">
-                  <select name="status" class="auto-submit" onchange="if(confirm('Update payout status to '+this.value+'?')) this.form.submit(); else this.selectedIndex=0;">
+                  <select name="status" class="auto-submit" onchange="var el=this, v=this.value; window.adminConfirm('Update payout status to '+v+'?').then(function(ok){ if(ok){ el.form.requestSubmit(); } else { el.selectedIndex=0; } });">
                     <option value="">Update status…</option>
                     <?php foreach (['APPROVED', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED'] as $s): ?><option value="<?= $s ?>"><?= $s ?></option><?php endforeach; ?>
                   </select>

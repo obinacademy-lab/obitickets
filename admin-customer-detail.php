@@ -38,7 +38,7 @@ render_admin_head('customers');
   <span class="admin-badge <?= $customer['account_status'] === 'ACTIVE' ? 'admin-badge-success' : 'admin-badge-danger' ?>"><?= htmlspecialchars($customer['account_status']) ?></span>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div style="display:flex; flex-direction:column; gap:20px;">
@@ -94,14 +94,14 @@ render_admin_head('customers');
     <?php if (admin_can('customers.manage')): ?>
       <div class="admin-card">
         <h3 style="margin-bottom:14px">Account</h3>
-        <form method="post" onsubmit="return confirm('<?= $customer['account_status'] === 'ACTIVE' ? 'Suspend' : 'Reactivate' ?> this customer account?');" style="margin-bottom:10px">
+        <form method="post" data-confirm="<?= $customer['account_status'] === 'ACTIVE' ? 'Suspend' : 'Reactivate' ?> this customer account?" <?= $customer['account_status'] === 'ACTIVE' ? 'data-danger' : '' ?> style="margin-bottom:10px">
           <?= csrf_field() ?><input type="hidden" name="action" value="account_status">
           <input type="hidden" name="status" value="<?= $customer['account_status'] === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' ?>">
           <button class="btn btn-block <?= $customer['account_status'] === 'ACTIVE' ? 'btn-line' : 'btn-purple' ?>" type="submit" style="<?= $customer['account_status'] === 'ACTIVE' ? 'color:var(--danger); border-color:var(--danger-border)' : '' ?>">
             <?= $customer['account_status'] === 'ACTIVE' ? 'Suspend customer' : 'Reactivate customer' ?>
           </button>
         </form>
-        <form method="post" onsubmit="return confirm('Make this customer an organizer? They\'ll be able to create and sell events.');">
+        <form method="post" data-confirm="Make this customer an organizer? They'll be able to create and sell events.">
           <?= csrf_field() ?><input type="hidden" name="action" value="promote">
           <button class="btn btn-line btn-block" type="submit">Promote to organizer</button>
         </form>

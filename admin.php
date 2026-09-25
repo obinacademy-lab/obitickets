@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-require_admin_permission('dashboard.view');
+$admin = require_admin_permission('dashboard.view');
 $stats = get_platform_stats();
 $activity = get_recent_activity(10);
 $upcoming = get_upcoming_events_admin(5);
@@ -18,56 +18,62 @@ $actionLabels = [
     'settings.update' => 'updated a setting',
 ];
 
+$hour = (int) date('G');
+$greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+$firstName = explode(' ', $admin['name'])[0];
+$grossRevenue = (float) ($stats['revenue_by_currency'][0]['total'] ?? 0);
+$platformRevenue = (float) ($stats['commission_by_currency'][0]['total'] ?? 0) + (float) ($stats['service_fees_by_currency'][0]['total'] ?? 0);
+
 $pageTitle = 'Dashboard';
 render_admin_head('dashboard');
 ?>
 
 <div class="admin-page-head">
   <div>
-    <h1>Platform overview</h1>
-    <p>How obitickets is doing right now, across every organizer and every event.</p>
+    <h1><?= htmlspecialchars($greeting) ?>, <?= htmlspecialchars($firstName) ?></h1>
+    <p>Here's what's happening across obitickets today.</p>
   </div>
 </div>
 
 <div class="admin-kpi-grid">
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-cash"/></svg> Gross revenue</div>
-    <span class="num"><?= htmlspecialchars($stats['revenue_by_currency'][0]['currency'] ?? 'UGX') ?> <?= number_format((float) ($stats['revenue_by_currency'][0]['total'] ?? 0), 0) ?></span>
+    <span class="num"><span data-count-to="<?= (int) $grossRevenue ?>" data-count-prefix="<?= htmlspecialchars($stats['revenue_by_currency'][0]['currency'] ?? 'UGX') ?> ">0</span></span>
     <span class="sub">All paid orders, lifetime</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-shield"/></svg> Platform revenue</div>
-    <span class="num"><?= htmlspecialchars($stats['commission_by_currency'][0]['currency'] ?? 'UGX') ?> <?= number_format((float) ($stats['commission_by_currency'][0]['total'] ?? 0) + (float) ($stats['service_fees_by_currency'][0]['total'] ?? 0), 0) ?></span>
+    <span class="num"><span data-count-to="<?= (int) $platformRevenue ?>" data-count-prefix="<?= htmlspecialchars($stats['commission_by_currency'][0]['currency'] ?? 'UGX') ?> ">0</span></span>
     <span class="sub">Commission + service fees</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-ticket"/></svg> Tickets sold</div>
-    <span class="num"><?= $stats['total_tickets'] ?></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['total_tickets'] ?>">0</span></span>
     <span class="sub"><?= $stats['checked_in'] ?> checked in</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-bolt"/></svg> Paid orders</div>
-    <span class="num"><?= $stats['total_orders'] ?></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['total_orders'] ?>">0</span></span>
     <span class="sub"><?= $stats['refunded_orders'] ?> refunded</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-cal"/></svg> Events</div>
-    <span class="num"><?= $stats['published_events'] ?> <span style="color:var(--muted-2); font-size:1rem">/ <?= $stats['total_events'] ?></span></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['published_events'] ?>">0</span> <span style="color:var(--muted-2); font-size:1rem">/ <?= $stats['total_events'] ?></span></span>
     <span class="sub"><?= $stats['pending_events'] ?> awaiting review</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-briefcase"/></svg> Organizers</div>
-    <span class="num"><?= $stats['total_organizers'] ?></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['total_organizers'] ?>">0</span></span>
     <span class="sub">Active on the platform</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-user"/></svg> Customers</div>
-    <span class="num"><?= $stats['total_customers'] ?></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['total_customers'] ?>">0</span></span>
     <span class="sub">Registered attendees</span>
   </div>
   <div class="admin-kpi-card">
     <div class="lbl"><svg width="15" height="15"><use href="#ic-cash"/></svg> Pending payouts</div>
-    <span class="num"><?= $stats['pending_payouts'] ?></span>
+    <span class="num"><span data-count-to="<?= (int) $stats['pending_payouts'] ?>">0</span></span>
     <span class="sub">Awaiting processing</span>
   </div>
 </div>

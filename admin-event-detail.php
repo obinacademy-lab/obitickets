@@ -53,7 +53,7 @@ render_admin_head('events');
   <span class="admin-badge <?= $meta[1] ?>" style="font-size:0.82rem"><?= htmlspecialchars($meta[0]) ?></span>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 <?php if ($event['status'] === 'REJECTED' && $event['rejection_reason']): ?>
   <div class="alert alert-error" style="margin-bottom:18px">Rejected: <?= htmlspecialchars($event['rejection_reason']) ?></div>
 <?php endif; ?>
@@ -123,7 +123,7 @@ render_admin_head('events');
     <?php if (admin_can('events.manage')): ?>
       <div class="admin-card">
         <h3 style="margin-bottom:14px">Change status</h3>
-        <form method="post" onsubmit="return confirm('Change this event\'s status?');">
+        <form method="post" data-confirm="Change this event's status?">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="status">
           <div class="admin-form-row">
@@ -145,14 +145,14 @@ render_admin_head('events');
         <h3 style="margin-bottom:4px">Homepage feature</h3>
         <p style="color:var(--muted-2); font-size:0.82rem; margin-bottom:14px">Featured, published events appear in the homepage's featured section.</p>
         <?php if ($event['featured']): ?>
-          <form method="post" onsubmit="return confirm('Remove this event from featured?');">
+          <form method="post" data-confirm="Remove this event from featured?">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="feature">
             <input type="hidden" name="featured" value="">
             <button class="btn btn-line btn-block" type="submit">Unfeature</button>
           </form>
         <?php else: ?>
-          <form method="post" onsubmit="return confirm('Feature this event on the homepage?');">
+          <form method="post" data-confirm="Feature this event on the homepage?">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="feature">
             <input type="hidden" name="featured" value="1">

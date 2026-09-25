@@ -30,7 +30,7 @@ render_admin_head('settings');
   <div><h1>General settings</h1><p>Platform-wide basics. Payment/ticketing rates stay in code — see the note below.</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div class="admin-card">

@@ -30,7 +30,7 @@ render_admin_head('tickets');
   <div><h1>Tickets</h1><p><?= count($tickets) ?> shown<?= $q === '' ? ' (most recent 100)' : '' ?></p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Ticket updated.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Ticket updated." hidden></span><?php endif; ?>
 
 <form class="admin-filter-bar" method="get">
   <input type="text" name="q" placeholder="Search ticket code, attendee or event…" value="<?= htmlspecialchars($q) ?>" style="min-width:320px">
@@ -62,7 +62,7 @@ render_admin_head('tickets');
               <?php endif; ?>
               <?php if ($t['status'] !== 'CANCELLED'): ?>
                 &middot;
-                <form method="post" style="display:inline" onsubmit="return confirm('Cancel this ticket?');"><?= csrf_field() ?><input type="hidden" name="ticket_id" value="<?= (int) $t['id'] ?>"><input type="hidden" name="action" value="cancel"><button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Cancel</button></form>
+                <form method="post" style="display:inline" data-confirm="Cancel this ticket?" data-danger><?= csrf_field() ?><input type="hidden" name="ticket_id" value="<?= (int) $t['id'] ?>"><input type="hidden" name="action" value="cancel"><button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Cancel</button></form>
               <?php endif; ?>
             </td>
           </tr>

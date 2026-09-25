@@ -53,8 +53,8 @@ render_admin_head('categories');
   <div><h1>Event categories</h1><p>Shown on the homepage strip and the browse-events filter row, in this order.</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error" style="margin-bottom:18px"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
+<?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div class="admin-table-wrap">
@@ -81,7 +81,7 @@ render_admin_head('categories');
               <a class="link" href="#" onclick="document.getElementById('edit-<?= (int) $c['id'] ?>').style.display='block'; return false;">Edit</a>
               <?php if ((int) $c['event_count'] === 0): ?>
                 &middot;
-                <form method="post" style="display:inline" onsubmit="return confirm('Delete this category?');"><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                <form method="post" style="display:inline" data-confirm="Delete this category? This can't be undone." data-danger><?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
                   <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Delete</button>
                 </form>
               <?php endif; ?>

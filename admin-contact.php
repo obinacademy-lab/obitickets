@@ -22,7 +22,7 @@ render_admin_head('contact');
   <div><h1>Contact messages</h1><p><?= count($messages) ?> shown</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Saved.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 
 <form class="admin-filter-bar" method="get">
   <select name="status" onchange="this.form.submit()">

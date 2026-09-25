@@ -46,8 +46,8 @@ render_admin_head('orders');
   <span class="admin-badge <?= $statusMeta[$order['status']] ?? 'admin-badge-muted' ?>" style="font-size:0.82rem"><?= htmlspecialchars($order['status']) ?></span>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Refund recorded.</div><?php endif; ?>
-<?php if ($error): ?><div class="alert alert-error" style="margin-bottom:18px"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Refund recorded." hidden></span><?php endif; ?>
+<?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
   <div style="display:flex; flex-direction:column; gap:20px;">
@@ -114,7 +114,7 @@ render_admin_head('orders');
       <div class="admin-card">
         <h3 style="margin-bottom:4px">Refund this order</h3>
         <p style="color:var(--muted-2); font-size:0.8rem; margin-bottom:14px">Records the refund here — you still need to send the money back to the buyer yourself (mobile money), since obitickets' payment integration has no automated refund API.</p>
-        <form method="post" onsubmit="return confirm('Refund UGX ' + this.amount.value + '? This cannot be undone.');">
+        <form method="post" onsubmit="if(this.dataset.confirmed) return true; event.preventDefault(); var f=this; window.adminConfirm('Refund UGX ' + this.amount.value + '? This cannot be undone.', true).then(function(ok){ if(ok){ f.dataset.confirmed='1'; f.requestSubmit(); } });">
           <?= csrf_field() ?><input type="hidden" name="action" value="refund">
           <div class="admin-form-row"><label>Amount (<?= htmlspecialchars($order['currency']) ?>)</label><input type="number" name="amount" min="1" max="<?= (float) $order['total_amount'] ?>" value="<?= (float) $order['total_amount'] ?>" step="1" required></div>
           <div class="admin-form-row"><label>Reason</label><input type="text" name="reason" required placeholder="e.g. Event cancelled"></div>

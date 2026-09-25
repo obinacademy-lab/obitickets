@@ -48,7 +48,7 @@ render_admin_head('events');
   <div><h1>Events</h1><p><?= $total ?> total</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><div class="alert alert-success" style="margin-bottom:18px">Event updated.</div><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="Event updated." hidden></span><?php endif; ?>
 
 <form class="admin-filter-bar" method="get">
   <input type="text" name="q" placeholder="Search title or organizer…" value="<?= htmlspecialchars($filters['q']) ?>">
