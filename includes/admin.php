@@ -59,24 +59,47 @@ function log_admin_action(int $adminId, string $action, string $entityType, ?int
         ->execute([$adminId, $action, $entityType, $entityId, $details ? json_encode($details) : null, $_SERVER['REMOTE_ADDR'] ?? null]);
 }
 
-function get_audit_logs(int $limit = 100, int $offset = 0): array
+function audit_log_period_clause(string $period): string
 {
-    $stmt = db()->prepare('
+    return match ($period) {
+        'today' => 'WHERE created_at >= CURDATE()',
+        'week' => 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
+        'month' => 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)',
+        default => '',
+    };
+}
+
+function get_audit_logs(int $limit = 100, int $offset = 0, string $period = ''): array
+{
+    $where = str_replace('WHERE ', 'WHERE al.', audit_log_period_clause($period));
+    $stmt = db()->prepare("
         SELECT al.*, u.name AS admin_name
         FROM audit_logs al
         LEFT JOIN users u ON u.id = al.admin_id
+        $where
         ORDER BY al.created_at DESC
         LIMIT ? OFFSET ?
-    ');
+    ");
     $stmt->bindValue(1, $limit, PDO::PARAM_INT);
     $stmt->bindValue(2, $offset, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll();
 }
 
-function count_audit_logs(): int
+function count_audit_logs(string $period = ''): int
 {
-    return (int) db()->query('SELECT COUNT(*) FROM audit_logs')->fetchColumn();
+    $where = audit_log_period_clause($period);
+    return (int) db()->query("SELECT COUNT(*) FROM audit_logs $where")->fetchColumn();
+}
+
+function get_audit_log_period_counts(): array
+{
+    return [
+        '' => count_audit_logs(),
+        'today' => count_audit_logs('today'),
+        'week' => count_audit_logs('week'),
+        'month' => count_audit_logs('month'),
+    ];
 }
 
 function get_recent_activity(int $limit = 12): array

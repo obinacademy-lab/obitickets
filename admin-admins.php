@@ -28,20 +28,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$admins = get_admin_users();
+$allAdmins = get_admin_users();
+
+$roleCounts = array_fill_keys(array_keys(ADMIN_ROLES), 0);
+foreach ($allAdmins as $a) {
+    $effRole = $a['admin_role'] ?: 'SUPER_ADMIN';
+    if (isset($roleCounts[$effRole])) {
+        $roleCounts[$effRole]++;
+    }
+}
+
+$roleFilter = $_GET['role'] ?? '';
+$admins = $roleFilter === ''
+    ? $allAdmins
+    : array_values(array_filter($allAdmins, static fn ($a) => ($a['admin_role'] ?: 'SUPER_ADMIN') === $roleFilter));
 
 $pageTitle = 'Admin Users';
 render_admin_head('admins');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Admin users</h1><p><?= count($admins) ?> total</p></div>
+  <div><h1>Admin users</h1><p><?= count($allAdmins) ?> total</p></div>
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>
 <?php if (($_GET['error'] ?? '') === 'self'): ?><span data-flash="You can't change your own admin role." data-flash-type="error" hidden></span><?php endif; ?>
 
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $roleFilter === '' ? ' active' : '' ?>" href="/admin-admins.php">
+    <span class="n"><?= array_sum($roleCounts) ?></span><span class="l">All</span>
+  </a>
+  <?php foreach (ADMIN_ROLES as $val => $label): ?>
+    <a class="admin-mini-stat<?= $roleFilter === $val ? ' active' : '' ?>" href="/admin-admins.php?role=<?= $val ?>">
+      <span class="n"><?= $roleCounts[$val] ?></span><span class="l"><?= htmlspecialchars($label) ?></span>
+    </a>
+  <?php endforeach; ?>
+</div>
+
 <div class="admin-grid-2">
+  <div>
+  <?php if (!$admins): ?>
+    <div class="admin-empty">
+      <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-shield"/></svg></div>
+      <h3>No admins in this view</h3>
+      <p>Try a different filter, or clear it to see everyone.</p>
+      <a class="btn btn-line" href="/admin-admins.php">Clear filter</a>
+    </div>
+  <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
       <thead><tr><th>Admin</th><th>Role</th><th>Last login</th><th>Since</th></tr></thead>
@@ -69,6 +102,8 @@ render_admin_head('admins');
         <?php endforeach; ?>
       </tbody>
     </table>
+  </div>
+  <?php endif; ?>
   </div>
 
   <div class="admin-card">
