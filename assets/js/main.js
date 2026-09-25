@@ -79,6 +79,28 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(tick, 30000);
   }
 
+  // Portrait banners (a flyer-style poster, taller than it is wide) don't
+  // suit the wide landscape hero with text overlaid on top — the image ends
+  // up a narrow strip and the site's own title/date text collides with
+  // whatever the flyer already has printed on it. When the uploaded banner
+  // turns out to be portrait, move the title block below the image instead
+  // (where a flyer's own baked-in text can't conflict with it) and let the
+  // hero grow taller so the poster still reads at a decent size.
+  var heroFull = document.getElementById('eventHeroFull');
+  var heroBannerImg = document.getElementById('heroBannerImg');
+  var heroContent = document.getElementById('eventHeroContent');
+  if (heroFull && heroBannerImg && heroContent) {
+    function applyOrientation() {
+      if (heroBannerImg.naturalWidth && heroBannerImg.naturalHeight / heroBannerImg.naturalWidth > 1.05) {
+        heroFull.classList.add('is-portrait');
+        heroFull.parentNode.insertBefore(heroContent, heroFull.nextSibling);
+        heroContent.classList.add('below-banner');
+      }
+    }
+    if (heroBannerImg.complete) applyOrientation();
+    else heroBannerImg.addEventListener('load', applyOrientation);
+  }
+
   // Banner/gallery lightbox — tap any [data-lightbox-src] element to preview
   // the full-size image (event.php's hero banner and gallery photos).
   var heroLightbox = document.getElementById('heroLightbox');

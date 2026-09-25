@@ -36,7 +36,7 @@ include __DIR__ . '/includes/header.php';
   <div class="crumb"><a href="/">Home</a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <?= htmlspecialchars($event['title']) ?></div>
 </div>
 
-<div class="event-hero-full" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+<div class="event-hero-full" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
   <?php if (!empty($event['banner_image'])): ?>
     <div class="event-hero-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
       <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
@@ -49,7 +49,7 @@ include __DIR__ . '/includes/header.php';
     <div class="event-hero-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
   <?php endif; ?>
   <div class="event-hero-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
-  <div class="wrap event-hero-content">
+  <div class="wrap event-hero-content" id="eventHeroContent">
     <span class="event-hero-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
     <h1><?= htmlspecialchars($event['title']) ?></h1>
     <div class="event-hero-meta">

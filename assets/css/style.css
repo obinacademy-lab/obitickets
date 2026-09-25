@@ -633,6 +633,14 @@ footer p{color:rgba(255,255,255,0.7);}
 .hero-expand-btn{position:absolute; top:22px; left:24px; z-index:3; display:flex; align-items:center; gap:7px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.8rem; font-weight:700; padding:9px 16px; border-radius:100px; cursor:pointer; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5); transition:background .25s var(--ease), transform .25s var(--ease);}
 .hero-expand-btn:hover{background:rgba(10,6,20,0.75); transform:translateY(-1px);}
 
+/* Portrait/flyer-style banners: a wide landscape frame squeezes a tall
+   image into a narrow strip and the overlaid title collides with whatever
+   the flyer already has printed on it. main.js detects this from the
+   image's real dimensions and moves the title below (via .below-banner)
+   and gives the frame room to show the poster at a decent size. */
+.event-hero-full.is-portrait{aspect-ratio:auto; height:min(72vh,620px); align-items:stretch;}
+.event-hero-full.is-portrait::after{display:none;}
+
 /* Title/date/venue sit back on the banner, bottom-anchored — the gradient
    above only shades the lower third so the rest of the organizer's photo
    (or flyer artwork) stays fully visible. */
@@ -643,8 +651,17 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-hero-meta .m{display:flex; align-items:center; gap:8px; font-size:0.94rem; font-weight:600; color:rgba(255,255,255,0.94);}
 .event-hero-meta svg{opacity:0.9; flex:none;}
 
+/* .below-banner: main.js relocates .event-hero-content here for portrait
+   banners — same content, now sitting on the page background, dark text. */
+.event-hero-content.below-banner{padding-top:28px; padding-bottom:8px; color:var(--ink);}
+.event-hero-content.below-banner .event-hero-tag{background:var(--purple-tint); color:var(--purple-deep); border:none; backdrop-filter:none;}
+.event-hero-content.below-banner h1{color:var(--ink);}
+.event-hero-content.below-banner .event-hero-meta .m{color:var(--muted);}
+.event-hero-content.below-banner .event-hero-meta svg{opacity:0.8; color:var(--purple);}
+
 @media (max-width:640px){
   .event-hero-full{aspect-ratio:4/3; max-height:420px;}
+  .event-hero-full.is-portrait{height:min(64vh,520px);}
   .event-hero-content{padding:20px 20px 22px;}
   .hero-expand-btn span{display:none;}
 }
