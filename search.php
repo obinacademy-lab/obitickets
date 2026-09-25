@@ -42,13 +42,26 @@ if ($category !== '') {
 } else {
     $heroTitle = 'Browse events';
 }
+
+$hasFilter = $category !== '' || $q !== '' || $freeOnly;
+if ($category !== '') {
+    $emptyTitle = 'No ' . htmlspecialchars($category) . ' events right now';
+} elseif ($q !== '') {
+    $emptyTitle = 'No events found for &ldquo;' . htmlspecialchars($q) . '&rdquo;';
+} elseif ($freeOnly) {
+    $emptyTitle = 'No free events right now';
+} else {
+    $emptyTitle = 'No events published yet';
+}
+$suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static fn ($c) => $c !== $category)), 0, 3);
 ?>
 
 <section class="page-hero">
   <img class="page-hero-bg" src="/assets/images/about/crowd.jpg" alt="">
+  <div class="page-hero-glow"></div>
   <div class="wrap page-hero-content">
-    <h1><?= htmlspecialchars($heroTitle) ?></h1>
-    <div class="page-hero-crumb">
+    <h1 class="hero-in" style="animation-delay:.05s"><?= htmlspecialchars($heroTitle) ?></h1>
+    <div class="page-hero-crumb hero-in" style="animation-delay:.15s">
       <a href="/">obitickets</a>
       <span>&rsaquo;</span>
       <span>Browse events</span>
@@ -89,7 +102,27 @@ if ($category !== '') {
     </div>
 
     <?php if (!$results): ?>
-      <p style="text-align:center; padding:40px 0">No events match your search &mdash; try a different keyword or category.</p>
+      <div class="empty-state hero-in" style="margin-top:8px">
+        <div class="empty-badge"><svg width="32" height="32"><use href="#ic-search"/></svg></div>
+        <h3><?= $emptyTitle ?></h3>
+        <p>New events are added every week &mdash; try another category, or check back soon.</p>
+        <?php if ($hasFilter): ?>
+          <div class="empty-actions">
+            <a class="btn btn-purple" href="/search.php">Browse all events <svg width="15" height="15" class="btn-arrow"><use href="#ic-arrow"/></svg></a>
+          </div>
+        <?php endif; ?>
+        <?php if ($suggestedCats): ?>
+          <div class="empty-suggestions">
+            <span class="empty-suggestions-label">Try instead</span>
+            <?php foreach ($suggestedCats as $sc): ?>
+              <a class="sugg-chip" href="<?= htmlspecialchars(search_url('', $sc)) ?>">
+                <span class="sugg-chip-ic"><svg width="13" height="13"><use href="#<?= $catStripIcons[$sc] ?>"/></svg></span>
+                <?= htmlspecialchars($sc) ?>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
     <?php else: ?>
       <div class="event-tile-grid" style="margin-top:32px">
         <?php foreach ($results as $event):
@@ -115,16 +148,16 @@ if ($category !== '') {
               <div class="event-tile-meta"><svg width="14" height="14"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></div>
               <div class="event-tile-price"><?= htmlspecialchars($priceLabel) ?></div>
             </div>
-            <a class="btn btn-purple" href="<?= htmlspecialchars($eventUrl) ?>">Get tickets &rarr;</a>
+            <a class="btn btn-purple" href="<?= htmlspecialchars($eventUrl) ?>">Get tickets <svg width="14" height="14" class="btn-arrow"><use href="#ic-arrow"/></svg></a>
           </div>
         <?php endforeach; ?>
       </div>
     <?php endif; ?>
 
     <div class="trust-badges" style="margin-top:64px">
-      <div><svg width="20" height="20"><use href="#ic-cal"/></svg> Real, scannable QR tickets</div>
-      <div><svg width="20" height="20"><use href="#ic-shield"/></svg> Secure MTN &amp; Airtel checkout</div>
-      <div><svg width="20" height="20"><use href="#ic-bolt"/></svg> Instant delivery, no waiting</div>
+      <div class="trust-item"><span class="trust-ic"><svg width="20" height="20"><use href="#ic-cal"/></svg></span> Real, scannable QR tickets</div>
+      <div class="trust-item"><span class="trust-ic"><svg width="20" height="20"><use href="#ic-shield"/></svg></span> Secure MTN &amp; Airtel checkout</div>
+      <div class="trust-item"><span class="trust-ic"><svg width="20" height="20"><use href="#ic-bolt"/></svg></span> Instant delivery, no waiting</div>
     </div>
 
   </section>
