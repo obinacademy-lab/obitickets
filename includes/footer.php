@@ -4,7 +4,7 @@
 
   <div class="foot-community">
     <div class="wrap">
-      <h2>Join Our Community</h2>
+      <h2><i></i>Join Our Community</h2>
       <div class="foot-social-row">
         <a class="foot-social" href="#" aria-label="Instagram">
           <span class="foot-social-ring"><svg width="22" height="22"><use href="#ic-instagram"/></svg></span>
@@ -32,7 +32,7 @@
           obitickets
         </a>
         <p>Ticketing made simple &mdash; for organizers and attendees across Africa.<br>Kampala, Uganda</p>
-        <div class="pay-row"><span class="pay-badge">MTN MoMo</span><span class="pay-badge">Airtel Money</span><span class="pay-badge">Visa/Mastercard</span></div>
+        <div class="pay-row"><span class="pay-badge">MTN MoMo</span><span class="pay-badge">Airtel Money</span></div>
       </div>
 
       <div class="foot-links">
