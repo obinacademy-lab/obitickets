@@ -30,6 +30,11 @@ function search_url(string $q, string $category = '', bool $freeOnly = false): s
     return '/search.php' . ($params ? '?' . http_build_query($params) : '');
 }
 
+$catStripIcons = [
+    'Music' => 'ic-music', 'Conference' => 'ic-briefcase', 'Comedy' => 'ic-mic',
+    'Sports' => 'ic-ball', 'Faith' => 'ic-cross', 'Fashion' => 'ic-hanger', 'Community' => 'ic-people',
+];
+
 if ($category !== '') {
     $heroTitle = $category;
 } elseif ($q !== '') {
@@ -63,11 +68,20 @@ if ($category !== '') {
     </form>
 
     <div class="search-cats">
-      <a class="search-cat <?= $category === '' && !$freeOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q)) ?>">All</a>
+      <a class="cat-chip <?= $category === '' && !$freeOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q)) ?>">
+        <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-grid"/></svg></span>
+        <span class="cat-chip-label">All</span>
+      </a>
       <?php foreach (EVENT_CATEGORIES as $cat): ?>
-        <a class="search-cat <?= $category === $cat ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q, $cat)) ?>"><?= category_emoji($cat) ?> <?= htmlspecialchars($cat) ?></a>
+        <a class="cat-chip <?= $category === $cat ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q, $cat)) ?>">
+          <span class="cat-chip-ic"><svg width="16" height="16"><use href="#<?= $catStripIcons[$cat] ?>"/></svg></span>
+          <span class="cat-chip-label"><?= htmlspecialchars($cat) ?></span>
+        </a>
       <?php endforeach; ?>
-      <a class="search-cat <?= $freeOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q, '', true)) ?>">🎟️ Free</a>
+      <a class="cat-chip <?= $freeOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q, '', true)) ?>">
+        <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-ticket"/></svg></span>
+        <span class="cat-chip-label">Free</span>
+      </a>
     </div>
 
     <div class="sec-head" style="margin-top:32px">

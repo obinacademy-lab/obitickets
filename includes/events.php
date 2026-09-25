@@ -109,16 +109,6 @@ function search_events(?string $q, ?string $category, bool $freeOnly = false, in
     return $stmt->fetchAll();
 }
 
-/** A representative emoji per category, for filter pills etc. */
-function category_emoji(string $category): string
-{
-    $map = [
-        'Music' => '🎵', 'Conference' => '💼', 'Comedy' => '🎤', 'Sports' => '🏟️',
-        'Faith' => '🙏', 'Fashion' => '👗', 'Community' => '🎉',
-    ];
-    return $map[$category] ?? '🎟️';
-}
-
 /**
  * Live count of upcoming published events per category, for the homepage's
  * category strip. Every category from EVENT_CATEGORIES is always present

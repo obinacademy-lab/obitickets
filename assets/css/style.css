@@ -123,9 +123,6 @@ body.nav-open{overflow:hidden;}
 
 /* ---------- SEARCH / BROWSE ---------- */
 .search-cats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:26px;}
-.search-cat{font-size:0.86rem; font-weight:600; padding:9px 18px; border-radius:100px; border:1.5px solid var(--line-strong); color:var(--ink); transition:border-color .25s var(--ease), color .25s var(--ease), background .25s var(--ease), transform .25s var(--ease-back);}
-.search-cat:hover{border-color:var(--purple-light); color:var(--purple); transform:translateY(-1px);}
-.search-cat.active{background:var(--purple); border-color:var(--purple); color:#fff;}
 .search-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:18px;}
 
 /* ---------- dark photo banner with a breadcrumb (search.php) ---------- */
