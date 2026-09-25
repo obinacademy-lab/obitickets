@@ -689,13 +689,13 @@ footer p{color:rgba(255,255,255,0.7);}
 .tier{padding:13px 10px; margin:0 -10px; border-bottom:1px solid var(--line); border-radius:10px; transition:background .2s var(--ease);}
 .tier:hover{background:var(--purple-tint);}
 .tier:last-of-type{border-bottom:none;}
-.tier-row{display:flex; justify-content:space-between; align-items:flex-start; gap:14px;}
-.tier .tn{font-weight:700; font-size:0.9rem;}
+.tier-row{display:flex; justify-content:space-between; align-items:center; gap:14px;}
+.tier .tn{font-weight:700; font-size:0.94rem;}
 .tier .td{font-size:0.76rem; color:var(--muted-2); margin-top:2px;}
-.tier .tp{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.88rem; white-space:nowrap;}
-.qty{display:flex; align-items:center; gap:10px; margin-top:9px;}
-.qty button{width:24px; height:24px; border-radius:7px; border:1px solid var(--line-strong); background:var(--paper); font-weight:700; font-size:0.86rem; line-height:1;}
-.qty .n{font-family:'IBM Plex Mono',monospace; font-weight:600; min-width:14px; text-align:center;}
+.tier .tp{font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:0.8rem; color:var(--muted-2); white-space:nowrap; margin-top:3px;}
+.qty{display:flex; align-items:center; gap:8px; flex:none; border:1px solid var(--line-strong); border-radius:100px; padding:5px 6px; background:var(--paper);}
+.qty button{width:22px; height:22px; border-radius:50%; border:none; background:var(--surface); box-shadow:0 1px 2px rgba(0,0,0,0.08); font-weight:700; font-size:0.9rem; line-height:1; cursor:pointer;}
+.qty .n{font-family:'IBM Plex Mono',monospace; font-weight:600; min-width:16px; text-align:center;}
 .poster-summary{padding:14px 22px; background:var(--purple-tint); margin-top:4px; font-size:0.86rem;}
 .poster-summary .r{display:flex; justify-content:space-between; padding:4px 0; color:var(--muted);}
 .poster-summary .r.total{color:var(--ink); font-weight:700; font-size:0.98rem; padding-top:10px; margin-top:4px; border-top:1px solid var(--line-strong);}
@@ -704,13 +704,25 @@ footer p{color:rgba(255,255,255,0.7);}
 .secure-note{display:flex; align-items:center; gap:7px; justify-content:center; font-size:0.75rem; color:var(--muted-2); margin-top:12px;}
 .pay-icons{display:flex; gap:10px; justify-content:center; margin-top:14px;}
 
-.event-content > section{margin-bottom:42px; padding-bottom:42px; border-bottom:1px solid var(--line);}
-.event-content > section:last-child{border-bottom:none; margin-bottom:0; padding-bottom:0;}
-.event-content h2{font-size:1.2rem; margin-bottom:16px;}
+.event-full-section{margin-top:36px;}
+.event-content h2, .event-details-card h2, .event-full-section h2{font-size:1.2rem; margin-bottom:16px;}
 .about-text{font-size:1rem; max-width:64ch;}
 .about-text + .about-text{margin-top:12px;}
 .tag-list{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;}
 .tag-pill{font-size:0.78rem; font-weight:600; padding:6px 13px; border-radius:100px; background:var(--purple-tint); color:var(--purple-deep);}
+
+/* ---------- compact info card (date/venue/organizer) beside the buy panel ---------- */
+.event-info-card{background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:24px; box-shadow:var(--shadow-lg);}
+.info-row{display:flex; align-items:flex-start; gap:14px;}
+.info-row + .info-row{margin-top:18px; padding-top:18px; border-top:1px solid var(--line);}
+.info-ic{width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none;}
+.info-lbl{display:block; font-size:0.72rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted-2);}
+.info-row h3{font-size:0.98rem; margin-top:4px; line-height:1.35;}
+.info-sub{font-size:0.84rem; color:var(--muted); margin-top:2px;}
+.info-row .side{margin-left:auto; flex:none;}
+
+/* ---------- full-width "Event Details" card, below the info/buy grid ---------- */
+.event-details-card{margin-top:36px; background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:32px; box-shadow:var(--shadow-lg);}
 
 /* ---------- event gallery: past-event photos/videos, event.php ---------- */
 .event-gallery{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}

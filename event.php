@@ -69,69 +69,35 @@ include __DIR__ . '/includes/header.php';
 
     <div class="event-content">
 
-      <section class="reveal">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px">
-          <h2>About this event</h2>
-          <div style="display:flex; gap:2px; flex:none">
-            <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
-            <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
+      <div class="event-info-card reveal">
+        <div class="info-row">
+          <span class="info-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="18" height="18"><use href="#ic-cal"/></svg></span>
+          <div>
+            <span class="info-lbl">Date &amp; Time</span>
+            <h3><?= htmlspecialchars(date('l, j F Y', strtotime($event['starts_at']))) ?> at <?= htmlspecialchars(date('g:i A', strtotime($event['starts_at']))) ?></h3>
+            <?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?>
+              <p class="info-sub">Ends <?= htmlspecialchars(date('j F Y', strtotime($event['ends_at']))) ?> at <?= htmlspecialchars(date('g:i A', strtotime($event['ends_at']))) ?></p>
+            <?php endif; ?>
           </div>
         </div>
-        <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
-          <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
-        <?php endforeach; ?>
-      </section>
-
-      <?php if ($eventMedia): ?>
-      <section class="reveal">
-        <h2>Event gallery</h2>
-        <div class="event-gallery">
-          <?php foreach ($eventMedia as $media): ?>
-            <?php if ($media['media_type'] === 'VIDEO'): ?>
-              <div class="event-gallery-item">
-                <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
-              </div>
-            <?php else: ?>
-              <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
-                <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-              </button>
-            <?php endif; ?>
-          <?php endforeach; ?>
-        </div>
-      </section>
-      <?php endif; ?>
-
-      <section class="reveal">
-        <h2>Venue</h2>
-        <div class="plain-row">
-          <div class="ic"><svg width="20" height="20"><use href="#ic-pin"/></svg></div>
-          <div><h3><?= htmlspecialchars($event['venue_name']) ?></h3><p><?= htmlspecialchars($event['venue_address'] ?? '') ?></p></div>
+        <div class="info-row">
+          <span class="info-ic" style="background:var(--success-bg); color:var(--success)"><svg width="18" height="18"><use href="#ic-pin"/></svg></span>
+          <div>
+            <span class="info-lbl">Venue</span>
+            <h3><?= htmlspecialchars($event['venue_name']) ?></h3>
+            <?php if ($event['venue_address']): ?><p class="info-sub"><?= htmlspecialchars($event['venue_address']) ?></p><?php endif; ?>
+          </div>
           <a class="btn btn-line side" href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Directions</a>
         </div>
-      </section>
-
-      <section class="reveal">
-        <h2>Organized by</h2>
-        <div class="plain-row">
-          <div class="avatar" style="width:40px;height:40px;background:var(--purple);color:#fff">
-            <?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?>
-          </div>
+        <div class="info-row">
+          <span class="info-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="18" height="18"><use href="#ic-briefcase"/></svg></span>
           <div>
+            <span class="info-lbl">Organized by</span>
             <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
-            <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
           </div>
           <a class="btn btn-line side" href="#">Follow</a>
         </div>
-      </section>
-
-      <?php if ($similarEvents): ?>
-      <section class="reveal">
-        <h2>Similar events</h2>
-        <div class="similar-row">
-          <?php foreach ($similarEvents as $tintIndex => $simEvent) { render_shelf_card($simEvent, $tintIndex); } ?>
-        </div>
-      </section>
-      <?php endif; ?>
+      </div>
 
     </div>
 
@@ -158,19 +124,22 @@ include __DIR__ . '/includes/header.php';
           ?>
             <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $available ?>">
               <div class="tier-row">
-                <div><div class="tn"><?= htmlspecialchars($tier['name']) ?></div><div class="td"><?= htmlspecialchars($tier['description'] ?? '') ?></div></div>
-                <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
-              </div>
-              <?php if ($soldOut): ?>
-                <div class="tag-pill" style="margin-top:9px; background:var(--line); color:var(--muted)">Sold out</div>
-              <?php else: ?>
-                <div class="qty">
-                  <button type="button">&minus;</button>
-                  <span class="n">0</span>
-                  <button type="button">+</button>
-                  <input type="hidden" class="qty-input" name="qty[<?= (int) $tier['id'] ?>]" value="0">
+                <div>
+                  <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
+                  <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
+                  <div class="tp">Price: <?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
                 </div>
-              <?php endif; ?>
+                <?php if ($soldOut): ?>
+                  <div class="tag-pill" style="background:var(--line); color:var(--muted); flex:none">Sold out</div>
+                <?php else: ?>
+                  <div class="qty">
+                    <button type="button">&minus;</button>
+                    <span class="n">0</span>
+                    <button type="button">+</button>
+                    <input type="hidden" class="qty-input" name="qty[<?= (int) $tier['id'] ?>]" value="0">
+                  </div>
+                <?php endif; ?>
+              </div>
             </div>
           <?php endforeach; ?>
         </div>
@@ -192,6 +161,47 @@ include __DIR__ . '/includes/header.php';
     </aside>
 
   </div>
+
+  <div class="event-details-card reveal">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px">
+      <h2><svg width="19" height="19" style="vertical-align:-3px; color:var(--purple); margin-right:6px"><use href="#ic-info"/></svg>Event Details</h2>
+      <div style="display:flex; gap:2px; flex:none">
+        <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
+        <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
+      </div>
+    </div>
+    <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
+      <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
+    <?php endforeach; ?>
+  </div>
+
+  <?php if ($eventMedia): ?>
+  <section class="reveal event-full-section">
+    <h2>Event gallery</h2>
+    <div class="event-gallery">
+      <?php foreach ($eventMedia as $media): ?>
+        <?php if ($media['media_type'] === 'VIDEO'): ?>
+          <div class="event-gallery-item">
+            <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
+          </div>
+        <?php else: ?>
+          <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
+            <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+          </button>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <?php if ($similarEvents): ?>
+  <section class="reveal event-full-section">
+    <h2>Similar events</h2>
+    <div class="similar-row">
+      <?php foreach ($similarEvents as $tintIndex => $simEvent) { render_shelf_card($simEvent, $tintIndex); } ?>
+    </div>
+  </section>
+  <?php endif; ?>
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
