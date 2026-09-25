@@ -25,13 +25,14 @@ $categoryIcons = [
         <input type="text" name="q" placeholder="Search events, artists or venues">
       </div>
       <div class="home-search-div"></div>
-      <div class="home-search-field">
+      <div class="home-search-field home-search-field-cat">
         <select name="category">
           <option value="">All categories</option>
           <?php foreach (EVENT_CATEGORIES as $cat): ?>
             <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
           <?php endforeach; ?>
         </select>
+        <svg class="field-chevron" width="13" height="13"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg>
       </div>
       <button type="submit" class="btn btn-purple">Search</button>
     </form>
