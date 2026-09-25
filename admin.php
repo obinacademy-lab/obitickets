@@ -12,7 +12,7 @@ $actionLabels = [
     'event.status_change' => 'changed the status of event', 'event.feature' => 'featured event', 'event.unfeature' => 'unfeatured event',
     'organizer.verification' => 'updated verification for organizer', 'user.suspend' => 'suspended user', 'user.reactivate' => 'reactivated user',
     'ticket.checkin' => 'checked in ticket', 'ticket.reverse_checkin' => 'reversed check-in for ticket', 'ticket.cancel' => 'cancelled ticket',
-    'order.refund' => 'refunded order', 'payout.create' => 'created a payout for', 'payout.status_change' => 'updated payout status for',
+    'order.refund' => 'refunded order', 'payout.create' => 'created a payout for', 'payout.request' => 'requested a withdrawal', 'payout.status_change' => 'updated payout status for',
     'promo.create' => 'created promo code', 'promo.activate' => 'activated promo code', 'promo.deactivate' => 'deactivated promo code', 'promo.delete' => 'deleted promo code',
     'user.role_change' => 'changed role for user', 'admin.role_assign' => 'assigned admin role to', 'contact.status_change' => 'updated contact message',
     'settings.update' => 'updated a setting',

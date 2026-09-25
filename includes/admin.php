@@ -368,8 +368,10 @@ function get_organizer_admin_detail(int $userId): ?array
 
 /**
  * Net earnings by currency: paid orders minus commission, excluding any
- * order that has been refunded, minus payouts already marked PAID.
- * @return array<string, array{lifetime: float, paid_out: float, available: float}>
+ * order that has been refunded, minus payouts already PAID — and minus any
+ * payout that's PENDING/APPROVED/PROCESSING, so an organizer (or admin) can
+ * never allocate the same money to two overlapping withdrawal requests.
+ * @return array<string, array{lifetime: float, paid_out: float, pending: float, available: float}>
  */
 function get_organizer_balance(int $organizerId): array
 {
@@ -382,7 +384,7 @@ function get_organizer_balance(int $organizerId): array
     $stmt->execute([$organizerId]);
     $balances = [];
     foreach ($stmt->fetchAll() as $row) {
-        $balances[$row['currency']] = ['lifetime' => (float) $row['lifetime'], 'paid_out' => 0.0, 'available' => (float) $row['lifetime']];
+        $balances[$row['currency']] = ['lifetime' => (float) $row['lifetime'], 'paid_out' => 0.0, 'pending' => 0.0, 'available' => (float) $row['lifetime']];
     }
 
     $stmt = db()->prepare("SELECT currency, COALESCE(SUM(amount), 0) AS paid FROM payouts WHERE organizer_id = ? AND status = 'PAID' GROUP BY currency");
@@ -390,13 +392,56 @@ function get_organizer_balance(int $organizerId): array
     foreach ($stmt->fetchAll() as $row) {
         $cur = $row['currency'];
         if (!isset($balances[$cur])) {
-            $balances[$cur] = ['lifetime' => 0.0, 'paid_out' => 0.0, 'available' => 0.0];
+            $balances[$cur] = ['lifetime' => 0.0, 'paid_out' => 0.0, 'pending' => 0.0, 'available' => 0.0];
         }
         $balances[$cur]['paid_out'] = (float) $row['paid'];
         $balances[$cur]['available'] -= (float) $row['paid'];
     }
 
+    $stmt = db()->prepare("SELECT currency, COALESCE(SUM(amount), 0) AS pending FROM payouts WHERE organizer_id = ? AND status IN ('PENDING','APPROVED','PROCESSING') GROUP BY currency");
+    $stmt->execute([$organizerId]);
+    foreach ($stmt->fetchAll() as $row) {
+        $cur = $row['currency'];
+        if (!isset($balances[$cur])) {
+            $balances[$cur] = ['lifetime' => 0.0, 'paid_out' => 0.0, 'pending' => 0.0, 'available' => 0.0];
+        }
+        $balances[$cur]['pending'] = (float) $row['pending'];
+        $balances[$cur]['available'] -= (float) $row['pending'];
+    }
+
     return $balances;
+}
+
+/** @return array{0: bool, 1: ?string} [success, errorMessage] */
+function request_withdrawal(int $organizerId, float $amount, string $method, string $destination, ?string $notes = null): array
+{
+    $destination = trim($destination);
+    if ($amount <= 0) {
+        return [false, 'Enter an amount greater than zero.'];
+    }
+    if ($destination === '') {
+        return [false, 'Enter a phone number or account to receive the payout.'];
+    }
+    $balance = get_organizer_balance($organizerId);
+    $available = array_sum(array_column($balance, 'available'));
+    if ($amount > $available) {
+        return [false, "That's more than your available balance."];
+    }
+
+    db()->prepare('INSERT INTO payouts (organizer_id, amount, currency, method, destination, notes) VALUES (?, ?, ?, ?, ?, ?)')
+        ->execute([$organizerId, $amount, 'UGX', $method, $destination, $notes]);
+    $payoutId = (int) db()->lastInsertId();
+    log_admin_action($organizerId, 'payout.request', 'payout', $payoutId, ['amount' => $amount]);
+
+    return [true, null];
+}
+
+/** The organizer's own outstanding (not yet paid/failed/rejected) withdrawal requests. */
+function get_pending_payouts_for_organizer(int $organizerId): array
+{
+    $stmt = db()->prepare("SELECT * FROM payouts WHERE organizer_id = ? AND status IN ('PENDING','APPROVED','PROCESSING') ORDER BY requested_at DESC");
+    $stmt->execute([$organizerId]);
+    return $stmt->fetchAll();
 }
 
 function set_organizer_verification(int $adminId, int $organizerId, string $status, ?string $notes = null): void

@@ -183,4 +183,16 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   });
+
+  // Organizer "Request withdrawal" — reveals the form with a smooth expand
+  var withdrawToggle = document.getElementById('withdrawToggle');
+  var withdrawForm = document.getElementById('withdrawForm');
+  if (withdrawToggle && withdrawForm) {
+    withdrawToggle.addEventListener('click', function () {
+      withdrawForm.classList.toggle('open');
+      if (withdrawForm.classList.contains('open')) {
+        withdrawForm.querySelector('input[name=amount]').focus();
+      }
+    });
+  }
 });

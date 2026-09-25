@@ -6,35 +6,46 @@ $admin = require_admin_permission('payouts.view');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && admin_can('payouts.process')) {
     verify_csrf();
     update_payout_status((int) $admin['id'], (int) $_POST['payout_id'], (string) $_POST['status']);
-    header('Location: /admin-payouts.php?updated=1');
+    header('Location: /admin-payouts.php?updated=1&status=' . htmlspecialchars((string) $_POST['status'], ENT_QUOTES));
     exit;
 }
 
 $payouts = get_payouts_admin();
-$pending = array_sum(array_map(static fn ($p) => in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true) ? (float) $p['amount'] : 0, $payouts));
-$paid = array_sum(array_map(static fn ($p) => $p['status'] === 'PAID' ? (float) $p['amount'] : 0, $payouts));
+$requested = array_filter($payouts, static fn ($p) => in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true));
+$pendingTotal = array_sum(array_column($requested, 'amount'));
+$paidTotal = array_sum(array_map(static fn ($p) => $p['status'] === 'PAID' ? (float) $p['amount'] : 0, $payouts));
 $statusMeta = ['PENDING' => 'admin-badge-warn', 'APPROVED' => 'admin-badge-purple', 'PROCESSING' => 'admin-badge-purple', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger'];
+
+$flashMap = ['PAID' => 'Withdrawal paid — organizer notified.', 'REJECTED' => 'Withdrawal rejected.', 'PROCESSING' => 'Marked as processing.', 'FAILED' => 'Marked as failed.', 'APPROVED' => 'Withdrawal approved.'];
 
 $pageTitle = 'Payouts';
 render_admin_head('payouts');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Organizer payouts</h1><p>Recorded here after you pay an organizer manually — there's no automated disbursement yet.</p></div>
+  <div><h1>Organizer withdrawals</h1><p>Organizers request a withdrawal from their available balance; approve and record payment here once you've sent it.</p></div>
 </div>
 
-<?php if (isset($_GET['updated'])): ?><span data-flash="Payout updated." hidden></span><?php endif; ?>
+<?php if (isset($_GET['updated'])): ?><span data-flash="<?= htmlspecialchars($flashMap[$_GET['status'] ?? ''] ?? 'Updated.', ENT_QUOTES) ?>" hidden></span><?php endif; ?>
 
 <div class="admin-kpi-grid" style="margin-bottom:24px">
-  <div class="admin-kpi-card"><div class="lbl">Pending</div><span class="num">UGX <?= number_format($pending, 0) ?></span><span class="sub"><?= count(array_filter($payouts, static fn ($p) => in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true))) ?> payouts</span></div>
-  <div class="admin-kpi-card"><div class="lbl">Paid out</div><span class="num">UGX <?= number_format($paid, 0) ?></span><span class="sub">Lifetime</span></div>
+  <div class="admin-kpi-card">
+    <div class="lbl"><svg width="15" height="15"><use href="#ic-clock"/></svg> Awaiting action</div>
+    <span class="num"><span data-count-to="<?= count($requested) ?>">0</span></span>
+    <span class="sub">UGX <span data-count-to="<?= (int) $pendingTotal ?>">0</span> requested</span>
+  </div>
+  <div class="admin-kpi-card">
+    <div class="lbl"><svg width="15" height="15"><use href="#ic-cash"/></svg> Paid out</div>
+    <span class="num">UGX <span data-count-to="<?= (int) $paidTotal ?>">0</span></span>
+    <span class="sub">Lifetime</span>
+  </div>
 </div>
 
 <?php if (!$payouts): ?>
   <div class="admin-empty">
     <svg width="40" height="40"><use href="#ic-cash"/></svg>
-    <h3>No payouts recorded yet</h3>
-    <p>Record a payout from an organizer's detail page once they have an available balance.</p>
+    <h3>No withdrawal requests yet</h3>
+    <p>Once an organizer requests a withdrawal from their dashboard, it'll show up here.</p>
     <a class="btn btn-line" href="/admin-organizers.php">Go to Organizers</a>
   </div>
 <?php else: ?>
@@ -42,21 +53,23 @@ render_admin_head('payouts');
     <table class="admin-table">
       <thead><tr><th>Organizer</th><th>Amount</th><th>Method</th><th>Destination</th><th>Requested</th><th>Status</th><th></th></tr></thead>
       <tbody>
-        <?php foreach ($payouts as $p): ?>
-          <tr>
+        <?php foreach ($payouts as $p): $isOpen = in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true); ?>
+          <tr class="<?= $p['status'] === 'PENDING' ? 'admin-row-attention' : '' ?>">
             <td><a class="link" href="/admin-organizer-detail.php?id=<?= (int) $p['organizer_id'] ?>"><?= htmlspecialchars($p['organizer_name']) ?></a></td>
-            <td class="mono"><?= htmlspecialchars($p['currency']) ?> <?= number_format((float) $p['amount'], 0) ?></td>
+            <td class="mono" style="font-weight:700"><?= htmlspecialchars($p['currency']) ?> <?= number_format((float) $p['amount'], 0) ?></td>
             <td class="muted"><?= htmlspecialchars(str_replace('_', ' ', $p['method'])) ?></td>
             <td class="muted mono"><?= htmlspecialchars($p['destination']) ?></td>
             <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($p['requested_at']))) ?></td>
-            <td><span class="admin-badge <?= $statusMeta[$p['status']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($p['status']) ?></span></td>
+            <td><span class="admin-badge <?= $statusMeta[$p['status']] ?? 'admin-badge-muted' ?>"><?= $p['status'] === 'PENDING' ? '<span class="admin-badge-dot"></span>' : '' ?><?= htmlspecialchars($p['status']) ?></span></td>
             <td style="white-space:nowrap">
-              <?php if (admin_can('payouts.process') && in_array($p['status'], ['PENDING', 'APPROVED', 'PROCESSING'], true)): ?>
-                <form method="post" style="display:inline"><?= csrf_field() ?><input type="hidden" name="payout_id" value="<?= (int) $p['id'] ?>">
-                  <select name="status" class="auto-submit" onchange="var el=this, v=this.value; window.adminConfirm('Update payout status to '+v+'?').then(function(ok){ if(ok){ el.form.requestSubmit(); } else { el.selectedIndex=0; } });">
-                    <option value="">Update status…</option>
-                    <?php foreach (['APPROVED', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED'] as $s): ?><option value="<?= $s ?>"><?= $s ?></option><?php endforeach; ?>
-                  </select>
+              <?php if (admin_can('payouts.process') && $isOpen): ?>
+                <form method="post" style="display:inline" data-confirm="Mark UGX <?= number_format((float) $p['amount'], 0) ?> as paid to <?= htmlspecialchars($p['organizer_name'], ENT_QUOTES) ?>? Send the money yourself first — this just records it.">
+                  <?= csrf_field() ?><input type="hidden" name="payout_id" value="<?= (int) $p['id'] ?>"><input type="hidden" name="status" value="PAID">
+                  <button type="submit" class="btn" style="background:var(--success); color:#fff; padding:7px 16px; font-size:0.82rem">Approve &amp; pay</button>
+                </form>
+                <form method="post" style="display:inline; margin-left:6px" data-confirm="Reject this withdrawal request?" data-danger>
+                  <?= csrf_field() ?><input type="hidden" name="payout_id" value="<?= (int) $p['id'] ?>"><input type="hidden" name="status" value="REJECTED">
+                  <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700; font-size:0.82rem">Reject</button>
                 </form>
               <?php endif; ?>
             </td>
