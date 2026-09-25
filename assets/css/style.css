@@ -1061,6 +1061,9 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .admin-detail-row .k{color:var(--muted);}
 .admin-detail-row .v{font-weight:700; text-align:right;}
 
+@keyframes adminResultIn{from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+.admin-checkin-result{animation:adminResultIn .35s var(--admin-ease) both;}
+.admin-checkin-result-ic{width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; box-shadow:var(--admin-shadow);}
 .admin-stat-mini{text-align:center;}
 .admin-stat-mini .num{display:block; font-size:1.5rem; font-weight:800; font-family:'IBM Plex Mono',monospace;}
 .admin-stat-mini .lbl{display:block; font-size:0.76rem; color:var(--muted-2); margin-top:2px;}

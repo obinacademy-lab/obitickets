@@ -52,11 +52,11 @@ render_admin_head('checkin');
       </form>
     </div>
 
-    <?php if ($result): ?>
-      <div class="admin-card" style="margin-top:20px; border-color:var(--<?= $resultType === 'success' ? 'success' : ($resultType === 'warning' ? 'warn' : 'danger') ?>-border); background:var(--<?= $resultType === 'success' ? 'success' : ($resultType === 'warning' ? 'warn' : 'danger') ?>-bg);">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-          <svg width="22" height="22" style="color:var(--<?= $resultType === 'success' ? 'success' : ($resultType === 'warning' ? 'warn' : 'danger') ?>)"><use href="#<?= $resultType === 'success' ? 'ic-check' : ($resultType === 'warning' ? 'ic-info' : 'ic-x') ?>"/></svg>
-          <strong style="color:var(--<?= $resultType === 'success' ? 'success' : ($resultType === 'warning' ? 'warn' : 'danger') ?>)"><?= htmlspecialchars($result['message']) ?></strong>
+    <?php if ($result): $rc = $resultType === 'success' ? 'success' : ($resultType === 'warning' ? 'warn' : 'danger'); ?>
+      <div class="admin-card admin-checkin-result" style="margin-top:20px; border-color:var(--<?= $rc ?>-border); background:var(--<?= $rc ?>-bg);">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:<?= isset($result['event_title']) ? '16px' : '0' ?>;">
+          <span class="admin-checkin-result-ic" style="background:var(--surface); color:var(--<?= $rc ?>)"><svg width="24" height="24"><use href="#<?= $resultType === 'success' ? 'ic-check' : ($resultType === 'warning' ? 'ic-info' : 'ic-x') ?>"/></svg></span>
+          <strong style="color:var(--<?= $rc ?>); font-size:1rem;"><?= htmlspecialchars($result['message']) ?></strong>
         </div>
         <?php if (isset($result['event_title'])): ?>
           <div class="admin-detail-row"><span class="k">Event</span><span class="v"><?= htmlspecialchars($result['event_title']) ?></span></div>
@@ -78,14 +78,36 @@ render_admin_head('checkin');
         <?php endforeach; ?>
       </select>
     </form>
-    <?php if ($eventStats): ?>
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
-        <div class="admin-stat-mini"><span class="num"><?= $eventStats['total'] ?></span><span class="lbl">Sold</span></div>
-        <div class="admin-stat-mini"><span class="num"><?= $eventStats['checked_in'] ?></span><span class="lbl">Checked in</span></div>
-        <div class="admin-stat-mini"><span class="num"><?= $eventStats['total'] > 0 ? round($eventStats['checked_in'] / $eventStats['total'] * 100) : 0 ?>%</span><span class="lbl">Rate</span></div>
+    <?php if ($eventStats): $rate = $eventStats['total'] > 0 ? round($eventStats['checked_in'] / $eventStats['total'] * 100) : 0; ?>
+      <div class="admin-kpi-grid">
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-card-top">
+            <span class="lbl">Sold</span>
+            <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-ticket"/></svg></span>
+          </div>
+          <span class="num"><span data-count-to="<?= (int) $eventStats['total'] ?>">0</span></span>
+        </div>
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-card-top">
+            <span class="lbl">Checked in</span>
+            <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-check"/></svg></span>
+          </div>
+          <span class="num"><span data-count-to="<?= (int) $eventStats['checked_in'] ?>">0</span></span>
+        </div>
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-card-top">
+            <span class="lbl">Rate</span>
+            <span class="admin-kpi-ic" style="background:<?= $rate >= 75 ? 'var(--success-bg); color:var(--success)' : 'var(--warn-bg); color:var(--warn)' ?>"><svg width="17" height="17"><use href="#ic-bolt"/></svg></span>
+          </div>
+          <span class="num"><span data-count-to="<?= $rate ?>">0</span>%</span>
+        </div>
       </div>
     <?php else: ?>
-      <p class="muted" style="font-size:0.86rem">Pick an event to see its check-in progress.</p>
+      <div class="admin-empty" style="padding:28px 24px">
+        <div class="admin-empty-ic"><svg width="24" height="24"><use href="#ic-cal"/></svg></div>
+        <h3>No event selected</h3>
+        <p>Pick an event above to see its live check-in progress.</p>
+      </div>
     <?php endif; ?>
   </div>
 </div>
