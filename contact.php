@@ -110,6 +110,9 @@ include __DIR__ . '/includes/header.php';
             <div><h4>Based in</h4><p>Kampala, Uganda</p></div>
           </div>
         </div>
+        <div class="contact-map">
+          <iframe src="https://maps.google.com/maps?q=Kampala,+Uganda&z=12&output=embed" title="Map showing Kampala, Uganda" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+        </div>
       </div>
     </div>
   </section>
