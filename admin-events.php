@@ -30,6 +30,8 @@ $perPage = 25;
 $total = count_events_admin($filters);
 $events = get_events_admin($filters, $perPage, ($page - 1) * $perPage);
 $totalPages = max(1, (int) ceil($total / $perPage));
+$statusCounts = get_event_status_counts();
+$categoryIcons = category_icon_map();
 
 $statusMeta = [
     'DRAFT' => ['Draft', 'admin-badge-muted'],
@@ -45,10 +47,21 @@ render_admin_head('events');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Events</h1><p><?= $total ?> total</p></div>
+  <div><h1>Events</h1><p><?= $total ?> total across the platform</p></div>
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Event updated." hidden></span><?php endif; ?>
+
+<div class="admin-mini-stat-row">
+  <a class="admin-mini-stat<?= $filters['status'] === '' ? ' active' : '' ?>" href="/admin-events.php">
+    <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
+  </a>
+  <?php foreach ($statusMeta as $val => $meta): ?>
+    <a class="admin-mini-stat<?= $filters['status'] === $val ? ' active' : '' ?>" href="/admin-events.php?status=<?= $val ?>">
+      <span class="n"><?= $statusCounts[$val] ?></span><span class="l"><?= htmlspecialchars($meta[0]) ?></span>
+    </a>
+  <?php endforeach; ?>
+</div>
 
 <form class="admin-filter-bar" method="get">
   <input type="text" name="q" placeholder="Search title or organizer…" value="<?= htmlspecialchars($filters['q']) ?>">
@@ -70,9 +83,9 @@ render_admin_head('events');
 
 <?php if (!$events): ?>
   <div class="admin-empty">
-    <svg width="40" height="40"><use href="#ic-cal"/></svg>
+    <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
     <h3>No events found</h3>
-    <p>Try a different search or clear your filters.</p>
+    <p>Try a different search, or clear your filters to see everything.</p>
     <a class="btn btn-line" href="/admin-events.php">Clear filters</a>
   </div>
 <?php else: ?>
@@ -80,15 +93,15 @@ render_admin_head('events');
     <table class="admin-table">
       <thead><tr><th>Event</th><th>Organizer</th><th>Category</th><th>Starts</th><th>Sold</th><th>Revenue</th><th>Status</th><th></th></tr></thead>
       <tbody>
-        <?php foreach ($events as $e): $meta = $statusMeta[$e['status']] ?? ['Unknown', 'admin-badge-muted']; ?>
-          <tr>
+        <?php foreach ($events as $e): $meta = $statusMeta[$e['status']] ?? ['Unknown', 'admin-badge-muted']; $needsReview = $e['status'] === 'PENDING_REVIEW'; ?>
+          <tr class="<?= $needsReview ? 'admin-row-attention' : '' ?>">
             <td><a class="link" href="/admin-event-detail.php?id=<?= (int) $e['id'] ?>"><?= htmlspecialchars($e['banner_emoji']) ?> <?= htmlspecialchars($e['title']) ?></a><?php if ($e['featured']): ?> <span class="admin-badge admin-badge-purple">Featured</span><?php endif; ?></td>
             <td><?= htmlspecialchars($e['organizer_name']) ?></td>
-            <td class="muted"><?= htmlspecialchars($e['category']) ?></td>
+            <td class="muted"><span style="display:inline-flex; align-items:center; gap:6px;"><svg width="13" height="13" style="opacity:.6"><use href="#<?= $categoryIcons[$e['category']] ?? 'ic-ticket' ?>"/></svg><?= htmlspecialchars($e['category']) ?></span></td>
             <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($e['starts_at']))) ?></td>
             <td class="mono"><?= (int) $e['tickets_sold'] ?></td>
             <td class="mono">UGX <?= number_format((float) $e['revenue'], 0) ?></td>
-            <td><span class="admin-badge <?= $meta[1] ?>"><?= htmlspecialchars($meta[0]) ?></span></td>
+            <td><span class="admin-badge <?= $meta[1] ?>"><?= $needsReview ? '<span class="admin-badge-dot"></span>' : '' ?><?= htmlspecialchars($meta[0]) ?></span></td>
             <td><a class="link" href="/admin-event-detail.php?id=<?= (int) $e['id'] ?>">Manage &rarr;</a></td>
           </tr>
         <?php endforeach; ?>

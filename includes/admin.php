@@ -279,6 +279,17 @@ function count_events_admin(array $filters = []): int
     return (int) $stmt->fetchColumn();
 }
 
+/** One row's worth of counts per status, for the Events page's summary strip — always includes every status, zero-filled. */
+function get_event_status_counts(): array
+{
+    $counts = array_fill_keys(EVENT_ADMIN_STATUSES, 0);
+    $stmt = db()->query('SELECT status, COUNT(*) AS n FROM events GROUP BY status');
+    foreach ($stmt->fetchAll() as $row) {
+        $counts[$row['status']] = (int) $row['n'];
+    }
+    return $counts;
+}
+
 function get_event_admin_detail(int $eventId): ?array
 {
     $stmt = db()->prepare('

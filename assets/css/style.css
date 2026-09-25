@@ -959,6 +959,18 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .admin-page-head h1{font-size:1.5rem;}
 .admin-page-head p{margin-top:5px; font-size:0.9rem; color:var(--muted);}
 
+/* Compact clickable status-count strip (Events, etc.) — doubles as filter + summary */
+.admin-mini-stat-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:20px;}
+.admin-mini-stat{display:block; border:1.5px solid var(--line); border-radius:12px; padding:13px 16px; background:var(--surface); text-decoration:none; transition:border-color .18s ease, background .18s ease, transform .18s var(--admin-ease); opacity:0; animation:adminRowIn .35s var(--admin-ease) both;}
+.admin-mini-stat:nth-child(1){animation-delay:.02s;} .admin-mini-stat:nth-child(2){animation-delay:.05s;} .admin-mini-stat:nth-child(3){animation-delay:.08s;}
+.admin-mini-stat:nth-child(4){animation-delay:.11s;} .admin-mini-stat:nth-child(5){animation-delay:.14s;} .admin-mini-stat:nth-child(6){animation-delay:.17s;}
+.admin-mini-stat:nth-child(7){animation-delay:.20s;}
+.admin-mini-stat:hover{border-color:var(--purple-light); transform:translateY(-2px); background:var(--purple-tint);}
+.admin-mini-stat.active{border-color:var(--purple); background:var(--purple-tint);}
+.admin-mini-stat .n{display:block; font-family:'IBM Plex Mono',monospace; font-size:1.3rem; font-weight:800; color:var(--ink);}
+.admin-mini-stat .l{display:block; margin-top:2px; font-size:0.76rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em;}
+.admin-mini-stat.active .n{color:var(--purple-deep);}
+
 .admin-kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
 .admin-kpi-card{border:1px solid var(--line); border-radius:var(--admin-radius); padding:20px 22px; background:var(--surface); box-shadow:var(--admin-shadow); transition:box-shadow .25s var(--admin-ease), border-color .25s var(--admin-ease), transform .25s var(--admin-ease); opacity:0; animation:adminRowIn .4s var(--admin-ease) both;}
 .admin-kpi-card:hover{box-shadow:var(--admin-shadow-lifted); border-color:var(--line-strong); transform:translateY(-2px);}
