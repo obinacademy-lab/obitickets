@@ -169,7 +169,11 @@ include __DIR__ . '/includes/header.php';
         <div class="poster-foot">
           <button class="btn btn-purple btn-block btn-lg" type="submit">Get Tickets</button>
           <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
-          <div class="pay-icons"><span class="pay-badge" style="border-color:var(--line); color:var(--muted)">MTN MoMo</span><span class="pay-badge" style="border-color:var(--line); color:var(--muted)">Airtel</span><span class="pay-badge" style="border-color:var(--line); color:var(--muted)">Card</span></div>
+          <div class="pay-icons">
+            <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span>
+            <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span>
+            <span class="pay-badge pay-badge-text">Card</span>
+          </div>
         </div>
       </form>
     </aside>
