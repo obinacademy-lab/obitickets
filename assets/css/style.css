@@ -618,26 +618,28 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-layout{display:grid; grid-template-columns:1fr 360px; gap:44px; padding:28px 0 80px; align-items:flex-start;}
 
 /* ---------- event page hero: full-bleed banner, tap-to-preview ---------- */
-.event-hero-full{position:relative; overflow:hidden; background:var(--purple); min-height:clamp(320px,42vw,540px); display:flex; align-items:flex-end; opacity:0; animation:heroIn .7s var(--ease) forwards;}
+.event-hero-full{position:relative; overflow:hidden; background:var(--purple); min-height:clamp(280px,40vw,520px); opacity:0; animation:heroIn .7s var(--ease) forwards;}
 .event-hero-media{position:absolute; inset:0; cursor:zoom-in;}
-.event-hero-media img{width:100%; height:100%; object-fit:cover; animation:kenburns 24s var(--ease) infinite alternate;}
-.event-hero-full::after{content:''; position:absolute; inset:0; background:linear-gradient(0deg, rgba(10,6,20,0.86) 0%, rgba(10,6,20,0.32) 52%, rgba(10,6,20,0.06) 100%); pointer-events:none;}
+.event-hero-media img{width:100%; height:100%; object-fit:cover; animation:kenburns 26s var(--ease) infinite alternate;}
 .event-hero-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
-.event-hero-count{position:absolute; top:22px; right:24px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(10,6,20,0.45); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:0.82rem; font-weight:700; padding:9px 18px; border-radius:100px;}
+.event-hero-count{position:absolute; top:22px; right:24px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.82rem; font-weight:700; padding:9px 18px; border-radius:100px; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5);}
 .event-hero-count .tk{font-size:1rem;}
 .event-hero-count #cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
-.hero-expand-btn{position:absolute; top:22px; left:24px; z-index:3; display:flex; align-items:center; gap:7px; background:rgba(10,6,20,0.45); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.14); color:#fff; font-size:0.8rem; font-weight:700; padding:9px 16px; border-radius:100px; cursor:pointer; transition:background .25s var(--ease), transform .25s var(--ease);}
-.hero-expand-btn:hover{background:rgba(10,6,20,0.65); transform:translateY(-1px);}
-.event-hero-content{position:relative; z-index:2; padding:72px 32px 44px; color:#fff;}
-.event-hero-tag{display:inline-flex; font-size:0.78rem; font-weight:700; padding:7px 15px; border-radius:100px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.2); backdrop-filter:blur(4px); margin-bottom:14px; letter-spacing:0.01em;}
-.event-hero-content h1{font-size:clamp(1.9rem,4.2vw,3.1rem); color:#fff; line-height:1.08; max-width:20ch; text-wrap:balance;}
-.event-hero-meta{margin-top:18px; display:flex; gap:24px; flex-wrap:wrap;}
-.event-hero-meta .m{display:flex; align-items:center; gap:8px; font-size:0.96rem; font-weight:600; color:rgba(255,255,255,0.94);}
-.event-hero-meta svg{opacity:0.9; flex:none;}
+.hero-expand-btn{position:absolute; top:22px; left:24px; z-index:3; display:flex; align-items:center; gap:7px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.8rem; font-weight:700; padding:9px 16px; border-radius:100px; cursor:pointer; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5); transition:background .25s var(--ease), transform .25s var(--ease);}
+.hero-expand-btn:hover{background:rgba(10,6,20,0.75); transform:translateY(-1px);}
+
+/* Title/date/venue live in their own block below the banner now, not
+   overlaid on top of it — so nothing in the organizer's uploaded artwork
+   (a flyer's own lineup/price text, for example) is ever covered up. */
+.event-hero-content{padding:28px 0 8px;}
+.event-hero-tag{display:inline-flex; font-size:0.78rem; font-weight:700; padding:7px 15px; border-radius:100px; background:var(--purple-tint); color:var(--purple-deep); margin-bottom:14px; letter-spacing:0.01em;}
+.event-hero-content h1{font-size:clamp(1.7rem,3.6vw,2.6rem); color:var(--ink); line-height:1.12; max-width:26ch; text-wrap:balance;}
+.event-hero-meta{margin-top:16px; display:flex; gap:24px; flex-wrap:wrap;}
+.event-hero-meta .m{display:flex; align-items:center; gap:8px; font-size:0.94rem; font-weight:600; color:var(--muted);}
+.event-hero-meta svg{opacity:0.8; flex:none; color:var(--purple);}
 
 @media (max-width:640px){
-  .event-hero-full{min-height:300px;}
-  .event-hero-content{padding:52px 20px 30px;}
+  .event-hero-full{min-height:240px;}
   .hero-expand-btn span{display:none;}
 }
 
