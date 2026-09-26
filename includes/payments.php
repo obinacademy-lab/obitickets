@@ -120,6 +120,7 @@ function resolve_checkout_cart(array $pending): array
 function create_pending_order(
     int $userId,
     int $eventId,
+    string $eventTitle,
     array $lineItems,
     float $subtotal,
     float $fee,
@@ -165,7 +166,11 @@ function create_pending_order(
     }
 
     try {
-        $result = iotec_initiate_collection($total, $phone, (string) $orderId, substr('obitickets order #' . $orderId, 0, 100));
+        // The payer sees this note in their mobile money prompt/receipt, so it
+        // names the event they're actually paying for rather than a bare
+        // internal order number.
+        $note = mb_substr('Ticket(s) for ' . $eventTitle . ' — obitickets order #' . $orderId, 0, 100);
+        $result = iotec_initiate_collection($total, $phone, (string) $orderId, $note);
         db()->prepare('UPDATE orders SET payment_reference = ? WHERE id = ?')->execute([$result['transactionId'], $orderId]);
     } catch (Throwable $e) {
         error_log('[iotec] initiateCollection failed for order ' . $orderId . ': ' . $e->getMessage());

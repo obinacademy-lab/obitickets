@@ -28,6 +28,7 @@ try {
     $orderId = create_pending_order(
         (int) $user['id'],
         (int) $cart['event']['id'],
+        (string) $cart['event']['title'],
         $cart['lineItems'],
         $cart['subtotal'],
         $cart['fee'],
