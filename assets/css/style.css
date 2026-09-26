@@ -603,7 +603,6 @@ footer p{color:rgba(255,255,255,0.7);}
 .pay-badge:hover{transform:translateY(-2px); box-shadow:0 10px 22px -8px rgba(20,10,35,0.5);}
 .pay-logo{height:13px; width:auto; display:block;}
 .pay-logo-airtel{height:16px;}
-.pay-badge-text{font-size:0.78rem; font-weight:700; color:var(--muted);}
 
 .foot-top-btn{width:42px; height:42px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.3); background:transparent; display:flex; align-items:center; justify-content:center; color:#fff; flex:none; transition:background .3s var(--ease), color .3s var(--ease), transform .3s var(--ease-back), border-color .3s var(--ease);}
 .foot-top-btn svg{transform:rotate(-90deg); transition:transform .3s var(--ease-back);}
