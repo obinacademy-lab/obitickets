@@ -48,20 +48,10 @@ $bodyClass = 'event-page';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="event-hero-v2 reveal" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
-  <?php if (!empty($event['banner_image'])): ?>
-    <div class="event-hero-v2-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
-      <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
-      <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-    </div>
-  <?php else: ?>
-    <div class="event-hero-v2-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-  <?php endif; ?>
-  <div class="event-hero-v2-scrim"></div>
-
-  <div class="event-hero-v2-top">
-    <span class="event-hero-v2-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
-    <div class="event-hero-v2-icons">
+<div class="event-hero-compact reveal" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+  <div class="wrap">
+    <div class="event-hero-compact-top">
+      <span class="event-hero-compact-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
       <div class="share-wrap">
         <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
           <svg width="16" height="16"><use href="#ic-share"/></svg>
@@ -74,21 +64,29 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="event-hero-v2-content">
-    <span class="event-hero-v2-org">Organized by <b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
-    <h1><?= htmlspecialchars($event['title']) ?></h1>
-    <div class="event-hero-v2-meta">
-      <span><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></span>
-      <span>&#128205; <?= htmlspecialchars($event['venue_name']) ?><?= $event['venue_address'] ? ', ' . htmlspecialchars($event['venue_address']) : '' ?></span>
-    </div>
-    <div class="event-hero-v2-badges">
-      <span class="event-hero-v2-badge"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></span>
-      <button class="event-hero-v2-badge like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
-        <svg width="15" height="15"><use href="#ic-heart"/></svg>
-        <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
-      </button>
+    <div class="event-hero-compact-row">
+      <?php if (!empty($event['banner_image'])): ?>
+        <div class="event-hero-compact-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+          <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+        </div>
+      <?php else: ?>
+        <div class="event-hero-compact-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+      <?php endif; ?>
+
+      <div class="event-hero-compact-text">
+        <h1><?= htmlspecialchars($event['title']) ?></h1>
+        <span class="event-hero-compact-org">Organized by:<b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
+        <div class="event-hero-compact-date"><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></div>
+        <div class="event-hero-compact-venue">&#128205; <?= htmlspecialchars($event['venue_name']) ?><?= $event['venue_address'] ? ', ' . htmlspecialchars($event['venue_address']) : '' ?></div>
+        <div class="event-hero-compact-badges">
+          <span class="event-hero-compact-badge"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></span>
+          <button class="event-hero-compact-badge like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
+            <svg width="15" height="15"><use href="#ic-heart"/></svg>
+            <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

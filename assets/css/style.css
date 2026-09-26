@@ -590,40 +590,40 @@ footer p{color:rgba(255,255,255,0.7);}
    frame above it. The whole banner still shows uncropped (contain), with a
    blurred cover copy filling the letterbox behind it, same technique as
    before — never crop what an organizer uploaded. ---------- */
-.event-hero-v2{position:relative; overflow:hidden; min-height:560px; display:flex; flex-direction:column; justify-content:flex-end; background:var(--purple-deep);}
-.event-hero-v2-media{position:absolute; inset:0; cursor:zoom-in;}
-.event-hero-v2-media .hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(38px) brightness(0.5) saturate(1.15);}
-.event-hero-v2-media #heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain;}
-.event-hero-v2-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
-.event-hero-v2-scrim{position:absolute; inset:0; background:linear-gradient(0deg, rgba(14,8,20,0.9) 0%, rgba(14,8,20,0.45) 32%, rgba(14,8,20,0.05) 58%); pointer-events:none;}
+.event-hero-compact{position:relative; background:#150D1C; color:#fff; padding:28px 0 40px;}
+.event-hero-compact-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;}
+.event-hero-compact-tag{display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; color:rgba(255,255,255,0.75);}
+.event-hero-compact .icon-btn{background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.16); color:#fff;}
+.event-hero-compact .icon-btn:hover{background:rgba(255,255,255,0.16); border-color:rgba(255,255,255,0.3); color:#fff; transform:translateY(-1px);}
 
-.event-hero-v2-top{position:relative; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; padding:22px 28px 0;}
-.event-hero-v2-tag{display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.14); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.78rem; font-weight:700; padding:8px 15px; border-radius:100px;}
-.event-hero-v2-icons{display:flex; gap:8px;}
-.event-hero-v2 .icon-btn{background:rgba(255,255,255,0.14); border-color:rgba(255,255,255,0.25); color:#fff; backdrop-filter:blur(6px);}
-.event-hero-v2 .icon-btn:hover{background:rgba(255,255,255,0.24); border-color:rgba(255,255,255,0.4); color:#fff; transform:translateY(-1px);}
-
-.event-hero-v2-content{position:relative; z-index:2; padding:0 28px 32px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;}
-.event-hero-v2-org{font-size:0.86rem; font-weight:600; color:rgba(255,255,255,0.65);}
-.event-hero-v2-org b{color:#fff;}
-.event-hero-v2-content h1{font-size:clamp(1.8rem,4vw,2.6rem); color:#fff; line-height:1.1; max-width:22ch; text-wrap:balance;}
-.event-hero-v2-meta{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 20px; font-size:0.95rem; font-weight:600; color:rgba(255,255,255,0.85);}
-.event-hero-v2-badges{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; justify-content:center;}
-.event-hero-v2-badge{display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:100px; padding:8px 16px; font-size:0.82rem; font-weight:700; color:#fff; font-family:inherit;}
-.event-hero-v2-badge .tk{font-size:0.95rem;}
-.event-hero-v2-badge#likeBtn svg{color:#fff;}
-.event-hero-v2-badge.liked{background:var(--purple); border-color:var(--purple); color:#fff;}
+.event-hero-compact-row{display:flex; gap:36px; align-items:flex-start;}
+.event-hero-compact-media{flex:none; width:240px; cursor:zoom-in;}
+.event-hero-compact-media img{width:100%; aspect-ratio:3/4; object-fit:contain; border-radius:14px; background:#0E0812; box-shadow:0 24px 50px -20px rgba(0,0,0,0.6); display:block;}
+.event-hero-compact-fallback{flex:none; width:240px; aspect-ratio:3/4; border-radius:14px; background:var(--purple-tint-2); display:flex; align-items:center; justify-content:center; font-size:4rem;}
+.event-hero-compact-text{flex:1; min-width:0; padding-top:4px;}
+.event-hero-compact-text h1{font-size:clamp(1.8rem,3.2vw,2.5rem); color:#fff; line-height:1.14; max-width:20ch; text-wrap:balance;}
+.event-hero-compact-org{display:block; margin-top:16px; font-size:0.86rem; color:rgba(255,255,255,0.55);}
+.event-hero-compact-org b{display:block; margin-top:4px; font-size:1rem; font-weight:700; color:var(--purple-light);}
+.event-hero-compact-date{margin-top:16px; font-size:1.02rem; font-weight:700; color:#fff;}
+.event-hero-compact-venue{margin-top:6px; font-size:0.92rem; color:rgba(255,255,255,0.6);}
+.event-hero-compact-badges{display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;}
+.event-hero-compact-badge{display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); border-radius:100px; padding:8px 16px; font-size:0.82rem; font-weight:700; color:#fff; font-family:inherit;}
+.event-hero-compact-badge .tk{font-size:0.95rem;}
+.event-hero-compact-badge#likeBtn svg{color:#fff;}
+.event-hero-compact-badge.liked{background:var(--purple); border-color:var(--purple); color:#fff;}
 /* The countdown badge gets the accent treatment (matches the brand color
    the way momoticketing.com's own "In N days" pill uses its gold accent),
    so it reads as the one badge worth a second glance. */
-.event-hero-v2-badge:has(#cd-text){border-color:rgba(239,68,68,0.4); color:var(--purple-light);}
-.event-hero-v2-badge:has(#cd-text) .tk{filter:none;}
+.event-hero-compact-badge:has(#cd-text){border-color:rgba(239,68,68,0.4); color:var(--purple-light);}
+.event-hero-compact-badge:has(#cd-text) .tk{filter:none;}
 #cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; color:var(--purple-light);}
 
-@media (max-width:640px){
-  .event-hero-v2{min-height:460px;}
-  .event-hero-v2-content h1{font-size:1.6rem;}
-  .event-hero-v2-meta{font-size:0.86rem; gap:4px 14px;}
+@media (max-width:720px){
+  .event-hero-compact-media, .event-hero-compact-fallback{display:none;}
+  .event-hero-compact-row{flex-direction:column; align-items:center; text-align:center;}
+  .event-hero-compact-text{width:100%;}
+  .event-hero-compact-text h1{max-width:100%;}
+  .event-hero-compact-badges{justify-content:center;}
 }
 
 /* ---------- mobile sticky buy bar: always-visible price + CTA while
