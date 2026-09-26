@@ -64,39 +64,45 @@ include __DIR__ . '/includes/header.php';
   <img id="lightboxImg" src="" alt="">
 </div>
 
+<div class="meta-strip reveal">
+  <div class="wrap meta-strip-inner">
+    <span class="item"><svg width="15" height="15"><use href="#ic-cal"/></svg> <b><?= htmlspecialchars(date('D j M, g:i A', strtotime($event['starts_at']))) ?></b><?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?> &ndash; <?= htmlspecialchars(date('D j M, g:i A', strtotime($event['ends_at']))) ?><?php endif; ?></span>
+    <span class="dot"></span>
+    <span class="item"><svg width="15" height="15"><use href="#ic-pin"/></svg> <b><?= htmlspecialchars($event['venue_name']) ?></b><?php if ($event['venue_address']): ?>, <?= htmlspecialchars($event['venue_address']) ?><?php endif; ?></span>
+    <span class="dot"></span>
+    <span class="item">Organized by <b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
+    <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Get directions <svg width="13" height="13"><use href="#ic-arrow"/></svg></a>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="event-layout">
 
     <div class="event-content">
 
-      <div class="event-info-card reveal">
-        <div class="info-row">
-          <span class="info-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="18" height="18"><use href="#ic-cal"/></svg></span>
-          <div>
-            <span class="info-lbl">Date &amp; Time</span>
-            <h3><?= htmlspecialchars(date('l, j F Y', strtotime($event['starts_at']))) ?> at <?= htmlspecialchars(date('g:i A', strtotime($event['starts_at']))) ?></h3>
-            <?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?>
-              <p class="info-sub">Ends <?= htmlspecialchars(date('j F Y', strtotime($event['ends_at']))) ?> at <?= htmlspecialchars(date('g:i A', strtotime($event['ends_at']))) ?></p>
-            <?php endif; ?>
-          </div>
+      <div class="content-head reveal">
+        <h2>About this event</h2>
+        <div class="icon-row">
+          <button class="icon-btn" type="button" aria-label="Save"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
+          <button class="icon-btn" type="button" aria-label="Share"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
         </div>
-        <div class="info-row">
-          <span class="info-ic" style="background:var(--success-bg); color:var(--success)"><svg width="18" height="18"><use href="#ic-pin"/></svg></span>
-          <div>
-            <span class="info-lbl">Venue</span>
-            <h3><?= htmlspecialchars($event['venue_name']) ?></h3>
-            <?php if ($event['venue_address']): ?><p class="info-sub"><?= htmlspecialchars($event['venue_address']) ?></p><?php endif; ?>
-          </div>
-          <a class="btn btn-line side" href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Directions</a>
+      </div>
+      <div class="reveal">
+        <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
+          <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2 class="reveal" style="margin-bottom:20px">Organized by</h2>
+      <div class="organizer-row reveal">
+        <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
+        <div>
+          <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
+          <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
         </div>
-        <div class="info-row">
-          <span class="info-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="18" height="18"><use href="#ic-briefcase"/></svg></span>
-          <div>
-            <span class="info-lbl">Organized by</span>
-            <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
-          </div>
-          <a class="btn btn-line side" href="#">Follow</a>
-        </div>
+        <button class="follow-btn" type="button">+ Follow</button>
       </div>
 
     </div>
@@ -127,7 +133,7 @@ include __DIR__ . '/includes/header.php';
                 <div>
                   <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
-                  <div class="tp">Price: <?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
+                  <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
                 </div>
                 <?php if ($soldOut): ?>
                   <div class="tag-pill" style="background:var(--line); color:var(--muted); flex:none">Sold out</div>
@@ -160,19 +166,6 @@ include __DIR__ . '/includes/header.php';
       </form>
     </aside>
 
-  </div>
-
-  <div class="event-details-card reveal">
-    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px">
-      <h2><svg width="19" height="19" style="vertical-align:-3px; color:var(--purple); margin-right:6px"><use href="#ic-info"/></svg>Event Details</h2>
-      <div style="display:flex; gap:2px; flex:none">
-        <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
-        <button class="icon-btn" type="button"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
-      </div>
-    </div>
-    <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
-      <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
-    <?php endforeach; ?>
   </div>
 
   <?php if ($eventMedia): ?>
