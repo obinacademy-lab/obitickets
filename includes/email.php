@@ -45,10 +45,10 @@ function send_password_reset_email(string $to, string $name, string $resetUrl): 
 {
     resend_send($to, 'Reset your obitickets password', <<<HTML
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #46216F;">Reset your password</h2>
+          <h2 style="color: #1e40af;">Reset your password</h2>
           <p>Hi {$name}, we received a request to reset the password for your obitickets account.</p>
           <p>
-            <a href="{$resetUrl}" style="display: inline-block; background: #5B2E8F; color: #fff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600;">
+            <a href="{$resetUrl}" style="display: inline-block; background: #1d4ed8; color: #fff; padding: 12px 24px; border-radius: 999px; text-decoration: none; font-weight: 600;">
               Reset Password
             </a>
           </p>
@@ -72,10 +72,10 @@ function send_contact_notification_email(string $to, string $name, string $fromE
     $safeMessage = nl2br(htmlspecialchars($message));
     resend_send($to, 'New contact message: ' . $topic, <<<HTML
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #46216F;">New contact message</h2>
+          <h2 style="color: #1e40af;">New contact message</h2>
           <p><strong>{$safeTopic}</strong></p>
           <p>From: {$safeName} &lt;{$safeEmail}&gt;</p>
-          <div style="background: #F2EDFA; border-radius: 12px; padding: 16px 18px; margin-top: 12px; color: #1C1526;">
+          <div style="background: #EAF1FE; border-radius: 12px; padding: 16px 18px; margin-top: 12px; color: #1C1526;">
             {$safeMessage}
           </div>
         </div>
