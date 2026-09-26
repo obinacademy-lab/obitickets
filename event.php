@@ -107,6 +107,25 @@ include __DIR__ . '/includes/header.php';
         <button class="follow-btn" type="button">+ Follow</button>
       </div>
 
+      <?php if ($eventMedia): ?>
+      <div class="divider"></div>
+
+      <h2 class="reveal" style="margin-bottom:20px">Event gallery</h2>
+      <div class="event-gallery reveal">
+        <?php foreach ($eventMedia as $media): ?>
+          <?php if ($media['media_type'] === 'VIDEO'): ?>
+            <div class="event-gallery-item">
+              <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
+            </div>
+          <?php else: ?>
+            <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
+              <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+            </button>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+
     </div>
 
     <aside class="buy-panel reveal">
@@ -170,25 +189,6 @@ include __DIR__ . '/includes/header.php';
     </aside>
 
   </div>
-
-  <?php if ($eventMedia): ?>
-  <section class="reveal event-full-section">
-    <h2>Event gallery</h2>
-    <div class="event-gallery">
-      <?php foreach ($eventMedia as $media): ?>
-        <?php if ($media['media_type'] === 'VIDEO'): ?>
-          <div class="event-gallery-item">
-            <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
-          </div>
-        <?php else: ?>
-          <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
-            <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-          </button>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </div>
-  </section>
-  <?php endif; ?>
 </div>
 
 </div>
