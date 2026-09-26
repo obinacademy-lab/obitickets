@@ -7,7 +7,6 @@ include __DIR__ . '/includes/header.php';
 $upcoming = upcoming_events_with_organizer(12);
 $picks = array_slice($upcoming, 0, 4);
 $grid = array_slice($upcoming, 4);
-$categoryIcons = category_icon_map();
 
 ?>
 
@@ -48,15 +47,6 @@ $categoryIcons = category_icon_map();
     <?php endif; ?>
   </div>
 </section>
-
-<div class="cat-strip">
-  <?php foreach (EVENT_CATEGORIES as $cat): ?>
-    <a class="cat-chip" href="/search.php?category=<?= urlencode($cat) ?>">
-      <span class="cat-chip-ic"><svg width="16" height="16"><use href="#<?= $categoryIcons[$cat] ?>"/></svg></span>
-      <span class="cat-chip-label"><?= htmlspecialchars($cat) ?></span>
-    </a>
-  <?php endforeach; ?>
-</div>
 
 <?php if ($picks): ?>
 <section class="picks-section">
