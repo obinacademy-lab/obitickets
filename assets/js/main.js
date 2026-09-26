@@ -192,6 +192,31 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLightbox(); });
   }
 
+  // Ticket bottom-sheet (mobile) — the same #buyPanel form used inline on
+  // desktop is toggled into a modal via a body class below 920px (see the
+  // .buy-panel media query in style.css). The mobile-buy-bar's native
+  // href="#buyPanel" plus the CSS :target rule is kept as the no-JS
+  // fallback, so this only intercepts the click when JS is running.
+  var buyPanel = document.getElementById('buyPanel');
+  var mobileBuyBar = document.querySelector('.mobile-buy-bar');
+  var sheetBackdrop = document.getElementById('sheetBackdrop');
+  var sheetClose = document.getElementById('sheetClose');
+  if (buyPanel && mobileBuyBar && sheetBackdrop) {
+    function openSheet() { document.body.classList.add('ticket-sheet-open'); }
+    function closeSheet() { document.body.classList.remove('ticket-sheet-open'); }
+    mobileBuyBar.addEventListener('click', function (e) {
+      if (window.matchMedia('(max-width: 920px)').matches) {
+        e.preventDefault();
+        openSheet();
+      }
+    });
+    sheetBackdrop.addEventListener('click', closeSheet);
+    if (sheetClose) sheetClose.addEventListener('click', closeSheet);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSheet();
+    });
+  }
+
   // Ticket quantity steppers — recompute the buy-panel's subtotal/fee/total
   // from each .tier's real data-price whenever a quantity changes, since
   // ticket prices now vary per event instead of being a fixed mockup number.

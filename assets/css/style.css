@@ -706,6 +706,16 @@ footer p{color:rgba(255,255,255,0.7);}
 .lightbox-close{position:absolute; top:24px; right:24px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s var(--ease);}
 .lightbox-close:hover{background:rgba(255,255,255,0.18);}
 
+/* ---------- ticket bottom-sheet: on narrow screens (see the .buy-panel
+   media query below) the same #buyPanel form used inline on desktop is
+   toggled into a modal via body.ticket-sheet-open; these base rules stay
+   inert (display:none / invisible) above that breakpoint. ---------- */
+.sheet-backdrop{position:fixed; inset:0; z-index:79; background:rgba(8,5,14,0.6); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .3s var(--ease), visibility 0s linear .3s;}
+body.ticket-sheet-open .sheet-backdrop{opacity:1; visibility:visible; pointer-events:auto; transition:opacity .3s var(--ease), visibility 0s linear;}
+.sheet-handle{display:none;}
+.sheet-close{display:none; position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; align-items:center; justify-content:center; border:1px solid var(--line-strong); background:var(--paper); color:var(--muted); cursor:pointer; transition:border-color .2s var(--ease), color .2s var(--ease);}
+.sheet-close:hover{border-color:var(--purple); color:var(--purple-light);}
+
 .buy-panel{position:sticky; top:96px; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow);}
 .buy-head{padding:22px 26px; border-bottom:1px solid var(--line);}
 .buy-head .lbl{font-size:0.7rem; font-weight:700; letter-spacing:0.08em; color:var(--muted-2); text-transform:uppercase;}
@@ -970,6 +980,30 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
   .ah-hero{padding:44px 0 10px;}
   .ah-section{padding:56px 0;}
   .moment-strip .stack{flex-direction:column;}
+}
+
+/* placed after the 980px/640px blocks above so it wins the cascade over
+   the 980px query's ".buy-panel{position:static}" at equal specificity */
+@media (max-width:920px){
+  /* !important throughout defeats .reveal's own opacity/transform/transition
+     (scroll-reveal animation, applied to this same element) exactly like the
+     dark-page override above does for the same clash. The transition itself
+     must be forced too, not just the transform value — a still-active
+     .reveal transition outranks even an !important transform declaration
+     (CSS transitions sit above !important in the cascade), which otherwise
+     leaves the sheet stuck between its open/closed positions. */
+  .buy-panel{
+    position:fixed; left:0; right:0; bottom:0; z-index:80;
+    max-height:88vh; overflow-y:auto; border-radius:20px 20px 0 0;
+    opacity:1 !important;
+    transform:translateY(100%) !important;
+    transition:transform .32s cubic-bezier(.16,1,.3,1) !important;
+  }
+  body.ticket-sheet-open .buy-panel, .buy-panel:target{transform:translateY(0) !important;}
+  body.ticket-sheet-open{overflow:hidden;}
+  .sheet-handle{display:block; width:36px; height:4px; border-radius:4px; background:var(--line-strong); margin:10px auto 0;}
+  .buy-head{padding-top:16px; padding-right:56px;}
+  .sheet-close{display:flex;}
 }
 
 /* =====================================================================

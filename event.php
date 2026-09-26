@@ -108,6 +108,8 @@ include __DIR__ . '/includes/header.php';
 </a>
 <?php endif; ?>
 
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+
 <div class="event-dark-shell">
 <div class="wrap">
   <div class="event-layout">
@@ -154,6 +156,10 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <aside class="buy-panel reveal" id="buyPanel">
+      <span class="sheet-handle" aria-hidden="true"></span>
+      <button class="sheet-close" id="sheetClose" type="button" aria-label="Close">
+        <svg width="14" height="14"><use href="#ic-x"/></svg>
+      </button>
       <div class="buy-head">
         <div class="lbl">SELECT TICKETS</div>
         <h3><?= htmlspecialchars($event['title']) ?></h3>
