@@ -64,6 +64,8 @@ include __DIR__ . '/includes/header.php';
   <img id="lightboxImg" src="" alt="">
 </div>
 
+<div class="event-dark">
+
 <div class="meta-strip reveal">
   <div class="wrap meta-strip-inner">
     <span class="item"><svg width="15" height="15"><use href="#ic-cal"/></svg> <b><?= htmlspecialchars(date('D j M, g:i A', strtotime($event['starts_at']))) ?></b><?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?> &ndash; <?= htmlspecialchars(date('D j M, g:i A', strtotime($event['ends_at']))) ?><?php endif; ?></span>
@@ -128,10 +130,11 @@ include __DIR__ . '/includes/header.php';
               $available = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
               $soldOut = $available === 0;
           ?>
+            <?php $isVip = stripos($tier['name'], 'vip') !== false; ?>
             <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $available ?>">
               <div class="tier-row">
                 <div>
-                  <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
+                  <div class="tn<?= $isVip ? ' vip' : '' ?>"><?= $isVip ? '&#10022; ' : '' ?><?= htmlspecialchars($tier['name']) ?></div>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
                   <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
                 </div>
@@ -186,16 +189,20 @@ include __DIR__ . '/includes/header.php';
     </div>
   </section>
   <?php endif; ?>
+</div>
 
-  <?php if ($similarEvents): ?>
-  <section class="reveal event-full-section">
+</div>
+
+<?php if ($similarEvents): ?>
+<div class="wrap">
+  <section class="reveal event-full-section" style="margin-top:0; padding:44px 0 10px;">
     <h2>Similar events</h2>
     <div class="similar-row">
       <?php foreach ($similarEvents as $tintIndex => $simEvent) { render_shelf_card($simEvent, $tintIndex); } ?>
     </div>
   </section>
-  <?php endif; ?>
 </div>
+<?php endif; ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
 <script src="/assets/js/cinematic.js"></script>

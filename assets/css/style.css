@@ -26,6 +26,8 @@
   --success-border:#BFE5CB;
   --ease:cubic-bezier(.16,.8,.24,1);
   --ease-back:cubic-bezier(.2,1.4,.4,1);
+  --gold:#D9B970;
+  --gold-deep:#B4924C;
 }
 
 *{box-sizing:border-box;}
@@ -659,11 +661,11 @@ footer p{color:rgba(255,255,255,0.7);}
 
 /* .below-banner: main.js relocates .event-hero-content here for portrait
    banners — same content, now sitting on the page background, dark text. */
-.event-hero-content.below-banner{padding-top:28px; padding-bottom:8px; color:var(--ink);}
-.event-hero-content.below-banner .event-hero-tag{background:var(--purple-tint); color:var(--purple-deep); border:none; backdrop-filter:none;}
-.event-hero-content.below-banner h1{color:var(--ink);}
-.event-hero-content.below-banner .event-hero-meta .m{color:var(--muted);}
-.event-hero-content.below-banner .event-hero-meta svg{opacity:0.8; color:var(--purple);}
+.event-hero-content.below-banner{background:#0E0A16; padding:28px 0 22px; color:#fff;}
+.event-hero-content.below-banner .event-hero-tag{background:rgba(255,255,255,0.1); color:var(--gold); border:1px solid rgba(255,255,255,0.14); backdrop-filter:none;}
+.event-hero-content.below-banner h1{color:#fff;}
+.event-hero-content.below-banner .event-hero-meta .m{color:rgba(255,255,255,0.65);}
+.event-hero-content.below-banner .event-hero-meta svg{opacity:0.85; color:var(--gold);}
 
 @media (max-width:640px){
   .event-hero-full{aspect-ratio:4/3; max-height:420px;}
@@ -748,6 +750,36 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-gallery-item{display:block; position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--purple-tint-2); border:none; padding:0; margin:0; cursor:zoom-in; width:100%;}
 .event-gallery-item img, .event-gallery-item video{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s var(--ease);}
 .event-gallery-item:hover img{transform:scale(1.06);}
+
+/* ---------- Concept C: Cinematic VIP — dark theme scoped to the event
+   page's content (from the meta strip through the gallery). Redefining
+   the tokens here means every existing component below (.tier, .about-text,
+   .organizer-row, .shelf-card, etc.) picks up the dark palette automatically
+   through var() — the shared nav stays a light glass bar over the hero
+   image (already how it works sitewide), and the footer is already a dark
+   purple gradient, so both ends of the page meet this section naturally. */
+.event-dark{
+  --ink:#fff; --muted:rgba(255,255,255,0.62); --muted-2:rgba(255,255,255,0.42);
+  --line:rgba(255,255,255,0.10); --line-strong:rgba(255,255,255,0.18);
+  --surface:#171022; --paper:#0E0A16;
+  background:var(--paper); color:#fff;
+}
+.event-dark .content h2::before{content:''; display:inline-block; width:3px; height:16px; background:var(--gold); border-radius:2px; margin-right:10px; vertical-align:-2px;}
+.event-dark .icon-btn:hover, .event-dark .follow-btn:hover{border-color:var(--gold); color:var(--gold);}
+.event-dark .organizer-avatar{background:linear-gradient(135deg,var(--gold),var(--gold-deep)); color:#171022;}
+.event-dark .tier:hover{background:rgba(255,255,255,0.035);}
+.event-dark .tp{color:var(--purple-light);}
+.event-dark .tn.vip{color:var(--gold);}
+.event-dark .qty, .event-dark .stepper{background:rgba(255,255,255,0.04);}
+.event-dark .qty button{background:#241A34; color:#fff; box-shadow:none;}
+.event-dark .buy-panel{box-shadow:0 30px 70px -26px rgba(0,0,0,0.55);}
+.event-dark .buy-head .lbl{color:var(--gold); opacity:1;}
+.event-dark .poster-summary{background:rgba(255,255,255,0.04);}
+.event-dark .poster-summary .r.total .v{color:var(--gold);}
+.event-dark .poster-foot .btn-purple{background:linear-gradient(135deg, var(--gold), var(--gold-deep)); color:#171022; box-shadow:0 16px 34px -14px rgba(217,185,112,0.45);}
+.event-dark .poster-foot .btn-purple:hover{box-shadow:0 20px 40px -14px rgba(217,185,112,0.55);}
+.event-dark .event-gallery-item{background:rgba(255,255,255,0.06);}
+.event-dark .alert-error{background:rgba(220,38,38,0.16); color:#FF9B8F; border-color:rgba(220,38,38,0.35);}
 
 .lineup-row{display:flex; gap:24px; flex-wrap:wrap;}
 .lineup-item{display:flex; align-items:center; gap:10px;}
