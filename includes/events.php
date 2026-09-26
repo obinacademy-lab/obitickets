@@ -294,13 +294,26 @@ function toggle_event_like(int $eventId, ?int $userId, ?string $sessionToken): a
 }
 
 /**
- * Renders one event card (see includes/shelf-card.php). A real function
- * (not a bare include) so its $event/$tintIndex locals can never collide
- * with a same-named variable in the including page's own scope.
+ * One poster-forward card for the homepage's Picks row / More events grid,
+ * and the event page's Similar events — image does the talking, just
+ * title/date/venue beneath it, no price or button (momoticketing.com-
+ * inspired: the grid card stays minimal, the sell happens on the event
+ * page itself).
  */
-function render_shelf_card(array $event, int $tintIndex = 0): void
+function render_poster_card(array $event): void
 {
-    include __DIR__ . '/shelf-card.php';
+    ?>
+    <a class="poster-card reveal" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
+      <?php if (!empty($event['banner_image'])): ?>
+        <img class="poster-card-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+      <?php else: ?>
+        <div class="poster-card-img poster-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+      <?php endif; ?>
+      <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
+      <div class="poster-card-meta"><?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?></div>
+      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
+    </a>
+    <?php
 }
 
 /** "Thu 25 – Sun 28 Sep 2026" for a multi-day event, "Sun 20 Sep 2026" for a single-day one. */

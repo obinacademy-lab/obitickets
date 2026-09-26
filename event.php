@@ -23,7 +23,7 @@ if (!$event) {
 }
 
 $tiers = get_ticket_types_for_event((int) $event['id']);
-$similarEvents = get_similar_events((int) $event['id'], $event['category']);
+$similarEvents = get_similar_events((int) $event['id'], $event['category'], 4);
 $eventMedia = get_event_media((int) $event['id']);
 $currency = $tiers[0]['currency'] ?? 'UGX';
 
@@ -201,8 +201,8 @@ include __DIR__ . '/includes/header.php';
 <div class="wrap">
   <section class="reveal event-full-section" style="margin-top:0; padding:44px 0 10px;">
     <h2>Similar events</h2>
-    <div class="similar-row">
-      <?php foreach ($similarEvents as $tintIndex => $simEvent) { render_shelf_card($simEvent, $tintIndex); } ?>
+    <div class="poster-grid">
+      <?php foreach ($similarEvents as $simEvent) render_poster_card($simEvent); ?>
     </div>
   </section>
 </div>

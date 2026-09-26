@@ -9,25 +9,6 @@ $picks = array_slice($upcoming, 0, 4);
 $grid = array_slice($upcoming, 4);
 $categoryIcons = category_icon_map();
 
-/** One poster-forward card for the Picks row / More events grid — image
- * does the talking, just title/date/venue beneath it, no price or button
- * (momoticketing.com-inspired: the grid card stays minimal, the sell
- * happens on the event page itself). */
-function render_poster_card(array $event): void
-{
-    ?>
-    <a class="poster-card reveal" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
-      <?php if (!empty($event['banner_image'])): ?>
-        <img class="poster-card-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-      <?php else: ?>
-        <div class="poster-card-img poster-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-      <?php endif; ?>
-      <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
-      <div class="poster-card-meta"><?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?></div>
-      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
-    </a>
-    <?php
-}
 ?>
 
 <section class="home-hero-v2">
