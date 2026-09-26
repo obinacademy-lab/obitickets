@@ -619,8 +619,8 @@ footer p{color:rgba(255,255,255,0.7);}
 #cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; color:var(--purple-light);}
 
 @media (max-width:720px){
-  .event-hero-compact-media, .event-hero-compact-fallback{display:none;}
   .event-hero-compact-row{flex-direction:column; align-items:center; text-align:center;}
+  .event-hero-compact-media, .event-hero-compact-fallback{width:min(240px,60vw);}
   .event-hero-compact-text{width:100%;}
   .event-hero-compact-text h1{max-width:100%;}
   .event-hero-compact-badges{justify-content:center;}
