@@ -245,6 +245,55 @@ function get_similar_events(int $eventId, string $category, int $limit = 2): arr
 }
 
 /**
+ * Whether $userId (logged in) or $sessionToken (guest) has already liked
+ * $eventId. Exactly one of $userId/$sessionToken is passed by callers.
+ */
+function has_liked_event(int $eventId, ?int $userId, ?string $sessionToken): bool
+{
+    if ($userId) {
+        $stmt = db()->prepare('SELECT 1 FROM event_likes WHERE event_id = ? AND user_id = ?');
+        $stmt->execute([$eventId, $userId]);
+    } else {
+        $stmt = db()->prepare('SELECT 1 FROM event_likes WHERE event_id = ? AND session_token = ?');
+        $stmt->execute([$eventId, $sessionToken]);
+    }
+    return (bool) $stmt->fetchColumn();
+}
+
+/**
+ * Toggles a like for $eventId by the given identity (a logged-in user_id, or
+ * a guest's session_token when $userId is null), keeping events.likes_count
+ * in sync. Returns the new state so the caller can update the heart in place.
+ *
+ * @return array{liked: bool, count: int}
+ */
+function toggle_event_like(int $eventId, ?int $userId, ?string $sessionToken): array
+{
+    $db = db();
+    $alreadyLiked = has_liked_event($eventId, $userId, $sessionToken);
+
+    if ($alreadyLiked) {
+        if ($userId) {
+            $db->prepare('DELETE FROM event_likes WHERE event_id = ? AND user_id = ?')->execute([$eventId, $userId]);
+        } else {
+            $db->prepare('DELETE FROM event_likes WHERE event_id = ? AND session_token = ?')->execute([$eventId, $sessionToken]);
+        }
+        $db->prepare('UPDATE events SET likes_count = GREATEST(0, likes_count - 1) WHERE id = ?')->execute([$eventId]);
+    } else {
+        try {
+            $db->prepare('INSERT INTO event_likes (event_id, user_id, session_token) VALUES (?, ?, ?)')->execute([$eventId, $userId, $sessionToken]);
+            $db->prepare('UPDATE events SET likes_count = likes_count + 1 WHERE id = ?')->execute([$eventId]);
+        } catch (PDOException $e) {
+            // Unique key hit — a double-click race already inserted this identity's like; treat as liked, no-op.
+        }
+    }
+
+    $stmt = $db->prepare('SELECT likes_count FROM events WHERE id = ?');
+    $stmt->execute([$eventId]);
+    return ['liked' => !$alreadyLiked, 'count' => (int) $stmt->fetchColumn()];
+}
+
+/**
  * Renders one event card (see includes/shelf-card.php). A real function
  * (not a bare include) so its $event/$tintIndex locals can never collide
  * with a same-named variable in the including page's own scope.

@@ -27,6 +27,14 @@ $similarEvents = get_similar_events((int) $event['id'], $event['category']);
 $eventMedia = get_event_media((int) $event['id']);
 $currency = $tiers[0]['currency'] ?? 'UGX';
 
+$currentUser = current_user();
+$likeUserId = $currentUser ? (int) $currentUser['id'] : null;
+$likeSessionToken = $likeUserId ? null : session_id();
+$userLikedEvent = has_liked_event((int) $event['id'], $likeUserId, $likeSessionToken);
+
+$eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']);
+$shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
+
 $pageTitle = $event['title'] . ' — obitickets';
 $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'] . '.';
 include __DIR__ . '/includes/header.php';
@@ -88,8 +96,21 @@ include __DIR__ . '/includes/header.php';
         <div class="content-head">
           <h2>About this event</h2>
           <div class="icon-row">
-            <button class="icon-btn" type="button" aria-label="Save"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
-            <button class="icon-btn" type="button" aria-label="Share"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
+            <button class="icon-btn like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
+              <svg width="16" height="16"><use href="#ic-heart"/></svg>
+              <span class="like-count" id="likeCount"><?= (int) $event['likes_count'] ?></span>
+            </button>
+            <div class="share-wrap">
+              <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
+                <svg width="16" height="16"><use href="#ic-share"/></svg>
+              </button>
+              <div class="share-popover" id="sharePopover">
+                <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
+                <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
+                <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
+                <button class="share-option" type="button" data-copy-link>Copy link</button>
+              </div>
+            </div>
           </div>
         </div>
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>

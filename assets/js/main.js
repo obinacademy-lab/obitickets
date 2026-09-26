@@ -79,6 +79,93 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(tick, 30000);
   }
 
+  // Event like button — toggles a like via /api/toggle-like.php and updates
+  // the heart's filled state + count in place (see toggle_event_like() in
+  // includes/events.php for how logged-in vs. guest identity is handled).
+  var likeBtn = document.getElementById('likeBtn');
+  if (likeBtn) {
+    var likeCount = document.getElementById('likeCount');
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    likeBtn.addEventListener('click', function () {
+      if (likeBtn.disabled) return;
+      likeBtn.disabled = true;
+      fetch('/api/toggle-like.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: parseInt(likeBtn.getAttribute('data-event-id'), 10),
+          csrf_token: csrfMeta ? csrfMeta.content : '',
+        }),
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.error) return;
+          likeBtn.classList.toggle('liked', data.liked);
+          likeBtn.setAttribute('aria-pressed', data.liked ? 'true' : 'false');
+          if (likeCount) likeCount.textContent = data.count;
+        })
+        .catch(function () {})
+        .then(function () { likeBtn.disabled = false; });
+    });
+  }
+
+  // Event share button — the native share sheet where supported (most mobile
+  // browsers, which already list WhatsApp/Instagram/etc. themselves), else a
+  // small popover with direct WhatsApp/X/Facebook links and a copy-link option.
+  var shareBtn = document.getElementById('shareBtn');
+  var sharePopover = document.getElementById('sharePopover');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', function () {
+      if (navigator.share) {
+        navigator.share({
+          title: shareBtn.getAttribute('data-share-title') || document.title,
+          text: shareBtn.getAttribute('data-share-text') || '',
+          url: shareBtn.getAttribute('data-share-url') || window.location.href,
+        }).catch(function () {});
+        return;
+      }
+      if (sharePopover) sharePopover.classList.toggle('open');
+    });
+
+    if (sharePopover) {
+      document.addEventListener('click', function (e) {
+        if (sharePopover.classList.contains('open') && !sharePopover.contains(e.target) && !shareBtn.contains(e.target)) {
+          sharePopover.classList.remove('open');
+        }
+      });
+
+      var copyLinkBtn = sharePopover.querySelector('[data-copy-link]');
+      if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', function () {
+          var url = shareBtn.getAttribute('data-share-url') || window.location.href;
+          var original = copyLinkBtn.textContent;
+          function flash(msg) {
+            copyLinkBtn.textContent = msg;
+            setTimeout(function () { copyLinkBtn.textContent = original; }, 1500);
+          }
+          function legacyCopy() {
+            var temp = document.createElement('textarea');
+            temp.value = url;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.focus();
+            temp.select();
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(temp);
+            flash(ok ? 'Copied!' : 'Couldn\'t copy — long-press the link');
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () { flash('Copied!'); }).catch(legacyCopy);
+          } else {
+            legacyCopy();
+          }
+        });
+      }
+    }
+  }
+
   // Banner/gallery lightbox — tap any [data-lightbox-src] element to preview
   // the full-size image (event.php's hero banner and gallery photos).
   var heroLightbox = document.getElementById('heroLightbox');

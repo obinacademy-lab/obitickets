@@ -752,6 +752,20 @@ footer p{color:rgba(255,255,255,0.7);}
 .icon-btn{display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:50%; color:var(--muted); border:1px solid var(--line-strong); background:var(--surface); transition:all .25s var(--ease);}
 .icon-btn:hover{border-color:var(--purple); color:var(--purple); transform:translateY(-2px); box-shadow:var(--shadow);}
 .icon-btn:hover{background:var(--purple-tint); color:var(--purple-deep);}
+.icon-btn:disabled{opacity:0.6; cursor:default; transform:none;}
+
+/* ---------- like button: pill-shaped so the count sits beside the heart ---------- */
+.icon-btn.like-btn{width:auto; padding:0 14px; gap:6px; border-radius:100px;}
+.like-count{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; font-weight:700;}
+.like-btn.liked{color:var(--purple-deep); border-color:var(--purple); background:var(--purple-tint);}
+.like-btn.liked svg path{fill:currentColor;}
+
+/* ---------- share popover: desktop fallback when the native share sheet isn't available ---------- */
+.share-wrap{position:relative;}
+.share-popover{position:absolute; top:calc(100% + 8px); right:0; z-index:20; min-width:180px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow-lg); padding:6px; opacity:0; visibility:hidden; transform:translateY(-6px); transition:opacity .2s var(--ease), transform .2s var(--ease), visibility 0s linear .2s;}
+.share-popover.open{opacity:1; visibility:visible; transform:translateY(0); transition:opacity .2s var(--ease), transform .2s var(--ease);}
+.share-option{display:block; width:100%; text-align:left; padding:9px 12px; border-radius:8px; border:none; background:none; font-size:0.86rem; font-weight:600; color:var(--ink); cursor:pointer; font-family:inherit;}
+.share-option:hover{background:var(--purple-tint); color:var(--purple-deep);}
 
 /* ============ CHECKOUT ============ */
 .checkout-card{border:1px solid var(--line); border-radius:16px; padding:20px 22px;}
