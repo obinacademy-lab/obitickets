@@ -630,7 +630,7 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-hero-v2-media .hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(38px) brightness(0.5) saturate(1.15);}
 .event-hero-v2-media #heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain;}
 .event-hero-v2-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
-.event-hero-v2-scrim{position:absolute; inset:0; background:linear-gradient(0deg, rgba(14,8,20,0.96) 0%, rgba(14,8,20,0.6) 45%, rgba(14,8,20,0.05) 75%); pointer-events:none;}
+.event-hero-v2-scrim{position:absolute; inset:0; background:linear-gradient(0deg, rgba(14,8,20,0.9) 0%, rgba(14,8,20,0.45) 32%, rgba(14,8,20,0.05) 58%); pointer-events:none;}
 
 .event-hero-v2-top{position:relative; z-index:2; display:flex; justify-content:space-between; align-items:flex-start; padding:22px 28px 0;}
 .event-hero-v2-tag{display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.14); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.78rem; font-weight:700; padding:8px 15px; border-radius:100px;}
@@ -648,12 +648,36 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-hero-v2-badge .tk{font-size:0.95rem;}
 .event-hero-v2-badge#likeBtn svg{color:#fff;}
 .event-hero-v2-badge.liked{background:var(--purple); border-color:var(--purple); color:#fff;}
-#cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+/* The countdown badge gets the accent treatment (matches the brand color
+   the way momoticketing.com's own "In N days" pill uses its gold accent),
+   so it reads as the one badge worth a second glance. */
+.event-hero-v2-badge:has(#cd-text){border-color:rgba(239,68,68,0.4); color:var(--purple-light);}
+.event-hero-v2-badge:has(#cd-text) .tk{filter:none;}
+#cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; color:var(--purple-light);}
 
 @media (max-width:640px){
   .event-hero-v2{min-height:460px;}
   .event-hero-v2-content h1{font-size:1.6rem;}
   .event-hero-v2-meta{font-size:0.86rem; gap:4px 14px;}
+}
+
+/* ---------- mobile sticky buy bar: always-visible price + CTA while
+   scrolling the event page on a phone (momoticketing.com-style) — links
+   down to the real, already-functional ticket panel rather than
+   duplicating its logic. Desktop already shows that panel sticky in the
+   sidebar, so this stays mobile-only. ---------- */
+.mobile-buy-bar{display:none;}
+@media (max-width:920px){
+  body.event-page{padding-bottom:78px;}
+  .mobile-buy-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    background:#150D1C; border-top:1px solid rgba(255,255,255,0.1);
+    padding:14px 20px; box-shadow:0 -20px 40px -20px rgba(0,0,0,0.6);
+  }
+  .mobile-buy-bar .lbl{display:block; font-size:0.66rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.42);}
+  .mobile-buy-bar .amt{display:block; font-family:'IBM Plex Mono',monospace; font-size:1.05rem; font-weight:800; color:#fff; margin-top:2px;}
+  .mobile-buy-bar .btn{flex:none; padding:12px 22px;}
 }
 
 /* ---------- dark shell: everything from "About" through the buy panel and

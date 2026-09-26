@@ -35,8 +35,16 @@ $userLikedEvent = has_liked_event((int) $event['id'], $likeUserId, $likeSessionT
 $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']);
 $shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
 
+$minPrice = null;
+foreach ($tiers as $tier) {
+    if ($minPrice === null || (float) $tier['price'] < $minPrice) {
+        $minPrice = (float) $tier['price'];
+    }
+}
+
 $pageTitle = $event['title'] . ' — obitickets';
 $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'] . '.';
+$bodyClass = 'event-page';
 include __DIR__ . '/includes/header.php';
 ?>
 
@@ -90,6 +98,16 @@ include __DIR__ . '/includes/header.php';
   <img id="lightboxImg" src="" alt="">
 </div>
 
+<?php if ($minPrice !== null): ?>
+<a class="mobile-buy-bar" href="#buyPanel">
+  <span>
+    <span class="lbl">From</span>
+    <span class="amt"><?= htmlspecialchars(format_money($minPrice, $currency)) ?></span>
+  </span>
+  <span class="btn btn-purple">Get Tickets</span>
+</a>
+<?php endif; ?>
+
 <div class="event-dark-shell">
 <div class="wrap">
   <div class="event-layout">
@@ -135,7 +153,7 @@ include __DIR__ . '/includes/header.php';
 
     </div>
 
-    <aside class="buy-panel reveal">
+    <aside class="buy-panel reveal" id="buyPanel">
       <div class="buy-head">
         <div class="lbl">SELECT TICKETS</div>
         <h3><?= htmlspecialchars($event['title']) ?></h3>
