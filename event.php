@@ -40,112 +40,96 @@ $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['s
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="wrap">
-  <div class="page-head">
-    <div class="crumb reveal"><a href="/">Home</a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <?= htmlspecialchars($event['title']) ?></div>
-    <span class="tag-pill reveal"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
-    <h1 class="reveal"><?= htmlspecialchars($event['title']) ?></h1>
-  </div>
+<div class="event-hero-v2 reveal" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+  <?php if (!empty($event['banner_image'])): ?>
+    <div class="event-hero-v2-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+      <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
+      <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+    </div>
+  <?php else: ?>
+    <div class="event-hero-v2-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+  <?php endif; ?>
+  <div class="event-hero-v2-scrim"></div>
 
-  <div class="hero-frame reveal" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
-    <?php if (!empty($event['banner_image'])): ?>
-      <div class="hero-frame-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
-        <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
-        <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+  <div class="event-hero-v2-top">
+    <span class="event-hero-v2-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
+    <div class="event-hero-v2-icons">
+      <div class="share-wrap">
+        <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
+          <svg width="16" height="16"><use href="#ic-share"/></svg>
+        </button>
+        <div class="share-popover" id="sharePopover">
+          <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
+          <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
+          <button class="share-option" type="button" data-copy-link>Copy link</button>
+        </div>
       </div>
-      <button class="hero-expand-btn" id="heroExpandBtn" type="button" aria-label="View banner full size" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>">
-        <svg width="16" height="16"><use href="#ic-expand"/></svg><span>View full size</span>
+    </div>
+  </div>
+
+  <div class="event-hero-v2-content">
+    <span class="event-hero-v2-org">Organized by <b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
+    <h1><?= htmlspecialchars($event['title']) ?></h1>
+    <div class="event-hero-v2-meta">
+      <span><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></span>
+      <span>&#128205; <?= htmlspecialchars($event['venue_name']) ?><?= $event['venue_address'] ? ', ' . htmlspecialchars($event['venue_address']) : '' ?></span>
+    </div>
+    <div class="event-hero-v2-badges">
+      <span class="event-hero-v2-badge"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></span>
+      <button class="event-hero-v2-badge like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
+        <svg width="15" height="15"><use href="#ic-heart"/></svg>
+        <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
       </button>
-    <?php else: ?>
-      <div class="hero-frame-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-    <?php endif; ?>
-    <div class="hero-frame-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
-  </div>
-
-  <div class="lightbox-overlay" id="heroLightbox">
-    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
-    <img id="lightboxImg" src="" alt="">
-  </div>
-
-  <div class="stat-strip reveal">
-    <div class="stat">
-      <div class="k">Date &amp; Time</div>
-      <div class="v"><?= htmlspecialchars(date('D j M, g:i A', strtotime($event['starts_at']))) ?></div>
-      <?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?>
-        <div class="s">Ends <?= htmlspecialchars(date('D j M, g:i A', strtotime($event['ends_at']))) ?></div>
-      <?php endif; ?>
-    </div>
-    <div class="stat">
-      <div class="k">Venue</div>
-      <div class="v"><?= htmlspecialchars($event['venue_name']) ?></div>
-      <?php if ($event['venue_address']): ?><div class="s"><?= htmlspecialchars($event['venue_address']) ?></div><?php endif; ?>
-      <div class="s"><a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Get directions &rarr;</a></div>
-    </div>
-    <div class="stat">
-      <div class="k">Organized by</div>
-      <div class="v"><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></div>
-      <?php if ($event['organizer_bio']): ?><div class="s"><?= htmlspecialchars($event['organizer_bio']) ?></div><?php endif; ?>
     </div>
   </div>
+</div>
 
+<div class="lightbox-overlay" id="heroLightbox">
+  <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<div class="event-dark-shell">
+<div class="wrap">
   <div class="event-layout">
 
     <div class="event-content">
 
-      <div class="card reveal">
-        <div class="content-head">
-          <h2>About this event</h2>
-          <div class="icon-row">
-            <button class="icon-btn like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
-              <svg width="16" height="16"><use href="#ic-heart"/></svg>
-              <span class="like-count" id="likeCount"><?= (int) $event['likes_count'] ?></span>
-            </button>
-            <div class="share-wrap">
-              <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
-                <svg width="16" height="16"><use href="#ic-share"/></svg>
-              </button>
-              <div class="share-popover" id="sharePopover">
-                <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
-                <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
-                <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
-                <button class="share-option" type="button" data-copy-link>Copy link</button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <h2 class="reveal">About this event</h2>
+      <div class="reveal">
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
           <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
         <?php endforeach; ?>
       </div>
 
-      <div class="card reveal">
-        <div class="content-head"><h2>Organized by</h2></div>
-        <div class="organizer-row">
-          <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
-          <div>
-            <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
-            <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
-          </div>
-          <button class="follow-btn" type="button">+ Follow</button>
+      <div class="divider"></div>
+
+      <h2 class="reveal" style="margin-bottom:20px">Organized by</h2>
+      <div class="organizer-row reveal">
+        <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
+        <div>
+          <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
+          <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
         </div>
+        <button class="follow-btn" type="button">+ Follow</button>
       </div>
 
       <?php if ($eventMedia): ?>
-      <div class="card reveal">
-        <div class="content-head"><h2>Event gallery</h2></div>
-        <div class="event-gallery">
-          <?php foreach ($eventMedia as $media): ?>
-            <?php if ($media['media_type'] === 'VIDEO'): ?>
-              <div class="event-gallery-item">
-                <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
-              </div>
-            <?php else: ?>
-              <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
-                <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-              </button>
-            <?php endif; ?>
-          <?php endforeach; ?>
-        </div>
+      <div class="divider"></div>
+      <h2 class="reveal" style="margin-bottom:20px">Event gallery</h2>
+      <div class="event-gallery reveal">
+        <?php foreach ($eventMedia as $media): ?>
+          <?php if ($media['media_type'] === 'VIDEO'): ?>
+            <div class="event-gallery-item">
+              <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
+            </div>
+          <?php else: ?>
+            <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
+              <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+            </button>
+          <?php endif; ?>
+        <?php endforeach; ?>
       </div>
       <?php endif; ?>
 
@@ -210,6 +194,7 @@ include __DIR__ . '/includes/header.php';
     </aside>
 
   </div>
+</div>
 </div>
 
 <?php if ($similarEvents): ?>

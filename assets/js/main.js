@@ -1,16 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-  // Homepage hero: crossfade through the background photo slides. Frozen on
-  // the first slide for prefers-reduced-motion, same as the rest of the site.
-  var heroSlides = document.querySelectorAll('#homeHeroSlides .home-hero-slide');
-  if (heroSlides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    var currentSlide = 0;
-    setInterval(function () {
-      heroSlides[currentSlide].classList.remove('is-active');
-      currentSlide = (currentSlide + 1) % heroSlides.length;
-      heroSlides[currentSlide].classList.add('is-active');
-    }, 5000);
-  }
-
   // Footer "back to top" button
   var footToTop = document.getElementById('footToTop');
   if (footToTop) {
@@ -294,18 +282,6 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.auto-submit').forEach(function (el) {
     el.addEventListener('change', function () {
       el.form.submit();
-    });
-  });
-
-  // Homepage upcoming-events row: arrow buttons scroll one card-width at a time
-  document.querySelectorAll('.evt-section').forEach(function (section) {
-    var row = section.querySelector('.evt-row');
-    if (!row) return;
-    section.querySelectorAll('.evt-arrow').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var dir = parseInt(btn.getAttribute('data-dir'), 10) || 1;
-        row.scrollBy({ left: dir * 290, behavior: 'smooth' });
-      });
     });
   });
 
