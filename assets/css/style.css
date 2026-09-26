@@ -26,8 +26,6 @@
   --success-border:#BFE5CB;
   --ease:cubic-bezier(.16,.8,.24,1);
   --ease-back:cubic-bezier(.2,1.4,.4,1);
-  --gold:#D9B970;
-  --gold-deep:#B4924C;
 }
 
 *{box-sizing:border-box;}
@@ -616,62 +614,52 @@ footer p{color:rgba(255,255,255,0.7);}
 .crumb{font-size:0.85rem; color:var(--muted); padding:22px 0 0; display:flex; gap:8px; align-items:center;}
 .crumb a{color:var(--muted);} .crumb a:hover{color:var(--ink);}
 
-.event-layout{display:grid; grid-template-columns:1fr 360px; gap:44px; padding:28px 0 80px; align-items:flex-start;}
+.event-layout{display:grid; grid-template-columns:1fr 380px; gap:48px; padding:32px 0 80px; align-items:flex-start;}
 
-/* ---------- event page hero: full-bleed banner, tap-to-preview ---------- */
-.event-hero-full{position:relative; overflow:hidden; background:var(--purple); aspect-ratio:2/1; max-height:520px; display:flex; align-items:flex-end; opacity:0; animation:heroIn .7s var(--ease) forwards;}
-.event-hero-media{position:absolute; inset:0; overflow:hidden; cursor:zoom-in;}
+/* ---------- page head: breadcrumb, category pill, title — sits above the
+   framed hero instead of overlaid on it, so a portrait flyer's own baked-in
+   text never collides with the site's title/date. ---------- */
+.page-head{padding:22px 0 0;}
+.page-head .tag-pill{display:inline-flex; margin:18px 0 14px;}
+.page-head h1{font-size:clamp(1.8rem,3.6vw,2.7rem); max-width:22ch; line-height:1.1;}
+
+/* ---------- hero frame: boxed, bordered card — not full-bleed ---------- */
+.hero-frame{position:relative; overflow:hidden; border-radius:20px; box-shadow:var(--shadow-lg); aspect-ratio:2.2/1; max-height:440px; margin-top:26px; background:var(--purple);}
+.hero-frame-media{position:absolute; inset:0; overflow:hidden; cursor:zoom-in;}
 /* The whole uploaded banner must always be visible, never cropped — so the
    sharp image uses object-fit:contain (shows 100% of it), and a blurred,
-   cropped copy fills the letterbox space behind it for a full-bleed look. */
-.hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(35px) brightness(0.55) saturate(1.15); opacity:0; animation:heroBgIn 1s var(--ease) forwards;}
-#heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain; opacity:0; animation:heroFgIn .9s var(--ease) .15s forwards;}
-@keyframes heroBgIn{from{opacity:0; transform:scale(1.32);} to{opacity:1; transform:scale(1.2);}}
-@keyframes heroFgIn{from{opacity:0; transform:scale(1.05);} to{opacity:1; transform:scale(1);}}
-@media (prefers-reduced-motion: reduce){
-  .hero-bg-blur{opacity:1; animation:none; transform:scale(1.2);}
-  #heroBannerImg{opacity:1; animation:none; transform:none;}
-}
-.event-hero-full::after{content:''; position:absolute; inset:0 0 0 0; background:linear-gradient(0deg, rgba(8,5,14,0.82) 0%, rgba(8,5,14,0.42) 34%, rgba(8,5,14,0) 62%); pointer-events:none;}
-.event-hero-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:7rem;}
-.event-hero-count{position:absolute; top:22px; right:24px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.82rem; font-weight:700; padding:9px 18px; border-radius:100px; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5);}
-.event-hero-count .tk{font-size:1rem;}
-.event-hero-count #cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
-.hero-expand-btn{position:absolute; top:22px; left:24px; z-index:3; display:flex; align-items:center; gap:7px; background:rgba(10,6,20,0.55); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); color:#fff; font-size:0.8rem; font-weight:700; padding:9px 16px; border-radius:100px; cursor:pointer; box-shadow:0 10px 26px -10px rgba(0,0,0,0.5); transition:background .25s var(--ease), transform .25s var(--ease);}
-.hero-expand-btn:hover{background:rgba(10,6,20,0.75); transform:translateY(-1px);}
-
-/* Portrait/flyer-style banners: a wide landscape frame squeezes a tall
-   image into a narrow strip and the overlaid title collides with whatever
-   the flyer already has printed on it. main.js detects this from the
-   image's real dimensions and moves the title below (via .below-banner)
-   and gives the frame room to show the poster at a decent size. */
-.event-hero-full.is-portrait{aspect-ratio:auto; height:min(72vh,620px); align-items:stretch;}
-.event-hero-full.is-portrait::after{display:none;}
-
-/* Title/date/venue sit back on the banner, bottom-anchored — the gradient
-   above only shades the lower third so the rest of the organizer's photo
-   (or flyer artwork) stays fully visible. */
-.event-hero-content{position:relative; z-index:2; padding:28px 32px 30px; color:#fff;}
-.event-hero-tag{display:inline-flex; font-size:0.78rem; font-weight:700; padding:7px 15px; border-radius:100px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.22); backdrop-filter:blur(4px); margin-bottom:14px; letter-spacing:0.01em;}
-.event-hero-content h1{font-size:clamp(1.7rem,3.6vw,2.6rem); color:#fff; line-height:1.12; max-width:26ch; text-wrap:balance;}
-.event-hero-meta{margin-top:14px; display:flex; gap:24px; flex-wrap:wrap;}
-.event-hero-meta .m{display:flex; align-items:center; gap:8px; font-size:0.94rem; font-weight:600; color:rgba(255,255,255,0.94);}
-.event-hero-meta svg{opacity:0.9; flex:none;}
-
-/* .below-banner: main.js relocates .event-hero-content here for portrait
-   banners — same content, now sitting on the page background, dark text. */
-.event-hero-content.below-banner{background:#0E0A16; padding:28px 0 22px; color:#fff;}
-.event-hero-content.below-banner .event-hero-tag{background:rgba(255,255,255,0.1); color:var(--gold); border:1px solid rgba(255,255,255,0.14); backdrop-filter:none;}
-.event-hero-content.below-banner h1{color:#fff;}
-.event-hero-content.below-banner .event-hero-meta .m{color:rgba(255,255,255,0.65);}
-.event-hero-content.below-banner .event-hero-meta svg{opacity:0.85; color:var(--gold);}
+   cropped copy fills the letterbox space behind it inside the frame. */
+.hero-frame-media .hero-bg-blur{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(35px) brightness(0.55) saturate(1.15);}
+.hero-frame-media #heroBannerImg{position:relative; width:100%; height:100%; object-fit:contain;}
+.hero-frame-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:6rem;}
+.hero-frame-count{position:absolute; top:18px; right:18px; z-index:3; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px); border:1px solid var(--line); color:var(--ink); font-size:0.8rem; font-weight:700; padding:8px 16px; border-radius:100px; box-shadow:var(--shadow);}
+.hero-frame-count .tk{font-size:1rem;}
+.hero-frame-count #cd-text{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+.hero-expand-btn{position:absolute; top:18px; left:18px; z-index:3; display:flex; align-items:center; gap:7px; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px); border:1px solid var(--line); color:var(--ink); font-size:0.78rem; font-weight:700; padding:8px 14px; border-radius:100px; cursor:pointer; box-shadow:var(--shadow); transition:transform .2s var(--ease);}
+.hero-expand-btn:hover{transform:translateY(-1px);}
 
 @media (max-width:640px){
-  .event-hero-full{aspect-ratio:4/3; max-height:420px;}
-  .event-hero-full.is-portrait{height:min(64vh,520px);}
-  .event-hero-content{padding:20px 20px 22px;}
+  .hero-frame{aspect-ratio:4/3; max-height:340px; border-radius:14px;}
   .hero-expand-btn span{display:none;}
 }
+
+/* ---------- stat strip: typographic facts, overlaps the hero's bottom edge ---------- */
+.stat-strip{background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); display:grid; grid-template-columns:repeat(3,1fr); margin:-32px 0 0; position:relative; z-index:2;}
+.stat{padding:22px 26px; border-right:1px solid var(--line);}
+.stat:last-child{border-right:none;}
+.stat .k{font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted-2);}
+.stat .v{font-size:1.02rem; font-weight:800; margin-top:8px; line-height:1.35; color:var(--ink);}
+.stat .s{font-size:0.8rem; color:var(--muted); margin-top:3px;}
+.stat a{color:var(--purple); font-weight:700; font-size:0.84rem;}
+@media (max-width:760px){
+  .stat-strip{grid-template-columns:1fr; margin-top:20px;}
+  .stat{border-right:none; border-bottom:1px solid var(--line);}
+  .stat:last-child{border-bottom:none;}
+}
+
+/* ---------- content cards: bordered box per section, no dividers ---------- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:30px;}
+.card + .card{margin-top:24px;}
 
 /* ---------- lightbox: full-size banner/gallery preview ---------- */
 .lightbox-overlay{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:32px; background:rgba(8,5,14,0.94); backdrop-filter:blur(6px); opacity:0; visibility:hidden; transition:opacity .3s var(--ease), visibility 0s linear .3s;}
@@ -681,33 +669,26 @@ footer p{color:rgba(255,255,255,0.7);}
 .lightbox-close{position:absolute; top:24px; right:24px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s var(--ease);}
 .lightbox-close:hover{background:rgba(255,255,255,0.18);}
 
-.buy-panel{position:sticky; top:96px; background:var(--surface); border-radius:24px; overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-lg), inset 0 1px 0 var(--inset-hi); transition:box-shadow .4s var(--ease), transform .4s var(--ease);}
-.buy-panel:hover{box-shadow:0 40px 90px -24px rgba(28,21,38,0.36); transform:translateY(-3px);}
-.buy-head{padding:24px 26px; position:relative; overflow:hidden; background:linear-gradient(135deg, var(--purple) 0%, var(--purple-deep) 100%);}
-.buy-head::after{content:''; position:absolute; top:-40%; right:-20%; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.14), transparent 70%);}
-.buy-head .lbl{position:relative; font-size:0.72rem; font-weight:700; letter-spacing:0.1em; color:rgba(255,255,255,0.75); text-transform:uppercase;}
-.buy-head h3{position:relative; font-size:1.15rem; color:#fff; margin-top:6px; line-height:1.3;}
-.poster-tiers{padding:8px 22px 0;}
-.tier{padding:16px 4px; margin:0; border-bottom:1px solid var(--line); border-radius:12px; transition:background .25s var(--ease);}
-.tier:hover{background:var(--purple-tint);}
+.buy-panel{position:sticky; top:96px; background:var(--surface); border-radius:16px; overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow);}
+.buy-head{padding:22px 26px; border-bottom:1px solid var(--line);}
+.buy-head .lbl{font-size:0.7rem; font-weight:700; letter-spacing:0.08em; color:var(--muted-2); text-transform:uppercase;}
+.buy-head h3{font-size:1.05rem; color:var(--ink); margin-top:6px; line-height:1.3;}
+.poster-tiers{padding:6px 26px 0;}
+.tier{padding:16px 0; margin:0; border-bottom:1px solid var(--line);}
 .tier:last-of-type{border-bottom:none;}
 .tier-row{display:flex; justify-content:space-between; align-items:center; gap:14px;}
-.tier .tn{font-weight:700; font-size:0.94rem;}
-.tier .td{font-size:0.78rem; color:var(--muted-2); margin-top:3px;}
-.tier .tp{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--purple-deep); white-space:nowrap; margin-top:6px;}
-.qty{display:flex; align-items:center; gap:2px; flex:none; border:1px solid var(--line-strong); border-radius:100px; padding:4px; background:var(--paper);}
-.qty button{width:26px; height:26px; border-radius:50%; border:none; background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,0.1); font-weight:700; font-size:1rem; line-height:1; cursor:pointer; transition:transform .15s var(--ease);}
-.qty button:active{transform:scale(0.88);}
-.qty .n{font-family:'IBM Plex Mono',monospace; font-weight:700; min-width:20px; text-align:center; font-size:0.92rem;}
-.poster-summary{padding:18px 22px; background:var(--purple-tint); margin:16px 0 0; font-size:0.88rem;}
-.poster-summary .r{display:flex; justify-content:space-between; padding:4px 0; color:var(--muted);}
-.poster-summary .r.total{color:var(--ink); font-weight:800; font-size:1.08rem; padding-top:12px; margin-top:6px; border-top:1px solid var(--line-strong);}
-.poster-summary .r.total .v{font-family:'IBM Plex Mono',monospace; color:var(--purple-deep);}
-.poster-foot{padding:20px 22px 24px;}
-.poster-foot .btn-purple{background:linear-gradient(135deg, var(--purple), var(--purple-deep)); box-shadow:0 16px 30px -12px rgba(91,46,143,0.5); border-radius:14px; transition:transform .25s var(--ease), box-shadow .25s var(--ease);}
-.poster-foot .btn-purple:hover{transform:translateY(-2px); box-shadow:0 20px 38px -12px rgba(91,46,143,0.6);}
-.poster-foot .btn-purple:active{transform:translateY(0) scale(0.98);}
-.secure-note{display:flex; align-items:center; gap:7px; justify-content:center; font-size:0.78rem; color:var(--muted-2); margin-top:14px;}
+.tier .tn{font-weight:700; font-size:0.92rem;}
+.tier .td{font-size:0.76rem; color:var(--muted-2); margin-top:2px;}
+.tier .tp{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:0.86rem; color:var(--ink); white-space:nowrap; margin-top:6px;}
+.qty{display:flex; align-items:center; gap:0; flex:none; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden;}
+.qty button{width:28px; height:28px; border:none; background:var(--paper); font-weight:700; font-size:0.95rem; line-height:1; cursor:pointer;}
+.qty .n{font-family:'IBM Plex Mono',monospace; font-weight:700; width:30px; text-align:center; font-size:0.86rem; border-left:1px solid var(--line-strong); border-right:1px solid var(--line-strong); height:28px; display:flex; align-items:center; justify-content:center;}
+.poster-summary{padding:18px 26px; background:var(--paper); margin:12px 0 0; font-size:0.88rem; border-top:1px solid var(--line);}
+.poster-summary .r{display:flex; justify-content:space-between; padding:3px 0; color:var(--muted);}
+.poster-summary .r.total{color:var(--ink); font-weight:800; font-size:1.05rem; padding-top:10px; margin-top:6px; border-top:1px solid var(--line-strong);}
+.poster-summary .r.total .v{font-family:'IBM Plex Mono',monospace;}
+.poster-foot{padding:20px 26px 24px;}
+.secure-note{display:flex; align-items:center; gap:7px; justify-content:center; font-size:0.76rem; color:var(--muted-2); margin-top:14px;}
 .pay-icons{display:flex; gap:10px; justify-content:center; margin-top:14px;}
 
 .event-full-section{margin-top:44px;}
@@ -717,31 +698,15 @@ footer p{color:rgba(255,255,255,0.7);}
 .tag-list{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;}
 .tag-pill{font-size:0.78rem; font-weight:600; padding:6px 13px; border-radius:100px; background:var(--purple-tint); color:var(--purple-deep);}
 
-/* ---------- meta strip: one clean line for date/venue/organizer, no icon-badge grid ---------- */
-.meta-strip{border-bottom:1px solid var(--line); background:var(--surface);}
-.meta-strip-inner{display:flex; align-items:center; flex-wrap:wrap; gap:10px 28px; padding:18px 0; font-size:0.88rem;}
-.meta-strip .item{display:flex; align-items:center; gap:8px; color:var(--muted); font-weight:600;}
-.meta-strip .item b{color:var(--ink); font-weight:700;}
-.meta-strip svg{color:var(--purple); flex:none;}
-.meta-strip .dot{width:3px; height:3px; border-radius:50%; background:var(--line-strong); flex:none;}
-.meta-strip a{margin-left:auto; font-weight:700; color:var(--purple); font-size:0.86rem; display:flex; align-items:center; gap:4px; transition:gap .25s var(--ease); flex:none;}
-.meta-strip a:hover{gap:8px;}
-@media (max-width:640px){
-  .meta-strip-inner{flex-direction:column; align-items:flex-start; gap:10px; padding:16px 0;}
-  .meta-strip .item{flex-wrap:wrap;}
-  .meta-strip .dot{display:none;}
-  .meta-strip a{margin-left:0; width:100%;}
-}
-
 /* ---------- content column: plain editorial text, hairline divider, no card chrome ---------- */
 .content-head{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;}
 .icon-row{display:flex; gap:6px;}
 .divider{height:1px; background:var(--line); margin:40px 0;}
 .organizer-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
-.organizer-avatar{width:52px; height:52px; border-radius:50%; background:linear-gradient(150deg,var(--purple-light),var(--purple-deep)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.05rem; flex:none;}
-.organizer-row h3{font-size:1.02rem;}
-.organizer-row p{font-size:0.86rem; margin-top:2px;}
-.follow-btn{margin-left:auto; padding:9px 20px; border-radius:100px; border:1px solid var(--line-strong); font-weight:700; font-size:0.84rem; background:var(--surface); transition:all .25s var(--ease); flex:none;}
+.organizer-avatar{width:44px; height:44px; border-radius:10px; background:linear-gradient(150deg,var(--purple-light),var(--purple-deep)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.92rem; flex:none;}
+.organizer-row h3{font-size:0.96rem;}
+.organizer-row p{font-size:0.82rem; margin-top:2px;}
+.follow-btn{margin-left:auto; padding:8px 18px; border-radius:10px; border:1px solid var(--line-strong); font-weight:700; font-size:0.82rem; background:var(--paper); transition:all .25s var(--ease); flex:none;}
 .follow-btn:hover{border-color:var(--purple); color:var(--purple);}
 
 /* ---------- event gallery: past-event photos/videos, event.php ---------- */
@@ -750,38 +715,8 @@ footer p{color:rgba(255,255,255,0.7);}
 .event-gallery-item img, .event-gallery-item video{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s var(--ease);}
 .event-gallery-item:hover img{transform:scale(1.06);}
 @media (max-width:640px){
-  .event-gallery{grid-template-columns:repeat(auto-fit,minmax(140px,160px)); justify-content:center; gap:14px; margin-bottom:36px;}
+  .event-gallery{grid-template-columns:repeat(auto-fit,minmax(140px,160px)); justify-content:center; gap:14px;}
 }
-
-/* ---------- Concept C: Cinematic VIP — dark theme scoped to the event
-   page's content (from the meta strip through the gallery). Redefining
-   the tokens here means every existing component below (.tier, .about-text,
-   .organizer-row, .shelf-card, etc.) picks up the dark palette automatically
-   through var() — the shared nav stays a light glass bar over the hero
-   image (already how it works sitewide), and the footer is already a dark
-   purple gradient, so both ends of the page meet this section naturally. */
-.event-dark{
-  --ink:#fff; --muted:rgba(255,255,255,0.62); --muted-2:rgba(255,255,255,0.42);
-  --line:rgba(255,255,255,0.10); --line-strong:rgba(255,255,255,0.18);
-  --surface:#171022; --paper:#0E0A16;
-  background:var(--paper); color:#fff;
-}
-.event-dark .event-content h2::before{content:''; display:inline-block; width:3px; height:16px; background:var(--gold); border-radius:2px; margin-right:10px; vertical-align:-2px;}
-.event-dark .icon-btn:hover, .event-dark .follow-btn:hover{border-color:var(--gold); color:var(--gold);}
-.event-dark .organizer-avatar{background:linear-gradient(135deg,var(--gold),var(--gold-deep)); color:#171022;}
-.event-dark .tier:hover{background:rgba(255,255,255,0.035);}
-.event-dark .tp{color:var(--purple-light);}
-.event-dark .tn.vip{color:var(--gold);}
-.event-dark .qty, .event-dark .stepper{background:rgba(255,255,255,0.04);}
-.event-dark .qty button{background:#241A34; color:#fff; box-shadow:none;}
-.event-dark .buy-panel{box-shadow:0 30px 70px -26px rgba(0,0,0,0.55);}
-.event-dark .buy-head .lbl{color:var(--gold); opacity:1;}
-.event-dark .poster-summary{background:rgba(255,255,255,0.04);}
-.event-dark .poster-summary .r.total .v{color:var(--gold);}
-.event-dark .poster-foot .btn-purple{background:linear-gradient(135deg, var(--gold), var(--gold-deep)); color:#171022; box-shadow:0 16px 34px -14px rgba(217,185,112,0.45);}
-.event-dark .poster-foot .btn-purple:hover{box-shadow:0 20px 40px -14px rgba(217,185,112,0.55);}
-.event-dark .event-gallery-item{background:rgba(255,255,255,0.06);}
-.event-dark .alert-error{background:rgba(220,38,38,0.16); color:#FF9B8F; border-color:rgba(220,38,38,0.35);}
 
 .lineup-row{display:flex; gap:24px; flex-wrap:wrap;}
 .lineup-item{display:flex; align-items:center; gap:10px;}

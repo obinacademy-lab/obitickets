@@ -33,96 +33,98 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="wrap">
-  <div class="crumb"><a href="/">Home</a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <?= htmlspecialchars($event['title']) ?></div>
-</div>
+  <div class="page-head">
+    <div class="crumb reveal"><a href="/">Home</a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> <svg width="12" height="12"><use href="#ic-chev"/></svg> <?= htmlspecialchars($event['title']) ?></div>
+    <span class="tag-pill reveal"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
+    <h1 class="reveal"><?= htmlspecialchars($event['title']) ?></h1>
+  </div>
 
-<div class="event-hero-full" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
-  <?php if (!empty($event['banner_image'])): ?>
-    <div class="event-hero-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
-      <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
-      <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+  <div class="hero-frame reveal" id="eventHeroFull" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+    <?php if (!empty($event['banner_image'])): ?>
+      <div class="hero-frame-media" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+        <img class="hero-bg-blur" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" aria-hidden="true">
+        <img id="heroBannerImg" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+      </div>
+      <button class="hero-expand-btn" id="heroExpandBtn" type="button" aria-label="View banner full size" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>">
+        <svg width="16" height="16"><use href="#ic-expand"/></svg><span>View full size</span>
+      </button>
+    <?php else: ?>
+      <div class="hero-frame-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+    <?php endif; ?>
+    <div class="hero-frame-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
+  </div>
+
+  <div class="lightbox-overlay" id="heroLightbox">
+    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <div class="stat-strip reveal">
+    <div class="stat">
+      <div class="k">Date &amp; Time</div>
+      <div class="v"><?= htmlspecialchars(date('D j M, g:i A', strtotime($event['starts_at']))) ?></div>
+      <?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?>
+        <div class="s">Ends <?= htmlspecialchars(date('D j M, g:i A', strtotime($event['ends_at']))) ?></div>
+      <?php endif; ?>
     </div>
-    <button class="hero-expand-btn" id="heroExpandBtn" type="button" aria-label="View banner full size" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>">
-      <svg width="16" height="16"><use href="#ic-expand"/></svg><span>View full size</span>
-    </button>
-  <?php else: ?>
-    <div class="event-hero-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-  <?php endif; ?>
-  <div class="event-hero-count"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></div>
-  <div class="wrap event-hero-content" id="eventHeroContent">
-    <span class="event-hero-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
-    <h1><?= htmlspecialchars($event['title']) ?></h1>
-    <div class="event-hero-meta">
-      <span class="m"><svg width="15" height="15"><use href="#ic-cal"/></svg> <?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></span>
-      <span class="m"><svg width="15" height="15"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></span>
+    <div class="stat">
+      <div class="k">Venue</div>
+      <div class="v"><?= htmlspecialchars($event['venue_name']) ?></div>
+      <?php if ($event['venue_address']): ?><div class="s"><?= htmlspecialchars($event['venue_address']) ?></div><?php endif; ?>
+      <div class="s"><a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Get directions &rarr;</a></div>
+    </div>
+    <div class="stat">
+      <div class="k">Organized by</div>
+      <div class="v"><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></div>
+      <?php if ($event['organizer_bio']): ?><div class="s"><?= htmlspecialchars($event['organizer_bio']) ?></div><?php endif; ?>
     </div>
   </div>
-</div>
 
-<div class="lightbox-overlay" id="heroLightbox">
-  <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
-  <img id="lightboxImg" src="" alt="">
-</div>
-
-<div class="event-dark">
-
-<div class="meta-strip reveal">
-  <div class="wrap meta-strip-inner">
-    <span class="item"><svg width="15" height="15"><use href="#ic-cal"/></svg> <b><?= htmlspecialchars(date('D j M, g:i A', strtotime($event['starts_at']))) ?></b><?php if (date('Y-m-d', strtotime($event['starts_at'])) !== date('Y-m-d', strtotime($event['ends_at']))): ?> &ndash; <?= htmlspecialchars(date('D j M, g:i A', strtotime($event['ends_at']))) ?><?php endif; ?></span>
-    <span class="dot"></span>
-    <span class="item"><svg width="15" height="15"><use href="#ic-pin"/></svg> <b><?= htmlspecialchars($event['venue_name']) ?></b><?php if ($event['venue_address']): ?>, <?= htmlspecialchars($event['venue_address']) ?><?php endif; ?></span>
-    <span class="dot"></span>
-    <span class="item">Organized by <b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
-    <a href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($event['venue_name'] . ', ' . ($event['venue_address'] ?? '')) ?>" target="_blank" rel="noopener">Get directions <svg width="13" height="13"><use href="#ic-arrow"/></svg></a>
-  </div>
-</div>
-
-<div class="wrap">
   <div class="event-layout">
 
     <div class="event-content">
 
-      <div class="content-head reveal">
-        <h2>About this event</h2>
-        <div class="icon-row">
-          <button class="icon-btn" type="button" aria-label="Save"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
-          <button class="icon-btn" type="button" aria-label="Share"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
+      <div class="card reveal">
+        <div class="content-head">
+          <h2>About this event</h2>
+          <div class="icon-row">
+            <button class="icon-btn" type="button" aria-label="Save"><svg width="16" height="16"><use href="#ic-heart"/></svg></button>
+            <button class="icon-btn" type="button" aria-label="Share"><svg width="16" height="16"><use href="#ic-share"/></svg></button>
+          </div>
         </div>
-      </div>
-      <div class="reveal">
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
           <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
         <?php endforeach; ?>
       </div>
 
-      <div class="divider"></div>
-
-      <h2 class="reveal" style="margin-bottom:20px">Organized by</h2>
-      <div class="organizer-row reveal">
-        <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
-        <div>
-          <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
-          <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
+      <div class="card reveal">
+        <div class="content-head"><h2>Organized by</h2></div>
+        <div class="organizer-row">
+          <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
+          <div>
+            <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
+            <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
+          </div>
+          <button class="follow-btn" type="button">+ Follow</button>
         </div>
-        <button class="follow-btn" type="button">+ Follow</button>
       </div>
 
       <?php if ($eventMedia): ?>
-      <div class="divider"></div>
-
-      <h2 class="reveal" style="margin-bottom:20px">Event gallery</h2>
-      <div class="event-gallery reveal">
-        <?php foreach ($eventMedia as $media): ?>
-          <?php if ($media['media_type'] === 'VIDEO'): ?>
-            <div class="event-gallery-item">
-              <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
-            </div>
-          <?php else: ?>
-            <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
-              <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-            </button>
-          <?php endif; ?>
-        <?php endforeach; ?>
+      <div class="card reveal">
+        <div class="content-head"><h2>Event gallery</h2></div>
+        <div class="event-gallery">
+          <?php foreach ($eventMedia as $media): ?>
+            <?php if ($media['media_type'] === 'VIDEO'): ?>
+              <div class="event-gallery-item">
+                <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
+              </div>
+            <?php else: ?>
+              <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
+                <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+              </button>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </div>
       </div>
       <?php endif; ?>
 
@@ -149,11 +151,10 @@ include __DIR__ . '/includes/header.php';
               $available = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
               $soldOut = $available === 0;
           ?>
-            <?php $isVip = stripos($tier['name'], 'vip') !== false; ?>
             <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $available ?>">
               <div class="tier-row">
                 <div>
-                  <div class="tn<?= $isVip ? ' vip' : '' ?>"><?= $isVip ? '&#10022; ' : '' ?><?= htmlspecialchars($tier['name']) ?></div>
+                  <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
                   <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
                 </div>
@@ -188,8 +189,6 @@ include __DIR__ . '/includes/header.php';
     </aside>
 
   </div>
-</div>
-
 </div>
 
 <?php if ($similarEvents): ?>
