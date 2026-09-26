@@ -2,28 +2,6 @@
   <div class="foot-glow foot-glow-a"></div>
   <div class="foot-glow foot-glow-b"></div>
 
-  <div class="foot-community">
-    <div class="wrap">
-      <h2><i></i>Join Our Community</h2>
-      <div class="foot-social-row">
-        <a class="foot-social" href="#" aria-label="Instagram">
-          <span class="foot-social-ring"><svg width="22" height="22"><use href="#ic-instagram"/></svg></span>
-          <span class="foot-social-label">Instagram</span>
-        </a>
-        <a class="foot-social" href="#" aria-label="X">
-          <span class="foot-social-ring"><svg width="20" height="20"><use href="#ic-x"/></svg></span>
-          <span class="foot-social-label">X</span>
-        </a>
-        <a class="foot-social" href="#" aria-label="TikTok">
-          <span class="foot-social-ring"><svg width="20" height="20"><use href="#ic-tiktok"/></svg></span>
-          <span class="foot-social-label">TikTok</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap"><div class="foot-divider"></div></div>
-
   <div class="foot-main-section">
     <div class="wrap foot-main">
       <div class="foot-brand">
