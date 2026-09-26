@@ -24,6 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /admin-order-detail.php?id=' . $orderId . '&updated=1');
             exit;
         }
+    } elseif (($_POST['action'] ?? '') === 'resend_ticket_email') {
+        if ($order['status'] !== 'PAID') {
+            $error = 'Only a paid order has tickets to resend.';
+        } else {
+            try {
+                send_order_tickets_email($orderId);
+                header('Location: /admin-order-detail.php?id=' . $orderId . '&resent=1');
+                exit;
+            } catch (Throwable $e) {
+                error_log('[admin] resend_ticket_email failed for order ' . $orderId . ': ' . $e->getMessage());
+                $error = "Couldn't resend the ticket email. Check the error log for details.";
+            }
+        }
     }
 }
 
@@ -47,6 +60,7 @@ render_admin_head('orders');
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Refund recorded." hidden></span><?php endif; ?>
+<?php if (isset($_GET['resent'])): ?><span data-flash="Ticket email resent to <?= htmlspecialchars($order['buyer_email'], ENT_QUOTES) ?>." hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-grid-2">
@@ -107,6 +121,12 @@ render_admin_head('orders');
       <div style="display:flex; flex-direction:column; gap:10px;">
         <a class="btn btn-line btn-block" href="/admin-customer-detail.php?id=<?= (int) $order['buyer_id'] ?>">View customer</a>
         <a class="btn btn-line btn-block" href="/admin-event-detail.php?id=<?= (int) $order['event_id'] ?>">View event</a>
+        <?php if ($order['status'] === 'PAID'): ?>
+          <form method="post" onsubmit="if(this.dataset.confirmed) return true; event.preventDefault(); var f=this; window.adminConfirm('Resend the ticket email to <?= htmlspecialchars($order['buyer_email'], ENT_QUOTES) ?>?').then(function(ok){ if(ok){ f.dataset.confirmed='1'; f.requestSubmit(); } });">
+            <?= csrf_field() ?><input type="hidden" name="action" value="resend_ticket_email">
+            <button class="btn btn-line btn-block" type="submit">Resend ticket email</button>
+          </form>
+        <?php endif; ?>
       </div>
     </div>
 
