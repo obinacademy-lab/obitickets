@@ -308,14 +308,22 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .masthead-bar{background:var(--purple-deep); color:#fff; text-align:center; padding:8px 0; font-size:0.78rem; font-weight:600; letter-spacing:0.03em;}
 .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--purple);}
 
-/* ---------- homepage hero: animated gradient mesh with inline search ---------- */
-.home-hero{position:relative; overflow:hidden; padding:88px 32px 96px; text-align:center; background:linear-gradient(160deg,#2c1650 0%, var(--purple-deep) 42%, var(--purple) 78%, #7745AE 100%); background-size:220% 220%; animation:gradientShift 16s ease-in-out infinite;}
-@keyframes gradientShift{0%,100%{background-position:0% 30%;} 50%{background-position:100% 70%;}}
-.home-hero-noise{position:absolute; inset:0; background-image:radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px); background-size:26px 26px; opacity:0.05; pointer-events:none;}
-.home-hero-glow{position:absolute; width:520px; height:520px; border-radius:50%; filter:blur(90px); opacity:0.3; pointer-events:none;}
+/* ---------- homepage hero: crossfading photo slideshow behind the search ---------- */
+.home-hero{position:relative; overflow:hidden; padding:88px 32px 96px; text-align:center; background:#2c1650;}
+.home-hero-slides{position:absolute; inset:0; z-index:0;}
+.home-hero-slide{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity 1.8s ease;}
+.home-hero-slide.is-active{opacity:1;}
+/* Brand-purple wash over the photos so the white search bar/text stay legible
+   and the hero still reads as obitickets, not a raw photo banner. */
+.home-hero-overlay{position:absolute; inset:0; z-index:1; background:linear-gradient(160deg, rgba(44,22,80,0.92) 0%, rgba(70,33,111,0.86) 42%, rgba(130,88,184,0.78) 78%, rgba(119,69,174,0.85) 100%);}
+.home-hero-noise{position:absolute; inset:0; z-index:1; background-image:radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px); background-size:26px 26px; opacity:0.05; pointer-events:none;}
+.home-hero-glow{position:absolute; z-index:1; width:520px; height:520px; border-radius:50%; filter:blur(90px); opacity:0.3; pointer-events:none;}
 .home-hero-glow-a{background:#B98CE8; top:-200px; left:-120px; animation:floaty 9s ease-in-out infinite;}
 .home-hero-glow-b{background:#FF9F7A; bottom:-220px; right:-140px; animation:floaty 11s ease-in-out infinite reverse;}
-.home-hero-content{position:relative; z-index:1; max-width:720px; margin:0 auto;}
+.home-hero-content{position:relative; z-index:2; max-width:720px; margin:0 auto;}
+@media (prefers-reduced-motion: reduce){
+  .home-hero-slide{transition:none;}
+}
 .home-hero-eyebrow{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#D8C3F5; opacity:0; animation:heroIn .8s var(--ease) .05s forwards;}
 .home-hero-eyebrow .hero-dot{width:6px; height:6px; border-radius:50%; background:#4ade80; box-shadow:0 0 0 4px rgba(74,222,128,0.2); flex:none; animation:pulse 2s ease-in-out infinite;}
 .home-hero-content h1{color:#fff; font-size:clamp(2.1rem,4.2vw,3rem); line-height:1.12; margin-top:16px;}

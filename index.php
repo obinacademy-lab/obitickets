@@ -9,6 +9,12 @@ $categoryIcons = category_icon_map();
 ?>
 
 <section class="home-hero">
+  <div class="home-hero-slides" id="homeHeroSlides">
+    <?php foreach (range(1, 8) as $slideNum): ?>
+      <div class="home-hero-slide<?= $slideNum === 1 ? ' is-active' : '' ?>" style="background-image:url('/assets/images/home-hero/slide-<?= $slideNum ?>.jpg')"></div>
+    <?php endforeach; ?>
+  </div>
+  <div class="home-hero-overlay"></div>
   <div class="home-hero-noise"></div>
   <div class="home-hero-glow home-hero-glow-a"></div>
   <div class="home-hero-glow home-hero-glow-b"></div>

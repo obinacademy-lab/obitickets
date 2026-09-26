@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // Homepage hero: crossfade through the background photo slides. Frozen on
+  // the first slide for prefers-reduced-motion, same as the rest of the site.
+  var heroSlides = document.querySelectorAll('#homeHeroSlides .home-hero-slide');
+  if (heroSlides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var currentSlide = 0;
+    setInterval(function () {
+      heroSlides[currentSlide].classList.remove('is-active');
+      currentSlide = (currentSlide + 1) % heroSlides.length;
+      heroSlides[currentSlide].classList.add('is-active');
+    }, 5000);
+  }
+
   // Footer "back to top" button
   var footToTop = document.getElementById('footToTop');
   if (footToTop) {
