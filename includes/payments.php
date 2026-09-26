@@ -211,6 +211,15 @@ function finalize_order_success(int $orderId, ?string $statusMessage): void
         $pdo->rollBack();
         throw $e;
     }
+
+    try {
+        send_order_tickets_email($orderId);
+    } catch (Throwable $e) {
+        // A broken ticket email must never fail the payment itself — the
+        // order is already PAID and the tickets already exist (visible on
+        // my-tickets.php/order.php either way); just log it for follow-up.
+        error_log('[email] send_order_tickets_email failed for order ' . $orderId . ': ' . $e->getMessage());
+    }
 }
 
 /**
@@ -313,6 +322,49 @@ function get_order_for_user(int $orderId, int $userId): ?array
         WHERE o.id = ? AND o.user_id = ?
     ');
     $stmt->execute([$orderId, $userId]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        return null;
+    }
+
+    $stmt = db()->prepare('
+        SELECT oi.*, tt.name AS tier_name
+        FROM order_items oi
+        JOIN ticket_types tt ON tt.id = oi.ticket_type_id
+        WHERE oi.order_id = ?
+        ORDER BY oi.id
+    ');
+    $stmt->execute([$orderId]);
+    $order['items'] = $stmt->fetchAll();
+
+    foreach ($order['items'] as &$item) {
+        $stmt = db()->prepare('SELECT * FROM tickets WHERE order_item_id = ? ORDER BY id');
+        $stmt->execute([$item['id']]);
+        $item['tickets'] = $stmt->fetchAll();
+    }
+    unset($item);
+
+    return $order;
+}
+
+/**
+ * Everything send_order_tickets_email() needs to render the ticket email —
+ * same shape as get_order_for_user() above, minus the user_id scoping
+ * (this runs server-side right after payment confirmation, not on behalf of
+ * a logged-in request) and with the buyer's name/email joined in.
+ */
+function get_order_ticket_details(int $orderId): ?array
+{
+    $stmt = db()->prepare('
+        SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.category, e.banner_emoji, e.banner_image,
+               e.starts_at AS event_starts_at, e.ends_at AS event_ends_at, e.venue_name, e.venue_address,
+               u.name AS buyer_name, u.email AS buyer_email
+        FROM orders o
+        JOIN events e ON e.id = o.event_id
+        JOIN users u ON u.id = o.user_id
+        WHERE o.id = ?
+    ');
+    $stmt->execute([$orderId]);
     $order = $stmt->fetch();
     if (!$order) {
         return null;
