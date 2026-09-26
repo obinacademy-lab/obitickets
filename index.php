@@ -13,7 +13,6 @@ $grid = array_slice($upcoming, 4);
 <section class="home-hero-v2">
   <div class="wrap home-hero-v2-inner">
     <div class="home-hero-v2-copy">
-      <div class="home-hero-eyebrow reveal"><span class="hero-dot"></span>Uganda's events, all in one place</div>
       <h1 class="reveal">Never miss a moment worth showing up for.</h1>
       <p class="reveal">Discover concerts, conferences, comedy and festivals across Uganda &mdash; and pay securely with MTN MoMo or Airtel Money.</p>
       <form class="home-search reveal" action="/search.php" method="get">
@@ -52,7 +51,7 @@ $grid = array_slice($upcoming, 4);
 <section class="picks-section">
   <div class="wrap">
     <div class="evt-section-head">
-      <div><span class="eyebrow">Our picks</span><h2 style="margin-top:10px;">Don't miss these</h2></div>
+      <div><h2>Our Picks</h2><p class="section-sub">Hand-picked by the obitickets team</p></div>
       <a style="font-size:0.86rem; font-weight:700; color:var(--purple-deep)" href="/search.php">See more &rarr;</a>
     </div>
     <div class="picks-row">

@@ -310,9 +310,7 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .home-hero-v2{background:var(--paper); padding:64px 0 48px;}
 .home-hero-v2-inner{display:flex; align-items:center; gap:48px;}
 .home-hero-v2-copy{flex:1.1; min-width:0;}
-.home-hero-eyebrow{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--purple-deep);}
-.home-hero-eyebrow .hero-dot{width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 4px rgba(34,197,94,0.18); flex:none; animation:pulse 2s ease-in-out infinite;}
-.home-hero-v2-copy h1{color:var(--ink); font-size:clamp(2.1rem,4.2vw,3.2rem); line-height:1.06; margin-top:16px; max-width:12ch; text-wrap:balance;}
+.home-hero-v2-copy h1{color:var(--ink); font-size:clamp(2.1rem,4.2vw,3.2rem); line-height:1.06; max-width:12ch; text-wrap:balance;}
 .home-hero-v2-copy p{color:var(--muted); margin-top:16px; font-size:1.02rem; max-width:40ch;}
 .home-hero-v2-collage{flex:1; position:relative; height:340px; min-width:0;}
 .home-hero-v2-collage-img{position:absolute; width:190px; height:250px; object-fit:cover; border-radius:16px; box-shadow:0 30px 50px -20px rgba(28,21,38,0.35); border:6px solid var(--surface);}
@@ -353,6 +351,7 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
    (momoticketing.com-inspired) — shared by the "Our picks" scroll row and
    the "More events" grid below it. ---------- */
 .evt-section-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:22px;}
+.section-sub{color:var(--muted); font-size:0.92rem; margin-top:6px;}
 .poster-card{display:block; color:inherit;}
 .poster-card-img{width:100%; aspect-ratio:4/5; object-fit:cover; border-radius:14px; display:block; background:var(--purple-tint-2); transition:transform .4s var(--ease), box-shadow .4s var(--ease);}
 .poster-card-fallback{display:flex; align-items:center; justify-content:center; font-size:2.6rem;}
