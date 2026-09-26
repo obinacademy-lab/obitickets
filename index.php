@@ -85,26 +85,5 @@ $categoryIcons = category_icon_map();
   <p style="text-align:center; padding:40px 0 80px">No events published yet — check back soon.</p>
 <?php endif; ?>
 
-<div class="pullquote-band">
-  <div class="band-shape band-shape-a"></div>
-  <div class="band-shape band-shape-b"></div>
-  <span class="eyebrow">For organizers</span>
-  <div class="band-stat" data-count="90" data-suffix="%">0%</div>
-  <h2>Keep 90% of every sale. Get paid the same day.</h2>
-  <p>10% commission, only when you sell. No setup fees, no surprises.</p>
-</div>
-
-<div class="classic-cta-wrap wrap">
-  <div class="classic-cta reveal">
-    <span class="eyebrow">Get started</span>
-    <h2>Every ticket, properly kept.</h2>
-    <p>Whichever side of the door you're on, obitickets is built to make it simple.</p>
-    <div class="classic-cta-btns">
-      <span class="magnetic"><a class="btn btn-purple btn-lg" href="/">Browse events</a></span>
-      <span class="magnetic"><a class="btn btn-line btn-lg" href="/signup.php">Start selling &mdash; it's free</a></span>
-    </div>
-  </div>
-</div>
-
 <script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
