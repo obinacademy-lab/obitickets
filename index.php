@@ -34,9 +34,9 @@ $grid = array_slice($upcoming, 4);
       </form>
     </div>
     <?php if ($picks): ?>
-    <div class="home-hero-v2-collage">
+    <div class="home-hero-v2-collage" id="heroCollage">
       <?php foreach (array_slice($picks, 0, 3) as $i => $event): ?>
-        <a class="home-hero-v2-collage-item reveal reveal-delay-<?= $i + 1 ?>" href="/event.php?slug=<?= urlencode($event['slug']) ?>" aria-label="View <?= htmlspecialchars($event['title']) ?>">
+        <a class="home-hero-v2-collage-item" href="/event.php?slug=<?= urlencode($event['slug']) ?>" aria-label="View <?= htmlspecialchars($event['title']) ?>">
           <?php if (!empty($event['banner_image'])): ?>
             <img class="home-hero-v2-collage-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
           <?php else: ?>
@@ -45,6 +45,38 @@ $grid = array_slice($upcoming, 4);
         </a>
       <?php endforeach; ?>
     </div>
+    <script>
+    (function () {
+      var collage = document.getElementById('heroCollage');
+      var items = collage ? collage.querySelectorAll('.home-hero-v2-collage-item') : [];
+      if (!items.length) return;
+
+      // pos[i] = which slot (0 = front, 1 = mid, 2 = back) item i currently sits in.
+      var pos = Array.prototype.map.call(items, function (_, i) { return i; });
+      function render() {
+        items.forEach(function (el, i) { el.setAttribute('data-pos', pos[i]); });
+      }
+      items.forEach(function (el, i) {
+        setTimeout(function () { el.setAttribute('data-pos', pos[i]); }, i * 150);
+      });
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || items.length < 2) return;
+
+      var timer = null;
+      function advance() {
+        pos = pos.map(function (p) { return (p + 1) % items.length; });
+        render();
+      }
+      function start() { if (!timer) timer = setInterval(advance, 3000); }
+      function stop() { clearInterval(timer); timer = null; }
+
+      start();
+      collage.addEventListener('mouseenter', stop);
+      collage.addEventListener('mouseleave', start);
+      collage.addEventListener('focusin', stop);
+      collage.addEventListener('focusout', start);
+    })();
+    </script>
     <?php endif; ?>
   </div>
 </section>
