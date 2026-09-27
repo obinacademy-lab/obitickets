@@ -10,6 +10,10 @@ if (!isset($pageTitle)) {
 if (!isset($pageDescription)) {
     $pageDescription = 'Find concerts, conferences, comedy and festivals across Africa. Buy your ticket in under a minute.';
 }
+if (!isset($ogImage)) {
+    $ogImage = rtrim(APP_URL, '/') . '/assets/images/og-image.png';
+}
+$ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,15 +21,27 @@ if (!isset($pageDescription)) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($pageTitle) ?></title>
 <meta name="description" content="<?= htmlspecialchars($pageDescription) ?>">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="obitickets">
+<meta property="og:title" content="<?= htmlspecialchars($pageTitle) ?>">
+<meta property="og:description" content="<?= htmlspecialchars($pageDescription) ?>">
+<meta property="og:url" content="<?= htmlspecialchars($ogUrl) ?>">
+<meta property="og:image" content="<?= htmlspecialchars($ogImage) ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= htmlspecialchars($pageTitle) ?>">
+<meta name="twitter:description" content="<?= htmlspecialchars($pageDescription) ?>">
+<meta name="twitter:image" content="<?= htmlspecialchars($ogImage) ?>">
 <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/png" href="/assets/images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <?php if (str_contains($bodyClass ?? '', 'classic-page') || str_contains($bodyClass ?? '', 'event-page')): ?>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <?php endif; ?>
-<link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../public/assets/css/style.css') ?: time() ?>">
 </head>
 <body<?= isset($bodyClass) ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
 <?php include __DIR__ . '/icons.php'; ?>

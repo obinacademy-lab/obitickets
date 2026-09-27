@@ -44,6 +44,9 @@ foreach ($tiers as $tier) {
 
 $pageTitle = $event['title'] . ' — obitickets';
 $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'] . '.';
+if (!empty($event['banner_image'])) {
+    $ogImage = rtrim(APP_URL, '/') . $event['banner_image'];
+}
 $bodyClass = 'event-page';
 include __DIR__ . '/includes/header.php';
 ?>
