@@ -363,10 +363,12 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .picks-section{padding:48px 0 8px;}
 .picks-row{display:flex; gap:18px; overflow-x:auto; padding:4px 32px 12px; margin:0 -32px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
 .picks-row::-webkit-scrollbar{display:none;}
-.picks-row .poster-card{flex:none; width:190px; scroll-snap-align:start;}
+.picks-row .poster-card{flex:none; width:200px; scroll-snap-align:start;}
+@media (min-width:768px){ .picks-row .poster-card{width:260px;} }
 
-.poster-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px 22px;}
-@media (max-width:920px){ .poster-grid{grid-template-columns:repeat(3,1fr);} }
+/* 3 columns (was 4) — momoticketing.com-sized cards, big enough that the
+   poster art actually reads instead of shrinking into a thumbnail. */
+.poster-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:24px 22px;}
 @media (max-width:640px){ .poster-grid{grid-template-columns:repeat(2,1fr); gap:20px 14px;} }
 
 @media (max-width:900px){

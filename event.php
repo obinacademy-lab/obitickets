@@ -23,7 +23,7 @@ if (!$event) {
 }
 
 $tiers = get_ticket_types_for_event((int) $event['id']);
-$similarEvents = get_similar_events((int) $event['id'], $event['category'], 4);
+$similarEvents = get_similar_events((int) $event['id'], $event['category'], 3);
 $eventMedia = get_event_media((int) $event['id']);
 $currency = $tiers[0]['currency'] ?? 'UGX';
 
