@@ -145,16 +145,118 @@ render_organizer_head('checkin', $ctx);
     <?php endif; ?>
   <?php endif; ?>
 
-  <form method="post" style="margin-top:24px" id="checkin-form">
+  <div class="checkin-scan-area" style="margin-top:20px">
+    <button type="button" class="btn btn-purple btn-lg btn-block" id="scanBtn">
+      <svg width="18" height="18" style="margin-right:8px; vertical-align:-3px"><use href="#ic-grid"/></svg>
+      Scan QR code
+    </button>
+    <div class="checkin-scan-view" id="scanView" hidden>
+      <video id="scanVideo" playsinline muted></video>
+      <button type="button" class="btn btn-line btn-block" id="scanCancelBtn" style="margin-top:12px">Cancel</button>
+    </div>
+    <p class="muted" id="scanStatus" style="margin-top:10px; font-size:0.82rem; text-align:center; min-height:1.2em"></p>
+  </div>
+
+  <button type="button" id="manualToggleBtn" style="display:block; margin:4px auto 0; padding:6px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:var(--muted-2); text-decoration:underline;">Or enter the code manually</button>
+
+  <form method="post" style="margin-top:16px" id="checkin-form" hidden>
     <?= csrf_field() ?>
     <div class="field">
       <label for="code">Ticket code</label>
-      <input id="code" name="code" type="text" autocomplete="off" autofocus placeholder="Scan or type a code, e.g. OT-A1B2C3D4E5">
-      <div class="field-hint">Works with a USB QR/barcode scanner — it just types the code and presses Enter for you.</div>
+      <input id="code" name="code" type="text" autocomplete="off" placeholder="Scan or type a code, e.g. OT-A1B2C3D4E5">
+      <div class="field-hint">Also works with a USB QR/barcode scanner — it just types the code and presses Enter for you.</div>
     </div>
     <button class="btn btn-purple btn-lg btn-block" type="submit" style="margin-top:18px">Check in</button>
   </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+(function () {
+  var scanBtn = document.getElementById('scanBtn');
+  var scanView = document.getElementById('scanView');
+  var scanVideo = document.getElementById('scanVideo');
+  var scanCancelBtn = document.getElementById('scanCancelBtn');
+  var scanStatus = document.getElementById('scanStatus');
+  var manualToggleBtn = document.getElementById('manualToggleBtn');
+  var checkinForm = document.getElementById('checkin-form');
+  var codeInput = document.getElementById('code');
+  if (!scanBtn) return;
+
+  var stream = null;
+  var rafId = null;
+  var canvas = document.createElement('canvas');
+  var canvasCtx = canvas.getContext('2d', { willReadFrequently: true });
+
+  function showManualForm() {
+    checkinForm.hidden = false;
+    codeInput.focus();
+  }
+
+  function stopScan() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    if (stream) {
+      stream.getTracks().forEach(function (t) { t.stop(); });
+      stream = null;
+    }
+    scanView.hidden = true;
+    scanBtn.hidden = false;
+  }
+
+  function tick() {
+    if (scanVideo.readyState === scanVideo.HAVE_ENOUGH_DATA) {
+      canvas.width = scanVideo.videoWidth;
+      canvas.height = scanVideo.videoHeight;
+      canvasCtx.drawImage(scanVideo, 0, 0, canvas.width, canvas.height);
+      var imageData = canvasCtx.getImageData(0, 0, canvas.width, canvas.height);
+      var qr = (typeof jsQR === 'function') ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+      if (qr && qr.data) {
+        stopScan();
+        codeInput.value = qr.data.trim();
+        checkinForm.hidden = false;
+        checkinForm.requestSubmit();
+        return;
+      }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startScan() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      scanStatus.textContent = 'Camera scanning isn\'t supported on this browser — enter the code manually below.';
+      showManualForm();
+      return;
+    }
+    if (typeof jsQR !== 'function') {
+      scanStatus.textContent = 'Couldn\'t load the QR scanner — enter the code manually below.';
+      showManualForm();
+      return;
+    }
+    scanStatus.textContent = '';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (s) {
+      stream = s;
+      scanVideo.srcObject = stream;
+      return scanVideo.play();
+    }).then(function () {
+      scanBtn.hidden = true;
+      scanView.hidden = false;
+      scanStatus.textContent = 'Point the camera at the ticket\'s QR code.';
+      rafId = requestAnimationFrame(tick);
+    }).catch(function () {
+      scanStatus.textContent = 'Camera access was denied or unavailable — enter the code manually below.';
+      showManualForm();
+    });
+  }
+
+  scanBtn.addEventListener('click', startScan);
+  scanCancelBtn.addEventListener('click', stopScan);
+  manualToggleBtn.addEventListener('click', function () {
+    stopScan();
+    showManualForm();
+  });
+})();
+</script>
 
 <?php if ($rejections): ?>
 <div class="admin-card" style="max-width:520px; margin:20px auto 0">

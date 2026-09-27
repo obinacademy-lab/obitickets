@@ -819,6 +819,8 @@ body.ticket-sheet-open .sheet-backdrop{opacity:1; visibility:visible; pointer-ev
 .checkin-stat .lbl{display:block; margin-top:4px; font-size:0.85rem; color:var(--muted);}
 .checkin-ticket-card{border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-top:12px;}
 #code{text-transform:uppercase;}
+.checkin-scan-view{margin-top:12px;}
+.checkin-scan-view video{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:16px; background:#000; display:block;}
 
 /* ============ ADMIN ============ */
 .sec-top{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap;}
