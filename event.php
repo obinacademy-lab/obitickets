@@ -55,17 +55,6 @@ include __DIR__ . '/includes/header.php';
   <div class="wrap">
     <div class="event-hero-compact-top">
       <span class="event-hero-compact-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
-      <div class="share-wrap">
-        <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
-          <svg width="16" height="16"><use href="#ic-share"/></svg>
-        </button>
-        <div class="share-popover" id="sharePopover">
-          <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
-          <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
-          <button class="share-option" type="button" data-copy-link>Copy link</button>
-        </div>
-      </div>
     </div>
 
     <div class="event-hero-compact-row">
@@ -78,7 +67,20 @@ include __DIR__ . '/includes/header.php';
       <?php endif; ?>
 
       <div class="event-hero-compact-text">
-        <h1><?= htmlspecialchars($event['title']) ?></h1>
+        <div class="event-title-row">
+          <h1><?= htmlspecialchars($event['title']) ?></h1>
+          <div class="share-wrap">
+            <button class="icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
+              <svg width="16" height="16"><use href="#ic-share"/></svg>
+            </button>
+            <div class="share-popover" id="sharePopover">
+              <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
+              <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
+              <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
+              <button class="share-option" type="button" data-copy-link>Copy link</button>
+            </div>
+          </div>
+        </div>
         <span class="event-hero-compact-org">Organized by:<b><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></b></span>
         <div class="event-hero-compact-date"><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></div>
         <div class="event-hero-compact-venue">&#128205; <?= htmlspecialchars($event['venue_name']) ?><?= $event['venue_address'] ? ', ' . htmlspecialchars($event['venue_address']) : '' ?></div>
