@@ -204,19 +204,36 @@ render_organizer_head('checkin', $ctx);
     scanBtn.hidden = false;
   }
 
+  // Many Android cameras stream at full resolution (1080p+) by default —
+  // running getImageData/jsQR on every raw frame at that size is too slow
+  // for real-time decoding, so the loop effectively never catches a clean
+  // read even with the QR clearly in view. Downscaling every frame to a
+  // capped size before decoding (independent of whatever resolution the
+  // camera actually delivers) is the standard fix.
+  var MAX_SCAN_DIMENSION = 640;
+
   function tick() {
     if (scanVideo.readyState === scanVideo.HAVE_ENOUGH_DATA) {
-      canvas.width = scanVideo.videoWidth;
-      canvas.height = scanVideo.videoHeight;
-      canvasCtx.drawImage(scanVideo, 0, 0, canvas.width, canvas.height);
-      var imageData = canvasCtx.getImageData(0, 0, canvas.width, canvas.height);
-      var qr = (typeof jsQR === 'function') ? jsQR(imageData.data, imageData.width, imageData.height) : null;
-      if (qr && qr.data) {
-        stopScan();
-        codeInput.value = qr.data.trim();
-        checkinForm.hidden = false;
-        checkinForm.requestSubmit();
-        return;
+      var vw = scanVideo.videoWidth;
+      var vh = scanVideo.videoHeight;
+      if (vw && vh) {
+        var scale = Math.min(1, MAX_SCAN_DIMENSION / Math.max(vw, vh));
+        var cw = Math.max(1, Math.round(vw * scale));
+        var ch = Math.max(1, Math.round(vh * scale));
+        if (canvas.width !== cw || canvas.height !== ch) {
+          canvas.width = cw;
+          canvas.height = ch;
+        }
+        canvasCtx.drawImage(scanVideo, 0, 0, cw, ch);
+        var imageData = canvasCtx.getImageData(0, 0, cw, ch);
+        var qr = (typeof jsQR === 'function') ? jsQR(imageData.data, imageData.width, imageData.height) : null;
+        if (qr && qr.data) {
+          stopScan();
+          codeInput.value = qr.data.trim();
+          checkinForm.hidden = false;
+          checkinForm.requestSubmit();
+          return;
+        }
       }
     }
     rafId = requestAnimationFrame(tick);
@@ -234,7 +251,7 @@ render_organizer_head('checkin', $ctx);
       return;
     }
     scanStatus.textContent = '';
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (s) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 720 }, height: { ideal: 720 } } }).then(function (s) {
       stream = s;
       scanVideo.srcObject = stream;
       return scanVideo.play();
