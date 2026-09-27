@@ -553,8 +553,21 @@ footer p{color:rgba(255,255,255,0.7);}
 .foot-glow-a{background:#FCA5A5; top:-160px; left:-100px; animation:floaty 12s ease-in-out infinite;}
 .foot-glow-b{background:#B91C1C; bottom:-180px; right:-120px; animation:floaty 15s ease-in-out infinite reverse;}
 
+/* ---------- legal documents: Terms of Use, Purchase Terms, Privacy Policy —
+   plain long-form prose, comfortable reading width, reuses .contact-hero for
+   the page header like refunds.php already does. ---------- */
+.legal-doc{max-width:740px; margin:0 auto;}
+.legal-doc .updated{color:var(--muted-2); font-size:0.85rem; margin-bottom:32px;}
+.legal-doc h2{font-size:1.25rem; margin-top:38px; margin-bottom:14px;}
+.legal-doc h2:first-of-type{margin-top:0;}
+.legal-doc p{margin-bottom:14px; line-height:1.7; color:var(--muted);}
+.legal-doc ul{margin:0 0 14px 22px; line-height:1.7; color:var(--muted);}
+.legal-doc li{margin-bottom:6px;}
+.legal-doc strong{color:var(--ink);}
+.legal-doc a{color:var(--purple-deep); font-weight:600;}
+
 .foot-main-section{padding:48px 0;}
-.foot-main{position:relative; z-index:1; display:grid; grid-template-columns:1.6fr repeat(3,1fr) auto; gap:40px; align-items:start;}
+.foot-main{position:relative; z-index:1; display:grid; grid-template-columns:1.4fr repeat(4,1fr) auto; gap:32px; align-items:start;}
 .foot-brand p{margin-top:16px; font-size:0.9rem; max-width:260px; line-height:1.65;}
 .foot-brand .logo{color:#fff;}
 .foot-brand .logo-mark{transition:transform .4s var(--ease-back);}

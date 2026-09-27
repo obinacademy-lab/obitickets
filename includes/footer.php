@@ -33,6 +33,12 @@
         <a href="/help.php">Help centre</a>
         <a href="/refunds.php">Refunds</a>
       </div>
+      <div class="foot-col">
+        <h4>Legal</h4>
+        <a href="/terms.php">Terms of Use</a>
+        <a href="/purchase-terms.php">Purchase Terms</a>
+        <a href="/privacy.php">Privacy Policy</a>
+      </div>
 
       <button type="button" class="foot-top-btn" id="footToTop" aria-label="Back to top">
         <svg width="18" height="18"><use href="#ic-chev"/></svg>
