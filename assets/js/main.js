@@ -204,7 +204,10 @@ document.addEventListener('DOMContentLoaded', function () {
         stopLightboxVideo();
         lightboxImg.src = item.src;
       }
-      if (lightboxCounter) lightboxCounter.textContent = (galleryIndex + 1) + ' / ' + galleryItems.length;
+      if (lightboxCounter) {
+        var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        lightboxCounter.textContent = pad(galleryIndex + 1) + '  —  ' + pad(galleryItems.length);
+      }
     }
 
     function openLightbox(src) {

@@ -150,14 +150,14 @@ include __DIR__ . '/includes/header.php';
       <?php if ($eventPhotos): ?>
       <div class="gallery-section reveal">
         <div class="gallery-section-head">
-          <span class="ic"><svg width="15" height="15"><use href="#ic-grid"/></svg></span>
           <h3>Photos</h3>
-          <span class="count"><?= count($eventPhotos) ?></span>
+          <span class="count"><?= str_pad((string) count($eventPhotos), 2, '0', STR_PAD_LEFT) ?></span>
         </div>
         <div class="photo-grid">
           <?php foreach ($eventPhotos as $idx => $media): ?>
-            <button type="button" class="photo-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="photo">
+            <button type="button" class="photo-item<?= $idx === 0 ? ' featured' : '' ?>" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="photo">
               <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+              <span class="expand-ic"><svg width="12" height="12"><use href="#ic-expand"/></svg></span>
             </button>
           <?php endforeach; ?>
         </div>
@@ -167,9 +167,8 @@ include __DIR__ . '/includes/header.php';
       <?php if ($eventVideos): ?>
       <div class="gallery-section reveal" style="margin-top:28px">
         <div class="gallery-section-head">
-          <span class="ic"><svg width="15" height="15"><use href="#ic-video"/></svg></span>
           <h3>Videos</h3>
-          <span class="count"><?= count($eventVideos) ?></span>
+          <span class="count"><?= str_pad((string) count($eventVideos), 2, '0', STR_PAD_LEFT) ?></span>
         </div>
         <div class="video-grid">
           <?php foreach ($eventVideos as $vIdx => $media):
