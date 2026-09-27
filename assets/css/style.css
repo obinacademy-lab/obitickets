@@ -313,18 +313,26 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .home-hero-v2-copy h1{color:var(--ink); font-size:clamp(2.1rem,4.2vw,3.2rem); line-height:1.06; max-width:12ch; text-wrap:balance;}
 .home-hero-v2-copy p{color:var(--muted); margin-top:16px; font-size:1.02rem; max-width:40ch;}
 .home-hero-v2-collage{flex:1; position:relative; height:340px; min-width:0;}
-.home-hero-v2-collage-img{position:absolute; width:190px; height:250px; object-fit:cover; border-radius:16px; box-shadow:0 30px 50px -20px rgba(28,21,38,0.35); border:6px solid var(--surface);}
+.home-hero-v2-collage-item{position:absolute; display:block; border-radius:16px; cursor:pointer;}
+.home-hero-v2-collage-item:nth-child(1){top:6px; left:20px; z-index:1;}
+.home-hero-v2-collage-item:nth-child(2){top:36px; left:190px; z-index:2;}
+.home-hero-v2-collage-item:nth-child(3){top:12px; left:360px; z-index:1;}
+.home-hero-v2-collage-img{width:190px; height:250px; object-fit:cover; border-radius:16px; box-shadow:0 30px 50px -20px rgba(28,21,38,0.35); border:6px solid var(--surface); display:block; transition:transform .45s var(--ease), box-shadow .45s var(--ease);}
 .home-hero-v2-collage-img.poster-card-fallback{display:flex; align-items:center; justify-content:center; font-size:2.6rem; background:var(--purple-tint-2);}
-.home-hero-v2-collage-img:nth-child(1){top:6px; left:20px; transform:rotate(-8deg); z-index:1;}
-.home-hero-v2-collage-img:nth-child(2){top:36px; left:190px; transform:rotate(5deg); z-index:2;}
-.home-hero-v2-collage-img:nth-child(3){top:12px; left:360px; transform:rotate(10deg); z-index:1;}
+.home-hero-v2-collage-item:nth-child(1) .home-hero-v2-collage-img{transform:rotate(-8deg);}
+.home-hero-v2-collage-item:nth-child(2) .home-hero-v2-collage-img{transform:rotate(5deg);}
+.home-hero-v2-collage-item:nth-child(3) .home-hero-v2-collage-img{transform:rotate(10deg);}
+.home-hero-v2-collage-item:nth-child(1):hover .home-hero-v2-collage-img{transform:translateY(-12px) scale(1.06) rotate(-3deg); box-shadow:0 40px 70px -18px rgba(28,21,38,0.5);}
+.home-hero-v2-collage-item:nth-child(2):hover .home-hero-v2-collage-img{transform:translateY(-14px) scale(1.06) rotate(0deg); box-shadow:0 40px 70px -18px rgba(28,21,38,0.5);}
+.home-hero-v2-collage-item:nth-child(3):hover .home-hero-v2-collage-img{transform:translateY(-12px) scale(1.06) rotate(4deg); box-shadow:0 40px 70px -18px rgba(28,21,38,0.5);}
+.home-hero-v2-collage-item:focus-visible{outline:2px solid var(--purple); outline-offset:4px; border-radius:16px;}
 @media (max-width:920px){
   .home-hero-v2-inner{flex-direction:column; align-items:stretch; gap:32px;}
   .home-hero-v2-copy h1{max-width:none;}
   .home-hero-v2-collage{height:220px;}
   .home-hero-v2-collage-img{width:130px; height:170px;}
-  .home-hero-v2-collage-img:nth-child(2){left:120px;}
-  .home-hero-v2-collage-img:nth-child(3){left:230px;}
+  .home-hero-v2-collage-item:nth-child(2){left:120px;}
+  .home-hero-v2-collage-item:nth-child(3){left:230px;}
 }
 @media (max-width:640px){
   .home-hero-v2-collage{display:none;}

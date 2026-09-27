@@ -34,13 +34,15 @@ $grid = array_slice($upcoming, 4);
       </form>
     </div>
     <?php if ($picks): ?>
-    <div class="home-hero-v2-collage" aria-hidden="true">
+    <div class="home-hero-v2-collage">
       <?php foreach (array_slice($picks, 0, 3) as $i => $event): ?>
-        <?php if (!empty($event['banner_image'])): ?>
-          <img class="home-hero-v2-collage-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-        <?php else: ?>
-          <div class="home-hero-v2-collage-img poster-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-        <?php endif; ?>
+        <a class="home-hero-v2-collage-item reveal reveal-delay-<?= $i + 1 ?>" href="/event.php?slug=<?= urlencode($event['slug']) ?>" aria-label="View <?= htmlspecialchars($event['title']) ?>">
+          <?php if (!empty($event['banner_image'])): ?>
+            <img class="home-hero-v2-collage-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+          <?php else: ?>
+            <div class="home-hero-v2-collage-img poster-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+          <?php endif; ?>
+        </a>
       <?php endforeach; ?>
     </div>
     <?php endif; ?>
