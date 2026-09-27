@@ -65,10 +65,11 @@ function send_password_reset_email(string $to, string $name, string $resetUrl): 
 /**
  * Renders one <table>-based ticket card per ticket in the order — inline
  * styles and table layout throughout, since flexbox/grid aren't reliably
- * supported by email clients (Outlook desktop in particular). Each ticket's
- * QR is a hotlinked image (ticket_qr_image_url() in includes/qr.php), not an
- * inlined data: URI — the ticket code is always shown as plain text below it
- * too, in case a client's own "load images" setting blocks it.
+ * supported by email clients (Outlook desktop in particular). Each ticket
+ * gets its own obitickets-hosted QR image (ticket_qr_image_url() in
+ * includes/qr.php); a ticket whose QR couldn't be generated still renders
+ * with its code shown as plain text, so one flaky request never breaks the
+ * whole email.
  */
 function render_ticket_email_html(array $order): string
 {
@@ -83,8 +84,10 @@ function render_ticket_email_html(array $order): string
         $tierName = htmlspecialchars($item['tier_name']);
         foreach ($item['tickets'] as $ticket) {
             $code = htmlspecialchars($ticket['ticket_code']);
-            $qrUrl = htmlspecialchars(ticket_qr_image_url($ticket['ticket_code']));
-            $qrHtml = '<img src="' . $qrUrl . '" width="180" height="180" alt="QR code for ' . $code . '" style="display:block; margin:0 auto; border-radius:8px;">';
+            $qrUrl = ticket_qr_image_url($ticket['ticket_code']);
+            $qrHtml = $qrUrl
+                ? '<img src="' . htmlspecialchars($qrUrl) . '" width="180" height="180" alt="QR code for ' . $code . '" style="display:block; margin:0 auto; border-radius:8px;">'
+                : '<div style="width:180px; height:180px; margin:0 auto; border:1px dashed #D8D2E4; border-radius:8px; display:table-cell; text-align:center; vertical-align:middle; color:#726C7E; font-size:12px;">QR unavailable &mdash; use the code below</div>';
 
             $cards .= <<<HTML
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; margin:0 auto 24px; border:1px solid #E8E4EF; border-radius:16px; overflow:hidden;">
