@@ -1057,6 +1057,93 @@ function set_setting(int $adminId, string $key, string $value): void
 }
 
 // =====================================================================
+// Login activity
+// =====================================================================
+
+/** @param array{q?: string, event_type?: string, role?: string, when?: string} $filters */
+function login_log_where(array $filters): array
+{
+    $where = [];
+    $params = [];
+    if (!empty($filters['q'])) {
+        $where[] = '(u.name LIKE ? OR u.email LIKE ?)';
+        $like = '%' . $filters['q'] . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+    if (!empty($filters['event_type'])) {
+        $where[] = 'l.event_type = ?';
+        $params[] = $filters['event_type'];
+    }
+    if (!empty($filters['role'])) {
+        $where[] = 'l.role = ?';
+        $params[] = $filters['role'];
+    }
+    if (!empty($filters['when'])) {
+        $clause = match ($filters['when']) {
+            'today' => 'l.logged_at >= CURDATE()',
+            '7d' => 'l.logged_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
+            '30d' => 'l.logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)',
+            default => null,
+        };
+        if ($clause) {
+            $where[] = $clause;
+        }
+    }
+    return [$where ? 'WHERE ' . implode(' AND ', $where) : '', $params];
+}
+
+function get_login_log(array $filters, int $page, int $perPage = 30): array
+{
+    [$whereSql, $params] = login_log_where($filters);
+    $offset = ($page - 1) * $perPage;
+    $stmt = db()->prepare("
+        SELECT l.*, u.name, u.email
+        FROM login_log l
+        JOIN users u ON u.id = l.user_id
+        $whereSql
+        ORDER BY l.logged_at DESC
+        LIMIT $perPage OFFSET $offset
+    ");
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
+function count_login_log(array $filters): int
+{
+    [$whereSql, $params] = login_log_where($filters);
+    $stmt = db()->prepare("SELECT COUNT(*) FROM login_log l JOIN users u ON u.id = l.user_id $whereSql");
+    $stmt->execute($params);
+    return (int) $stmt->fetchColumn();
+}
+
+function get_login_log_stats(): array
+{
+    return [
+        'logins_today' => (int) db()->query("SELECT COUNT(*) FROM login_log WHERE event_type = 'LOGIN' AND logged_at >= CURDATE()")->fetchColumn(),
+        'signups_today' => (int) db()->query("SELECT COUNT(*) FROM login_log WHERE event_type = 'SIGNUP' AND logged_at >= CURDATE()")->fetchColumn(),
+        'unique_today' => (int) db()->query('SELECT COUNT(DISTINCT user_id) FROM login_log WHERE logged_at >= CURDATE()')->fetchColumn(),
+        'total_week' => (int) db()->query("SELECT COUNT(*) FROM login_log WHERE logged_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)")->fetchColumn(),
+    ];
+}
+
+/** Top cities by activity over the last 30 days, for a small panel — skips rows whose geo lookup never resolved. */
+function get_top_login_locations(int $limit = 8): array
+{
+    $stmt = db()->prepare("
+        SELECT city, country, COUNT(*) AS n
+        FROM login_log
+        WHERE logged_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND country IS NOT NULL
+        GROUP BY city, country
+        ORDER BY n DESC
+        LIMIT ?
+    ");
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+// =====================================================================
 // Global search
 // =====================================================================
 

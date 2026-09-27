@@ -96,8 +96,29 @@ function register_user(string $name, string $email, string $password, string $ro
 
     session_regenerate_id(true);
     $_SESSION['user_id'] = $userId;
+    log_login_event($userId, $role, 'SIGNUP');
 
     return [true, null];
+}
+
+/**
+ * Records one row in login_log for a successful login or signup — never for
+ * a failed attempt. Wrapped so a failure here (a network hiccup reaching
+ * ip-api.com, say) can never break login/signup itself.
+ */
+function log_login_event(int $userId, string $role, string $eventType): void
+{
+    try {
+        $geo = geo_lookup_ip(get_client_ip()) ?? ['country' => null, 'city' => null];
+        [$device, $browser, $os] = parse_user_agent((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+
+        db()->prepare('
+            INSERT INTO login_log (user_id, event_type, role, device_type, browser, os, country, city)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ')->execute([$userId, $eventType, $role, $device, $browser, $os, $geo['country'], $geo['city']]);
+    } catch (Throwable $e) {
+        error_log("[login_log] Failed to record $eventType for user $userId: " . $e->getMessage());
+    }
 }
 
 /**
@@ -105,7 +126,7 @@ function register_user(string $name, string $email, string $password, string $ro
  */
 function attempt_login(string $email, string $password): array
 {
-    $stmt = db()->prepare('SELECT id, password_hash, account_status FROM users WHERE email = ?');
+    $stmt = db()->prepare('SELECT id, password_hash, account_status, role FROM users WHERE email = ?');
     $stmt->execute([strtolower(trim($email))]);
     $user = $stmt->fetch();
 
@@ -119,6 +140,7 @@ function attempt_login(string $email, string $password): array
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int) $user['id'];
     db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$user['id']]);
+    log_login_event((int) $user['id'], $user['role'], 'LOGIN');
 
     return [true, null];
 }
