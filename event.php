@@ -93,7 +93,11 @@ include __DIR__ . '/includes/header.php';
 
 <div class="lightbox-overlay" id="heroLightbox">
   <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close"><svg width="20" height="20"><use href="#ic-x"/></svg></button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Previous"><svg width="20" height="20"><use href="#ic-chev" transform="rotate(180 12 12)"/></svg></button>
   <img id="lightboxImg" src="" alt="">
+  <video id="lightboxVideo" controls playsinline hidden></video>
+  <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Next"><svg width="20" height="20"><use href="#ic-chev"/></svg></button>
+  <div class="lightbox-counter" id="lightboxCounter"></div>
 </div>
 
 <?php if ($minPrice !== null): ?>
@@ -133,22 +137,53 @@ include __DIR__ . '/includes/header.php';
         <button class="follow-btn" type="button">+ Follow</button>
       </div>
 
-      <?php if ($eventMedia): ?>
+      <?php if ($eventMedia):
+        // Photos first, then videos — the combined data-gallery-index order
+        // the lightbox's Prev/Next walks through matches this same order,
+        // so browsing the lightbox mirrors browsing the page top-to-bottom.
+        $eventPhotos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] !== 'VIDEO'));
+        $eventVideos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] === 'VIDEO'));
+      ?>
       <div class="divider"></div>
       <h2 class="reveal" style="margin-bottom:20px">Event gallery</h2>
-      <div class="event-gallery reveal">
-        <?php foreach ($eventMedia as $media): ?>
-          <?php if ($media['media_type'] === 'VIDEO'): ?>
-            <div class="event-gallery-item">
-              <video src="<?= htmlspecialchars($media['file_path']) ?>" controls preload="metadata"></video>
-            </div>
-          <?php else: ?>
-            <button type="button" class="event-gallery-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>">
+
+      <?php if ($eventPhotos): ?>
+      <div class="gallery-section reveal">
+        <div class="gallery-section-head">
+          <span class="ic"><svg width="15" height="15"><use href="#ic-grid"/></svg></span>
+          <h3>Photos</h3>
+          <span class="count"><?= count($eventPhotos) ?></span>
+        </div>
+        <div class="photo-grid">
+          <?php foreach ($eventPhotos as $idx => $media): ?>
+            <button type="button" class="photo-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="photo">
               <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
             </button>
-          <?php endif; ?>
-        <?php endforeach; ?>
+          <?php endforeach; ?>
+        </div>
       </div>
+      <?php endif; ?>
+
+      <?php if ($eventVideos): ?>
+      <div class="gallery-section reveal" style="margin-top:28px">
+        <div class="gallery-section-head">
+          <span class="ic"><svg width="15" height="15"><use href="#ic-video"/></svg></span>
+          <h3>Videos</h3>
+          <span class="count"><?= count($eventVideos) ?></span>
+        </div>
+        <div class="video-grid">
+          <?php foreach ($eventVideos as $vIdx => $media):
+              $idx = count($eventPhotos) + $vIdx;
+          ?>
+            <button type="button" class="video-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="video">
+              <video src="<?= htmlspecialchars($media['file_path']) ?>" preload="metadata" muted playsinline></video>
+              <span class="video-play"><svg width="16" height="16"><use href="#ic-play"/></svg></span>
+              <span class="video-duration" data-video-duration-src="<?= htmlspecialchars($media['file_path']) ?>" hidden></span>
+            </button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
       <?php endif; ?>
 
     </div>

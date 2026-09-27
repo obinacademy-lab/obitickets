@@ -167,30 +167,117 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Banner/gallery lightbox — tap any [data-lightbox-src] element to preview
-  // the full-size image (event.php's hero banner and gallery photos).
+  // the full-size image (event.php's hero banner), or any [data-gallery-index]
+  // element to open the full event gallery (photos + videos together) with
+  // Prev/Next navigation. Both share the same overlay; nav controls and the
+  // video player only show up in gallery mode.
   var heroLightbox = document.getElementById('heroLightbox');
   if (heroLightbox) {
     var lightboxImg = document.getElementById('lightboxImg');
+    var lightboxVideo = document.getElementById('lightboxVideo');
     var lightboxClose = document.getElementById('lightboxClose');
+    var lightboxPrev = document.getElementById('lightboxPrev');
+    var lightboxNext = document.getElementById('lightboxNext');
+    var lightboxCounter = document.getElementById('lightboxCounter');
+
+    // Gallery items in page order: every [data-gallery-index] element,
+    // sorted numerically — built once, since the gallery never changes
+    // after page load.
+    var galleryItems = Array.prototype.slice.call(document.querySelectorAll('[data-gallery-index]'))
+      .sort(function (a, b) { return (+a.getAttribute('data-gallery-index')) - (+b.getAttribute('data-gallery-index')); })
+      .map(function (el) { return { src: el.getAttribute('data-lightbox-src'), type: el.getAttribute('data-gallery-type') }; });
+    var galleryIndex = -1; // -1 = single-image mode (hero banner), not browsing the gallery
+
+    function stopLightboxVideo() {
+      if (lightboxVideo) { lightboxVideo.pause(); lightboxVideo.removeAttribute('src'); lightboxVideo.load(); }
+    }
+
+    function renderGalleryItem() {
+      var item = galleryItems[galleryIndex];
+      var isVideo = item.type === 'video';
+      lightboxImg.hidden = isVideo;
+      if (lightboxVideo) lightboxVideo.hidden = !isVideo;
+      if (isVideo) {
+        lightboxImg.src = '';
+        if (lightboxVideo) { lightboxVideo.src = item.src; lightboxVideo.play().catch(function () {}); }
+      } else {
+        stopLightboxVideo();
+        lightboxImg.src = item.src;
+      }
+      if (lightboxCounter) lightboxCounter.textContent = (galleryIndex + 1) + ' / ' + galleryItems.length;
+    }
+
     function openLightbox(src) {
+      galleryIndex = -1;
+      lightboxImg.hidden = false;
+      if (lightboxVideo) lightboxVideo.hidden = true;
+      stopLightboxVideo();
       lightboxImg.src = src;
       heroLightbox.classList.add('open');
+      heroLightbox.classList.remove('is-gallery');
       document.body.style.overflow = 'hidden';
     }
+
+    function openGalleryAt(index) {
+      galleryIndex = index;
+      renderGalleryItem();
+      heroLightbox.classList.add('open', 'is-gallery');
+      document.body.style.overflow = 'hidden';
+    }
+
     function closeLightbox() {
       heroLightbox.classList.remove('open');
       document.body.style.overflow = '';
+      stopLightboxVideo();
     }
-    document.querySelectorAll('[data-lightbox-src]').forEach(function (el) {
+
+    function galleryNext() { galleryIndex = (galleryIndex + 1) % galleryItems.length; renderGalleryItem(); }
+    function galleryPrev() { galleryIndex = (galleryIndex - 1 + galleryItems.length) % galleryItems.length; renderGalleryItem(); }
+
+    document.querySelectorAll('[data-lightbox-src]:not([data-gallery-index])').forEach(function (el) {
       el.addEventListener('click', function () { openLightbox(el.getAttribute('data-lightbox-src')); });
       el.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(el.getAttribute('data-lightbox-src')); }
       });
     });
+    document.querySelectorAll('[data-gallery-index]').forEach(function (el) {
+      var idx = +el.getAttribute('data-gallery-index');
+      el.addEventListener('click', function () { openGalleryAt(idx); });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGalleryAt(idx); }
+      });
+    });
+
     lightboxClose.addEventListener('click', closeLightbox);
+    if (lightboxNext) lightboxNext.addEventListener('click', galleryNext);
+    if (lightboxPrev) lightboxPrev.addEventListener('click', galleryPrev);
     heroLightbox.addEventListener('click', function (e) { if (e.target === heroLightbox) closeLightbox(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLightbox(); });
+    document.addEventListener('keydown', function (e) {
+      if (!heroLightbox.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (galleryIndex === -1) return; // arrows only navigate in gallery mode
+      if (e.key === 'ArrowRight') galleryNext();
+      if (e.key === 'ArrowLeft') galleryPrev();
+    });
   }
+
+  // Video gallery-card duration badge — reads each video's own metadata
+  // client-side (no duration stored server-side) via a preload="metadata"
+  // probe, so the badge fills in as soon as the browser knows it; silently
+  // stays hidden if metadata never loads.
+  document.querySelectorAll('[data-video-duration-src]').forEach(function (badge) {
+    var probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.src = badge.getAttribute('data-video-duration-src');
+    probe.addEventListener('loadedmetadata', function () {
+      var d = probe.duration;
+      if (!isFinite(d)) return;
+      var m = Math.floor(d / 60);
+      var s = Math.floor(d % 60);
+      badge.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      badge.hidden = false;
+    });
+  });
 
   // Ticket bottom-sheet (mobile) — the same #buyPanel form used inline on
   // desktop is toggled into a modal via a body class below 920px (see the

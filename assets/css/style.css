@@ -681,10 +681,21 @@ footer p{color:rgba(255,255,255,0.7);}
 /* ---------- lightbox: full-size banner/gallery preview ---------- */
 .lightbox-overlay{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:32px; background:rgba(8,5,14,0.94); backdrop-filter:blur(6px); opacity:0; visibility:hidden; transition:opacity .3s var(--ease), visibility 0s linear .3s;}
 .lightbox-overlay.open{opacity:1; visibility:visible; transition:opacity .3s var(--ease), visibility 0s linear;}
-.lightbox-overlay img{max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 40px 90px -20px rgba(0,0,0,0.6); transform:scale(0.94); transition:transform .35s var(--ease);}
-.lightbox-overlay.open img{transform:scale(1);}
-.lightbox-close{position:absolute; top:24px; right:24px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s var(--ease);}
-.lightbox-close:hover{background:rgba(255,255,255,0.18);}
+.lightbox-overlay img, .lightbox-overlay video{max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 40px 90px -20px rgba(0,0,0,0.6); transform:scale(0.94); transition:transform .35s var(--ease);}
+.lightbox-overlay.open img, .lightbox-overlay.open video{transform:scale(1);}
+.lightbox-close, .lightbox-nav{position:absolute; border-radius:50%; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.08); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s var(--ease);}
+.lightbox-close:hover, .lightbox-nav:hover{background:rgba(255,255,255,0.18);}
+.lightbox-close{top:24px; right:24px; width:44px; height:44px;}
+.lightbox-nav{top:50%; transform:translateY(-50%); width:48px; height:48px; z-index:1;}
+.lightbox-prev{left:16px;}
+.lightbox-next{right:16px;}
+.lightbox-counter{position:absolute; bottom:22px; left:50%; transform:translateX(-50%); font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:rgba(255,255,255,0.75); background:rgba(0,0,0,0.5); padding:5px 12px; border-radius:100px;}
+.lightbox-overlay:not(.is-gallery) .lightbox-nav, .lightbox-overlay:not(.is-gallery) .lightbox-counter{display:none;}
+@media (max-width:640px){
+  .lightbox-nav{width:40px; height:40px;}
+  .lightbox-prev{left:8px;}
+  .lightbox-next{right:8px;}
+}
 
 /* ---------- ticket bottom-sheet: on narrow screens (see the .buy-panel
    media query below) the same #buyPanel form used inline on desktop is
@@ -736,13 +747,31 @@ body.ticket-sheet-open .sheet-backdrop{opacity:1; visibility:visible; pointer-ev
 .follow-btn{margin-left:auto; padding:8px 18px; border-radius:10px; border:1px solid var(--line-strong); font-weight:700; font-size:0.82rem; background:var(--paper); transition:all .25s var(--ease); flex:none;}
 .follow-btn:hover{border-color:var(--purple); color:var(--purple);}
 
-/* ---------- event gallery: past-event photos/videos, event.php ---------- */
-.event-gallery{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,150px)); gap:12px; justify-content:start;}
-.event-gallery-item{display:block; position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; background:var(--purple-tint-2); border:none; padding:0; margin:0; cursor:zoom-in; width:100%;}
-.event-gallery-item img, .event-gallery-item video{width:100%; height:100%; object-fit:cover; display:block; transition:transform .4s var(--ease);}
-.event-gallery-item:hover img{transform:scale(1.06);}
+/* ---------- event gallery: photos and videos in their own separate,
+   labeled sections (event.php) — both feed into the same lightbox's
+   Prev/Next via [data-gallery-index], in this same page order. ---------- */
+.gallery-section-head{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
+.gallery-section-head .ic{width:30px; height:30px; border-radius:9px; background:var(--surface); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--muted); flex:none;}
+.gallery-section-head h3{font-size:0.98rem; font-weight:800; margin:0;}
+.gallery-section-head .count{font-size:0.8rem; color:var(--muted-2); font-family:'IBM Plex Mono',monospace;}
+
+.photo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px;}
+.photo-item{display:block; position:relative; aspect-ratio:1; border-radius:14px; overflow:hidden; background:var(--surface); border:1px solid var(--line); padding:0; margin:0; cursor:zoom-in; width:100%;}
+.photo-item img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s var(--ease);}
+.photo-item:hover img{transform:scale(1.08);}
+
+.video-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px;}
+.video-item{display:block; position:relative; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:var(--surface); border:1px solid var(--line); padding:0; margin:0; cursor:pointer; width:100%;}
+.video-item video{width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; transition:transform .5s var(--ease);}
+.video-item:hover video{transform:scale(1.06);}
+.video-item::before{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%); pointer-events:none;}
+.video-play{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:48px; height:48px; border-radius:50%; background:rgba(255,255,255,0.16); backdrop-filter:blur(6px); border:1.5px solid rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; color:#fff; transition:transform .3s var(--ease), background .3s var(--ease);}
+.video-play svg{margin-left:3px;}
+.video-item:hover .video-play{transform:translate(-50%,-50%) scale(1.1); background:var(--purple);}
+.video-duration{position:absolute; bottom:10px; right:10px; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); color:#fff; font-size:0.7rem; font-weight:700; font-family:'IBM Plex Mono',monospace; padding:3px 8px; border-radius:6px;}
 @media (max-width:640px){
-  .event-gallery{grid-template-columns:repeat(auto-fit,minmax(140px,160px)); justify-content:center; gap:14px;}
+  .photo-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px;}
+  .video-grid{grid-template-columns:1fr;}
 }
 
 .lineup-row{display:flex; gap:24px; flex-wrap:wrap;}
