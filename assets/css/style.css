@@ -173,7 +173,7 @@ body.nav-open{overflow:hidden;}
 .event-tile-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:36px 28px;}
 .event-tile{display:flex; flex-direction:column; border-radius:18px; transition:transform .35s var(--ease-back), box-shadow .35s var(--ease);}
 .event-tile-grid .event-tile:hover{transform:translateY(-8px); box-shadow:0 30px 50px -24px rgba(153,27,27,0.35);}
-a.event-tile-art{position:relative; display:block; border-radius:14px; overflow:hidden; height:200px;}
+a.event-tile-art{position:relative; display:block; border-radius:14px; overflow:hidden; aspect-ratio:4/5;}
 .event-tile-art img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .6s var(--ease);}
 .event-tile:hover .event-tile-art img{transform:scale(1.08);}
 .event-tile-art::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(20,10,35,0.35) 100%); opacity:0; transition:opacity .35s var(--ease);}
