@@ -71,16 +71,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = ['type' => 'error', 'message' => 'Enter or scan a ticket code.'];
     } elseif (!$ticket) {
         $result = ['type' => 'error', 'message' => "No ticket found for code \"{$code}\"."];
+        log_organizer_action($organizerId, $ctx['actor_id'], 'ticket.checkin_rejected', null, null, ['code' => $code, 'reason' => 'NOT_FOUND', 'event_id' => $eventId]);
     } elseif ((int) $ticket['event_id'] !== $eventId) {
         $result = ['type' => 'error', 'message' => "That ticket is for a different event (\"{$ticket['event_title']}\"), not this one.", 'ticket' => $ticket];
+        log_organizer_action($organizerId, $ctx['actor_id'], 'ticket.checkin_rejected', 'ticket', (int) $ticket['id'], ['code' => $code, 'reason' => 'WRONG_EVENT', 'event_id' => $eventId]);
     } elseif ($ticket['status'] === 'CANCELLED') {
         $result = ['type' => 'error', 'message' => 'This ticket has been cancelled and cannot be used.', 'ticket' => $ticket];
+        log_organizer_action($organizerId, $ctx['actor_id'], 'ticket.checkin_rejected', 'ticket', (int) $ticket['id'], ['code' => $code, 'reason' => 'CANCELLED', 'event_id' => $eventId]);
     } elseif ($ticket['status'] === 'USED') {
         $result = [
             'type' => 'warn',
             'message' => 'Already checked in at ' . date('g:ia \o\n D j M', strtotime($ticket['checked_in_at'])) . '.',
             'ticket' => $ticket,
         ];
+        log_organizer_action($organizerId, $ctx['actor_id'], 'ticket.checkin_rejected', 'ticket', (int) $ticket['id'], ['code' => $code, 'reason' => 'ALREADY_USED', 'event_id' => $eventId]);
     } else {
         check_in_ticket((int) $ticket['id']);
         $result = ['type' => 'success', 'message' => 'Checked in.', 'ticket' => $ticket];
@@ -96,6 +100,14 @@ $result = $_SESSION['checkin_result'] ?? null;
 unset($_SESSION['checkin_result']);
 
 $stats = get_checkin_stats($eventId);
+$rejectionCount = count_checkin_rejections_for_event($eventId);
+$rejections = $rejectionCount ? get_checkin_rejections_for_event($eventId, 10) : [];
+$rejectionReasonLabels = [
+    'ALREADY_USED' => 'Already used',
+    'CANCELLED' => 'Cancelled ticket',
+    'WRONG_EVENT' => 'Different event',
+    'NOT_FOUND' => 'Code not found',
+];
 
 $pageTitle = 'Check-in — ' . $event['title'];
 render_organizer_head('checkin', $ctx);
@@ -112,6 +124,12 @@ render_organizer_head('checkin', $ctx);
     <span class="num mono"><?= $stats['checked_in'] ?> / <?= $stats['total'] ?></span>
     <span class="lbl">tickets checked in</span>
   </div>
+  <?php if ($rejectionCount > 0): ?>
+    <div class="checkin-stat" style="margin-top:10px">
+      <span class="num mono" style="color:var(--danger)"><?= $rejectionCount ?></span>
+      <span class="lbl">flagged attempts &mdash; reused, cancelled or invalid codes</span>
+    </div>
+  <?php endif; ?>
 
   <?php if ($result): ?>
     <div class="alert alert-<?= $result['type'] === 'success' ? 'success' : ($result['type'] === 'warn' ? 'warn' : 'error') ?>" style="margin-top:20px">
@@ -137,5 +155,26 @@ render_organizer_head('checkin', $ctx);
     <button class="btn btn-purple btn-lg btn-block" type="submit" style="margin-top:18px">Check in</button>
   </form>
 </div>
+
+<?php if ($rejections): ?>
+<div class="admin-card" style="max-width:520px; margin:20px auto 0">
+  <h3 style="font-size:0.98rem; margin-bottom:4px">Flagged attempts</h3>
+  <p class="muted" style="font-size:0.82rem; margin-bottom:14px">Rejected scans at this door — a repeated "Already used" for the same code is the clearest sign a ticket's been shared.</p>
+  <div class="admin-table-wrap" style="border:none; box-shadow:none;">
+    <table class="admin-table">
+      <thead><tr><th>Code</th><th>Reason</th><th>Time</th></tr></thead>
+      <tbody>
+        <?php foreach ($rejections as $r): $d = json_decode($r['details'] ?? '', true) ?: []; ?>
+          <tr>
+            <td class="mono" style="font-size:0.82rem"><?= htmlspecialchars($d['code'] ?? '—') ?></td>
+            <td><span class="admin-badge admin-badge-warn"><?= htmlspecialchars($rejectionReasonLabels[$d['reason'] ?? ''] ?? ($d['reason'] ?? 'Unknown')) ?></span></td>
+            <td class="muted mono" style="font-size:0.78rem"><?= htmlspecialchars(date('g:ia D j M', strtotime($r['created_at']))) ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php render_organizer_foot(); ?>
