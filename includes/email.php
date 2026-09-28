@@ -69,15 +69,12 @@ function send_password_reset_email(string $to, string $name, string $resetUrl): 
  * gets its own obitickets-hosted QR image (ticket_qr_image_url() in
  * includes/qr.php); a ticket whose QR couldn't be generated still renders
  * with its code shown as plain text, so one flaky request never breaks the
- * whole email.
+ * whole email. Shared by the "your tickets are ready" email and the
+ * day-before reminder below — neither carries its own copy of this markup.
  */
-function render_ticket_email_html(array $order): string
+function render_ticket_cards_html(array $order): string
 {
-    $eventTitle = htmlspecialchars($order['event_title']);
     $buyerName = htmlspecialchars($order['buyer_name']);
-    $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
-    $venue = htmlspecialchars($order['venue_name'] . ($order['venue_address'] ? ', ' . $order['venue_address'] : ''));
-    $ticketUrl = rtrim(APP_URL, '/') . '/order.php?id=' . (int) $order['id'];
 
     $cards = '';
     foreach ($order['items'] as $item) {
@@ -112,6 +109,18 @@ function render_ticket_email_html(array $order): string
               HTML;
         }
     }
+
+    return $cards;
+}
+
+function render_ticket_email_html(array $order): string
+{
+    $eventTitle = htmlspecialchars($order['event_title']);
+    $buyerName = htmlspecialchars($order['buyer_name']);
+    $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
+    $venue = htmlspecialchars($order['venue_name'] . ($order['venue_address'] ? ', ' . $order['venue_address'] : ''));
+    $ticketUrl = rtrim(APP_URL, '/') . '/order.php?id=' . (int) $order['id'];
+    $cards = render_ticket_cards_html($order);
 
     return <<<HTML
         <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
@@ -160,6 +169,62 @@ function send_order_tickets_email(int $orderId): void
 
     $subject = 'Your ' . ($ticketCount === 1 ? 'ticket' : 'tickets') . ' for ' . $order['event_title'];
     resend_send($order['buyer_email'], $subject, render_ticket_email_html($order));
+}
+
+function render_ticket_reminder_email_html(array $order): string
+{
+    $eventTitle = htmlspecialchars($order['event_title']);
+    $buyerName = htmlspecialchars($order['buyer_name']);
+    $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
+    $venue = htmlspecialchars($order['venue_name'] . ($order['venue_address'] ? ', ' . $order['venue_address'] : ''));
+    $ticketUrl = rtrim(APP_URL, '/') . '/order.php?id=' . (int) $order['id'];
+    $cards = render_ticket_cards_html($order);
+
+    return <<<HTML
+        <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
+          <h2 style="color:#991B1B;">See you soon? 🎟️</h2>
+          <p>Hi {$buyerName}, just a reminder that {$eventTitle} is coming up &mdash; your tickets are below, ready to scan at the gate.</p>
+          <p style="background:#FEF2F2; border-radius:12px; padding:14px 16px; color:#1C1526;">
+            <strong>{$eventTitle}</strong><br>
+            {$dateRange}<br>
+            {$venue}
+          </p>
+          {$cards}
+          <p style="font-size:14px; color:#726C7E;">
+            You can also view or re-download these anytime from your
+            <a href="{$ticketUrl}" style="color:#991B1B;">order page</a>.
+          </p>
+          <p style="color:#726C7E; font-size:12px;">
+            Each QR code is unique to one ticket and can only be scanned in once &mdash; please don't share a screenshot publicly.
+          </p>
+        </div>
+        HTML;
+}
+
+/**
+ * Emails a "see you soon" reminder for a paid order — same ticket cards as
+ * send_order_tickets_email(), different subject/intro. Called from
+ * cron/send-event-reminders.php once per paid order on an event starting in
+ * roughly 24 hours; never called from the checkout flow itself.
+ */
+function send_order_reminder_email(int $orderId): void
+{
+    $order = get_order_ticket_details($orderId);
+    if (!$order) {
+        error_log("[email] send_order_reminder_email: order $orderId not found");
+        return;
+    }
+
+    $ticketCount = 0;
+    foreach ($order['items'] as $item) {
+        $ticketCount += count($item['tickets']);
+    }
+    if ($ticketCount === 0) {
+        error_log("[email] send_order_reminder_email: order $orderId has no tickets yet");
+        return;
+    }
+
+    resend_send($order['buyer_email'], 'Reminder: ' . $order['event_title'] . ' is coming up', render_ticket_reminder_email_html($order));
 }
 
 function send_contact_notification_email(string $to, string $name, string $fromEmail, string $topic, string $message): void
