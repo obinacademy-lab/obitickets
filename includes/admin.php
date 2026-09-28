@@ -163,6 +163,31 @@ function get_daily_revenue(int $days = 14): array
 }
 
 /**
+ * Unique visitors per day, from the site_visits table (see track_site_visit()
+ * in includes/analytics.php) — one row per (session, day), so COUNT(*) here
+ * is already deduped rather than a raw pageview count.
+ */
+function get_daily_visitors(int $days = 14): array
+{
+    $stmt = db()->prepare('
+        SELECT visit_date AS day, COUNT(*) AS total
+        FROM site_visits
+        WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+        GROUP BY visit_date
+        ORDER BY day
+    ');
+    $stmt->execute([$days]);
+    $rows = array_column($stmt->fetchAll(), null, 'day');
+
+    $out = [];
+    for ($i = $days - 1; $i >= 0; $i--) {
+        $day = date('Y-m-d', strtotime("-$i days"));
+        $out[] = ['day' => $day, 'total' => (int) ($rows[$day]['total'] ?? 0)];
+    }
+    return $out;
+}
+
+/**
  * This-period vs previous-period deltas for the dashboard's KPI trend
  * arrows — real numbers, not a hardcoded "+12%". A NULL percent means the
  * previous period had zero to compare against (avoids a divide-by-zero

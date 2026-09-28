@@ -7,6 +7,9 @@ $activity = get_recent_activity(10);
 $upcoming = get_upcoming_events_admin(5);
 $dailyRevenue = get_daily_revenue(14);
 $maxDaily = max(1, ...array_column($dailyRevenue, 'total'));
+$dailyVisitors = get_daily_visitors(14);
+$maxDailyVisitors = max(1, ...array_column($dailyVisitors, 'total'));
+$todayVisitors = end($dailyVisitors)['total'] ?? 0;
 $comparison = get_period_comparison(30);
 $recentPayouts = admin_can('payouts.view') ? array_slice(get_payouts_admin(), 0, 6) : [];
 $payoutStatusMeta = ['PENDING' => 'admin-badge-warn', 'APPROVED' => 'admin-badge-purple', 'PROCESSING' => 'admin-badge-purple', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger'];
@@ -26,6 +29,20 @@ foreach ($chartPoints as $i => $p) {
     $chartLine .= ($i === 0 ? 'M' : ' L') . $p['x'] . ',' . $p['y'];
 }
 $chartArea = $chartPoints ? $chartLine . ' L' . end($chartPoints)['x'] . ',' . ($padTop + $plotH) . ' L' . $chartPoints[0]['x'] . ',' . ($padTop + $plotH) . ' Z' : '';
+
+// Same SVG line-chart build as the revenue chart above, for daily visitors.
+$visitorChartDays = count($dailyVisitors);
+$visitorChartPoints = [];
+foreach ($dailyVisitors as $i => $d) {
+    $x = $visitorChartDays > 1 ? $padX + ($i * ($plotW / ($visitorChartDays - 1))) : $padX + $plotW / 2;
+    $y = $padTop + (1 - ($d['total'] / $maxDailyVisitors)) * $plotH;
+    $visitorChartPoints[] = ['x' => round($x, 1), 'y' => round($y, 1), 'total' => $d['total'], 'day' => $d['day'], 'peak' => $d['total'] > 0 && $d['total'] == $maxDailyVisitors];
+}
+$visitorChartLine = '';
+foreach ($visitorChartPoints as $i => $p) {
+    $visitorChartLine .= ($i === 0 ? 'M' : ' L') . $p['x'] . ',' . $p['y'];
+}
+$visitorChartArea = $visitorChartPoints ? $visitorChartLine . ' L' . end($visitorChartPoints)['x'] . ',' . ($padTop + $plotH) . ' L' . $visitorChartPoints[0]['x'] . ',' . ($padTop + $plotH) . ' Z' : '';
 
 $actionLabels = [
     'event.status_change' => 'changed the status of event', 'event.feature' => 'featured event', 'event.unfeature' => 'unfeatured event',
@@ -124,6 +141,14 @@ render_admin_head('dashboard');
   </div>
   <div class="admin-kpi-card">
     <div class="admin-kpi-card-top">
+      <span class="lbl">Site visitors today</span>
+      <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-user"/></svg></span>
+    </div>
+    <span class="num"><span data-count-to="<?= (int) $todayVisitors ?>">0</span></span>
+    <span class="sub">Unique sessions since midnight</span>
+  </div>
+  <div class="admin-kpi-card">
+    <div class="admin-kpi-card-top">
       <span class="lbl">Pending payouts</span>
       <span class="admin-kpi-ic" style="background:<?= $stats['pending_payouts'] ? 'var(--warn-bg); color:var(--warn)' : 'var(--purple-tint); color:var(--purple)' ?>"><svg width="17" height="17"><use href="#ic-cash"/></svg></span>
     </div>
@@ -188,6 +213,37 @@ render_admin_head('dashboard');
       <?php if (admin_can('audit.view')): ?><a class="link" style="display:inline-block; margin-top:14px; font-size:0.84rem; font-weight:700; color:var(--purple)" href="/admin-audit.php">View all activity &rarr;</a><?php endif; ?>
     <?php endif; ?>
   </div>
+</div>
+
+<div class="admin-card" style="margin-top:20px">
+  <h3 style="margin-bottom:2px">Site visitors — last 14 days</h3>
+  <p style="color:var(--muted-2); font-size:0.82rem; margin-bottom:20px">Unique sessions per day, across the whole site</p>
+  <?php if ($maxDailyVisitors <= 1): ?>
+    <div class="admin-empty" style="padding:28px 24px">
+      <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-user"/></svg></div>
+      <p style="margin-top:0">No visitor traffic recorded in the last 14 days yet.</p>
+    </div>
+  <?php else: ?>
+    <svg viewBox="0 0 <?= $chartW ?> <?= $chartH ?>" width="100%" height="170" preserveAspectRatio="none" class="admin-line-chart">
+      <defs>
+        <linearGradient id="visitChartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--success)" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="var(--success)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="<?= htmlspecialchars($visitorChartArea) ?>" fill="url(#visitChartGrad)" stroke="none"></path>
+      <path d="<?= htmlspecialchars($visitorChartLine) ?>" fill="none" stroke="var(--success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="admin-line-path"></path>
+      <?php foreach ($visitorChartPoints as $p): ?>
+        <?php if ($p['peak']): ?>
+          <text x="<?= $p['x'] ?>" y="<?= max(11, $p['y'] - 9) ?>" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--success); font-family:'IBM Plex Mono',monospace;"><?= (int) $p['total'] ?></text>
+        <?php endif; ?>
+        <circle cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="<?= $p['peak'] ? 4.5 : 3 ?>" style="fill:var(--success); stroke:var(--surface); stroke-width:1.5;">
+          <title><?= htmlspecialchars(date('d M Y', strtotime($p['day']))) ?>: <?= (int) $p['total'] ?> visitor<?= $p['total'] === 1 ? '' : 's' ?></title>
+        </circle>
+        <text x="<?= $p['x'] ?>" y="<?= $chartH - 6 ?>" text-anchor="middle" font-size="9" style="fill:var(--muted-2); font-family:'IBM Plex Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($p['day']))) ?></text>
+      <?php endforeach; ?>
+    </svg>
+  <?php endif; ?>
 </div>
 
 <?php if (admin_can('payouts.view')): ?>
