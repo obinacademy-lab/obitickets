@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'set_role' && $targetId) {
         set_admin_role((int) $admin['id'], $targetId, (string) ($_POST['admin_role'] ?? ''));
+    } elseif ($action === 'remove_admin' && $targetId) {
+        update_user_role((int) $admin['id'], $targetId, 'ATTENDEE');
     } elseif ($action === 'promote') {
         $email = trim((string) ($_POST['email'] ?? ''));
         $stmt = db()->prepare('SELECT id FROM users WHERE email = ?');
@@ -77,7 +79,7 @@ render_admin_head('admins');
   <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
-      <thead><tr><th>Admin</th><th>Role</th><th>Last login</th><th>Since</th></tr></thead>
+      <thead><tr><th>Admin</th><th>Role</th><th>Last login</th><th>Since</th><th></th></tr></thead>
       <tbody>
         <?php foreach ($admins as $a): ?>
           <tr>
@@ -98,6 +100,14 @@ render_admin_head('admins');
             </td>
             <td class="muted mono"><?= $a['last_login_at'] ? htmlspecialchars(date('d M Y, H:i', strtotime($a['last_login_at']))) : '—' ?></td>
             <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($a['created_at']))) ?></td>
+            <td>
+              <?php if ((int) $a['id'] !== (int) $admin['id']): ?>
+                <form method="post" style="display:inline" data-confirm="Remove admin access for <?= htmlspecialchars($a['name'], ENT_QUOTES) ?>? They'll go back to being a regular attendee." data-danger>
+                  <?= csrf_field() ?><input type="hidden" name="action" value="remove_admin"><input type="hidden" name="user_id" value="<?= (int) $a['id'] ?>">
+                  <button type="submit" class="link" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:0; font-weight:700">Remove admin</button>
+                </form>
+              <?php endif; ?>
+            </td>
           </tr>
         <?php endforeach; ?>
       </tbody>
