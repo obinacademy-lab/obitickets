@@ -90,8 +90,8 @@ function register_user(string $name, string $email, string $password, string $ro
     $userId = (int) db()->lastInsertId();
 
     if ($role === 'ORGANIZER') {
-        $stmt = db()->prepare('INSERT INTO organizer_profiles (user_id, org_name) VALUES (?, ?)');
-        $stmt->execute([$userId, $name]);
+        $stmt = db()->prepare('INSERT INTO organizer_profiles (user_id, org_name, slug) VALUES (?, ?, ?)');
+        $stmt->execute([$userId, $name, generate_unique_organizer_slug($name)]);
     }
 
     session_regenerate_id(true);

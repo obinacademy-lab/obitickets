@@ -34,6 +34,7 @@ $userLikedEvent = has_liked_event((int) $event['id'], $likeUserId, $likeSessionT
 
 $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']);
 $shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
+$organizerSlug = get_or_create_organizer_slug((int) $event['organizer_id']);
 
 $minPrice = null;
 foreach ($tiers as $tier) {
@@ -134,11 +135,21 @@ include __DIR__ . '/includes/header.php';
 
       <h2 class="reveal" style="margin-bottom:20px">Organized by</h2>
       <div class="organizer-row reveal">
-        <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
-        <div>
-          <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
-          <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
-        </div>
+        <?php if ($organizerSlug): ?>
+          <a class="organizer-link" href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>" style="display:contents">
+            <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
+            <div>
+              <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
+              <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
+            </div>
+          </a>
+        <?php else: ?>
+          <span class="organizer-avatar"><?= htmlspecialchars(initials_from_name($event['org_name'] ?? $event['organizer_user_name'])) ?></span>
+          <div>
+            <h3><?= htmlspecialchars($event['org_name'] ?? $event['organizer_user_name']) ?></h3>
+            <p><?= htmlspecialchars($event['organizer_bio'] ?? 'Event organizer on obitickets.') ?></p>
+          </div>
+        <?php endif; ?>
         <button class="follow-btn" type="button">+ Follow</button>
       </div>
 

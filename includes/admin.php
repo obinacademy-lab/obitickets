@@ -1001,8 +1001,9 @@ function update_user_role(int $adminId, int $userId, string $role): void
         if (!$stmt->fetch()) {
             $nameStmt = db()->prepare('SELECT name FROM users WHERE id = ?');
             $nameStmt->execute([$userId]);
-            db()->prepare('INSERT INTO organizer_profiles (user_id, org_name) VALUES (?, ?)')
-                ->execute([$userId, $nameStmt->fetchColumn()]);
+            $orgName = (string) $nameStmt->fetchColumn();
+            db()->prepare('INSERT INTO organizer_profiles (user_id, org_name, slug) VALUES (?, ?, ?)')
+                ->execute([$userId, $orgName, generate_unique_organizer_slug($orgName)]);
         }
     }
     log_admin_action($adminId, 'user.role_change', 'user', $userId, ['role' => $role]);

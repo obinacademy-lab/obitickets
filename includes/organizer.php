@@ -75,6 +75,89 @@ function require_organizer_access(string $permission): array
 }
 
 // =====================================================================
+// Public organizer profile (organizer.php?slug=...)
+// =====================================================================
+
+function generate_unique_organizer_slug(string $orgName): string
+{
+    $base = slugify($orgName);
+    if ($base === '') {
+        $base = 'organizer';
+    }
+    $slug = $base;
+    $i = 2;
+    while (true) {
+        $stmt = db()->prepare('SELECT id FROM organizer_profiles WHERE slug = ?');
+        $stmt->execute([$slug]);
+        if (!$stmt->fetch()) {
+            return $slug;
+        }
+        $slug = $base . '-' . $i;
+        $i++;
+    }
+}
+
+/**
+ * Every organizer_profiles row created before this feature shipped has a
+ * NULL slug — rather than a one-time backfill script, this generates and
+ * saves one the first time it's actually needed (an event page linking to
+ * the organizer, or the organizer's own dashboard showing their shareable
+ * link). Called at most once per organizer; every call after that just
+ * reads the now-saved slug back.
+ */
+function get_or_create_organizer_slug(int $organizerUserId): ?string
+{
+    $stmt = db()->prepare('SELECT slug, org_name FROM organizer_profiles WHERE user_id = ?');
+    $stmt->execute([$organizerUserId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+    if ($row['slug']) {
+        return $row['slug'];
+    }
+    $slug = generate_unique_organizer_slug($row['org_name']);
+    db()->prepare('UPDATE organizer_profiles SET slug = ? WHERE user_id = ?')->execute([$slug, $organizerUserId]);
+    return $slug;
+}
+
+function get_organizer_profile_by_slug(string $slug): ?array
+{
+    $stmt = db()->prepare('
+        SELECT op.*, u.name AS user_name
+        FROM organizer_profiles op
+        JOIN users u ON u.id = op.user_id
+        WHERE op.slug = ?
+    ');
+    $stmt->execute([$slug]);
+    return $stmt->fetch() ?: null;
+}
+
+/**
+ * Only ever PUBLISHED events — a public profile page is not the place to
+ * leak an organizer's drafts or cancelled events.
+ * @return array{upcoming: list<array>, past: list<array>}
+ */
+function get_public_events_for_organizer(int $organizerUserId): array
+{
+    $stmt = db()->prepare("
+        SELECT id, title, slug, banner_image, banner_emoji, venue_name, starts_at
+        FROM events
+        WHERE organizer_id = ? AND status = 'PUBLISHED'
+        ORDER BY starts_at ASC
+    ");
+    $stmt->execute([$organizerUserId]);
+    $all = $stmt->fetchAll();
+
+    $now = date('Y-m-d H:i:s');
+    $upcoming = array_values(array_filter($all, static fn ($e) => $e['starts_at'] >= $now));
+    $past = array_values(array_filter($all, static fn ($e) => $e['starts_at'] < $now));
+    usort($past, static fn ($a, $b) => strcmp($b['starts_at'], $a['starts_at']));
+
+    return ['upcoming' => $upcoming, 'past' => $past];
+}
+
+// =====================================================================
 // Team management
 // =====================================================================
 
