@@ -16,7 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'set_role' && $targetId) {
         set_admin_role((int) $admin['id'], $targetId, (string) ($_POST['admin_role'] ?? ''));
     } elseif ($action === 'remove_admin' && $targetId) {
-        update_user_role((int) $admin['id'], $targetId, 'ATTENDEE');
+        // Someone promoted to admin was very possibly an organizer first —
+        // an existing organizer_profiles row is how we know that, since
+        // promoting to ADMIN overwrites role but never touches that table.
+        // Revert to ORGANIZER for them instead of flattening to ATTENDEE.
+        $stmt = db()->prepare('SELECT id FROM organizer_profiles WHERE user_id = ?');
+        $stmt->execute([$targetId]);
+        $fallbackRole = $stmt->fetch() ? 'ORGANIZER' : 'ATTENDEE';
+        update_user_role((int) $admin['id'], $targetId, $fallbackRole);
     } elseif ($action === 'promote') {
         $email = trim((string) ($_POST['email'] ?? ''));
         $stmt = db()->prepare('SELECT id FROM users WHERE email = ?');
