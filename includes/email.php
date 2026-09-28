@@ -227,6 +227,55 @@ function send_order_reminder_email(int $orderId): void
     resend_send($order['buyer_email'], 'Reminder: ' . $order['event_title'] . ' is coming up', render_ticket_reminder_email_html($order));
 }
 
+/**
+ * The order has no tickets to show (payment never went through), so this is
+ * a much simpler email than the two above — just what they were trying to
+ * buy, and a link back to the event to start a fresh checkout. Called from
+ * cron/expire-stale-orders.php right after fail_order() releases the
+ * abandoned reservation, so the "try again" link always points at tickets
+ * that are actually available again.
+ */
+function render_abandoned_checkout_email_html(array $order): string
+{
+    $eventTitle = htmlspecialchars($order['event_title']);
+    $buyerName = htmlspecialchars($order['buyer_name']);
+    $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($order['event_slug']);
+
+    $lines = '';
+    foreach ($order['items'] as $item) {
+        $lines .= '<p style="margin:4px 0; font-family:sans-serif; font-size:14px; color:#1C1526;">' . (int) $item['quantity'] . '&times; ' . htmlspecialchars($item['tier_name']) . '</p>';
+    }
+
+    return <<<HTML
+        <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
+          <h2 style="color:#991B1B;">Still want to go? 🎟️</h2>
+          <p>Hi {$buyerName}, your ticket reservation for <strong>{$eventTitle}</strong> didn't go through &mdash; no charge was made, and those tickets have been released back to general sale.</p>
+          <div style="background:#FEF2F2; border-radius:12px; padding:14px 16px; margin:16px 0;">
+            {$lines}
+          </div>
+          <p>
+            <a href="{$eventUrl}" style="display:inline-block; background:#DC2626; color:#fff; padding:12px 24px; border-radius:999px; text-decoration:none; font-weight:600;">
+              Try again
+            </a>
+          </p>
+          <p style="color:#726C7E; font-size:12px;">
+            If you no longer want to attend, you can safely ignore this email.
+          </p>
+        </div>
+        HTML;
+}
+
+function send_abandoned_checkout_email(int $orderId): void
+{
+    $order = get_order_ticket_details($orderId);
+    if (!$order) {
+        error_log("[email] send_abandoned_checkout_email: order $orderId not found");
+        return;
+    }
+
+    resend_send($order['buyer_email'], 'Still want to go to ' . $order['event_title'] . '?', render_abandoned_checkout_email_html($order));
+}
+
 function send_contact_notification_email(string $to, string $name, string $fromEmail, string $topic, string $message): void
 {
     // All four values come straight from an unauthenticated public form
