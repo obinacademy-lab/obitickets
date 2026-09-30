@@ -69,6 +69,15 @@ function require_role(string $role): array
     return $user;
 }
 
+/** Shared by the direct-login path and verify-2fa.php's post-code-check path. */
+function finalize_login(int $userId, string $role): void
+{
+    $_SESSION['user_id'] = $userId;
+    unset($_SESSION['pending_2fa_user_id'], $_SESSION['two_factor_attempts']);
+    db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$userId]);
+    log_login_event($userId, $role, 'LOGIN');
+}
+
 /**
  * @return array{0: bool, 1: ?string} [success, errorMessage]
  */
@@ -124,25 +133,34 @@ function log_login_event(int $userId, string $role, string $eventType): void
 /**
  * @return array{0: bool, 1: ?string} [success, errorMessage]
  */
+/**
+ * @return array{0: bool, 1: ?string, 2: bool} [success, errorMessage, needsTwoFactor]
+ */
 function attempt_login(string $email, string $password): array
 {
-    $stmt = db()->prepare('SELECT id, password_hash, account_status, role FROM users WHERE email = ?');
+    $stmt = db()->prepare('SELECT id, password_hash, account_status, role, totp_enabled FROM users WHERE email = ?');
     $stmt->execute([strtolower(trim($email))]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
-        return [false, 'Incorrect email or password.'];
+        return [false, 'Incorrect email or password.', false];
     }
     if ($user['account_status'] === 'SUSPENDED') {
-        return [false, 'This account has been suspended. Contact support for help.'];
+        return [false, 'This account has been suspended. Contact support for help.', false];
     }
 
+    // Regenerate now (right after the password check) regardless of whether a
+    // second factor is still needed, so the session id a 2FA-pending request
+    // rides on is never one an attacker could have fixed beforehand.
     session_regenerate_id(true);
-    $_SESSION['user_id'] = (int) $user['id'];
-    db()->prepare('UPDATE users SET last_login_at = NOW() WHERE id = ?')->execute([$user['id']]);
-    log_login_event((int) $user['id'], $user['role'], 'LOGIN');
 
-    return [true, null];
+    if ($user['role'] === 'ADMIN' && (int) $user['totp_enabled'] === 1) {
+        $_SESSION['pending_2fa_user_id'] = (int) $user['id'];
+        return [true, null, true];
+    }
+
+    finalize_login((int) $user['id'], $user['role']);
+    return [true, null, false];
 }
 
 function logout_user(): void

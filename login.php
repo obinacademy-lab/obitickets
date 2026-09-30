@@ -26,9 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $password === '') {
         $errors[] = 'Please enter your email and password.';
     } else {
-        [$ok, $err] = attempt_login($email, $password);
+        [$ok, $err, $needsTwoFactor] = attempt_login($email, $password);
         if ($ok) {
-            header('Location: ' . $next);
+            header('Location: ' . ($needsTwoFactor ? '/verify-2fa.php?next=' . urlencode($next) : $next));
             exit;
         }
         $errors[] = $err;

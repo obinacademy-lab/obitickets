@@ -19,6 +19,7 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/geo.php';
 require_once __DIR__ . '/analytics.php';
+require_once __DIR__ . '/totp.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/api.php';
 require_once __DIR__ . '/qr.php';

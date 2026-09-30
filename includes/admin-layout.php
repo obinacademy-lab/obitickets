@@ -48,6 +48,7 @@ function render_admin_head(string $active): void
             ['key' => 'admins', 'label' => 'Admin Users', 'href' => '/admin-admins.php', 'icon' => 'ic-shield', 'perm' => 'admins.manage'],
             ['key' => 'logins', 'label' => 'Login Activity', 'href' => '/admin-logins.php', 'icon' => 'ic-pin', 'perm' => 'audit.view'],
             ['key' => 'audit', 'label' => 'Audit Logs', 'href' => '/admin-audit.php', 'icon' => 'ic-clock', 'perm' => 'audit.view'],
+            ['key' => '2fa', 'label' => 'Two-Factor Auth', 'href' => '/admin-security.php', 'icon' => 'ic-shield', 'perm' => 'dashboard.view'],
         ]],
         ['label' => 'Settings', 'items' => [
             ['key' => 'settings', 'label' => 'General', 'href' => '/admin-settings.php', 'icon' => 'ic-settings', 'perm' => 'settings.view'],
@@ -144,6 +145,7 @@ function render_admin_head(string $active): void
           <svg width="14" height="14" class="admin-profile-chev"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg>
         </button>
         <div class="admin-profile-menu" id="adminProfileMenu">
+          <a href="/admin-security.php">Two-factor authentication</a>
           <a href="/">Back to site</a>
           <a href="/logout.php">Log out</a>
         </div>
