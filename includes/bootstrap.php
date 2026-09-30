@@ -28,6 +28,7 @@ require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/events.php';
 require_once __DIR__ . '/payments.php';
 require_once __DIR__ . '/checkin.php';
+require_once __DIR__ . '/reviews.php';
 require_once __DIR__ . '/admin.php';
 require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';

@@ -765,6 +765,29 @@ body.ticket-sheet-open .sheet-backdrop{opacity:1; visibility:visible; pointer-ev
 .follow-btn{margin-left:auto; padding:8px 18px; border-radius:10px; border:1px solid var(--line-strong); font-weight:700; font-size:0.82rem; background:var(--paper); transition:all .25s var(--ease); flex:none;}
 .follow-btn:hover{border-color:var(--purple); color:var(--purple);}
 
+/* ---------- reviews & ratings (event.php) — the star picker is a classic
+   CSS-only radio trick: options run 5..1 in the DOM (flex row-reverse
+   redraws them 1..5 on screen) so a plain ~ sibling selector can light up
+   a star and everything visually to its left without any JS. ---------- */
+.review-stars{display:inline-flex; gap:2px; color:#FFC107; font-size:1rem; letter-spacing:1px;}
+.review-stars .empty{color:var(--line-strong);}
+.review-summary{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:22px;}
+.review-summary .avg{font-size:1.5rem; font-weight:800;}
+.review-summary .review-stars{font-size:1.2rem;}
+.star-picker{display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:4px;}
+.star-picker input{position:absolute; opacity:0; pointer-events:none;}
+.star-picker label{font-size:1.9rem; line-height:1; color:var(--line-strong); cursor:pointer; transition:color .12s var(--ease);}
+.star-picker input:checked ~ label,
+.star-picker label:hover,
+.star-picker label:hover ~ label{color:#FFC107;}
+.review-form{margin-bottom:28px; max-width:460px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px 22px;}
+.review-row{padding:18px 0; border-top:1px solid var(--line);}
+.review-row:first-of-type{border-top:none;}
+.review-row-head{display:flex; align-items:center; gap:12px;}
+.review-row-head .who{font-weight:700; font-size:0.92rem;}
+.review-row-head .when{margin-left:auto; font-size:0.78rem; color:var(--muted-2);}
+.review-comment{margin-top:8px; color:var(--muted); font-size:0.92rem; max-width:64ch;}
+
 /* ---------- event gallery: photos and videos in their own separate,
    labeled sections (event.php) — both feed into the same lightbox's
    Prev/Next via [data-gallery-index], in this same page order. A

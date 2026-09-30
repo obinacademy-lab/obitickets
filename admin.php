@@ -52,6 +52,7 @@ $actionLabels = [
     'promo.create' => 'created promo code', 'promo.activate' => 'activated promo code', 'promo.deactivate' => 'deactivated promo code', 'promo.delete' => 'deleted promo code',
     'user.role_change' => 'changed role for user', 'admin.role_assign' => 'assigned admin role to', 'contact.status_change' => 'updated contact message',
     'settings.update' => 'updated a setting',
+    'review.delete' => 'removed a review on event',
     'admin.2fa_enable' => 'turned on two-factor authentication', 'admin.2fa_disable' => 'turned off two-factor authentication', 'admin.2fa_regenerate_codes' => 'regenerated 2FA recovery codes for',
 ];
 

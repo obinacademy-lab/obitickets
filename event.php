@@ -36,6 +36,34 @@ $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug'])
 $shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
 $organizerSlug = get_or_create_organizer_slug((int) $event['organizer_id']);
 
+$reviewError = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_review') {
+    verify_csrf();
+    if (!$currentUser) {
+        header('Location: /login.php?next=' . urlencode($_SERVER['REQUEST_URI']));
+        exit;
+    }
+    [$reviewOk, $reviewError] = submit_event_review(
+        (int) $currentUser['id'],
+        (int) $event['id'],
+        (int) ($_POST['rating'] ?? 0),
+        $_POST['comment'] ?? null
+    );
+    if ($reviewOk) {
+        // Relative on purpose — $eventUrl is built from APP_URL (for share
+        // links/OG tags, which need an absolute URL), but an internal redirect
+        // should land on whatever host the visitor is already on.
+        header('Location: /event.php?slug=' . urlencode($event['slug']) . '#reviews');
+        exit;
+    }
+}
+
+$reviewSummary = get_event_rating_summary((int) $event['id']);
+$reviews = get_reviews_for_event((int) $event['id']);
+$myReview = $currentUser ? get_user_review_for_event((int) $currentUser['id'], (int) $event['id']) : null;
+$eventHasEnded = strtotime($event['ends_at']) < time();
+$canReview = $currentUser && $eventHasEnded && user_attended_event((int) $currentUser['id'], (int) $event['id']);
+
 $minPrice = null;
 foreach ($tiers as $tier) {
     if ($minPrice === null || (float) $tier['price'] < $minPrice) {
@@ -199,6 +227,59 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
       <?php endif; ?>
+      <?php endif; ?>
+
+      <?php if ($eventHasEnded || $reviews): ?>
+      <div class="divider"></div>
+      <h2 class="reveal" id="reviews" style="margin-bottom:16px">Reviews</h2>
+
+      <div class="review-summary reveal">
+        <?php if ($reviewSummary['count'] > 0): ?>
+          <span class="avg"><?= number_format($reviewSummary['average'], 1) ?></span>
+          <?= render_star_rating($reviewSummary['average']) ?>
+          <span style="color:var(--muted-2); font-size:0.86rem;"><?= $reviewSummary['count'] ?> review<?= $reviewSummary['count'] === 1 ? '' : 's' ?></span>
+        <?php else: ?>
+          <span style="color:var(--muted-2);">No reviews yet.</span>
+        <?php endif; ?>
+      </div>
+
+      <?php if ($reviewError): ?>
+        <div class="alert alert-error" style="max-width:460px; margin-bottom:16px"><?= htmlspecialchars($reviewError) ?></div>
+      <?php endif; ?>
+
+      <?php if ($canReview): ?>
+        <form method="post" class="review-form reveal">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="submit_review">
+          <div style="font-weight:700; margin-bottom:10px"><?= $myReview ? 'Update your review' : 'How was it?' ?></div>
+          <div class="star-picker" role="radiogroup" aria-label="Rating">
+            <?php for ($s = 5; $s >= 1; $s--): ?>
+              <input type="radio" id="rate<?= $s ?>" name="rating" value="<?= $s ?>" required<?= $myReview && (int) $myReview['rating'] === $s ? ' checked' : '' ?>>
+              <label for="rate<?= $s ?>" title="<?= $s ?> star<?= $s === 1 ? '' : 's' ?>">&#9733;</label>
+            <?php endfor; ?>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <textarea name="comment" rows="3" maxlength="1000" placeholder="Tell others what you thought (optional)" style="width:100%"><?= htmlspecialchars($myReview['comment'] ?? '') ?></textarea>
+          </div>
+          <button class="btn btn-purple" type="submit" style="margin-top:12px"><?= $myReview ? 'Update review' : 'Post review' ?></button>
+        </form>
+      <?php elseif ($eventHasEnded && !$currentUser): ?>
+        <p class="reveal" style="color:var(--muted-2); font-size:0.9rem; margin-bottom:20px"><a href="/login.php?next=<?= urlencode('/event.php?slug=' . $event['slug'] . '#reviews') ?>" style="color:var(--purple-light); font-weight:700">Log in</a> if you attended to leave a review.</p>
+      <?php endif; ?>
+
+      <?php foreach ($reviews as $r): ?>
+        <div class="review-row reveal">
+          <div class="review-row-head">
+            <span class="organizer-avatar" style="width:36px; height:36px; font-size:0.78rem"><?= htmlspecialchars(initials_from_name($r['reviewer_name'])) ?></span>
+            <div>
+              <div class="who"><?= htmlspecialchars($r['reviewer_name']) ?></div>
+              <?= render_star_rating((float) $r['rating']) ?>
+            </div>
+            <span class="when"><?= htmlspecialchars(date('j M Y', strtotime($r['created_at']))) ?></span>
+          </div>
+          <?php if ($r['comment']): ?><p class="review-comment"><?= nl2br(htmlspecialchars($r['comment'])) ?></p><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
       <?php endif; ?>
 
     </div>

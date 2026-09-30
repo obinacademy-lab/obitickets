@@ -25,6 +25,7 @@ if (!$organizer) {
 
 $events = get_public_events_for_organizer((int) $organizer['user_id']);
 $eventCount = count($events['upcoming']) + count($events['past']);
+$ratingSummary = get_organizer_rating_summary((int) $organizer['user_id']);
 
 $pageTitle = $organizer['org_name'] . ' — obitickets';
 $pageDescription = ($organizer['bio'] ?: ('Events by ' . $organizer['org_name'] . ' on obitickets.'));
@@ -44,7 +45,16 @@ include __DIR__ . '/includes/header.php';
           </span>
         <?php endif; ?>
       </h1>
-      <p class="muted" style="margin-top:6px; font-size:0.92rem;"><?= $eventCount ?> event<?= $eventCount === 1 ? '' : 's' ?> on obitickets</p>
+      <p class="muted" style="margin-top:6px; font-size:0.92rem; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span><?= $eventCount ?> event<?= $eventCount === 1 ? '' : 's' ?> on obitickets</span>
+        <?php if ($ratingSummary['count'] > 0): ?>
+          <span style="display:inline-flex; align-items:center; gap:6px;">
+            <?= render_star_rating($ratingSummary['average']) ?>
+            <strong style="color:var(--ink)"><?= number_format($ratingSummary['average'], 1) ?></strong>
+            <span>(<?= $ratingSummary['count'] ?> review<?= $ratingSummary['count'] === 1 ? '' : 's' ?>)</span>
+          </span>
+        <?php endif; ?>
+      </p>
       <?php if ($organizer['bio']): ?>
         <p style="margin-top:14px; max-width:60ch; color:var(--muted-2);"><?= nl2br(htmlspecialchars($organizer['bio'])) ?></p>
       <?php endif; ?>

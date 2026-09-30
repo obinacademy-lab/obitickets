@@ -228,6 +228,38 @@ function send_order_reminder_email(int $orderId): void
 }
 
 /**
+ * A "how was it?" nudge sent to every checked-in attendee once an event has
+ * finished — see cron/send-review-prompts.php. Not tied to an order (an
+ * attendee, not a purchase), so this takes plain values rather than the
+ * get_order_ticket_details() shape the emails above use.
+ */
+function render_review_prompt_email_html(string $name, string $eventTitle, string $eventUrl): string
+{
+    $safeName = htmlspecialchars($name);
+    $safeTitle = htmlspecialchars($eventTitle);
+
+    return <<<HTML
+        <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
+          <h2 style="color:#991B1B;">How was {$safeTitle}? 🎉</h2>
+          <p>Hi {$safeName}, thanks for coming out! We'd love to hear what you thought — it only takes a minute.</p>
+          <p>
+            <a href="{$eventUrl}" style="display:inline-block; background:#DC2626; color:#fff; padding:12px 24px; border-radius:999px; text-decoration:none; font-weight:600;">
+              Leave a review
+            </a>
+          </p>
+          <p style="color:#726C7E; font-size:12px;">
+            Your review helps other people discover great events like this one.
+          </p>
+        </div>
+        HTML;
+}
+
+function send_review_prompt_email(string $email, string $name, string $eventTitle, string $eventUrl): void
+{
+    resend_send($email, 'How was ' . $eventTitle . '?', render_review_prompt_email_html($name, $eventTitle, $eventUrl));
+}
+
+/**
  * The order has no tickets to show (payment never went through), so this is
  * a much simpler email than the two above — just what they were trying to
  * buy, and a link back to the event to start a fresh checkout. Called from
