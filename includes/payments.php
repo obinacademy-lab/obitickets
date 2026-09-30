@@ -145,10 +145,10 @@ function create_pending_order(
         $commission = round($subtotal * PLATFORM_COMMISSION_RATE, 2);
 
         $stmt = $pdo->prepare('
-            INSERT INTO orders (user_id, event_id, status, subtotal_amount, service_fee_amount, commission_amount, total_amount, currency, payment_method)
-            VALUES (?, ?, "PENDING", ?, ?, ?, ?, ?, "MOBILE_MONEY")
+            INSERT INTO orders (user_id, event_id, status, subtotal_amount, service_fee_amount, commission_amount, total_amount, currency, payment_method, phone)
+            VALUES (?, ?, "PENDING", ?, ?, ?, ?, ?, "MOBILE_MONEY", ?)
         ');
-        $stmt->execute([$userId, $eventId, $subtotal, $fee, $commission, $total, $currency]);
+        $stmt->execute([$userId, $eventId, $subtotal, $fee, $commission, $total, $currency, $phone]);
         $orderId = (int) $pdo->lastInsertId();
 
         foreach ($lineItems as $item) {
@@ -224,6 +224,12 @@ function finalize_order_success(int $orderId, ?string $statusMessage): void
         // order is already PAID and the tickets already exist (visible on
         // my-tickets.php/order.php either way); just log it for follow-up.
         error_log('[email] send_order_tickets_email failed for order ' . $orderId . ': ' . $e->getMessage());
+    }
+
+    try {
+        send_order_tickets_sms($orderId);
+    } catch (Throwable $e) {
+        error_log('[sms] send_order_tickets_sms failed for order ' . $orderId . ': ' . $e->getMessage());
     }
 }
 

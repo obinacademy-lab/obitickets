@@ -32,6 +32,17 @@ define('IOTEC_WALLET_ID', '');
 define('RESEND_API_KEY', '');
 define('EMAIL_FROM', 'obitickets <info@obitickets.site>');
 
+// --- SMS (Africa's Talking — africastalking.com) ----------------------------
+// Sign up at https://africastalking.com, then from your dashboard:
+//   - Sandbox app (default, for testing): username is literally "sandbox";
+//     add your own phone number under Sandbox > Simulator > Launch to
+//     receive test SMS for free before going live.
+//   - Live app (once ready for real attendees): create an app, use its
+//     username, and buy SMS credit — Uganda delivery is billed per message.
+// Leave AT_API_KEY blank to skip SMS entirely (ticket email still sends).
+define('AT_USERNAME', 'sandbox');
+define('AT_API_KEY', '');
+
 if (APP_ENV === 'development') {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');
