@@ -33,9 +33,9 @@ $grid = array_slice($upcoming, 4);
         <button type="submit" class="btn btn-purple">Discover</button>
       </form>
     </div>
-    <?php if ($picks): ?>
+    <?php if ($upcoming): ?>
     <div class="home-hero-v2-collage" id="heroCollage">
-      <?php foreach (array_slice($picks, 0, 3) as $i => $event): ?>
+      <?php foreach ($upcoming as $i => $event): ?>
         <a class="home-hero-v2-collage-item" href="/event.php?slug=<?= urlencode($event['slug']) ?>" aria-label="View <?= htmlspecialchars($event['title']) ?>">
           <?php if (!empty($event['banner_image'])): ?>
             <img class="home-hero-v2-collage-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
