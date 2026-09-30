@@ -32,16 +32,15 @@ define('IOTEC_WALLET_ID', '');
 define('RESEND_API_KEY', '');
 define('EMAIL_FROM', 'obitickets <info@obitickets.site>');
 
-// --- SMS (Africa's Talking — africastalking.com) ----------------------------
-// Sign up at https://africastalking.com, then from your dashboard:
-//   - Sandbox app (default, for testing): username is literally "sandbox";
-//     add your own phone number under Sandbox > Simulator > Launch to
-//     receive test SMS for free before going live.
-//   - Live app (once ready for real attendees): create an app, use its
-//     username, and buy SMS credit — Uganda delivery is billed per message.
-// Leave AT_API_KEY blank to skip SMS entirely (ticket email still sends).
-define('AT_USERNAME', 'sandbox');
-define('AT_API_KEY', '');
+// --- SMS (ioTec Messaging — a separate product from the Pay wallet above,
+// with its own credentials) --------------------------------------------------
+// Log into https://messaging.iotec.io with your iotec account, then:
+// Management > Settings > CONFIGURATION tab. IOTEC_MSG_CLIENT_ID is shown
+// under "API Key"; click "Generate New API Key" for IOTEC_MSG_API_KEY (only
+// shown once — copy it immediately). Leave either blank to skip SMS entirely
+// (the ticket email still sends either way).
+define('IOTEC_MSG_CLIENT_ID', '');
+define('IOTEC_MSG_API_KEY', '');
 
 if (APP_ENV === 'development') {
     error_reporting(E_ALL);

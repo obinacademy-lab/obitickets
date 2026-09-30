@@ -40,7 +40,7 @@ include __DIR__ . '/includes/header.php';
       <ul>
         <li><strong>iotec</strong> — processes MTN Mobile Money and Airtel Money payments</li>
         <li><strong>Resend</strong> — delivers transactional emails (your tickets, password resets)</li>
-        <li><strong>Africa's Talking</strong> — texts your ticket code(s) to the phone number used at checkout; only that phone number and the ticket details are sent to it</li>
+        <li><strong>ioTec Messaging</strong> — texts your ticket code(s) to the phone number used at checkout; only that phone number and the ticket details are sent to it</li>
         <li>A QR code generation service — turns your ticket code into a scannable image; only the ticket code itself (not your name or email) is sent to it</li>
         <li>An IP geolocation lookup — resolves a login's approximate city/country for the security monitoring described above</li>
       </ul>

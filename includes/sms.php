@@ -2,47 +2,50 @@
 declare(strict_types=1);
 
 /**
- * SMS delivery via Africa's Talking (africastalking.com) — the same
- * "log and return, never throw" shape as resend_send() in email.php, so a
- * broken/unconfigured SMS gateway can never break checkout. Uses
- * defined()/empty() rather than a bare constant reference for AT_USERNAME
- * and AT_API_KEY, since a live config.php deployed before this feature
- * shipped won't define them yet — that must degrade to "SMS skipped", not a
- * fatal "undefined constant" error on every single request.
+ * SMS delivery via ioTec Messaging (https://iotec.io/api-docs/messaging) —
+ * a separate iotec product from the Pay wallet already used for mobile
+ * money in includes/iotec.php, with its own credentials (Client-Id +
+ * X-Api-Key from https://messaging.iotec.io, not the Pay client_id/secret)
+ * and no OAuth token exchange, just static headers on every request.
+ * Same "log and return, never throw" shape as resend_send() in email.php,
+ * so a broken/unconfigured SMS gateway can never break checkout. Uses
+ * defined()/empty() rather than a bare constant reference for the
+ * credentials, since a live config.php deployed before this feature shipped
+ * won't define them yet — that must degrade to "SMS skipped", not a fatal
+ * "undefined constant" error on every single request.
  */
-function at_username(): string
+const IOTEC_MESSAGING_SEND_URL = 'https://messaging-api.iotec.io/api/msg/bulk/send';
+
+function iotec_msg_client_id(): string
 {
-    return defined('AT_USERNAME') ? AT_USERNAME : 'sandbox';
+    return defined('IOTEC_MSG_CLIENT_ID') ? IOTEC_MSG_CLIENT_ID : '';
 }
 
-function at_api_key(): string
+function iotec_msg_api_key(): string
 {
-    return defined('AT_API_KEY') ? AT_API_KEY : '';
+    return defined('IOTEC_MSG_API_KEY') ? IOTEC_MSG_API_KEY : '';
 }
 
 function send_sms(string $phone, string $message): void
 {
-    if (at_api_key() === '') {
-        error_log("[sms] AT_API_KEY is not set — skipping SMS to $phone");
+    if (iotec_msg_api_key() === '' || iotec_msg_client_id() === '') {
+        error_log("[sms] IOTEC_MSG_CLIENT_ID/IOTEC_MSG_API_KEY not set — skipping SMS to $phone");
         return;
     }
 
-    $to = '+' . iotec_normalize_phone($phone);
-    $username = at_username();
-    $host = $username === 'sandbox' ? 'api.sandbox.africastalking.com' : 'api.africastalking.com';
+    $recipient = preg_replace('/\D/', '', $phone) ?? '';
 
-    $ch = curl_init("https://$host/version1/messaging");
+    $ch = curl_init(IOTEC_MESSAGING_SEND_URL);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => [
-            'apiKey: ' . at_api_key(),
-            'Accept: application/json',
-            'Content-Type: application/x-www-form-urlencoded',
+            'Client-Id: ' . iotec_msg_client_id(),
+            'X-Api-Key: ' . iotec_msg_api_key(),
+            'Content-Type: application/json',
         ],
-        CURLOPT_POSTFIELDS => http_build_query([
-            'username' => $username,
-            'to' => $to,
-            'message' => $message,
+        CURLOPT_POSTFIELDS => json_encode([
+            'recipients' => [$recipient],
+            'body' => $message,
         ]),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 20,
@@ -52,7 +55,7 @@ function send_sms(string $phone, string $message): void
     curl_close($ch);
 
     if ($status < 200 || $status >= 300) {
-        error_log("[sms] Africa's Talking rejected the SMS to $to ($status): $body");
+        error_log("[sms] ioTec Messaging rejected the SMS to $recipient ($status): $body");
     }
 }
 
