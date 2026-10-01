@@ -70,6 +70,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var textEl = document.getElementById('cd-text');
     function tick() {
       var diff = Math.max(0, target - new Date());
+      if (diff === 0 && textEl && textEl.parentNode) {
+        // Already started — "Starts in 0d 0h 0m" reads wrong at the venue door.
+        textEl.parentNode.innerHTML = '<span class="tk">&#127917;</span> Happening now';
+        return;
+      }
       var d = Math.floor(diff / 86400000);
       var h = Math.floor((diff % 86400000) / 3600000);
       var m = Math.floor((diff % 3600000) / 60000);

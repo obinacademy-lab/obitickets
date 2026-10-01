@@ -69,6 +69,20 @@ function require_role(string $role): array
     return $user;
 }
 
+/**
+ * A same-site path safe to redirect to after login/signup, or $default. Must
+ * be a single leading slash: "//evil.com" and "/\evil.com" are parsed by
+ * browsers as protocol-relative absolute URLs, i.e. an open redirect.
+ * @param mixed $next
+ */
+function safe_next_path($next, string $default = '/dashboard.php'): string
+{
+    if (!is_string($next) || $next === '' || $next[0] !== '/' || str_starts_with($next, '//') || str_starts_with($next, '/\\') || preg_match('/[\r\n]/', $next)) {
+        return $default;
+    }
+    return $next;
+}
+
 /** Shared by the direct-login path and verify-2fa.php's post-code-check path. */
 function finalize_login(int $userId, string $role): void
 {

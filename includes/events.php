@@ -41,7 +41,7 @@ function trending_music_events(int $limit = 6): array
     $stmt = db()->prepare("
         SELECT " . EVENT_SELECT . "
         FROM events e
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW() AND e.category = 'Music'
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.category = 'Music'
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
     );
@@ -67,7 +67,7 @@ function free_community_events(int $limit = 6): array
     $stmt = db()->prepare("
         SELECT " . EVENT_SELECT . "
         FROM events e
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW()
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
           AND EXISTS (SELECT 1 FROM ticket_types t WHERE t.event_id = e.id AND t.price = 0)
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
@@ -83,7 +83,7 @@ function free_community_events(int $limit = 6): array
  */
 function search_events(?string $q, ?string $category, bool $freeOnly = false, int $limit = 60): array
 {
-    $conditions = ["e.status = 'PUBLISHED'", 'e.starts_at >= NOW()'];
+    $conditions = ["e.status = 'PUBLISHED'", 'e.ends_at >= NOW()'];
     $params = [];
 
     $q = trim((string) $q);
@@ -121,7 +121,7 @@ function get_category_counts(): array
     $stmt = db()->query("
         SELECT category, COUNT(*) AS cnt
         FROM events
-        WHERE status = 'PUBLISHED' AND starts_at >= NOW()
+        WHERE status = 'PUBLISHED' AND ends_at >= NOW()
         GROUP BY category
     ");
     foreach ($stmt->fetchAll() as $row) {
@@ -142,7 +142,7 @@ function get_hero_carousel_events(int $limit = 4): array
     $stmt = db()->prepare("
         SELECT " . EVENT_SELECT . "
         FROM events e
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW() AND e.banner_image IS NOT NULL
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.banner_image IS NOT NULL
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
     );
@@ -155,7 +155,7 @@ function get_hero_carousel_events(int $limit = 4): array
     $stmt = db()->prepare("
         SELECT " . EVENT_SELECT . "
         FROM events e
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW()
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
     );
@@ -166,7 +166,7 @@ function get_hero_carousel_events(int $limit = 4): array
 /** Feeds the homepage's large-card grid, below the hero carousel. */
 function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
 {
-    $sql = "SELECT " . EVENT_SELECT . " FROM events e WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW()";
+    $sql = "SELECT " . EVENT_SELECT . " FROM events e WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()";
     $params = [];
     $excludeEventIds = array_filter(array_map('intval', $excludeEventIds));
     if ($excludeEventIds) {
@@ -186,6 +186,13 @@ function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
  * badge), so a dedicated query rather than growing the shared EVENT_SELECT
  * for every other caller that doesn't need it.
  */
+/**
+ * Every public listing here filters on ends_at, not starts_at: an event stays
+ * listed (homepage, search, hero) for as long as it is still running, so
+ * someone arriving at the door can still find it and buy a ticket. Sales were
+ * never blocked once an event started — the event page itself always worked —
+ * but it used to vanish from every listing the moment it began.
+ */
 function upcoming_events_with_organizer(int $limit = 6): array
 {
     $stmt = db()->prepare("
@@ -193,7 +200,7 @@ function upcoming_events_with_organizer(int $limit = 6): array
         FROM events e
         JOIN users u ON u.id = e.organizer_id
         LEFT JOIN organizer_profiles op ON op.user_id = u.id
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW()
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
     );
@@ -236,7 +243,7 @@ function get_similar_events(int $eventId, string $category, int $limit = 2): arr
     $stmt = db()->prepare("
         SELECT " . EVENT_SELECT . "
         FROM events e
-        WHERE e.status = 'PUBLISHED' AND e.starts_at >= NOW() AND e.category = ? AND e.id != ?
+        WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.category = ? AND e.id != ?
         ORDER BY e.starts_at ASC
         LIMIT " . (int) $limit
     );

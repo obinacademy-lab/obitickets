@@ -76,7 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['waitlist'])) {
     exit;
 }
 $waitlistNotice = $waitlistMessages[$_GET['waitlist'] ?? ''] ?? null;
-$waitingTierIds = $currentUser ? get_waiting_tier_ids((int) $currentUser['id'], (int) $event['id']) : [];
+// The waitlist is a nice-to-have; it must never be able to take the ticket
+// page down for a logged-in buyer (e.g. if its table hasn't been migrated yet).
+$waitingTierIds = [];
+if ($currentUser) {
+    try {
+        $waitingTierIds = get_waiting_tier_ids((int) $currentUser['id'], (int) $event['id']);
+    } catch (Throwable $e) {
+        error_log('[waitlist] could not load waiting tiers: ' . $e->getMessage());
+    }
+}
 
 $reviewError = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_review') {

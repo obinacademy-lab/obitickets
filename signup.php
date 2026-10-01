@@ -1,8 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
+// Where to send the new account afterwards — a buyer who came here from the
+// checkout login wall must land back in checkout (the cart survives in the
+// session), not on an empty "My tickets" page.
+$next = safe_next_path($_GET['next'] ?? $_POST['next'] ?? null);
+
 if (current_user()) {
-    header('Location: /dashboard.php');
+    header('Location: ' . $next);
     exit;
 }
 
@@ -33,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$errors) {
         [$ok, $err] = register_user($name, $email, $password, $role, $phone !== '' ? $phone : null);
         if ($ok) {
-            header('Location: /dashboard.php');
+            header('Location: ' . $next);
             exit;
         }
         $errors[] = $err;
@@ -61,6 +66,7 @@ include __DIR__ . '/includes/header.php';
 
       <form method="post" novalidate>
         <?= csrf_field() ?>
+        <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
         <div class="field">
           <label for="name">Full name</label>
@@ -99,7 +105,7 @@ include __DIR__ . '/includes/header.php';
         <button class="btn btn-purple btn-block btn-lg" type="submit" style="margin-top:24px">Create account</button>
       </form>
 
-      <div class="auth-foot">Already have an account? <a href="/login.php">Log in</a></div>
+      <div class="auth-foot">Already have an account? <a href="/login.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Log in</a></div>
     </div>
   </section>
 </div>

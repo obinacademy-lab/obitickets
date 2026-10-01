@@ -72,7 +72,7 @@ include __DIR__ . '/includes/header.php';
       </form>
 
       <div class="auth-foot"><a href="/forgot-password.php">Forgot your password?</a></div>
-      <div class="auth-foot">Don't have an account? <a href="/signup.php">Sign up</a></div>
+      <div class="auth-foot">Don't have an account? <a href="/signup.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Sign up</a></div>
     </div>
   </section>
 </div>
