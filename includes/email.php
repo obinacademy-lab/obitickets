@@ -260,6 +260,39 @@ function send_review_prompt_email(string $email, string $name, string $eventTitl
 }
 
 /**
+ * Sent by notify_waitlist_for_tier() (includes/waitlist.php) when a seat on a
+ * sold-out tier opens up. Deliberately says it isn't held — anyone can buy
+ * it until it's gone — so nobody thinks they've been promised a ticket.
+ */
+function render_waitlist_available_email_html(string $name, string $eventTitle, string $tierName, string $eventUrl): string
+{
+    $safeName = htmlspecialchars($name);
+    $safeTitle = htmlspecialchars($eventTitle);
+    $safeTier = htmlspecialchars($tierName);
+
+    return <<<HTML
+        <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
+          <h2 style="color:#991B1B;">A ticket just opened up 🎟️</h2>
+          <p>Hi {$safeName}, good news &mdash; a <strong>{$safeTier}</strong> ticket for <strong>{$safeTitle}</strong> is available again.</p>
+          <p>
+            <a href="{$eventUrl}" style="display:inline-block; background:#DC2626; color:#fff; padding:12px 24px; border-radius:999px; text-decoration:none; font-weight:600;">
+              Get my ticket
+            </a>
+          </p>
+          <p style="color:#726C7E; font-size:13px;">
+            Tickets aren't held for you &mdash; it's first come, first served, so grab it soon if you still want to go.
+          </p>
+          <p style="color:#726C7E; font-size:12px;">You're getting this because you joined the waitlist for this ticket.</p>
+        </div>
+        HTML;
+}
+
+function send_waitlist_available_email(string $email, string $name, string $eventTitle, string $tierName, string $eventUrl): void
+{
+    resend_send($email, 'A ticket opened up for ' . $eventTitle, render_waitlist_available_email_html($name, $eventTitle, $tierName, $eventUrl));
+}
+
+/**
  * The order has no tickets to show (payment never went through), so this is
  * a much simpler email than the two above — just what they were trying to
  * buy, and a link back to the event to start a fresh checkout. Called from

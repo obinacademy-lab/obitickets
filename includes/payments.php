@@ -252,11 +252,13 @@ function fail_order(int $orderId, string $message): void
             return;
         }
 
+        $releasedTierIds = [];
         $stmt = $pdo->prepare('SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?');
         $stmt->execute([$orderId]);
         foreach ($stmt->fetchAll() as $item) {
             $pdo->prepare('UPDATE ticket_types SET quantity_sold = quantity_sold - ? WHERE id = ?')
                 ->execute([$item['quantity'], $item['ticket_type_id']]);
+            $releasedTierIds[] = (int) $item['ticket_type_id'];
         }
 
         $pdo->prepare("UPDATE orders SET status = 'FAILED', status_message = ? WHERE id = ?")
@@ -265,6 +267,17 @@ function fail_order(int $orderId, string $message): void
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
+    }
+
+    // Seats just came back — tell whoever is waiting on those tiers. Like the
+    // ticket email in finalize_order_success(), a failure here must never
+    // turn an already-handled order into an error.
+    foreach (array_unique($releasedTierIds) as $tierId) {
+        try {
+            notify_waitlist_for_tier($tierId);
+        } catch (Throwable $e) {
+            error_log('[waitlist] notify failed for tier ' . $tierId . ': ' . $e->getMessage());
+        }
     }
 }
 

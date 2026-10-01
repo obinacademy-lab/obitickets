@@ -36,6 +36,48 @@ $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug'])
 $shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
 $organizerSlug = get_or_create_organizer_slug((int) $event['organizer_id']);
 
+// The join/leave buttons live inside the checkout <form> (nested forms aren't
+// valid HTML), so they're submit buttons with their own formaction pointing
+// here, named "waitlist" with a value like "join:12" / "leave:12".
+$waitlistMessages = [
+    'joined' => ['success', "You're on the waitlist — we'll email you if a ticket opens up."],
+    'already' => ['success', "You're already on the waitlist for that ticket."],
+    'left' => ['success', "You've been removed from the waitlist."],
+    'available' => ['error', 'That ticket is available now — you can buy it straight away.'],
+    'closed' => ['error', 'Sorry, the waitlist for that ticket is closed.'],
+];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['waitlist'])) {
+    verify_csrf();
+    $backUrl = '/event.php?slug=' . urlencode($event['slug']);
+    if (!$currentUser) {
+        header('Location: /login.php?next=' . urlencode($backUrl . '#buyPanel'));
+        exit;
+    }
+    [$wlAction, $wlTierId] = array_pad(explode(':', (string) $_POST['waitlist'], 2), 2, '0');
+    $wlTierId = (int) $wlTierId;
+
+    // Only act on a tier that really belongs to this event — the id comes
+    // straight from the form, so never trust it to match the page.
+    $ownsTier = false;
+    foreach ($tiers as $t) {
+        if ((int) $t['id'] === $wlTierId) {
+            $ownsTier = true;
+        }
+    }
+    if (!$ownsTier) {
+        $wlResult = 'closed';
+    } elseif ($wlAction === 'leave') {
+        leave_waitlist((int) $currentUser['id'], $wlTierId);
+        $wlResult = 'left';
+    } else {
+        $wlResult = join_waitlist((int) $currentUser['id'], $wlTierId);
+    }
+    header('Location: ' . $backUrl . '&waitlist=' . $wlResult . '#buyPanel');
+    exit;
+}
+$waitlistNotice = $waitlistMessages[$_GET['waitlist'] ?? ''] ?? null;
+$waitingTierIds = $currentUser ? get_waiting_tier_ids((int) $currentUser['id'], (int) $event['id']) : [];
+
 $reviewError = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_review') {
     verify_csrf();
@@ -294,6 +336,10 @@ include __DIR__ . '/includes/header.php';
         <h3><?= htmlspecialchars($event['title']) ?></h3>
       </div>
 
+      <?php if ($waitlistNotice): ?>
+        <div class="alert alert-<?= $waitlistNotice[0] ?>" style="margin:16px 22px 0"><?= htmlspecialchars($waitlistNotice[1]) ?></div>
+      <?php endif; ?>
+
       <?php if (isset($_GET['error']) && $_GET['error'] === 'select_tickets'): ?>
         <div class="alert alert-error" style="margin:16px 22px 0">Please select at least one ticket.</div>
       <?php elseif (isset($_GET['error']) && $_GET['error'] === 'sold_out'): ?>
@@ -317,7 +363,15 @@ include __DIR__ . '/includes/header.php';
                   <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
                 </div>
                 <?php if ($soldOut): ?>
-                  <div class="tag-pill" style="background:var(--line); color:var(--muted); flex:none">Sold out</div>
+                  <div class="waitlist-box">
+                    <div class="tag-pill" style="background:var(--line); color:var(--muted); flex:none">Sold out</div>
+                    <?php if (in_array((int) $tier['id'], $waitingTierIds, true)): ?>
+                      <span class="waitlist-state">On the waitlist</span>
+                      <button class="waitlist-btn" type="submit" name="waitlist" value="leave:<?= (int) $tier['id'] ?>" formaction="/event.php?slug=<?= urlencode($event['slug']) ?>" formnovalidate>Leave</button>
+                    <?php elseif (!$eventHasEnded): ?>
+                      <button class="waitlist-btn primary" type="submit" name="waitlist" value="join:<?= (int) $tier['id'] ?>" formaction="/event.php?slug=<?= urlencode($event['slug']) ?>" formnovalidate>Join waitlist</button>
+                    <?php endif; ?>
+                  </div>
                 <?php else: ?>
                   <div class="qty">
                     <button type="button">&minus;</button>

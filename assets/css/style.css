@@ -788,6 +788,18 @@ body.ticket-sheet-open .sheet-backdrop{opacity:1; visibility:visible; pointer-ev
 .review-row-head .when{margin-left:auto; font-size:0.78rem; color:var(--muted-2);}
 .review-comment{margin-top:8px; color:var(--muted); font-size:0.92rem; max-width:64ch;}
 
+/* ---------- waitlist (event.php) — sits where a sold-out tier's qty
+   stepper would be. The buttons are submit buttons inside the checkout form
+   (see the formaction note in event.php), so they're styled like the small
+   pill buttons rather than as full-width form actions. ---------- */
+.waitlist-box{display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; flex:none; max-width:55%;}
+.waitlist-state{font-size:0.76rem; font-weight:700; color:var(--purple-light);}
+.waitlist-btn{font:inherit; font-size:0.78rem; font-weight:700; padding:6px 13px; border-radius:100px; border:1px solid var(--line-strong); background:transparent; color:var(--muted); cursor:pointer; transition:all .2s var(--ease);}
+.waitlist-btn:hover{border-color:var(--purple); color:var(--purple-light);}
+.waitlist-btn.primary{background:var(--purple); border-color:var(--purple); color:#fff;}
+.waitlist-btn.primary:hover{background:var(--purple-deep); border-color:var(--purple-deep); color:#fff;}
+.event-dark-shell .alert-success{background:rgba(220,38,38,0.12); color:#FFB4AA; border-color:rgba(220,38,38,0.3);}
+
 /* ---------- event gallery: photos and videos in their own separate,
    labeled sections (event.php) — both feed into the same lightbox's
    Prev/Next via [data-gallery-index], in this same page order. A

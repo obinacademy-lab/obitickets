@@ -716,4 +716,18 @@ function replace_ticket_types(int $eventId, array $tiers): void
         $pdo->rollBack();
         throw $e;
     }
+
+    // An organizer raising a sold-out tier's quantity frees seats without
+    // anything being released, so this is the other moment to tell the
+    // waitlist. notify_waitlist_for_tier() does nothing for a tier that's
+    // still full, so it's safe to call for every existing tier.
+    foreach ($tiers as $tier) {
+        if (!empty($tier['id'])) {
+            try {
+                notify_waitlist_for_tier((int) $tier['id']);
+            } catch (Throwable $e) {
+                error_log('[waitlist] notify failed for tier ' . $tier['id'] . ': ' . $e->getMessage());
+            }
+        }
+    }
 }
