@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+// The deployed web root is the repo root, so this file is reachable by URL —
+// refuse web requests before loading anything. Checks REQUEST_METHOD (set only
+// by a web server) rather than PHP_SAPI alone, so the real cron still runs
+// even if the host's `php` binary isn't literally the "cli" SAPI.
+if (PHP_SAPI !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
+    http_response_code(403);
+    exit('Forbidden');
+}
+
 /**
  * Run on a schedule (hourly is fine — same cadence as
  * cron/send-event-reminders.php) via a Hostinger cron job:
