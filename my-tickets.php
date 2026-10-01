@@ -30,7 +30,7 @@ include __DIR__ . '/includes/header.php';
                 <span class="tag-pill"><?= htmlspecialchars($o['currency'] . ' ' . number_format((float) $o['total_amount'], 0)) ?></span>
               </div>
             </div>
-            <a class="btn btn-line" href="/order.php?id=<?= (int) $o['id'] ?>">View tickets</a>
+            <a class="btn btn-line" href="/order.php?id=<?= (int) $o['id'] ?>"><?= $o['status'] === 'PENDING' ? 'Check payment' : 'View tickets' ?></a>
           </div>
         <?php endforeach; ?>
       </div>

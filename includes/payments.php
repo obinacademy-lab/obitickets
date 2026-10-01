@@ -23,6 +23,15 @@ const PLATFORM_COMMISSION_RATE = 0.10;
  */
 const SERVICE_FEE_PER_TICKET = 700;
 
+/**
+ * Stamped by cron/expire-stale-orders.php on an order it failed on its own
+ * say-so rather than iotec's. Also how recheck_order_payment() recognises an
+ * order that was failed that way while a real transaction existed — the one
+ * kind of FAILED order that might secretly have been paid (an earlier version
+ * of that cron failed orders on age alone, before it asked iotec).
+ */
+const STALE_ORDER_EXPIRY_MESSAGE = 'Payment request expired — please try again.';
+
 function generate_ticket_code(): string
 {
     return 'OT-' . strtoupper(bin2hex(random_bytes(5)));
@@ -287,9 +296,11 @@ function fail_order(int $orderId, string $message): void
  * calls this, and finalize_order_success()/fail_order() are themselves
  * idempotent — so calling it on an order that's already PAID/FAILED just
  * hands back that same status without touching anything.
+ * $statusCheck exists only so tests can stand in for iotec — production
+ * callers never pass it.
  * @return array{status:string, statusMessage:?string}
  */
-function resolve_order_with_iotec(array $order): array
+function resolve_order_with_iotec(array $order, ?callable $statusCheck = null): array
 {
     if ($order['status'] !== 'PENDING') {
         return ['status' => $order['status'], 'statusMessage' => $order['status_message']];
@@ -302,7 +313,7 @@ function resolve_order_with_iotec(array $order): array
     }
 
     try {
-        $result = iotec_check_collection_status($order['payment_reference']);
+        $result = ($statusCheck ?? 'iotec_check_collection_status')($order['payment_reference']);
     } catch (Throwable $e) {
         error_log('[iotec] checkCollectionStatus failed for order ' . $order['id'] . ': ' . $e->getMessage());
         return ['status' => 'PENDING', 'statusMessage' => null];
@@ -335,6 +346,161 @@ function poll_order_payment(int $userId, int $orderId): array
         throw new RuntimeException('Order not found.');
     }
     return resolve_order_with_iotec($order);
+}
+
+/** Whether it's worth asking iotec again about this order (see STALE_ORDER_EXPIRY_MESSAGE). */
+function order_can_recheck_payment(array $order): bool
+{
+    if (empty($order['payment_reference'])) {
+        return false;
+    }
+    return $order['status'] === 'PENDING'
+        || ($order['status'] === 'FAILED' && $order['status_message'] === STALE_ORDER_EXPIRY_MESSAGE);
+}
+
+/**
+ * A FAILED order that iotec now confirms was actually paid: put its seats
+ * back and run it through the normal finalizer, so the buyer ends up exactly
+ * where they'd have been had they stayed on the page. If the seats are gone
+ * by now (or the event has finished) the sale can't be honoured — the order
+ * stays FAILED and the caller must get the money back to the buyer.
+ * @return 'paid'|'refund_needed'|'unchanged'
+ */
+function revive_paid_order(int $orderId, ?string $statusMessage): string
+{
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT status, event_id FROM orders WHERE id = ? FOR UPDATE');
+        $stmt->execute([$orderId]);
+        $order = $stmt->fetch();
+        if (!$order || $order['status'] !== 'FAILED') {
+            $pdo->commit();
+            return $order && $order['status'] === 'PAID' ? 'paid' : 'unchanged';
+        }
+
+        $stmt = $pdo->prepare('SELECT status, ends_at FROM events WHERE id = ?');
+        $stmt->execute([$order['event_id']]);
+        $event = $stmt->fetch();
+        $viable = $event && $event['status'] === 'PUBLISHED' && strtotime($event['ends_at']) >= time();
+
+        $stmt = $pdo->prepare('SELECT ticket_type_id, quantity FROM order_items WHERE order_id = ?');
+        $stmt->execute([$orderId]);
+        $items = $stmt->fetchAll();
+
+        // Capacity only — a paused tier still has to honour money already taken.
+        foreach ($viable ? $items : [] as $item) {
+            $stmt = $pdo->prepare('SELECT quantity_total, quantity_sold FROM ticket_types WHERE id = ? FOR UPDATE');
+            $stmt->execute([$item['ticket_type_id']]);
+            $tier = $stmt->fetch();
+            if (!$tier || ((int) $tier['quantity_sold'] + (int) $item['quantity']) > (int) $tier['quantity_total']) {
+                $viable = false;
+                break;
+            }
+        }
+
+        if (!$viable) {
+            $pdo->commit();
+            return 'refund_needed';
+        }
+
+        foreach ($items as $item) {
+            $pdo->prepare('UPDATE ticket_types SET quantity_sold = quantity_sold + ? WHERE id = ?')
+                ->execute([$item['quantity'], $item['ticket_type_id']]);
+        }
+        $pdo->prepare("UPDATE orders SET status = 'PENDING', status_message = NULL WHERE id = ?")->execute([$orderId]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+
+    // Back to PENDING with its seats held — the ordinary finalizer takes it from
+    // here (and if it were to throw, the order is still PENDING, so the next
+    // recheck or the stale-orders cron simply finishes the job).
+    finalize_order_success($orderId, $statusMessage);
+    return 'paid';
+}
+
+/**
+ * The buyer's "did my payment go through?" button. Asks iotec directly, so it
+ * works for someone who paid and then lost the checkout page — the case
+ * nothing else on the server covers, since only a browser ever polls iotec.
+ * Besides PENDING orders it re-checks the one kind of FAILED order that may
+ * have been paid (see STALE_ORDER_EXPIRY_MESSAGE); a FAILED order iotec
+ * itself declined is final and is never second-guessed.
+ *
+ * @return 'paid'|'pending'|'failed'|'refund_needed'|'unavailable'
+ * @throws RuntimeException if the order doesn't exist or isn't this user's
+ */
+function recheck_order_payment(int $userId, int $orderId, ?callable $statusCheck = null): string
+{
+    $stmt = db()->prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?');
+    $stmt->execute([$orderId, $userId]);
+    $order = $stmt->fetch();
+    if (!$order) {
+        throw new RuntimeException('Order not found.');
+    }
+
+    if ($order['status'] === 'PAID') {
+        return 'paid';
+    }
+    if (!order_can_recheck_payment($order)) {
+        return $order['status'] === 'PENDING' ? 'pending' : 'failed';
+    }
+
+    if ($order['status'] === 'PENDING') {
+        return match (resolve_order_with_iotec($order, $statusCheck)['status']) {
+            'PAID' => 'paid',
+            'FAILED' => 'failed',
+            default => 'pending',
+        };
+    }
+
+    try {
+        $result = ($statusCheck ?? 'iotec_check_collection_status')($order['payment_reference']);
+    } catch (Throwable $e) {
+        error_log('[iotec] recheck failed for order ' . $orderId . ': ' . $e->getMessage());
+        return 'unavailable';
+    }
+    if ($result['status'] !== 'Success') {
+        return 'failed';
+    }
+
+    $outcome = revive_paid_order($orderId, $result['statusMessage'] ?? null);
+    if ($outcome === 'refund_needed') {
+        flag_paid_order_needing_refund($order);
+        return 'refund_needed';
+    }
+    return $outcome === 'paid' ? 'paid' : 'failed';
+}
+
+/**
+ * Money was taken but the tickets can't be issued — makes sure a human sees
+ * it, by putting a message in the admin Contact Messages inbox (once per
+ * order, however many times the buyer clicks the button).
+ */
+function flag_paid_order_needing_refund(array $order): void
+{
+    $marker = 'Order #' . (int) $order['id'] . ' ';
+    $stmt = db()->prepare("SELECT 1 FROM contact_messages WHERE topic = 'Payment issue' AND message LIKE ? LIMIT 1");
+    $stmt->execute([$marker . '%']);
+    if ($stmt->fetchColumn()) {
+        return;
+    }
+
+    $stmt = db()->prepare('SELECT name, email FROM users WHERE id = ?');
+    $stmt->execute([$order['user_id']]);
+    $buyer = $stmt->fetch() ?: ['name' => 'Unknown', 'email' => 'unknown@invalid'];
+
+    create_contact_message(
+        $buyer['name'],
+        $buyer['email'],
+        'Payment issue',
+        $marker . '(' . $order['currency'] . ' ' . number_format((float) $order['total_amount'], 0) . ', iotec ref ' . $order['payment_reference'] . ') '
+        . 'was PAID at iotec but its tickets could not be issued — the seats sold out, or the event is over. Needs a manual refund to the buyer.'
+    );
+    error_log('[payments] REFUND NEEDED for order ' . (int) $order['id'] . ' (paid at iotec, tickets unavailable)');
 }
 
 function get_order_for_user(int $orderId, int $userId): ?array

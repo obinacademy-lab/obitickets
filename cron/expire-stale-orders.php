@@ -62,7 +62,7 @@ foreach ($staleOrders as $order) {
         send_abandoned_checkout_email($orderId);
         echo "Order #{$orderId}: iotec reports it failed — released and emailed a recovery nudge.\n";
     } elseif (!$order['payment_reference']) {
-        fail_order($orderId, 'Payment request expired — please try again.');
+        fail_order($orderId, STALE_ORDER_EXPIRY_MESSAGE);
         send_abandoned_checkout_email($orderId);
         echo "Order #{$orderId}: never reached iotec — released and emailed a recovery nudge.\n";
     } else {
