@@ -96,6 +96,7 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
 
     <div class="sec-head" style="margin-top:32px">
       <h2><?= count($results) ?> event<?= count($results) === 1 ? '' : 's' ?> found<?= $q !== '' ? ' for &ldquo;' . htmlspecialchars($q) . '&rdquo;' : '' ?></h2>
+      <a class="more" href="/past-events.php">Past events &rarr;</a>
     </div>
 
     <?php if (!$results): ?>

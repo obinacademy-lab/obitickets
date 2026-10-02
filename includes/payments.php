@@ -52,6 +52,11 @@ function resolve_checkout_cart(array $pending): array
     if (!$event) {
         return ['error' => 'event_not_found'];
     }
+    // A finished event can't sell: guards the checkout page and the payment
+    // API even if someone replays an old cart or posts the form by hand.
+    if (event_has_ended($event)) {
+        return ['error' => 'event_ended'];
+    }
 
     $tiersById = [];
     foreach (get_ticket_types_for_event((int) $event['id']) as $t) {

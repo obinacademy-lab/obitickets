@@ -61,6 +61,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
     </a>
     <div class="nav-links">
       <a class="ghost" href="/">Browse events</a>
+      <a class="ghost" href="/past-events.php">Past events</a>
       <a class="ghost" href="/my-events.php">Sell tickets</a>
       <a class="ghost" href="/about.php">About Us</a>
       <a class="ghost" href="/contact.php">Contact Us</a>
@@ -101,6 +102,11 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
     <a class="nav-drawer-row<?= $navPath === '/' ? ' current' : '' ?>" href="/">
       <span class="ic"><svg width="17" height="17"><use href="#ic-cal"/></svg></span>
       <span class="label">Browse events</span>
+      <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+    </a>
+    <a class="nav-drawer-row<?= $navPath === '/past-events.php' ? ' current' : '' ?>" href="/past-events.php">
+      <span class="ic"><svg width="17" height="17"><use href="#ic-clock"/></svg></span>
+      <span class="label">Past events</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </a>
     <a class="nav-drawer-row<?= $navPath === '/my-events.php' ? ' current' : '' ?>" href="/my-events.php">

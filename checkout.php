@@ -33,7 +33,11 @@ if (!$event) {
 $cart = resolve_checkout_cart($pending);
 if (isset($cart['error'])) {
     unset($_SESSION['pending_checkout']);
-    $errorParam = $cart['error'] === 'no_tickets_selected' ? 'select_tickets' : 'sold_out';
+    $errorParam = match ($cart['error']) {
+        'no_tickets_selected' => 'select_tickets',
+        'event_ended' => 'ended',
+        default => 'sold_out',
+    };
     header('Location: /event.php?slug=' . urlencode($pending['event_slug']) . '&error=' . $errorParam);
     exit;
 }

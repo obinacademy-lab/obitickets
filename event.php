@@ -131,10 +131,11 @@ $bodyClass = 'event-page';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="event-hero-compact reveal" data-countdown-target="<?= htmlspecialchars($event['starts_at']) ?>">
+<div class="event-hero-compact reveal"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
   <div class="wrap">
     <div class="event-hero-compact-top">
       <span class="event-hero-compact-tag"><?= htmlspecialchars($event['banner_emoji']) ?> <?= htmlspecialchars($event['category']) ?></span>
+      <?php if ($eventHasEnded): ?><span class="event-ended-pill">Ended</span><?php endif; ?>
     </div>
 
     <div class="event-hero-compact-row">
@@ -165,7 +166,11 @@ include __DIR__ . '/includes/header.php';
         <div class="event-hero-compact-date"><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></div>
         <div class="event-hero-compact-venue">&#128205; <?= htmlspecialchars($event['venue_name']) ?><?= $event['venue_address'] ? ', ' . htmlspecialchars($event['venue_address']) : '' ?></div>
         <div class="event-hero-compact-badges">
-          <span class="event-hero-compact-badge"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></span>
+          <?php if ($eventHasEnded): ?>
+            <span class="event-hero-compact-badge"><span class="tk">&#127937;</span> Event ended</span>
+          <?php else: ?>
+            <span class="event-hero-compact-badge"><span class="tk">&#127917;</span> Starts in <span id="cd-text">--</span></span>
+          <?php endif; ?>
           <button class="event-hero-compact-badge like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
             <svg width="15" height="15"><use href="#ic-heart"/></svg>
             <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
@@ -185,7 +190,7 @@ include __DIR__ . '/includes/header.php';
   <div class="lightbox-counter" id="lightboxCounter"></div>
 </div>
 
-<?php if ($minPrice !== null): ?>
+<?php if ($minPrice !== null && !$eventHasEnded): ?>
 <a class="mobile-buy-bar" href="#buyPanel">
   <span>
     <span class="lbl">From</span>
@@ -335,6 +340,22 @@ include __DIR__ . '/includes/header.php';
 
     </div>
 
+    <?php if ($eventHasEnded): ?>
+    <aside class="ended-panel reveal" id="endedPanel">
+      <div class="ended-panel-badge"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
+      <h3>This event has ended</h3>
+      <p>Ticket sales are closed. Thanks to everyone who came along<?= $reviewSummary['count'] > 0 ? ' — here is what they thought.' : '.' ?></p>
+      <?php if ($reviewSummary['count'] > 0): ?>
+        <a class="ended-panel-rating" href="#reviews">
+          <span class="avg"><?= number_format($reviewSummary['average'], 1) ?></span>
+          <?= render_star_rating($reviewSummary['average']) ?>
+          <span><?= $reviewSummary['count'] ?> review<?= $reviewSummary['count'] === 1 ? '' : 's' ?></span>
+        </a>
+      <?php endif; ?>
+      <a class="btn btn-purple btn-block" href="/search.php">Browse upcoming events</a>
+      <a class="ended-panel-link" href="/past-events.php">See more past events &rarr;</a>
+    </aside>
+    <?php else: ?>
     <aside class="buy-panel reveal" id="buyPanel">
       <span class="sheet-handle" aria-hidden="true"></span>
       <button class="sheet-close" id="sheetClose" type="button" aria-label="Close">
@@ -408,6 +429,7 @@ include __DIR__ . '/includes/header.php';
         </div>
       </form>
     </aside>
+    <?php endif; ?>
 
   </div>
 </div>

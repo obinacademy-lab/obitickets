@@ -19,6 +19,7 @@
       <div class="foot-col">
         <h4>Company</h4>
         <a href="/">Homepage</a>
+        <a href="/past-events.php">Past events</a>
         <a href="/about.php">About</a>
         <a href="/contact.php">Contact</a>
       </div>
@@ -52,6 +53,6 @@
     </div>
   </div>
 </footer>
-<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
+<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../public/assets/js/main.js') ?: time() ?>"></script>
 </body>
 </html>

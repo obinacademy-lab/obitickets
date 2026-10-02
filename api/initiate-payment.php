@@ -3,7 +3,7 @@
 // budget explicitly rather than depend on the host's ini default.
 set_time_limit(45);
 
-require __DIR__ . '/../includes/bootstrap.php';
+require __DIR__ . '/../../includes/bootstrap.php';
 
 $user = api_require_login();
 $body = json_body();
@@ -21,6 +21,10 @@ if (!$pending) {
 
 $cart = resolve_checkout_cart($pending);
 if (isset($cart['error'])) {
+    if ($cart['error'] === 'event_ended') {
+        unset($_SESSION['pending_checkout']);
+        json_response(['error' => 'This event has ended, so tickets are no longer on sale.'], 400);
+    }
     json_response(['error' => 'This event or ticket selection is no longer available.'], 400);
 }
 

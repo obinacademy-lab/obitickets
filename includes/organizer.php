@@ -141,7 +141,7 @@ function get_organizer_profile_by_slug(string $slug): ?array
 function get_public_events_for_organizer(int $organizerUserId): array
 {
     $stmt = db()->prepare("
-        SELECT id, title, slug, banner_image, banner_emoji, venue_name, starts_at
+        SELECT id, title, slug, banner_image, banner_emoji, venue_name, starts_at, ends_at
         FROM events
         WHERE organizer_id = ? AND status = 'PUBLISHED'
         ORDER BY starts_at ASC
@@ -150,9 +150,11 @@ function get_public_events_for_organizer(int $organizerUserId): array
     $all = $stmt->fetchAll();
 
     $now = date('Y-m-d H:i:s');
-    $upcoming = array_values(array_filter($all, static fn ($e) => $e['starts_at'] >= $now));
-    $past = array_values(array_filter($all, static fn ($e) => $e['starts_at'] < $now));
-    usort($past, static fn ($a, $b) => strcmp($b['starts_at'], $a['starts_at']));
+    // Split on the end time, same as the public listings: a running event is
+    // still "upcoming" (sellable), only a finished one is "past".
+    $upcoming = array_values(array_filter($all, static fn ($e) => $e['ends_at'] >= $now));
+    $past = array_values(array_filter($all, static fn ($e) => $e['ends_at'] < $now));
+    usort($past, static fn ($a, $b) => strcmp($b['ends_at'], $a['ends_at']));
 
     return ['upcoming' => $upcoming, 'past' => $past];
 }

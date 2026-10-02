@@ -208,6 +208,64 @@ function upcoming_events_with_organizer(int $limit = 6): array
     return $stmt->fetchAll();
 }
 
+/** True once an event's end time has passed — it can no longer sell tickets. */
+function event_has_ended(array $event): bool
+{
+    return strtotime($event['ends_at']) < time();
+}
+
+/**
+ * Past events: PUBLISHED events whose end time has passed, newest first. There
+ * is no "archive" step — an event moves here by itself the moment ends_at
+ * goes by, because upcoming listings use `ends_at >= NOW()` and this uses the
+ * exact opposite condition.
+ *
+ * Optional keyword (title / venue) and category filters. Each row also carries
+ * the event's average rating and review count so the page can show them.
+ *
+ * @return array{events: list<array>, total: int}
+ */
+function past_events(?string $q = null, ?string $category = null, int $limit = 24, int $offset = 0): array
+{
+    $conditions = ["e.status = 'PUBLISHED'", 'e.ends_at < NOW()'];
+    $params = [];
+
+    $q = trim((string) $q);
+    if ($q !== '') {
+        $conditions[] = '(e.title LIKE ? OR e.venue_name LIKE ?)';
+        $like = '%' . $q . '%';
+        array_push($params, $like, $like);
+    }
+    if ($category !== null && $category !== '' && in_array($category, EVENT_CATEGORIES, true)) {
+        $conditions[] = 'e.category = ?';
+        $params[] = $category;
+    }
+    $where = implode(' AND ', $conditions);
+
+    $count = db()->prepare("SELECT COUNT(*) FROM events e WHERE $where");
+    $count->execute($params);
+    $total = (int) $count->fetchColumn();
+
+    // Rating columns come from a LEFT JOIN so a missing reviews table (migration
+    // 011 not applied yet) can't take the whole page down — falls back below.
+    $select = "SELECT " . EVENT_SELECT . ",
+            (SELECT ROUND(AVG(r.rating), 1) FROM event_reviews r WHERE r.event_id = e.id) AS avg_rating,
+            (SELECT COUNT(*) FROM event_reviews r WHERE r.event_id = e.id) AS review_count
+        FROM events e WHERE $where ORDER BY e.ends_at DESC LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset;
+    try {
+        $stmt = db()->prepare($select);
+        $stmt->execute($params);
+        $events = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        $stmt = db()->prepare("SELECT " . EVENT_SELECT . ", NULL AS avg_rating, 0 AS review_count
+            FROM events e WHERE $where ORDER BY e.ends_at DESC LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset);
+        $stmt->execute($params);
+        $events = $stmt->fetchAll();
+    }
+
+    return ['events' => $events, 'total' => $total];
+}
+
 function get_event_by_slug(string $slug): ?array
 {
     $stmt = db()->prepare("
@@ -319,6 +377,38 @@ function render_poster_card(array $event): void
       <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
       <div class="poster-card-meta"><?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?></div>
       <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
+    </a>
+    <?php
+}
+
+/**
+ * Card for the past-events page. Unlike the cropped 4:5 poster card, the
+ * banner is shown whole at its own proportions — the page is a look-back, so
+ * the artwork is the point. Carries the average rating when there is one.
+ */
+function render_past_event_card(array $event): void
+{
+    $reviewCount = (int) ($event['review_count'] ?? 0);
+    ?>
+    <a class="past-card reveal" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
+      <span class="past-card-art">
+        <?php if (!empty($event['banner_image'])): ?>
+          <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy">
+        <?php else: ?>
+          <span class="past-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></span>
+        <?php endif; ?>
+        <span class="past-card-pill">Ended</span>
+      </span>
+      <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
+      <div class="poster-card-meta"><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></div>
+      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
+      <?php if ($reviewCount > 0): ?>
+        <div class="past-card-rating">
+          <?= render_star_rating((float) $event['avg_rating']) ?>
+          <strong><?= number_format((float) $event['avg_rating'], 1) ?></strong>
+          <span>(<?= $reviewCount ?>)</span>
+        </div>
+      <?php endif; ?>
     </a>
     <?php
 }
