@@ -53,7 +53,7 @@ include __DIR__ . '/includes/header.php';
       <p>We keep your account and order history for as long as your account is active, since it's how you view past tickets and organizers track their sales. If you ask us to delete your account, we'll remove your personal details, keeping only what we're legally required to retain (such as financial records for tax purposes).</p>
 
       <h2>6. Your rights</h2>
-      <p>You can review and update your account details anytime from your dashboard. To request a copy of your data, ask us to correct something, or delete your account, <a href="/contact.php">contact us</a> — we'll respond within a reasonable time.</p>
+      <p>You can review and update your account details anytime from your dashboard. To request a copy of your data or ask us to correct something, <a href="/contact.php">contact us</a>. To delete your account and personal details, use the <a href="/delete-account.php">account deletion page</a> — we confirm the request by email and complete it within 30 days. These rights apply on the website and in the obitickets app.</p>
 
       <h2>7. Security</h2>
       <p>Passwords are hashed, not stored as plain text. Payment details are handled entirely by our payment processor, never by obitickets directly. We use standard safeguards (HTTPS, access controls) to protect the data we do hold, though no system is ever 100% guaranteed secure.</p>

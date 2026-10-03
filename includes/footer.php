@@ -40,6 +40,7 @@
         <a href="/terms.php">Terms of Use</a>
         <a href="/purchase-terms.php">Purchase Terms</a>
         <a href="/privacy.php">Privacy Policy</a>
+        <a href="/delete-account.php">Delete account</a>
       </div>
 
       <button type="button" class="foot-top-btn" id="footToTop" aria-label="Back to top">
