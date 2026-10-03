@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "obitickets",
+  "short_name": "obitickets",
+  "description": "Find events and buy tickets with MTN MoMo or Airtel Money. Your QR tickets, always in your pocket.",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDFCFE",
+  "theme_color": "#DC2626",
+  "lang": "en",
+  "categories": ["entertainment", "lifestyle", "shopping"],
+  "icons": [
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "My tickets", "short_name": "Tickets", "url": "/my-tickets.php?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Browse events", "short_name": "Events", "url": "/search.php?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Past events", "short_name": "Past", "url": "/past-events.php?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}

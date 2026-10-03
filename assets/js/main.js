@@ -417,3 +417,53 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+
+// "Install the app" links (footer + mobile menu). They stay hidden unless the
+// browser says the site can be installed — Chrome/Edge/Android fire
+// beforeinstallprompt; iPhone Safari never does, so there we show the
+// manual "Add to Home Screen" steps instead. Already running as an
+// installed app: nothing to offer.
+(function () {
+  var links = document.querySelectorAll('[data-install-app]');
+  if (!links.length) return;
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+
+  var deferred = null;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  function setVisible(on) { links.forEach(function (l) { l.hidden = !on; }); }
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    setVisible(true);
+  });
+  window.addEventListener('appinstalled', function () { deferred = null; setVisible(false); });
+  if (isIOS) setVisible(true);
+
+  function showIosSteps() {
+    var sheet = document.createElement('div');
+    sheet.className = 'install-sheet';
+    sheet.innerHTML =
+      '<div class="install-sheet-card" role="dialog" aria-modal="true" aria-label="Install obitickets">' +
+      '<img src="/assets/icons/icon-192.png" alt="" width="56" height="56">' +
+      '<h3>Add obitickets to your Home Screen</h3>' +
+      '<p>Tap the <strong>Share</strong> button in Safari, then choose <strong>Add to Home Screen</strong>.</p>' +
+      '<button type="button" class="btn btn-purple btn-block">Got it</button></div>';
+    sheet.addEventListener('click', function (e) {
+      if (e.target === sheet || e.target.tagName === 'BUTTON') sheet.remove();
+    });
+    document.body.appendChild(sheet);
+  }
+
+  links.forEach(function (l) {
+    l.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (deferred) {
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; setVisible(false); });
+      } else if (isIOS) {
+        showIosSteps();
+      }
+    });
+  });
+})();

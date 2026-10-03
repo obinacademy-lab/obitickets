@@ -35,13 +35,14 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <meta name="twitter:image" content="<?= htmlspecialchars($ogImage) ?>">
 <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
 <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+<?php include __DIR__ . '/pwa-head.php'; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <?php if (str_contains($bodyClass ?? '', 'classic-page') || str_contains($bodyClass ?? '', 'event-page')): ?>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <?php endif; ?>
-<link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../public/assets/css/style.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 </head>
 <body<?= isset($bodyClass) ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
 <?php include __DIR__ . '/icons.php'; ?>
@@ -122,6 +123,11 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
     <a class="nav-drawer-row<?= $navPath === '/contact.php' ? ' current' : '' ?>" href="/contact.php">
       <span class="ic"><svg width="17" height="17"><use href="#ic-mail"/></svg></span>
       <span class="label">Contact Us</span>
+      <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+    </a>
+    <a class="nav-drawer-row" href="#" data-install-app hidden>
+      <span class="ic"><svg width="17" height="17"><use href="#ic-ticket"/></svg></span>
+      <span class="label">Install the app</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </a>
     <div class="nav-drawer-div"></div>

@@ -22,6 +22,7 @@
         <a href="/past-events.php">Past events</a>
         <a href="/about.php">About</a>
         <a href="/contact.php">Contact</a>
+        <a href="#" data-install-app hidden>Install the app</a>
       </div>
       <div class="foot-col">
         <h4>Organizers</h4>
@@ -53,6 +54,6 @@
     </div>
   </div>
 </footer>
-<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../public/assets/js/main.js') ?: time() ?>"></script>
+<script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 </body>
 </html>
