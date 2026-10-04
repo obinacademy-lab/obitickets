@@ -3,7 +3,7 @@
 // budget explicitly rather than depend on the host's ini default.
 set_time_limit(45);
 
-require __DIR__ . '/../../includes/bootstrap.php';
+require __DIR__ . '/../includes/bootstrap.php';
 
 $user = api_require_login();
 $body = json_body();
