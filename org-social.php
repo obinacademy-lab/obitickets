@@ -73,6 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result['ok'] ? $back('moment_deleted') : $error = $result['error'];
         } elseif ($action === 'moment_update') {
             $soundOpts = [];
+            if (isset($_POST['buy_bar_present'])) {
+                $soundOpts['buy_bar'] = !empty($_POST['buy_bar']);
+            }
             if (isset($_POST['sound_id'])) {
                 $newSound = (int) $_POST['sound_id'];
                 $soundOpts = ['sound_id' => $newSound, 'sound_start' => $newSound === (int) ($_POST['sound_prev'] ?? 0) ? (float) ($_POST['sound_start'] ?? 0) : 0, 'sound_mix' => (int) ($_POST['sound_mix'] ?? 70), 'slide_beats' => (int) ($_POST['slide_beats'] ?? 2), 'slide_fx' => (string) ($_POST['slide_fx'] ?? 'ZOOM')];
@@ -104,6 +107,8 @@ $posts = $event ? get_event_feed((int) $event['id'], null, 20) : [];
 $momentsReady = false;
 $orgMoments = [];
 $soundsReady = false;
+$momentResults = [];
+$salesReady = false;
 $libSounds = [];
 $mySounds = [];
 if ($event) {
@@ -111,6 +116,10 @@ if ($event) {
         if (moments_ready()) {
             $momentsReady = true;
             $orgMoments = get_event_moments((int) $event['id'], null, 100);
+            if (moments_sales_ready()) {
+                $salesReady = true;
+                $momentResults = get_moment_results((int) $event['id']);
+            }
             if (sounds_ready()) {
                 $soundsReady = true;
                 $libSounds = array_map('sound_public', get_library_sounds());
@@ -197,6 +206,9 @@ render_organizer_head('social', $ctx);
       <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
       <h3 style="margin-bottom:4px">Moments <span class="muted" style="font-weight:600; font-size:0.85rem">9:16 photos and videos</span></h3>
       <p class="muted" style="font-size:0.86rem; margin:0 0 16px">Short vertical clips and photos from your event. Anyone can watch; people with an account can react, comment and share. Vertical video (1080 &times; 1920) looks best.</p>
+      <?php if ($momentsReady): ?>
+        <div style="margin:0 0 16px"><a class="btn btn-purple" href="/org-promo-video.php?event=<?= (int) $event['id'] ?>" style="width:auto; display:inline-flex">Make a promo video that sells tickets</a></div>
+      <?php endif; ?>
       <?php if (!$momentsReady): ?>
         <div class="muted" style="padding:14px 0">Moments are not switched on yet. Run <code>migration/017_moments.sql</code> to turn them on.</div>
       <?php else: ?>
@@ -292,6 +304,7 @@ render_organizer_head('social', $ctx);
           <div class="mu-item">
             <div class="mu-thumb">
               <?php if ($thumb): ?><img src="<?= htmlspecialchars($thumb) ?>" alt="" loading="lazy" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"><?php else: ?><video src="<?= htmlspecialchars($m['media_path']) ?>#t=0.5" muted playsinline preload="metadata" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"></video><?php endif; ?>
+              <?php if ((int) ($m['is_promo'] ?? 0) === 1): ?><span class="mu-badge" style="left:auto; right:8px; background:#DC2626">PROMO</span><?php endif; ?>
               <span class="mu-badge"><?= $isVideo ? 'Video' . ($m['duration_seconds'] !== null ? ' ' . moment_clock((int) $m['duration_seconds']) : '') : ($m['media_type'] === 'SLIDESHOW' ? count($m['slides'] ?? []) . ' photos' : 'Photo') ?><?= !empty($m['sound_id']) && ($m['sound_status'] ?? '') === 'ACTIVE' ? ' &#9835;' : '' ?></span>
               <span class="mu-meta"><?= htmlspecialchars(moment_compact((int) $m['view_count'])) ?> views &middot; <?= (int) $m['reaction_count'] ?> &#10084;&#65039; &middot; <?= (int) $m['comment_count'] ?> &#128172;</span>
             </div>
@@ -305,6 +318,10 @@ render_organizer_head('social', $ctx);
                 <label class="social-check"><input type="radio" name="fit" value="FILL"<?= $m['fit_mode'] === 'FILL' ? ' checked' : '' ?>> Fill</label>
                 <label class="social-check"><input type="radio" name="fit" value="FIT"<?= $m['fit_mode'] === 'FIT' ? ' checked' : '' ?>> Fit with blurred sides</label>
                 <label class="social-check"><input type="checkbox" name="comments_enabled" value="1"<?= (int) $m['comments_enabled'] === 1 ? ' checked' : '' ?>> Allow comments</label>
+                <?php if (moments_sales_ready()): ?>
+                  <input type="hidden" name="buy_bar_present" value="1">
+                  <label class="social-check"><input type="checkbox" name="buy_bar" value="1"<?= (int) ($m['buy_bar'] ?? 0) === 1 ? ' checked' : '' ?>> Show a Get tickets bar on this moment</label>
+                <?php endif; ?>
                 <?php if ($soundsReady): ?>
                   <input type="hidden" name="sound_start" value="<?= htmlspecialchars((string) ($m['sound_start'] ?? 0)) ?>"><input type="hidden" name="sound_prev" value="<?= (int) ($m['sound_id'] ?? 0) ?>">
                   <label class="social-check">Sound
@@ -347,6 +364,47 @@ render_organizer_head('social', $ctx);
 
     <?php endif; ?>
 
+    <?php if ($canManage && $salesReady && $momentResults): ?>
+    <!-- what each moment sold -->
+    <div class="admin-card" id="moment-results">
+      <h3 style="margin-bottom:4px">What your moments sold</h3>
+      <p class="muted" style="font-size:0.86rem; margin:0 0 14px">A sale counts when someone taps Get tickets on a moment and buys within 24 hours. Revenue is ticket sales without fees.</p>
+      <?php
+        $tv = $tt = $tk = 0; $rev = 0.0;
+        foreach ($momentResults as $r) { $tv += (int) $r['view_count']; $tt += (int) $r['cta_taps']; $tk += (int) $r['tickets']; $rev += (float) $r['revenue']; }
+      ?>
+      <div class="admin-mini-stat-row" style="margin-bottom:14px">
+        <div class="admin-mini-stat"><span class="n"><?= number_format($tv) ?></span><span class="l">Views</span></div>
+        <div class="admin-mini-stat"><span class="n"><?= number_format($tt) ?></span><span class="l">Taps on Get tickets<?= $tv > 0 ? ' (' . number_format($tt / $tv * 100, 1) . '%)' : '' ?></span></div>
+        <div class="admin-mini-stat"><span class="n"><?= number_format($tk) ?></span><span class="l">Tickets sold</span></div>
+        <div class="admin-mini-stat"><span class="n"><?= htmlspecialchars(number_format($rev)) ?></span><span class="l">Ticket sales</span></div>
+      </div>
+      <?php
+        $sorted = $momentResults;
+        usort($sorted, static fn ($a, $b) => ((float) $b['revenue'] <=> (float) $a['revenue']) ?: ((int) $b['cta_taps'] <=> (int) $a['cta_taps']) ?: ((int) $b['view_count'] <=> (int) $a['view_count']));
+        $bestId = ($sorted && (float) $sorted[0]['revenue'] > 0) ? (int) $sorted[0]['id'] : 0;
+      ?>
+      <?php foreach ($sorted as $r): $thumb = $r['media_type'] === 'VIDEO' ? $r['poster_path'] : $r['media_path']; $views = (int) $r['view_count']; $taps = (int) $r['cta_taps']; ?>
+        <div class="social-post" style="display:flex; gap:14px; align-items:flex-start">
+          <div style="width:54px; aspect-ratio:9/16; border-radius:10px; overflow:hidden; background:#241520; flex:none"><?php if ($thumb): ?><img src="<?= htmlspecialchars($thumb) ?>" alt="" style="width:100%; height:100%; object-fit:cover"><?php endif; ?></div>
+          <div style="flex:1; min-width:0">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+              <b style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%"><?= $r['caption'] !== null && $r['caption'] !== '' ? htmlspecialchars(mb_substr($r['caption'], 0, 60)) : '<span class="muted">No caption</span>' ?></b>
+              <?php if ((int) $r['is_promo'] === 1): ?><span class="admin-badge admin-badge-danger">Promo</span><?php endif; ?>
+              <?php if ($bestId === (int) $r['id']): ?><span class="admin-badge admin-badge-success">Best seller</span><?php endif; ?>
+              <?php if ((int) $r['buy_bar'] === 0): ?><span class="admin-badge admin-badge-muted">No buy bar</span><?php endif; ?>
+            </div>
+            <div class="muted" style="font-size:0.88rem; margin-top:6px; line-height:1.6">
+              <b style="color:inherit"><?= number_format($views) ?></b> views &rarr;
+              <b style="color:inherit"><?= number_format($taps) ?></b> taps<?= $views > 0 ? ' (' . number_format($taps / $views * 100, 1) . '%)' : '' ?> &rarr;
+              <b style="color:inherit"><?= number_format((int) $r['checkouts']) ?></b> checkouts<?= $taps > 0 ? ' (' . number_format((int) $r['checkouts'] / $taps * 100) . '%)' : '' ?> &rarr;
+              <b style="color:inherit"><?= number_format((int) $r['tickets']) ?></b> tickets sold<?= (float) $r['revenue'] > 0 ? ' &middot; ' . htmlspecialchars(number_format((float) $r['revenue'])) : '' ?>
+            </div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <!-- reports -->
     <div class="admin-card" id="reports">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">

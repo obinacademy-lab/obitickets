@@ -469,6 +469,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
           'eventUrl' => $eventUrl,
           'open' => $openMoment,
           'org' => ['id' => (int) $event['organizer_id'], 'name' => $orgName, 'initials' => $evOrgInitials, 'following' => !empty($followingOrganizer)],
+          'buy' => moment_buy_info($event),
           'items' => array_map('moment_public', $moments),
       ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
     </section>

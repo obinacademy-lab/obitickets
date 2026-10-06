@@ -43,6 +43,11 @@ if (isset($cart['error'])) {
 }
 ['lineItems' => $lineItems, 'subtotal' => $subtotal, 'fee' => $fee, 'total' => $total, 'currency' => $currency] = $cart;
 $ticketCount = array_sum(array_column($lineItems, 'quantity'));
+try {
+    moment_record_checkout((int) $event['id']); // only counts when the visitor came from a moment
+} catch (Throwable $e) {
+    error_log('[moments] checkout count failed: ' . $e->getMessage());
+}
 
 $pageTitle = 'Checkout — obitickets';
 include __DIR__ . '/includes/header.php';

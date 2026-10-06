@@ -14,7 +14,7 @@ api_csrf_verify($body);
 
 $action = (string) ($body['action'] ?? '');
 $user = current_user();
-$readActions = ['comments', 'feed_more', 'moment_view', 'moment_share'];
+$readActions = ['comments', 'feed_more', 'moment_view', 'moment_share', 'moment_cta'];
 if (!in_array($action, $readActions, true) && !$user) {
     json_response(['error' => 'Please log in to do that.', 'login' => true], 401);
 }
@@ -63,6 +63,21 @@ try {
                 $r['pulse_reactions'] = get_event_social_counts($eventId)['reactions'] + $r['total'];
             }
             json_response($r, $r['ok'] ? 200 : 400);
+
+        case 'moment_cta':
+            // "Get tickets" was tapped on a moment: count it once per visit, and remember the moment so a
+            // purchase in the next 24 hours is credited to it.
+            $ctaId = $intOf($body['id'] ?? 0);
+            if (!isset($_SESSION['moment_taps']) || !is_array($_SESSION['moment_taps'])) {
+                $_SESSION['moment_taps'] = [];
+            }
+            $firstTap = !isset($_SESSION['moment_taps'][$ctaId]);
+            $known = moment_record_tap($ctaId, $firstTap);
+            if ($known && $firstTap) {
+                $_SESSION['moment_taps'][$ctaId] = time();
+                $_SESSION['moment_taps'] = array_slice($_SESSION['moment_taps'], -300, null, true);
+            }
+            json_response(['ok' => $known, 'counted' => $known && $firstTap]);
 
         case 'moment_view':
         case 'moment_share':

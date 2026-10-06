@@ -45,6 +45,13 @@ try {
     json_response(['error' => $e->getMessage()], 400);
 }
 
+// If the buyer came from a moment's Get tickets bar, credit the sale to it (never blocks the payment).
+try {
+    moment_attribute_order($orderId, (int) $cart['event']['id']);
+} catch (Throwable $e) {
+    error_log('[moments] attribution failed: ' . $e->getMessage());
+}
+
 unset($_SESSION['pending_checkout']);
 
 // create_pending_order() reports an immediate iotec failure (bad

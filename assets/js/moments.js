@@ -91,6 +91,7 @@
         '<div class="mv-deck">' +
           '<div class="mv-stage"><div class="mv-reel"></div></div>' +
           '<div class="mv-pn"></div>' +
+          '<div class="mv-buy" hidden><div class="tx"><small>From</small><b></b><div class="urg" hidden></div></div><button type="button" class="mv-buybtn">Get tickets</button></div>' +
           '<div class="mv-rail">' +
             '<button type="button" class="mv-ava" aria-label="Follow the organizer"></button>' +
             '<button type="button" class="mv-act mv-love" aria-label="Love"><span class="ic">❤️</span><span class="n">0</span></button>' +
@@ -108,6 +109,7 @@
         '</div></aside>' +
       '</div>' +
       '<div class="mv-scrim"></div>' +
+      '<div class="mv-tsheet" role="dialog" aria-label="Choose tickets"><div class="grab"></div><h4></h4><div class="meta"></div><div class="trows"></div><div class="sum"><span>Total (with fee)</span><span class="tot"></span></div><button class="go" type="button">Continue to checkout</button><div class="sec">Secure checkout \u00b7 Mobile Money \u00b7 instant QR ticket</div></div>' +
       '<div class="mv-share" role="dialog" aria-label="Share"><header><span>Share this moment</span><button type="button" class="mv-sclose" aria-label="Close">&times;</button></header><div class="mv-opts"></div><div class="mv-linkrow"><span></span><button type="button" class="mv-copy">Copy link</button></div></div>';
     root.appendChild(v);
 
@@ -204,6 +206,8 @@
     $('.mv-sh', v).addEventListener('click', openShare);
     $('.mv-sclose', v).addEventListener('click', closeLayers);
     $('.mv-scrim', v).addEventListener('click', closeLayers);
+    $('.mv-buybtn', v).addEventListener('click', openTickets);
+    $('.mv-tsheet .go', v).addEventListener('click', goCheckout);
     $('.mv-copy', v).addEventListener('click', function () {
       var url = momentUrl(items[cur].id);
       if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, function () { toast(url); });
@@ -370,7 +374,10 @@
   function bindProgress() {
     $$('.mv-clip', V).forEach(function (c) {
       var v = $('video', c), bar = $('.mv-pg i', c);
-      if (v && bar) v.addEventListener('timeupdate', function () { if (v.duration) bar.style.width = (v.currentTime / v.duration * 100) + '%'; });
+      if (v && bar) v.addEventListener('timeupdate', function () {
+        var it = byId[parseInt(c.getAttribute('data-id'), 10)], d = isFinite(v.duration) && v.duration > 0 ? v.duration : (it && it.duration) || 0;
+        if (d) bar.style.width = Math.min(100, v.currentTime / d * 100) + '%';
+      });
     });
   }
 
@@ -412,6 +419,72 @@
     var vm = $('.mv-clip[data-id="' + it.id + '"] .vm', V);
     if (vm) vm.textContent = (it.type === 'video' ? compact(it.views) + (it.views === 1 ? ' view' : ' views') + ' · ' : '') + it.when;
     refreshCard(it);
+    syncBuy(it);
+  }
+
+  /* ---------- selling: the Get tickets bar and ticket picker ---------- */
+  var BUY = data.buy || null;
+  var cartQty = {};
+  function money(n) { return (BUY ? BUY.currency : 'UGX') + ' ' + Math.round(n).toLocaleString('en-US'); }
+  function syncBuy(it) {
+    var bar = $('.mv-buy', V), show = !!(BUY && it.buyBar);
+    bar.hidden = !show;
+    V.classList.toggle('has-buy', show);
+    if (!show) return;
+    $('b', bar).textContent = money(BUY.from);
+    var u = $('.urg', bar), bits = [];
+    if (BUY.left != null) bits.push(BUY.left + ' left');
+    if (BUY.now) bits.push('Happening now');
+    else if (BUY.days != null) bits.push(BUY.days === 0 ? 'Today' : BUY.days + (BUY.days === 1 ? ' day to go' : ' days to go'));
+    u.hidden = !bits.length;
+    u.innerHTML = bits.length ? '<i></i>' : '';
+    if (bits.length) u.appendChild(document.createTextNode(bits.join(' \u00b7 ')));
+  }
+  function cartTotals() {
+    var n = 0, sub = 0;
+    BUY.tiers.forEach(function (t) { var q = cartQty[t.id] || 0; n += q; sub += q * t.price; });
+    return { n: n, total: sub + n * BUY.fee };
+  }
+  function paintCart() {
+    var rows = $('.mv-tsheet .trows', V); rows.innerHTML = '';
+    BUY.tiers.forEach(function (t) {
+      var q = cartQty[t.id] || 0, row = el('div', 'trow' + (q ? ' on' : ''));
+      row.innerHTML = '<div class="a"><b></b><span></span></div><div class="qty"><button type="button" aria-label="Fewer">\u2212</button><output>' + q + '</output><button type="button" aria-label="More">+</button></div>';
+      $('b', row).textContent = t.name;
+      $('.a span', row).textContent = money(t.price) + ' \u00b7 ' + t.left + ' left';
+      var btns = row.querySelectorAll('.qty button');
+      btns[0].addEventListener('click', function () { cartQty[t.id] = Math.max(0, q - 1); paintCart(); });
+      btns[1].addEventListener('click', function () { cartQty[t.id] = Math.min(Math.min(10, t.left), q + 1); paintCart(); });
+      rows.appendChild(row);
+    });
+    var c = cartTotals();
+    $('.mv-tsheet .tot', V).textContent = money(c.total);
+    $('.mv-tsheet .go', V).disabled = c.n === 0;
+  }
+  function openTickets() {
+    if (!BUY) return;
+    var it = byId[order[cur]];
+    api({ action: 'moment_cta', id: it.id }); // counts the tap and remembers which video sent them
+    if (!Object.keys(cartQty).length) cartQty[BUY.tiers[0].id] = 1;
+    $('.mv-tsheet h4', V).textContent = BUY.title;
+    $('.mv-tsheet .meta', V).textContent = BUY.when + (BUY.where ? ' \u00b7 ' + BUY.where : '');
+    paintCart();
+    closeLayers(true);
+    $('.mv-scrim', V).classList.add('open');
+    $('.mv-tsheet', V).classList.add('open');
+  }
+  function goCheckout() {
+    var c = cartTotals();
+    if (!BUY || c.n === 0) return;
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    var f = document.createElement('form');
+    f.method = 'post'; f.action = '/checkout.php';
+    function hid(n, v) { var i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i); }
+    hid('csrf_token', meta ? meta.content : '');
+    hid('event_slug', BUY.slug);
+    BUY.tiers.forEach(function (t) { if (cartQty[t.id]) hid('qty[' + t.id + ']', String(cartQty[t.id])); });
+    document.body.appendChild(f);
+    f.submit();
   }
 
   function pop(node) { node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop'); }
@@ -501,8 +574,8 @@
   function closeShare() { $('.mv-share', V).classList.remove('open'); }
   /** Closes the comments panel / share box. Returns true if something was open. */
   function closeLayers(silent) {
-    var open = $('.mv-docked', V).classList.contains('open') || $('.mv-share', V).classList.contains('open') || $('.mv-picker', V).classList.contains('open');
-    $('.mv-docked', V).classList.remove('open'); $('.mv-share', V).classList.remove('open'); $('.mv-scrim', V).classList.remove('open'); closePicker();
+    var open = $('.mv-docked', V).classList.contains('open') || $('.mv-share', V).classList.contains('open') || $('.mv-tsheet', V).classList.contains('open') || $('.mv-picker', V).classList.contains('open');
+    $('.mv-docked', V).classList.remove('open'); $('.mv-share', V).classList.remove('open'); $('.mv-tsheet', V).classList.remove('open'); $('.mv-scrim', V).classList.remove('open'); closePicker();
     return open;
   }
 

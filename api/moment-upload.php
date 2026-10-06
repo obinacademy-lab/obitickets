@@ -43,7 +43,11 @@ try {
         'sound_mix' => (int) ($_POST['sound_mix'] ?? 70),
         'slide_beats' => (int) ($_POST['slide_beats'] ?? 2),
         'slide_fx' => (string) ($_POST['slide_fx'] ?? 'ZOOM'),
+        'promo' => !empty($_POST['promo']),
     ];
+    if (isset($_POST['buy_bar'])) {
+        $opts['buy_bar'] = !empty($_POST['buy_bar']);
+    }
     $result = create_moment(
         $event,
         $user,

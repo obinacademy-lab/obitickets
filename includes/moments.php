@@ -62,6 +62,22 @@ function moments_ready(): bool
     return $ready;
 }
 
+/** True once migration 019 (promo flag, buy bar, sales tracking) has been run. */
+function moments_sales_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            db()->query('SELECT is_promo, buy_bar, cta_taps, checkouts FROM event_moments LIMIT 0');
+            db()->query('SELECT source_moment_id FROM orders LIMIT 0');
+            $ready = true;
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
 function moment_select_sql(): string
 {
     // Sound and slideshow columns exist after migration 018; before it they read as empty.
@@ -71,10 +87,14 @@ function moment_select_sql(): string
         : "NULL AS sound_id, 0 AS sound_start, 70 AS sound_mix, 2 AS slide_beats, 'ZOOM' AS slide_fx,
                NULL AS sound_title, NULL AS sound_artist, NULL AS sound_path, NULL AS sound_bpm, NULL AS sound_offset, NULL AS sound_duration, NULL AS sound_status, NULL AS sound_source,";
     $join = sounds_ready() ? 'LEFT JOIN sounds sd ON sd.id = m.sound_id' : '';
+    $v3 = moments_sales_ready()
+        ? 'm.is_promo, m.buy_bar, m.cta_taps, m.checkouts,'
+        : '0 AS is_promo, 0 AS buy_bar, 0 AS cta_taps, 0 AS checkouts,';
     return "
         SELECT p.id, p.event_id, p.author_id, p.body AS caption, p.comments_enabled, p.created_at,
                m.media_type, m.media_path, m.poster_path, m.focus_x, m.fit_mode, m.duration_seconds, m.view_count, m.share_count,
                $v2
+               $v3
                (SELECT COUNT(*) FROM post_reactions r WHERE r.post_id = p.id) AS reaction_count,
                (SELECT COUNT(*) FROM post_comments c WHERE c.post_id = p.id AND c.status = 'PUBLISHED') AS comment_count,
                (SELECT r.reaction FROM post_reactions r WHERE r.post_id = p.id AND r.user_id = :viewer) AS my_reaction
@@ -156,6 +176,8 @@ function moment_public(array $m): array
         'beats' => (int) ($m['slide_beats'] ?? 2),
         'fx' => strtolower((string) ($m['slide_fx'] ?? 'ZOOM')),
         'sound' => $sound,
+        'promo' => (int) ($m['is_promo'] ?? 0) === 1,
+        'buyBar' => (int) ($m['buy_bar'] ?? 0) === 1,
         'focus' => (int) $m['focus_x'],
         'fit' => $m['fit_mode'] === 'FIT' ? 'fit' : 'fill',
         'caption' => (string) ($m['caption'] ?? ''),
@@ -456,6 +478,11 @@ function create_moment(array $event, array $user, array $file, ?array $poster, s
                 $slideStmt->execute([$postId, $i, $sp]);
             }
         }
+        if (moments_sales_ready()) {
+            $promo = !empty($opts['promo']) ? 1 : 0;
+            $buyBar = array_key_exists('buy_bar', $opts) ? (!empty($opts['buy_bar']) ? 1 : 0) : $promo; // promo videos get the bar unless switched off
+            $pdo->prepare('UPDATE event_moments SET is_promo = ?, buy_bar = ? WHERE post_id = ?')->execute([$promo, $buyBar, $postId]);
+        }
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
@@ -518,6 +545,9 @@ function update_moment(array $user, int $postId, string $caption, int $focusX, s
     }
     db()->prepare('UPDATE event_posts SET body = ?, comments_enabled = ? WHERE id = ?')->execute([$caption !== '' ? $caption : null, $commentsEnabled ? 1 : 0, $postId]);
     db()->prepare('UPDATE event_moments SET focus_x = ?, fit_mode = ? WHERE post_id = ?')->execute([max(0, min(100, $focusX)), $fit === 'FIT' ? 'FIT' : 'FILL', $postId]);
+    if (moments_sales_ready() && array_key_exists('buy_bar', $opts)) {
+        db()->prepare('UPDATE event_moments SET buy_bar = ? WHERE post_id = ?')->execute([!empty($opts['buy_bar']) ? 1 : 0, $postId]);
+    }
     if ($sound) {
         db()->prepare('UPDATE event_moments SET sound_id = ?, sound_start = ?, sound_mix = ?, slide_beats = ?, slide_fx = ? WHERE post_id = ?')
             ->execute([$sound['sound_id'], $sound['start'], $sound['mix'], $sound['beats'], $sound['fx'], $postId]);
@@ -675,4 +705,123 @@ function moments_shelf_html(array $moments, string $orgName, string $orgInitials
     }
     $h .= '</div><button type="button" class="mv-nav mv-next" aria-label="Scroll right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></div></div>';
     return $h;
+}
+
+// ---- selling from a moment (migration 019) ----
+
+/**
+ * What the viewer's "Get tickets" bar and ticket picker need, or null when there is nothing to sell
+ * (event over, no tickets on sale, or sold out). The urgency numbers are only given when they are true
+ * and small enough to matter, so the page can show them without inventing anything.
+ *
+ * @return array<string,mixed>|null
+ */
+function moment_buy_info(array $event): ?array
+{
+    if (($event['status'] ?? '') !== 'PUBLISHED' || strtotime((string) $event['ends_at']) < time()) {
+        return null;
+    }
+    $tiers = [];
+    $left = 0;
+    $capacity = 0;
+    $currency = 'UGX';
+    foreach (get_ticket_types_for_event((int) $event['id']) as $t) {
+        $remaining = max(0, (int) $t['quantity_total'] - (int) $t['quantity_sold']);
+        $capacity += (int) $t['quantity_total'];
+        if (!empty($t['sales_paused']) || $remaining === 0) {
+            continue;
+        }
+        $left += $remaining;
+        $currency = (string) $t['currency'];
+        $tiers[] = ['id' => (int) $t['id'], 'name' => (string) $t['name'], 'price' => (float) $t['price'], 'left' => $remaining];
+    }
+    if (!$tiers) {
+        return null;
+    }
+    $starts = strtotime((string) $event['starts_at']);
+    $days = null;
+    $now = false;
+    if ($starts !== false) {
+        if ($starts > time()) {
+            $d = (int) floor(($starts - time()) / 86400);
+            $days = $d <= 7 ? $d : null;
+        } else {
+            $now = true;
+        }
+    }
+    return [
+        'slug' => (string) $event['slug'],
+        'title' => (string) $event['title'],
+        'when' => format_event_date_range($event['starts_at'], $event['ends_at']),
+        'where' => (string) ($event['venue_name'] ?? ''),
+        'currency' => $currency,
+        'fee' => SERVICE_FEE_PER_TICKET,
+        'from' => min(array_column($tiers, 'price')),
+        'tiers' => $tiers,
+        'left' => ($left <= 50 || ($capacity > 0 && $left / $capacity <= 0.25)) ? $left : null,
+        'days' => $days,
+        'now' => $now,
+    ];
+}
+
+/** A visitor tapped "Get tickets" on a moment: count it once per visit and remember where they came from. */
+function moment_record_tap(int $postId, bool $count = true): bool
+{
+    if (!moments_sales_ready()) {
+        return false;
+    }
+    $stmt = db()->prepare("SELECT m.event_id FROM event_moments m JOIN event_posts p ON p.id = m.post_id WHERE m.post_id = ? AND p.status = 'PUBLISHED'");
+    $stmt->execute([$postId]);
+    $eventId = $stmt->fetchColumn();
+    if ($eventId === false) {
+        return false;
+    }
+    $_SESSION['moment_src'] = ['id' => $postId, 'event' => (int) $eventId, 'at' => time(), 'checkout_counted' => false];
+    if ($count) {
+        db()->prepare('UPDATE event_moments SET cta_taps = cta_taps + 1 WHERE post_id = ?')->execute([$postId]);
+    }
+    return true;
+}
+
+/** The checkout page opened for the event the visitor came from a moment about: count it once. */
+function moment_record_checkout(int $eventId): void
+{
+    $src = $_SESSION['moment_src'] ?? null;
+    if (!$src || (int) $src['event'] !== $eventId || time() - (int) $src['at'] > 86400 || !empty($src['checkout_counted']) || !moments_sales_ready()) {
+        return;
+    }
+    db()->prepare('UPDATE event_moments SET checkouts = checkouts + 1 WHERE post_id = ?')->execute([(int) $src['id']]);
+    $_SESSION['moment_src']['checkout_counted'] = true;
+}
+
+/** Credits a new order to the moment the buyer tapped within the last 24 hours (same event only). */
+function moment_attribute_order(int $orderId, int $eventId): void
+{
+    $src = $_SESSION['moment_src'] ?? null;
+    if (!$src || (int) $src['event'] !== $eventId || time() - (int) $src['at'] > 86400 || !moments_sales_ready()) {
+        return;
+    }
+    db()->prepare('UPDATE orders SET source_moment_id = ? WHERE id = ? AND source_moment_id IS NULL')->execute([(int) $src['id'], $orderId]);
+}
+
+/**
+ * What each moment did for sales: views, taps on Get tickets, checkouts started, tickets sold and ticket
+ * revenue from paid orders credited to it. Newest first.
+ * @return list<array<string,mixed>>
+ */
+function get_moment_results(int $eventId): array
+{
+    if (!moments_sales_ready()) {
+        return [];
+    }
+    $stmt = db()->prepare("
+        SELECT p.id, p.body AS caption, m.media_type, m.media_path, m.poster_path, m.is_promo, m.buy_bar, m.view_count, m.cta_taps, m.checkouts, p.created_at,
+               (SELECT COUNT(*) FROM orders o WHERE o.source_moment_id = p.id) AS orders_started,
+               (SELECT COALESCE(SUM(oi.quantity), 0) FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.source_moment_id = p.id AND o.status = 'PAID') AS tickets,
+               (SELECT COALESCE(SUM(o.subtotal_amount), 0) FROM orders o WHERE o.source_moment_id = p.id AND o.status = 'PAID') AS revenue
+        FROM event_moments m JOIN event_posts p ON p.id = m.post_id
+        WHERE m.event_id = ? AND p.status = 'PUBLISHED' AND m.media_path <> ''
+        ORDER BY p.id DESC LIMIT 100");
+    $stmt->execute([$eventId]);
+    return $stmt->fetchAll();
 }
