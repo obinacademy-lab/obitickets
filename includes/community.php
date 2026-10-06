@@ -598,7 +598,19 @@ function set_post_reaction(int $postId, int $userId, ?string $reaction): array
     }
     $count = db()->prepare('SELECT COUNT(*) FROM post_reactions WHERE post_id = ?');
     $count->execute([$postId]);
-    return ['ok' => true, 'reaction_count' => (int) $count->fetchColumn(), 'my_reaction' => $reaction];
+    return ['ok' => true, 'reaction_count' => (int) $count->fetchColumn(), 'my_reaction' => $reaction, 'breakdown' => post_reaction_breakdown($postId)];
+}
+
+/** Top three reactions on a post, most used first. @return array<string,int> */
+function post_reaction_breakdown(int $postId): array
+{
+    $stmt = db()->prepare('SELECT reaction, COUNT(*) AS n FROM post_reactions WHERE post_id = ? GROUP BY reaction ORDER BY n DESC LIMIT 3');
+    $stmt->execute([$postId]);
+    $out = [];
+    foreach ($stmt->fetchAll() as $r) {
+        $out[$r['reaction']] = (int) $r['n'];
+    }
+    return $out;
 }
 
 function set_comment_reaction(int $commentId, int $userId, ?string $reaction): array
@@ -896,4 +908,42 @@ function get_hidden_content(int $eventId, int $limit = 20): array
         $r['body'] = mb_substr((string) $r['body'], 0, 200);
     }
     return $rows;
+}
+
+/** One comment in the same shape get_post_comments() returns, for showing a just-posted comment. */
+function get_comment_for_render(int $commentId, ?int $viewerId): ?array
+{
+    $stmt = db()->prepare("
+        SELECT c.id, c.post_id, c.user_id, c.parent_id, c.body, c.created_at, u.name AS author_name,
+               (e.organizer_id = c.user_id) AS is_organizer,
+               EXISTS(SELECT 1 FROM orders o WHERE o.user_id = c.user_id AND o.event_id = p.event_id AND o.status = 'PAID') AS is_verified_attendee,
+               (SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id = c.id) AS reaction_count,
+               (SELECT r.reaction FROM comment_reactions r WHERE r.comment_id = c.id AND r.user_id = :viewer) AS my_reaction
+        FROM post_comments c
+        JOIN users u ON u.id = c.user_id
+        JOIN event_posts p ON p.id = c.post_id
+        JOIN events e ON e.id = p.event_id
+        WHERE c.id = :id AND c.status = 'PUBLISHED'");
+    $stmt->bindValue(':viewer', $viewerId ?? 0, PDO::PARAM_INT);
+    $stmt->bindValue(':id', $commentId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+    $row['replies'] = [];
+    return $row;
+}
+
+/** The published event row (with the organizer's display name) the community renders against. */
+function get_community_event(int $eventId): ?array
+{
+    $stmt = db()->prepare("
+        SELECT e.*, COALESCE(op.org_name, u.name) AS org_name
+        FROM events e
+        JOIN users u ON u.id = e.organizer_id
+        LEFT JOIN organizer_profiles op ON op.user_id = e.organizer_id
+        WHERE e.id = ? AND e.status = 'PUBLISHED'");
+    $stmt->execute([$eventId]);
+    return $stmt->fetch() ?: null;
 }
