@@ -43,7 +43,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
-<?php if (str_contains($bodyClass ?? '', 'event-page')): ?>
+<?php if (str_contains($bodyClass ?? '', 'event-page') || str_contains($bodyClass ?? '', 'ev-page')): ?>
 <link rel="stylesheet" href="/assets/css/event-v3.css?v=<?= @filemtime(__DIR__ . '/../assets/css/event-v3.css') ?: time() ?>">
 <?php endif; ?>
 </head>

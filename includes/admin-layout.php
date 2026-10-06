@@ -25,6 +25,7 @@ function render_admin_head(string $active): void
             ['key' => 'events', 'label' => 'All Events', 'href' => '/admin-events.php', 'icon' => 'ic-cal', 'perm' => 'events.view', 'badge' => $stats['pending_events'] ?: null],
             ['key' => 'categories', 'label' => 'Categories', 'href' => '/admin-categories.php', 'icon' => 'ic-tag', 'perm' => 'categories.manage'],
             ['key' => 'reviews', 'label' => 'Reviews', 'href' => '/admin-reviews.php', 'icon' => 'ic-heart', 'perm' => 'events.manage'],
+            ['key' => 'social', 'label' => 'Social moderation', 'href' => '/admin-social.php', 'icon' => 'ic-shield', 'perm' => 'events.manage'],
         ]],
         ['label' => 'Users', 'items' => [
             ['key' => 'customers', 'label' => 'Customers', 'href' => '/admin-customers.php', 'icon' => 'ic-user', 'perm' => 'customers.view'],

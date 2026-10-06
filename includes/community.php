@@ -947,3 +947,127 @@ function get_community_event(int $eventId): ?array
     $stmt->execute([$eventId]);
     return $stmt->fetch() ?: null;
 }
+
+// =====================================================================
+// Organizer profile + admin moderation helpers
+// =====================================================================
+
+/** @param list<int> $eventIds @return array<int,int> event id => people who bought (distinct paid buyers) */
+function get_events_going_counts(array $eventIds): array
+{
+    $ids = array_values(array_filter(array_map('intval', $eventIds)));
+    if (!$ids) {
+        return [];
+    }
+    $in = implode(',', $ids); // integers only
+    $out = [];
+    foreach (db()->query("SELECT event_id, COUNT(DISTINCT user_id) AS n FROM orders WHERE status = 'PAID' AND event_id IN ($in) GROUP BY event_id")->fetchAll() as $r) {
+        $out[(int) $r['event_id']] = (int) $r['n'];
+    }
+    return $out;
+}
+
+/** @param list<int> $eventIds @return array<int,array{average:float,count:int}> */
+function get_events_review_stats(array $eventIds): array
+{
+    $ids = array_values(array_filter(array_map('intval', $eventIds)));
+    if (!$ids) {
+        return [];
+    }
+    $in = implode(',', $ids);
+    $out = [];
+    try {
+        foreach (db()->query("SELECT event_id, ROUND(AVG(rating), 1) AS avg_rating, COUNT(*) AS n FROM event_reviews WHERE event_id IN ($in) GROUP BY event_id")->fetchAll() as $r) {
+            $out[(int) $r['event_id']] = ['average' => (float) $r['avg_rating'], 'count' => (int) $r['n']];
+        }
+    } catch (Throwable $e) {
+        error_log('[community] review stats: ' . $e->getMessage());
+    }
+    return $out;
+}
+
+/** Real totals for an organizer's public profile. @return array{events:int, tickets_sold:int} */
+function get_organizer_public_stats(int $organizerUserId): array
+{
+    $stmt = db()->prepare("
+        SELECT COUNT(*) AS events,
+               COALESCE((SELECT SUM(t.quantity_sold) FROM ticket_types t JOIN events e2 ON e2.id = t.event_id
+                         WHERE e2.organizer_id = :o2 AND e2.status = 'PUBLISHED'), 0) AS tickets_sold
+        FROM events WHERE organizer_id = :o1 AND status = 'PUBLISHED'");
+    $stmt->execute([':o1' => $organizerUserId, ':o2' => $organizerUserId]);
+    $row = $stmt->fetch();
+    return ['events' => (int) $row['events'], 'tickets_sold' => (int) $row['tickets_sold']];
+}
+
+/**
+ * Open reports across every event, grouped per reported item, for the admin queue.
+ * @return list<array<string,mixed>>
+ */
+function get_all_open_reports(int $limit = 60): array
+{
+    $stmt = db()->prepare("
+        SELECT r.event_id, e.title AS event_title, e.slug AS event_slug, r.content_type, r.content_id,
+               COUNT(*) AS report_count, MAX(r.created_at) AS last_reported,
+               GROUP_CONCAT(DISTINCT r.reason ORDER BY r.reason SEPARATOR ',') AS reasons
+        FROM content_reports r JOIN events e ON e.id = r.event_id
+        WHERE r.status = 'OPEN'
+        GROUP BY r.event_id, r.content_type, r.content_id
+        ORDER BY last_reported DESC LIMIT " . (int) $limit);
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
+    foreach ($rows as &$row) {
+        [$content] = community_load_content($row['content_type'], (int) $row['content_id']);
+        $row['snippet'] = $content ? mb_substr((string) $content['body'], 0, 240) : '';
+        $row['content_status'] = $content['status'] ?? 'DELETED';
+        $row['author_id'] = $content ? (int) $content['owner_id'] : 0;
+        $row['author_name'] = '';
+        if ($content) {
+            $a = db()->prepare('SELECT name FROM users WHERE id = ?');
+            $a->execute([(int) $content['owner_id']]);
+            $row['author_name'] = (string) $a->fetchColumn();
+        }
+        $row['reasons'] = array_filter(explode(',', (string) $row['reasons']));
+    }
+    unset($row);
+    return $rows;
+}
+
+/** Hidden or deleted posts/comments anywhere, newest first, so an admin can restore a wrong call. */
+function get_removed_content_all(int $limit = 40): array
+{
+    $stmt = db()->prepare("
+        SELECT * FROM (
+          SELECT 'POST' AS content_type, p.id AS content_id, p.status, p.body, u.name AS author_name, e.title AS event_title, e.slug AS event_slug, p.updated_at AS at
+          FROM event_posts p JOIN users u ON u.id = p.author_id JOIN events e ON e.id = p.event_id WHERE p.status IN ('HIDDEN','DELETED')
+          UNION ALL
+          SELECT 'COMMENT', c.id, c.status, c.body, u.name, e.title, e.slug, c.created_at
+          FROM post_comments c JOIN event_posts p ON p.id = c.post_id JOIN users u ON u.id = c.user_id JOIN events e ON e.id = p.event_id WHERE c.status IN ('HIDDEN','DELETED')
+        ) x ORDER BY at DESC LIMIT " . (int) $limit);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+/** @return list<array<string,mixed>> */
+function get_recent_moderation_actions(int $limit = 30): array
+{
+    $stmt = db()->prepare("
+        SELECT m.*, e.title AS event_title, u.name AS actor_name
+        FROM moderation_log m JOIN events e ON e.id = m.event_id LEFT JOIN users u ON u.id = m.actor_id
+        ORDER BY m.id DESC LIMIT " . (int) $limit);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+/** Platform-wide counts for the admin overview. @return array<string,int> */
+function get_community_admin_totals(): array
+{
+    $row = db()->query("
+        SELECT (SELECT COUNT(*) FROM event_posts WHERE status = 'PUBLISHED') AS posts,
+               (SELECT COUNT(*) FROM post_comments WHERE status = 'PUBLISHED') AS comments,
+               (SELECT COUNT(*) FROM post_reactions) + (SELECT COUNT(*) FROM comment_reactions) AS reactions,
+               (SELECT COUNT(*) FROM event_follows) AS event_follows,
+               (SELECT COUNT(*) FROM organizer_follows) AS organizer_follows,
+               (SELECT COUNT(DISTINCT content_type, content_id) FROM content_reports WHERE status = 'OPEN') AS open_reports
+    ")->fetch();
+    return array_map('intval', $row);
+}

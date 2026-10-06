@@ -164,6 +164,14 @@
   root.addEventListener('click', function (e) {
     var t = e.target;
 
+    var copyBtn = t.closest('[data-ev-copy]');
+    if (copyBtn) {
+      var shareUrl = copyBtn.getAttribute('data-ev-copy');
+      if (navigator.share) { navigator.share({ title: document.title, url: shareUrl }).catch(function () {}); }
+      else if (navigator.clipboard) { navigator.clipboard.writeText(shareUrl).then(function () { toast('Link copied'); }); }
+      return;
+    }
+
     var follow = t.closest('[data-ev-follow]');
     if (follow) {
       if (needLogin()) return;

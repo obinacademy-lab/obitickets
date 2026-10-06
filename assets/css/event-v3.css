@@ -339,3 +339,54 @@ body.event-page{background:#F7F3F1;}
 @media (prefers-reduced-motion:reduce){
   .ev *{transition:none !important;}
 }
+
+/* ==========================================================================
+   Organizer public profile (body.ev-page)
+   ========================================================================== */
+body.ev-page{background:#F7F3F1;}
+.ev-avatar-xl{width:136px; height:136px; font-family:'Fraunces',Georgia,serif; font-size:48px; box-shadow:0 0 0 8px #fff, 0 20px 40px -20px rgba(94,23,48,0.6);}
+.ev-org-hero{display:flex; align-items:center; gap:40px; padding-top:56px; padding-bottom:36px; flex-wrap:wrap;}
+.ev-org-hero-main{flex:1 1 420px; min-width:0;}
+.ev-org-hero-name{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+.ev-org-hero-name h1{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(2rem,4vw,3rem); line-height:1.05; margin:0; color:var(--ink);}
+.ev-org-hero-bio{margin:12px 0 0; max-width:60ch; color:var(--muted); font-size:17px;}
+.ev-org-hero-actions{display:flex; align-items:center; gap:10px; margin-top:22px; flex-wrap:wrap;}
+.ev-pill{display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 16px; background:#fff; border:1.5px solid var(--line); border-radius:100px; font-weight:700; font-size:14px; text-decoration:none;}
+.ev-pill b{font-size:12px;}
+.ev-pill:hover{border-color:var(--ink);}
+.ev-statbar{display:flex; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden;}
+.ev-stat{flex:1 1 180px; padding:22px 28px; border-left:1px solid var(--line);}
+.ev-stat:first-child{border-left:0;}
+.ev-stat b{display:block; font-family:'Fraunces',Georgia,serif; font-size:34px; font-weight:700; line-height:1;}
+.ev-stat span{display:block; margin-top:6px; font-size:13px; color:var(--muted-2);}
+.ev-star{font-size:18px; color:#B7791F;}
+.ev-profile-body{padding-top:44px; padding-bottom:90px;}
+.ev-h2-count{font-family:'Manrope',system-ui,sans-serif; font-size:15px; font-weight:700; color:var(--muted-2); margin-left:6px;}
+.ev-section-note{margin:-10px 0 22px; color:var(--muted);}
+.ev-egrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:30px 26px;}
+.ev-ecard{display:flex; flex-direction:column; text-decoration:none; color:inherit; min-width:0;}
+.ev-ecard-art{position:relative; display:block; aspect-ratio:1/1; border-radius:22px; overflow:hidden; background:radial-gradient(110% 90% at 18% 8%, #F0806A 0%, #C23A3F 38%, #5E1730 100%); box-shadow:0 22px 40px -26px rgba(94,23,48,0.55); transition:transform .3s ease, box-shadow .3s ease;}
+.ev-ecard:hover .ev-ecard-art{transform:translateY(-4px); box-shadow:0 28px 46px -24px rgba(94,23,48,0.6);}
+.ev-ecard-art img{width:100%; height:100%; object-fit:cover; display:block;}
+.ev-ecard-fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:3.4rem;}
+.ev-ecard-date{position:absolute; top:14px; left:14px; background:#fff; border-radius:14px; padding:6px 12px; text-align:center; line-height:1.1; box-shadow:0 6px 16px -8px rgba(0,0,0,0.4);}
+.ev-ecard-date b{display:block; font-size:20px;}
+.ev-ecard-date i{display:block; font-style:normal; font-size:11px; font-weight:800; color:#DC2626; letter-spacing:0.06em;}
+.ev-ecard-pill{position:absolute; top:14px; left:14px; background:rgba(27,20,23,0.78); color:#fff; font-size:11px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; border-radius:100px; padding:5px 12px;}
+.ev-ecard-title{margin-top:14px; font-weight:800; font-size:17px; line-height:1.3; overflow-wrap:anywhere;}
+.ev-ecard-sub{color:var(--muted); font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.ev-ecard-foot{margin-top:6px; font-size:14px; color:var(--muted-2); min-height:21px;}
+.ev-ecard-foot b{color:var(--ink);}
+.ev-ecard-foot .review-stars{font-size:0.95rem;}
+@media (max-width:900px){
+  .ev-egrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .ev-org-hero{padding-top:34px; gap:24px;}
+  .ev-avatar-xl{width:104px; height:104px; font-size:38px;}
+}
+@media (max-width:560px){
+  .ev-egrid{grid-template-columns:1fr; gap:26px;}
+  .ev-stat{flex:1 1 45%; padding:18px 20px;}
+  .ev-stat:nth-child(odd){border-left:0;}
+  .ev-stat:nth-child(n+3){border-top:1px solid var(--line);}
+  .ev-stat b{font-size:28px;}
+}
