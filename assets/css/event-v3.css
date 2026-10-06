@@ -399,3 +399,144 @@ body.ev-page{background:#F7F3F1;}
 .ev-event-react .ev-react-ico{font-size:16px;}
 .ev-event-react .ev-react-sum{font-size:14px; color:var(--muted);}
 .ev-event-react .ev-react-sum b{color:var(--ink);}
+
+/* ==========================================================================
+   Motion layer for the event page. Everything here is progressive: with no JS
+   the page is complete and static, and prefers-reduced-motion turns it all off.
+   Hooks added by public/assets/js/event-motion.js: .ev-glow, .ev-cd, .ev-shine,
+   .ev-tab-ink, .ev-w (title words), body.ev-motion.
+   ========================================================================== */
+.ev{--ev-ease:cubic-bezier(.16,.8,.24,1); --ev-spring:cubic-bezier(.2,1.4,.4,1);}
+
+/* readable "Log in" on the dark button (the ".ev a" colour reset was making it black on black) */
+.ev a.ev-btn-dark, .ev a.ev-btn-dark:hover{color:#fff;}
+
+/* ---------- buttons ---------- */
+.ev-btn, .ev-icon-btn{transition:background .25s ease, border-color .25s ease, color .25s ease, box-shadow .3s ease, transform .35s var(--ev-spring);}
+.ev-btn:hover, .ev-icon-btn:hover{transform:translateY(-2px);}
+.ev-btn:active, .ev-icon-btn:active{transform:scale(.96);}
+.ev-btn-primary{position:relative; overflow:hidden; isolation:isolate;}
+.ev-btn-primary::before{content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%); transform:translateX(-130%);}
+.ev-btn-primary:hover::before, .ev-btn-primary.ev-sweep::before{animation:evSweep 1.1s var(--ev-ease);}
+.ev-btn-primary:hover{box-shadow:0 22px 34px -14px rgba(220,38,38,.8);}
+@keyframes evSweep{to{transform:translateX(130%);}}
+.ev-icon-btn.like-btn.liked svg{animation:evHeart .55s var(--ev-spring);}
+@keyframes evHeart{0%{transform:scale(1);}35%{transform:scale(1.55);}100%{transform:scale(1);}}
+
+/* ---------- hero: glow, intro, poster tilt ---------- */
+.ev-hero{position:relative; --glow:220,38,38;}
+.ev-hero-grid{position:relative; z-index:1;}
+.ev-glow{position:absolute; inset:-80px 0 0; overflow:hidden; pointer-events:none; z-index:0;
+  -webkit-mask-image:linear-gradient(#000 55%,transparent); mask-image:linear-gradient(#000 55%,transparent);}
+.ev-glow i{position:absolute; border-radius:50%; filter:blur(70px); will-change:transform;}
+.ev-glow i:nth-child(1){width:520px; height:520px; left:calc(50% - 760px); top:40px; background:rgba(var(--glow),.42); animation:evDrift1 16s ease-in-out infinite alternate;}
+.ev-glow i:nth-child(2){width:420px; height:420px; left:calc(50% - 180px); top:-60px; background:rgba(var(--glow),.18); animation:evDrift2 20s ease-in-out infinite alternate;}
+.ev-glow i:nth-child(3){width:360px; height:360px; right:calc(50% - 680px); top:160px; background:rgba(220,38,38,.14); animation:evDrift1 24s ease-in-out infinite alternate-reverse;}
+@keyframes evDrift1{to{transform:translate(70px,40px) scale(1.12);}}
+@keyframes evDrift2{to{transform:translate(-60px,50px) scale(.92);}}
+
+.ev-cover{animation:evCoverIn 1.1s var(--ev-ease) both; transform-style:preserve-3d;}
+.ev-cover.is-ready{animation:none;}
+.ev-cover.is-tilting{transition:transform .12s linear;}
+.ev-cover:not(.is-tilting){transition:transform .5s var(--ev-ease);}
+.ev-cover img{box-shadow:0 36px 70px -30px rgba(var(--glow),.7), 0 0 0 1px rgba(27,20,23,0.06);}
+.ev-shine{position:absolute; inset:0; border-radius:28px; pointer-events:none; mix-blend-mode:soft-light; opacity:0; transition:opacity .3s; background:radial-gradient(circle at var(--mx,50%) var(--my,50%),#fff 0,rgba(255,255,255,0) 55%);}
+.ev-cover.is-tilting .ev-shine{opacity:.75;}
+@keyframes evCoverIn{from{opacity:0; transform:translateY(34px) scale(.94); filter:blur(14px);}to{opacity:1; transform:none; filter:none;}}
+
+.ev-hero-text > *{animation:evUp .8s var(--ev-ease) both;}
+.ev-hero-text > :nth-child(1){animation-delay:.25s;}
+.ev-hero-text > :nth-child(2){animation-delay:.3s;}
+.ev-hero-text > :nth-child(3){animation-delay:.4s;}
+.ev-hero-text > :nth-child(4){animation-delay:.48s;}
+.ev-hero-text > :nth-child(5){animation-delay:.56s;}
+.ev-hero-text > :nth-child(6){animation-delay:.64s;}
+.ev-hero-text > :nth-child(7){animation-delay:.72s;}
+.ev-hero-text > :nth-child(8){animation-delay:.8s;}
+.ev-hero-text > .ev-title{animation:none;}
+@keyframes evUp{from{opacity:0; transform:translateY(18px);}to{opacity:1; transform:none;}}
+/* title: words slide up out of a mask, staggered */
+.ev-w{display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:.1em; margin-bottom:-.1em;}
+.ev-w > span{display:inline-block; animation:evWord .9s var(--ev-ease) both; animation-delay:calc(.12s + var(--wi,0)*55ms);}
+@keyframes evWord{from{transform:translateY(112%) rotate(2deg);}to{transform:none;}}
+
+/* live dot + countdown tiles */
+.ev-live-dot{width:8px; height:8px; border-radius:50%; background:#DC2626; position:relative; display:inline-block;}
+.ev-live-dot::after{content:''; position:absolute; inset:0; border-radius:50%; background:#DC2626; animation:evPing 1.8s var(--ev-ease) infinite;}
+@keyframes evPing{to{transform:scale(3.2); opacity:0;}}
+.ev-has-cd .ev-eyebrow-state, .ev-has-cd .ev-eyebrow .ev-dot{display:none;}
+.ev-cd{display:flex; gap:10px; margin-top:22px; animation:evUp .8s var(--ev-ease) .46s both;}
+.ev-cd-u{min-width:68px; padding:11px 12px 9px; background:#fff; border:1px solid var(--line); border-radius:16px; text-align:center; box-shadow:0 14px 24px -20px rgba(27,20,23,.45);}
+.ev-cd-u b{display:block; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:26px; line-height:1.1; height:1.1em; overflow:hidden; font-variant-numeric:tabular-nums;}
+.ev-cd-u b span{display:block; animation:evRoll .45s var(--ev-ease);}
+.ev-cd-u small{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-2);}
+.ev-cd-u.is-sec{background:var(--ink); border-color:var(--ink); color:#fff;}
+.ev-cd-u.is-sec small{color:rgba(255,255,255,.55);}
+@keyframes evRoll{from{transform:translateY(-70%); opacity:0;}to{transform:none; opacity:1;}}
+@media (max-width:420px){.ev-cd{gap:8px;} .ev-cd-u{min-width:0; flex:1; padding:10px 6px 8px;} .ev-cd-u b{font-size:22px;}}
+
+/* ---------- tabs: sliding line + lift shadow ---------- */
+.ev-tabs{transition:box-shadow .3s ease;}
+.ev-tabs.is-stuck{box-shadow:0 14px 26px -22px rgba(27,20,23,.5);}
+.ev-tabs-row{position:relative;}
+.ev-tabs a{transition:color .25s ease;}
+.ev-tabs-row.has-ink a.is-active{border-bottom-color:transparent;}
+.ev-tab-ink{position:absolute; left:0; bottom:0; height:3px; width:0; background:#DC2626; border-radius:3px 3px 0 0; transition:transform .5s var(--ev-ease), width .5s var(--ev-ease); pointer-events:none;}
+
+/* ---------- scroll reveals (resting state is fully visible) ---------- */
+@supports (animation-timeline:view()){
+  body.ev-motion .ev-section:not(#community), body.ev-motion .ev-side > .ev-card{animation:evReveal linear both; animation-timeline:view(); animation-range:entry 0% entry 30%;}
+  @keyframes evReveal{from{opacity:0; transform:translateY(34px);}to{opacity:1; transform:none;}}
+}
+
+/* ---------- community polish ---------- */
+.ev-post, .ev-card, .ev-note-card{transition:box-shadow .35s var(--ev-ease), transform .35s var(--ev-ease);}
+.ev-post:hover, .ev-card:hover, .ev-note-card:hover{box-shadow:0 22px 40px -28px rgba(27,20,23,.4);}
+.ev-post{animation:evPostIn .5s var(--ev-ease) both;}
+@keyframes evPostIn{from{opacity:0; transform:translateY(12px);}to{opacity:1; transform:none;}}
+.ev-empty::before{content:''; width:54px; height:54px; border-radius:50%; margin-bottom:10px; background:#FDEDED url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%23DC2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 01-11.6 7.1L3 21l1.9-6.2A8 8 0 1121 12z'/%3E%3C/svg%3E") center no-repeat; animation:evRing 2.6s ease-out infinite;}
+@keyframes evRing{0%{box-shadow:0 0 0 0 rgba(220,38,38,.3);}100%{box-shadow:0 0 0 24px rgba(220,38,38,0);}}
+
+/* reaction picker springs open, then each emoji pops in */
+.ev-picker:not([hidden]){animation:evPickerIn .35s var(--ev-spring) both; transform-origin:left bottom;}
+.ev-picker:not([hidden]) .ev-picker-btn{animation:evPop .5s var(--ev-spring) both;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(2){animation-delay:35ms;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(3){animation-delay:70ms;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(4){animation-delay:105ms;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(5){animation-delay:140ms;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(6){animation-delay:175ms;}
+.ev-picker:not([hidden]) .ev-picker-btn:nth-child(7){animation-delay:210ms;}
+.ev-picker-btn{transition:transform .3s var(--ev-spring), background .2s ease;}
+.ev-picker-btn:hover, .ev-picker-btn:focus-visible{transform:scale(1.4) translateY(-6px);}
+@keyframes evPickerIn{from{opacity:0; transform:translateY(10px) scale(.9);}to{opacity:1; transform:none;}}
+@keyframes evPop{from{transform:scale(0) translateY(10px);}to{transform:none;}}
+.ev-burst{position:fixed; z-index:200; pointer-events:none; font-size:22px; line-height:1; animation:evFly 1s var(--ev-ease) forwards;}
+@keyframes evFly{from{transform:translate(0,0) scale(.4); opacity:1;}to{transform:translate(var(--dx),var(--dy)) scale(1.3) rotate(var(--r)); opacity:0;}}
+.ev-pulse-item b{font-variant-numeric:tabular-nums;}
+
+/* ---------- ticket card ---------- */
+@media (min-width:921px){
+  body.ev-motion .ev-stub-wrap{animation:evStubIn 1s var(--ev-ease) .5s both;}
+  @keyframes evStubIn{from{opacity:0; transform:translateY(40px) rotate(1.5deg);}to{opacity:1; transform:none;}}
+}
+.ev-stub .tier{transition:background .3s ease, border-color .3s ease;}
+.ev-stub .tier.has{background:rgba(220,38,38,.1);}
+.ev-stub .qty button{transition:background .2s ease, border-color .2s ease, color .2s ease, transform .3s var(--ev-spring);}
+.ev-stub .qty button:hover{background:var(--st-ink); color:var(--st-bg); border-color:var(--st-ink);}
+.ev-stub .qty button:active{transform:scale(.82);}
+.ev-stub .poster-foot .btn{position:relative; overflow:hidden; isolation:isolate;}
+.ev-stub .poster-foot .btn::before{content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.38) 50%,transparent 70%); transform:translateX(-130%);}
+.ev-stub .poster-foot .btn.ev-sweep::before{animation:evSweep 1.1s var(--ev-ease);}
+.ev-stub .qty .n.ev-bump{display:inline-block; animation:evRoll .35s var(--ev-ease);}
+
+/* ---------- phone ticket bar slides in once the hero buttons are out of view ---------- */
+@media (max-width:920px){
+  body.ev-motion .mobile-buy-bar{transition:transform .6s var(--ev-ease);}
+  body.ev-motion:not(.ev-bar-on):not(.ticket-sheet-open) .mobile-buy-bar{transform:translateY(120%);}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .ev *, .ev *::before, .ev *::after{animation-duration:.001ms !important; animation-delay:0s !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  body.ev-motion .ev-section, body.ev-motion .ev-side > .ev-card{animation:none !important;}
+  .ev-glow i{animation:none !important;}
+}

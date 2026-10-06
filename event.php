@@ -664,6 +664,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 <?php endif; ?>
 
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
+<script src="/assets/js/event-motion.js?v=<?= @filemtime(__DIR__ . '/assets/js/event-motion.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
 <script src="/assets/js/cinematic.js"></script>
 
