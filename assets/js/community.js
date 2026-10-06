@@ -52,6 +52,9 @@
     return Array.prototype.slice.call(tmp.children);
   }
 
+  // The Moments viewer (moments.js) talks to the same API and shows the same toasts.
+  window.EvCommunity = { api: api, toast: toast, needLogin: needLogin, htmlToNodes: htmlToNodes };
+
   function closeFloating(except) {
     document.querySelectorAll('.ev-picker:not([hidden])').forEach(function (p) { if (p !== except) p.hidden = true; });
     document.querySelectorAll('.ev-menu:not([hidden])').forEach(function (m) {
@@ -362,6 +365,7 @@
         input.value = '';
       }
       if (post) setCommentCount(post, res.count);
+      document.dispatchEvent(new CustomEvent('ev:comment-added', { detail: { postId: postId, count: res.count } }));
     });
   });
 

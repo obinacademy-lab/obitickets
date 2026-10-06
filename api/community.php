@@ -14,7 +14,7 @@ api_csrf_verify($body);
 
 $action = (string) ($body['action'] ?? '');
 $user = current_user();
-$readActions = ['comments', 'feed_more'];
+$readActions = ['comments', 'feed_more', 'moment_view', 'moment_share'];
 if (!in_array($action, $readActions, true) && !$user) {
     json_response(['error' => 'Please log in to do that.', 'login' => true], 401);
 }
@@ -63,6 +63,24 @@ try {
                 $r['pulse_reactions'] = get_event_social_counts($eventId)['reactions'] + $r['total'];
             }
             json_response($r, $r['ok'] ? 200 : 400);
+
+        case 'moment_view':
+        case 'moment_share':
+            // Guests count too; one count per visitor per moment per session keeps the numbers honest.
+            $momentId = $intOf($body['id'] ?? 0);
+            $statKey = $action === 'moment_share' ? 'moment_shares' : 'moment_views';
+            if (!isset($_SESSION[$statKey]) || !is_array($_SESSION[$statKey])) {
+                $_SESSION[$statKey] = [];
+            }
+            if (isset($_SESSION[$statKey][$momentId])) {
+                json_response(['ok' => true, 'counted' => false]);
+            }
+            $counted = record_moment_stat($momentId, $action === 'moment_share' ? 'share' : 'view');
+            if ($counted) {
+                $_SESSION[$statKey][$momentId] = time();
+                $_SESSION[$statKey] = array_slice($_SESSION[$statKey], -300, null, true);
+            }
+            json_response(['ok' => true, 'counted' => $counted]);
 
         case 'comments':
             $found = $ctxForPost($intOf($body['post_id'] ?? 0));

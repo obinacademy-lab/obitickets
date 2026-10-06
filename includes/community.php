@@ -146,7 +146,7 @@ function get_event_social_counts(int $eventId): array
               WHERE p.event_id = :e3 AND p.status = 'PUBLISHED') AS reactions,
           (SELECT COUNT(*) FROM post_comments c JOIN event_posts p ON p.id = c.post_id
               WHERE p.event_id = :e4 AND p.status = 'PUBLISHED' AND c.status = 'PUBLISHED') AS comments,
-          (SELECT COUNT(*) FROM event_posts WHERE event_id = :e5 AND status = 'PUBLISHED') AS posts
+          (SELECT COUNT(*) FROM event_posts WHERE event_id = :e5 AND status = 'PUBLISHED' AND post_type <> 'MOMENT') AS posts
     ");
     $stmt->execute([':e1' => $eventId, ':e2' => $eventId, ':e3' => $eventId, ':e4' => $eventId, ':e5' => $eventId]);
     $row = $stmt->fetch();
@@ -448,7 +448,9 @@ function create_event_post(array $event, array $user, string $type, string $body
     if ($imagePath && $type === 'TEXT') {
         $type = 'IMAGE';
     }
-    if (community_rate_limited('event_posts', 'author_id', (int) $user['id'], POST_RATE_LIMIT, 600)) {
+    $recentPosts = db()->prepare("SELECT COUNT(*) FROM event_posts WHERE author_id = ? AND post_type <> 'MOMENT' AND created_at >= (NOW() - INTERVAL 600 SECOND)");
+    $recentPosts->execute([(int) $user['id']]);
+    if ((int) $recentPosts->fetchColumn() >= POST_RATE_LIMIT) { // moments have their own limit
         return ['ok' => false, 'error' => "You're posting too quickly. Please wait a few minutes."];
     }
 
@@ -528,7 +530,7 @@ function get_event_feed(int $eventId, ?int $viewerId, int $limit = FEED_PAGE_SIZ
         FROM event_posts p
         JOIN users u ON u.id = p.author_id
         JOIN events e ON e.id = p.event_id
-        WHERE p.event_id = :event AND p.status = 'PUBLISHED' AND u.account_status = 'ACTIVE'
+        WHERE p.event_id = :event AND p.status = 'PUBLISHED' AND p.post_type <> 'MOMENT' AND u.account_status = 'ACTIVE'
           AND " . community_block_filter('p.author_id') . "
           $paging
         ORDER BY p.is_pinned DESC, p.id DESC
@@ -753,7 +755,7 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
             create_notification($replyToAuthor, 'comment_reply',
                 community_display_name((string) $user['name']) . ' replied to your comment',
                 mb_substr($body, 0, 150),
-                '/event.php?slug=' . urlencode($post['event_slug']) . '#comment-' . $commentId);
+                '/event.php?slug=' . urlencode($post['event_slug']) . (($post['post_type'] ?? '') === 'MOMENT' ? '&moment=' . $postId : '#comment-' . $commentId));
         } catch (Throwable $e) {
             error_log('[community] reply notification failed: ' . $e->getMessage());
         }
@@ -762,10 +764,11 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
     // Tell the post's author (not for their own comment) — one row per comment, never grouped silently away.
     if ((int) $post['author_id'] !== (int) $user['id']) {
         try {
+            $isMoment = ($post['post_type'] ?? '') === 'MOMENT';
             create_notification((int) $post['author_id'], 'post_comment',
-                community_display_name((string) $user['name']) . ' commented on your post',
+                community_display_name((string) $user['name']) . ' commented on your ' . ($isMoment ? 'moment' : 'post'),
                 mb_substr($body, 0, 150),
-                '/event.php?slug=' . urlencode($post['event_slug']) . '#post-' . $postId);
+                '/event.php?slug=' . urlencode($post['event_slug']) . ($isMoment ? '&moment=' . $postId : '#post-' . $postId));
         } catch (Throwable $e) {
             error_log('[community] comment notification failed: ' . $e->getMessage());
         }
@@ -841,7 +844,7 @@ function get_post_comments(int $postId, ?int $viewerId, int $limit = 20, ?int $a
 function community_load_content(string $type, int $contentId): array
 {
     if ($type === 'POST') {
-        $stmt = db()->prepare('SELECT id, event_id, author_id AS owner_id, status, body FROM event_posts WHERE id = ?');
+        $stmt = db()->prepare("SELECT id, event_id, author_id AS owner_id, status, COALESCE(NULLIF(body, ''), IF(post_type = 'MOMENT', '[Photo or video moment]', '')) AS body FROM event_posts WHERE id = ?");
     } elseif ($type === 'COMMENT') {
         $stmt = db()->prepare('SELECT c.id, p.event_id, c.user_id AS owner_id, c.status, c.body FROM post_comments c JOIN event_posts p ON p.id = c.post_id WHERE c.id = ?');
     } else {
@@ -986,7 +989,7 @@ function dismiss_reports(array $actor, string $type, int $contentId): array
 function get_hidden_content(int $eventId, int $limit = 20): array
 {
     $stmt = db()->prepare("
-        SELECT 'POST' AS content_type, p.id AS content_id, p.body, u.name AS author_name, p.created_at
+        SELECT 'POST' AS content_type, p.id AS content_id, COALESCE(NULLIF(p.body, ''), IF(p.post_type = 'MOMENT', '[Photo or video moment]', '')) AS body, u.name AS author_name, p.created_at
         FROM event_posts p JOIN users u ON u.id = p.author_id WHERE p.event_id = :e1 AND p.status = 'HIDDEN'
         UNION ALL
         SELECT 'COMMENT', c.id, c.body, u.name, c.created_at
@@ -1132,7 +1135,7 @@ function get_removed_content_all(int $limit = 40): array
 {
     $stmt = db()->prepare("
         SELECT * FROM (
-          SELECT 'POST' AS content_type, p.id AS content_id, p.status, p.body, u.name AS author_name, e.title AS event_title, e.slug AS event_slug, p.updated_at AS at
+          SELECT 'POST' AS content_type, p.id AS content_id, p.status, COALESCE(NULLIF(p.body, ''), IF(p.post_type = 'MOMENT', '[Photo or video moment]', '')) AS body, u.name AS author_name, e.title AS event_title, e.slug AS event_slug, p.updated_at AS at
           FROM event_posts p JOIN users u ON u.id = p.author_id JOIN events e ON e.id = p.event_id WHERE p.status IN ('HIDDEN','DELETED')
           UNION ALL
           SELECT 'COMMENT', c.id, c.status, c.body, u.name, e.title, e.slug, c.created_at

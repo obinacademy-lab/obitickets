@@ -27,6 +27,7 @@ $error = null;
 $messages = [
     'posted' => 'Posted.', 'updated' => 'Saved.', 'hidden' => 'Hidden from the community. You can restore it below.',
     'restored' => 'Restored.', 'deleted' => 'Deleted.', 'dismissed' => 'Kept. The reports were closed.', 'links' => 'Social links saved.',
+    'moment' => 'Moment published. Your followers have been told.', 'moment_saved' => 'Moment updated.', 'moment_deleted' => 'Moment deleted.',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -67,6 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 delete_post_image($imagePath);
                 $error = $result['error'];
             }
+        } elseif ($action === 'moment_delete') {
+            $result = delete_moment($actor, (int) ($_POST['id'] ?? 0));
+            $result['ok'] ? $back('moment_deleted') : $error = $result['error'];
+        } elseif ($action === 'moment_update') {
+            $result = update_moment($actor, (int) ($_POST['id'] ?? 0), (string) ($_POST['caption'] ?? ''), (int) ($_POST['focus_x'] ?? 50), ($_POST['fit'] ?? '') === 'FIT' ? 'FIT' : 'FILL', !empty($_POST['comments_enabled']));
+            $result['ok'] ? $back('moment_saved') : $error = $result['error'];
         } elseif (in_array($action, ['pin', 'unpin'], true)) {
             $result = set_post_pinned($actor, (int) ($_POST['id'] ?? 0), $action === 'pin');
             $result['ok'] ? $back('updated') : $error = $result['error'];
@@ -89,6 +96,18 @@ $counts = $event ? get_event_social_counts((int) $event['id']) : null;
 $reports = $event ? get_event_reports((int) $event['id']) : [];
 $hidden = $event ? get_hidden_content((int) $event['id']) : [];
 $posts = $event ? get_event_feed((int) $event['id'], null, 20) : [];
+$momentsReady = false;
+$orgMoments = [];
+if ($event) {
+    try {
+        if (moments_ready()) {
+            $momentsReady = true;
+            $orgMoments = get_event_moments((int) $event['id'], null, 100);
+        }
+    } catch (Throwable $e) {
+        error_log('[moments] org page: ' . $e->getMessage());
+    }
+}
 $links = get_organizer_social_links($organizerId, false);
 $linksByPlatform = array_column($links, null, 'platform');
 
@@ -157,6 +176,85 @@ render_organizer_head('social', $ctx);
         <div style="display:flex; justify-content:flex-end; margin-top:14px"><button class="btn btn-purple" type="submit">Publish</button></div>
       </form>
     </div>
+    <?php endif; ?>
+
+    <?php if ($canManage): ?>
+    <!-- moments -->
+    <div class="admin-card" id="moments-admin">
+      <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
+      <h3 style="margin-bottom:4px">Moments <span class="muted" style="font-weight:600; font-size:0.85rem">9:16 photos and videos</span></h3>
+      <p class="muted" style="font-size:0.86rem; margin:0 0 16px">Short vertical clips and photos from your event. Anyone can watch; people with an account can react, comment and share. Vertical video (1080 &times; 1920) looks best.</p>
+      <?php if (!$momentsReady): ?>
+        <div class="muted" style="padding:14px 0">Moments are not switched on yet. Run <code>migration/017_moments.sql</code> to turn them on.</div>
+      <?php else: ?>
+      <div class="mu" id="mu" data-endpoint="/api/moment-upload.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
+           data-max-video="<?= moment_video_max_bytes() ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>">
+        <div>
+          <div class="mu-frame is-empty" id="muFrame">Choose a video or photo to see how it will look</div>
+          <div class="mu-hint" id="muHint" hidden>&larr; Drag sideways to choose what stays in frame &rarr;</div>
+          <label class="social-check" style="justify-content:center"><input type="checkbox" id="muGuides" checked> Show where buttons and caption appear</label>
+        </div>
+        <div>
+          <div class="mu-row" style="margin-top:0">
+            <label class="btn btn-line" for="muFile" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Choose video or photo</label>
+            <input type="file" id="muFile" accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" hidden>
+            <span class="muted" style="font-size:0.84rem; margin-left:8px">MP4 or WebM up to <?= (int) round(moment_video_max_bytes() / 1048576) ?> MB and <?= MOMENT_MAX_SECONDS ?> seconds &middot; JPG, PNG or WebP up to 5 MB</span>
+          </div>
+          <div class="mu-facts" id="muFacts" style="margin-top:12px"></div>
+          <div id="muFit" hidden>
+            <div class="mu-seg" role="group" aria-label="How to fit"><button type="button" data-fit="FILL" aria-pressed="true">Fill the frame</button><button type="button" data-fit="FIT" aria-pressed="false">Fit with blurred sides</button></div>
+          </div>
+          <div class="mu-row" id="muCover" hidden>
+            <label for="muCoverRange">Cover frame <span class="muted" style="font-weight:600">(what people see before they press play)</span></label>
+            <input type="range" id="muCoverRange" min="0" max="100" value="0" step="1">
+          </div>
+          <div class="mu-row">
+            <label for="muCaption">Caption</label>
+            <textarea id="muCaption" maxlength="<?= MOMENT_CAPTION_MAX ?>" placeholder="Doors open at 8. Dress code: all black."></textarea>
+            <div class="muted" style="font-size:0.8rem; margin-top:4px"><span id="muCount">0</span>/<?= MOMENT_CAPTION_MAX ?></div>
+          </div>
+          <div class="mu-bar" id="muBar" hidden><i></i></div>
+          <div class="mu-actions"><span class="mu-state" id="muState" role="status">Nothing selected yet.</span><button class="btn btn-purple" type="button" id="muPublish" disabled>Publish moment</button></div>
+        </div>
+      </div>
+
+      <?php if ($orgMoments): ?>
+      <div class="mu-list">
+        <?php foreach ($orgMoments as $m): $isVideo = $m['media_type'] === 'VIDEO'; $thumb = $isVideo ? $m['poster_path'] : $m['media_path']; ?>
+          <div class="mu-item">
+            <div class="mu-thumb">
+              <?php if ($thumb): ?><img src="<?= htmlspecialchars($thumb) ?>" alt="" loading="lazy" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"><?php else: ?><video src="<?= htmlspecialchars($m['media_path']) ?>#t=0.5" muted playsinline preload="metadata" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"></video><?php endif; ?>
+              <span class="mu-badge"><?= $isVideo ? 'Video' . ($m['duration_seconds'] !== null ? ' ' . moment_clock((int) $m['duration_seconds']) : '') : 'Photo' ?></span>
+              <span class="mu-meta"><?= htmlspecialchars(moment_compact((int) $m['view_count'])) ?> views &middot; <?= (int) $m['reaction_count'] ?> &#10084;&#65039; &middot; <?= (int) $m['comment_count'] ?> &#128172;</span>
+            </div>
+            <div class="mu-cap"><?= $m['caption'] ? htmlspecialchars($m['caption']) : '<span class="muted">No caption</span>' ?></div>
+            <details>
+              <summary>Edit</summary>
+              <form method="post">
+                <?= csrf_field() ?><input type="hidden" name="action" value="moment_update"><input type="hidden" name="event_id" value="<?= (int) $event['id'] ?>"><input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                <textarea name="caption" rows="3" maxlength="<?= MOMENT_CAPTION_MAX ?>" aria-label="Caption" style="width:100%"><?= htmlspecialchars((string) $m['caption']) ?></textarea>
+                <label class="social-check">Framing <input type="range" name="focus_x" min="0" max="100" value="<?= (int) $m['focus_x'] ?>" style="flex:1"></label>
+                <label class="social-check"><input type="radio" name="fit" value="FILL"<?= $m['fit_mode'] === 'FILL' ? ' checked' : '' ?>> Fill</label>
+                <label class="social-check"><input type="radio" name="fit" value="FIT"<?= $m['fit_mode'] === 'FIT' ? ' checked' : '' ?>> Fit with blurred sides</label>
+                <label class="social-check"><input type="checkbox" name="comments_enabled" value="1"<?= (int) $m['comments_enabled'] === 1 ? ' checked' : '' ?>> Allow comments</label>
+                <button class="social-btn plain" type="submit">Save</button>
+              </form>
+            </details>
+            <div class="social-actions">
+              <form method="post" data-confirm="Delete this moment, its comments and reactions for good?" data-danger>
+                <?= csrf_field() ?><input type="hidden" name="action" value="moment_delete"><input type="hidden" name="event_id" value="<?= (int) $event['id'] ?>"><input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                <button type="submit" class="social-btn danger">Delete</button>
+              </form>
+              <a class="social-btn plain" href="/event.php?slug=<?= urlencode($event['slug']) ?>&moment=<?= (int) $m['id'] ?>" target="_blank" rel="noopener">View</a>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+      <script src="/assets/js/org-moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-moments.js') ?: time() ?>"></script>
+      <?php endif; ?>
+    </div>
+
     <?php endif; ?>
 
     <!-- reports -->

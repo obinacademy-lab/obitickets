@@ -753,6 +753,11 @@ function add_event_media(int $eventId, array $items): void
     $stmt = db()->prepare('INSERT INTO event_media (event_id, media_type, file_path, sort_order) VALUES (?, ?, ?, ?)');
     foreach ($items as $item) {
         $stmt->execute([$eventId, $item['media_type'], $item['file_path'], $nextSort++]);
+        try {
+            moment_sync_legacy_add($eventId, (int) db()->lastInsertId(), $item['media_type'], $item['file_path']); // gallery files are moments too
+        } catch (Throwable $e) {
+            error_log('[moments] gallery sync failed: ' . $e->getMessage());
+        }
     }
 }
 
@@ -771,7 +776,13 @@ function delete_event_media(int $mediaId, int $eventId): ?string
     if ($filePath === false) {
         return null;
     }
+    try {
+        moment_sync_legacy_remove($mediaId);
+    } catch (Throwable $e) {
+        error_log('[moments] gallery sync failed: ' . $e->getMessage());
+    }
     db()->prepare('DELETE FROM event_media WHERE id = ? AND event_id = ?')->execute([$mediaId, $eventId]);
+
     return $filePath;
 }
 

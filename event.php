@@ -178,6 +178,21 @@ if ($communityReady) {
     }
 }
 
+// Moments (migration 017): 9:16 photos and videos. Without it, the old gallery further down still renders.
+$moments = [];
+$momentsReady = false;
+$openMoment = (int) ($_GET['moment'] ?? 0);
+if ($communityReady) {
+    try {
+        if (moments_ready()) {
+            $moments = get_event_moments((int) $event['id'], $currentUser ? (int) $currentUser['id'] : null);
+            $momentsReady = true;
+        }
+    } catch (Throwable $e) {
+        error_log('[moments] event page: ' . $e->getMessage());
+    }
+}
+
 $minPrice = null;
 foreach ($tiers as $tier) {
     if ($minPrice === null || (float) $tier['price'] < $minPrice) {
@@ -190,6 +205,19 @@ $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['s
 if (!empty($event['banner_image'])) {
     $ogImage = rtrim(APP_URL, '/') . $event['banner_image'];
 }
+if ($openMoment && $momentsReady) {
+    foreach ($moments as $sharedMoment) {
+        if ((int) $sharedMoment['id'] === $openMoment) {
+            $sharedThumb = $sharedMoment['media_type'] === 'VIDEO' ? $sharedMoment['poster_path'] : $sharedMoment['media_path'];
+            if ($sharedThumb) {
+                $ogImage = rtrim(APP_URL, '/') . $sharedThumb;
+            }
+            $sharedCaption = trim((string) ($sharedMoment['caption'] ?? ''));
+            $pageTitle = ($sharedCaption !== '' ? mb_substr($sharedCaption, 0, 70) : ($sharedMoment['media_type'] === 'VIDEO' ? 'Video' : 'Photo') . ' from ' . $event['title']) . ' — obitickets';
+            $pageDescription = 'Watch this moment from ' . $event['title'] . ' on obitickets.';
+        }
+    }
+}
 $bodyClass = 'event-page';
 include __DIR__ . '/includes/header.php';
 ?>
@@ -200,6 +228,7 @@ $evWhere = $event['venue_name'] . ($event['venue_address'] ? ', ' . $event['venu
 $evOrgInitials = initials_from_name($orgName);
 $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 ?>
+<link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
 <div class="ev" id="evRoot"<?= $communityReady && !$currentUser ? ' data-login="' . htmlspecialchars('/login.php?next=' . urlencode('/event.php?slug=' . $event['slug'] . '#community'), ENT_QUOTES) . '"' : '' ?> data-event-id="<?= (int) $event['id'] ?>" data-event-url="<?= htmlspecialchars($eventUrl, ENT_QUOTES) ?>">
 
 <div class="lightbox-overlay" id="heroLightbox">
@@ -327,7 +356,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php if ($communityReady): ?><a href="#community" class="is-active" data-tab="community">Community</a><?php endif; ?>
     <a href="#about" data-tab="about">About</a>
     <?php if (!$eventHasEnded): ?><a href="#buyPanel" data-tab="tickets">Tickets</a><?php endif; ?>
-    <?php if ($eventMedia): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
+    <?php if ($momentsReady ? $moments : $eventMedia): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
     <?php if ($eventHasEnded || $reviews): ?><a href="#reviews" data-tab="reviews">Reviews</a><?php endif; ?>
   </div>
 </nav>
@@ -433,7 +462,17 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       </div>
     </section>
 
-      <?php if ($eventMedia):
+      <?php if ($momentsReady && $moments): ?>
+    <section id="moments" class="ev-section ev-moments">
+      <?= moments_shelf_html($moments, $orgName, $evOrgInitials) ?>
+      <script type="application/json" id="momentsData"><?= json_encode([
+          'eventUrl' => $eventUrl,
+          'open' => $openMoment,
+          'org' => ['id' => (int) $event['organizer_id'], 'name' => $orgName, 'initials' => $evOrgInitials, 'following' => !empty($followingOrganizer)],
+          'items' => array_map('moment_public', $moments),
+      ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+    </section>
+      <?php elseif (!$momentsReady && $eventMedia):
         // Photos first, then videos — the combined data-gallery-index order
         // the lightbox's Prev/Next walks through matches this same order,
         // so browsing the lightbox mirrors browsing the page top-to-bottom.
@@ -671,6 +710,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 <?php endif; ?>
 
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
+<script src="/assets/js/moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/moments.js') ?: time() ?>"></script>
 <script src="/assets/js/event-motion.js?v=<?= @filemtime(__DIR__ . '/assets/js/event-motion.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
 <script src="/assets/js/cinematic.js"></script>
