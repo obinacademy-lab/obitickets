@@ -167,6 +167,17 @@ try {
     error_log('[community] event page: ' . $e->getMessage());
 }
 
+// Reactions on the event itself live in their own table (migration 015); if it is
+// missing, only this bar is hidden — the rest of the community keeps working.
+$eventReactions = null;
+if ($communityReady) {
+    try {
+        $eventReactions = get_event_reaction_summary((int) $event['id'], $currentUser ? (int) $currentUser['id'] : null);
+    } catch (Throwable $e) {
+        error_log('[community] event reactions: ' . $e->getMessage());
+    }
+}
+
 $minPrice = null;
 foreach ($tiers as $tier) {
     if ($minPrice === null || (float) $tier['price'] < $minPrice) {
@@ -285,11 +296,24 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         </div>
       </div>
 
+      <?php if ($communityReady && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+      <div class="ev-event-react">
+        <div class="ev-react-wrap">
+          <button type="button" class="ev-btn ev-btn-outline ev-btn-sm ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
+            <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
+            <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
+          </button>
+          <?= community_reaction_picker_html() ?>
+        </div>
+        <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
+      </div>
+      <?php endif; ?>
+
       <?php if ($communityReady): ?>
       <div class="ev-pulse" aria-label="Event activity">
         <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
         <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
-        <div class="ev-pulse-item"><b><?= number_format($social['reactions']) ?></b><span>reactions</span></div>
+        <div class="ev-pulse-item"><b id="pulseReactions"><?= number_format($social['reactions'] + ($eventReactions['total'] ?? 0)) ?></b><span>reactions</span></div>
         <div class="ev-pulse-item"><b><?= number_format($social['comments']) ?></b><span>comments</span></div>
       </div>
       <?php endif; ?>

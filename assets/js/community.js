@@ -187,6 +187,26 @@
     }
 
     var pickBtn = t.closest('.ev-picker-btn');
+    if (pickBtn && pickBtn.closest('.ev-event-react')) {
+      var eWrap = pickBtn.closest('.ev-react-wrap'), eTrigger = eWrap.querySelector('.ev-react-btn');
+      var eReaction = pickBtn.getAttribute('data-reaction'), eMine = eTrigger.getAttribute('data-my');
+      eWrap.querySelector('.ev-picker').hidden = true;
+      api({ action: 'react_event', event_id: root.getAttribute('data-event-id'), reaction: eMine === eReaction ? null : eReaction }).then(function (res) {
+        if (!res.ok) { toast(res.error || 'Could not react.', true); return; }
+        var on = !!res.my_reaction;
+        eTrigger.setAttribute('data-my', res.my_reaction || '');
+        eTrigger.classList.toggle('is-on', on);
+        var ico = eTrigger.querySelector('.ev-react-ico'), lab = eTrigger.querySelector('.ev-react-label');
+        if (on) { ico.textContent = REACTION_EMOJI[res.my_reaction]; lab.textContent = nice(res.my_reaction); }
+        else {
+          ico.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>';
+          lab.textContent = 'React to this event';
+        }
+        var sum = document.getElementById('evEventReactSum'); if (sum) sum.innerHTML = res.summary_html;
+        var pulse = document.getElementById('pulseReactions'); if (pulse && typeof res.pulse_reactions === 'number') pulse.textContent = res.pulse_reactions.toLocaleString();
+      });
+      return;
+    }
     if (pickBtn) {
       var wrap = pickBtn.closest('.ev-react-wrap'), trigger = wrap.querySelector('.ev-react-btn');
       var isComment = !!pickBtn.closest('.ev-comment');

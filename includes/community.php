@@ -1071,3 +1071,55 @@ function get_community_admin_totals(): array
     ")->fetch();
     return array_map('intval', $row);
 }
+
+// =====================================================================
+// Reactions on the event itself — open to every logged-in account
+// =====================================================================
+
+/**
+ * Set (or with null, clear) the user's one reaction on a published event.
+ * No ticket is needed: this is how anyone shows interest in an upcoming event.
+ *
+ * @return array{ok:bool, error?:string, my_reaction?:?string, total?:int, breakdown?:array<string,int>}
+ */
+function set_event_reaction(int $eventId, int $userId, ?string $reaction): array
+{
+    if ($reaction !== null && !isset(REACTION_TYPES[$reaction])) {
+        return ['ok' => false, 'error' => 'Unknown reaction.'];
+    }
+    $stmt = db()->prepare("SELECT id FROM events WHERE id = ? AND status = 'PUBLISHED'");
+    $stmt->execute([$eventId]);
+    if (!$stmt->fetchColumn()) {
+        return ['ok' => false, 'error' => 'This event is not available.'];
+    }
+    if ($reaction === null) {
+        db()->prepare('DELETE FROM event_reactions WHERE event_id = ? AND user_id = ?')->execute([$eventId, $userId]);
+    } else {
+        db()->prepare('INSERT INTO event_reactions (event_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)')
+            ->execute([$eventId, $userId, $reaction]);
+    }
+    $summary = get_event_reaction_summary($eventId, $userId);
+    return ['ok' => true, 'my_reaction' => $summary['mine'], 'total' => $summary['total'], 'breakdown' => $summary['breakdown']];
+}
+
+/** @return array{total:int, breakdown:array<string,int>, mine:?string} top three reactions, most used first */
+function get_event_reaction_summary(int $eventId, ?int $viewerId): array
+{
+    $stmt = db()->prepare('SELECT reaction, COUNT(*) AS n FROM event_reactions WHERE event_id = ? GROUP BY reaction ORDER BY n DESC');
+    $stmt->execute([$eventId]);
+    $total = 0;
+    $breakdown = [];
+    foreach ($stmt->fetchAll() as $r) {
+        $total += (int) $r['n'];
+        if (count($breakdown) < 3) {
+            $breakdown[$r['reaction']] = (int) $r['n'];
+        }
+    }
+    $mine = null;
+    if ($viewerId) {
+        $m = db()->prepare('SELECT reaction FROM event_reactions WHERE event_id = ? AND user_id = ?');
+        $m->execute([$eventId, $viewerId]);
+        $mine = $m->fetchColumn() ?: null;
+    }
+    return ['total' => $total, 'breakdown' => $breakdown, 'mine' => $mine];
+}

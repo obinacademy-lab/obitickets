@@ -390,3 +390,12 @@ body.ev-page{background:#F7F3F1;}
   .ev-stat:nth-child(n+3){border-top:1px solid var(--line);}
   .ev-stat b{font-size:28px;}
 }
+
+/* ---------- reactions on the event itself ---------- */
+.ev-event-react{display:flex; align-items:center; gap:14px; margin-top:18px; flex-wrap:wrap;}
+.ev-event-react .ev-react-wrap{flex:none;}
+.ev-event-react .ev-react-btn.is-on{border-color:#DC2626; color:#991B1B; background:#FDEDED;}
+.ev-event-react .ev-picker{left:0; bottom:calc(100% + 8px);}
+.ev-event-react .ev-react-ico{font-size:16px;}
+.ev-event-react .ev-react-sum{font-size:14px; color:var(--muted);}
+.ev-event-react .ev-react-sum b{color:var(--ink);}

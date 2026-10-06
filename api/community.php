@@ -54,6 +54,16 @@ try {
             }
             json_response($r, $r['ok'] ? 200 : 400);
 
+        case 'react_event':
+            $eventId = $intOf($body['event_id'] ?? 0);
+            $reaction = isset($body['reaction']) && $body['reaction'] !== '' ? (string) $body['reaction'] : null;
+            $r = set_event_reaction($eventId, $uid, $reaction);
+            if ($r['ok']) {
+                $r['summary_html'] = community_reaction_summary_html($r['breakdown'], $r['total']);
+                $r['pulse_reactions'] = get_event_social_counts($eventId)['reactions'] + $r['total'];
+            }
+            json_response($r, $r['ok'] ? 200 : 400);
+
         case 'comments':
             $found = $ctxForPost($intOf($body['post_id'] ?? 0));
             if (!$found || $found[0]['status'] !== 'PUBLISHED') {
