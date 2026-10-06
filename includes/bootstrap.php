@@ -31,6 +31,7 @@ require_once __DIR__ . '/payments.php';
 require_once __DIR__ . '/checkin.php';
 require_once __DIR__ . '/reviews.php';
 require_once __DIR__ . '/waitlist.php';
+require_once __DIR__ . '/community.php';
 require_once __DIR__ . '/admin.php';
 require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';
