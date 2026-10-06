@@ -8,10 +8,11 @@ declare(strict_types=1);
  * functions allow. Who may do what:
  *
  *   guest            read posts and comments, share
- *   logged-in user   follow, react, comment, report, block
- *   ticket holder    all of the above + create posts ("Verified attendee":
- *                    derived from a PAID order for this event, never stored
- *                    or settable by the client)
+ *   logged-in user   follow, react, comment, post, report, block — a ticket is
+ *                    NOT required; anyone with an account can take part
+ *   ticket holder    same, plus the "Verified attendee" badge (derived from a
+ *                    PAID order for this event, never stored or settable by the
+ *                    client) so readers can tell buyers from everyone else
  *   organizer owner  all of the above for their own event + official
  *                    announcements, pin, comment controls, hide/delete anyone's
  *                    content on their event
@@ -59,6 +60,14 @@ const POST_RATE_LIMIT = 5;        // posts per user per 10 minutes
 const COMMENT_RATE_LIMIT = 10;    // comments per user per 5 minutes
 const REPORT_RATE_LIMIT = 10;     // reports per user per hour
 const FEED_PAGE_SIZE = 10;
+
+/**
+ * Accounts aren't email-verified, so anyone can register in seconds and spam is
+ * almost always a link. People without a ticket may still post and comment freely,
+ * but not include web links; ticket holders, the organizer and admins can. Set to
+ * false to allow links for everyone.
+ */
+const COMMUNITY_BLOCK_LINKS_FOR_NON_BUYERS = true;
 
 // =====================================================================
 // Names, counts, permissions
@@ -116,13 +125,14 @@ function can_moderate_event(?array $user, array $event): bool
     return $ctx !== null && (int) $ctx['organizer_id'] === (int) $event['organizer_id'] && organizer_can($ctx, 'social.manage');
 }
 
-/** Posting needs a ticket (or being the organizer / an admin). */
+/**
+ * Anyone logged in may post on a published event — a ticket is not required.
+ * (Suspended accounts never get here: current_user() treats them as logged out.)
+ * What a ticket buys is the Verified attendee badge, not the right to speak.
+ */
 function can_post_to_event(?array $user, array $event): bool
 {
-    if ($user === null || ($event['status'] ?? '') !== 'PUBLISHED') {
-        return false;
-    }
-    return can_moderate_event($user, $event) || user_has_ticket_for_event((int) $user['id'], (int) $event['id']);
+    return $user !== null && ($event['status'] ?? '') === 'PUBLISHED';
 }
 
 /** @return array{going:int, following:int, reactions:int, comments:int, posts:int} real counts only */
@@ -378,6 +388,22 @@ function community_block_filter(string $authorColumn): string
 // Posts
 // =====================================================================
 
+/** True if the text contains something that works as a link (a URL, www., a bare domain, or a chat-invite link). */
+function community_contains_link(string $text): bool
+{
+    return (bool) preg_match('~(https?://|www\.|\b(?:wa\.me|t\.me|bit\.ly)\b|\b[a-z0-9-]{2,}\.(?:com|net|org|io|co|ug|site|info|xyz|me|ly|link|click|top|shop|online|app)\b)~i', $text);
+}
+
+/** Whether this person's text must be link-free: no ticket and not the organizer/admin. */
+function community_links_blocked_for(array $user, array $event): bool
+{
+    return COMMUNITY_BLOCK_LINKS_FOR_NON_BUYERS
+        && !can_moderate_event($user, $event)
+        && !user_has_ticket_for_event((int) $user['id'], (int) $event['id']);
+}
+
+const COMMUNITY_LINK_MESSAGE = 'Links can be shared by ticket holders and the organizer. Please remove the link and try again.';
+
 /** Strips control characters and runaway blank lines; returns trimmed text. */
 function community_clean_text(string $text): string
 {
@@ -402,7 +428,7 @@ function create_event_post(array $event, array $user, string $type, string $body
 {
     $type = in_array($type, ['TEXT', 'IMAGE', 'ORGANIZER_UPDATE'], true) ? $type : 'TEXT';
     if (!can_post_to_event($user, $event)) {
-        return ['ok' => false, 'error' => 'Only people with a ticket for this event can post here.'];
+        return ['ok' => false, 'error' => 'You need to be logged in to post here.'];
     }
     $isOfficial = $type === 'ORGANIZER_UPDATE';
     if ($isOfficial && !can_moderate_event($user, $event)) {
@@ -415,6 +441,9 @@ function create_event_post(array $event, array $user, string $type, string $body
     }
     if (mb_strlen($body) > POST_MAX_CHARS) {
         return ['ok' => false, 'error' => 'That post is too long (limit ' . POST_MAX_CHARS . ' characters).'];
+    }
+    if (community_contains_link($body) && community_links_blocked_for($user, $event)) {
+        return ['ok' => false, 'error' => COMMUNITY_LINK_MESSAGE];
     }
     if ($imagePath && $type === 'TEXT') {
         $type = 'IMAGE';
@@ -654,6 +683,9 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
     }
     if (mb_strlen($body) > COMMENT_MAX_CHARS) {
         return ['ok' => false, 'error' => 'That comment is too long (limit ' . COMMENT_MAX_CHARS . ' characters).'];
+    }
+    if (community_contains_link($body) && community_links_blocked_for($user, get_event_for_post($post))) {
+        return ['ok' => false, 'error' => COMMUNITY_LINK_MESSAGE];
     }
     if (community_rate_limited('post_comments', 'user_id', (int) $user['id'], COMMENT_RATE_LIMIT, 300)) {
         return ['ok' => false, 'error' => "You're commenting too quickly. Please wait a moment."];

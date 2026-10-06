@@ -344,13 +344,13 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       <?php if ($postError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($postError) ?></div><?php endif; ?>
       <?php if (isset($_GET['posted'])): ?><div class="alert alert-success" style="margin-bottom:16px">Posted.</div><?php endif; ?>
 
-      <?php if ($ctx['can_post']): ?>
+      <?php if ($ctx['can_post']): $composerHasTicket = user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id']); ?>
         <form method="post" enctype="multipart/form-data" class="ev-composer" id="evComposer">
           <?= csrf_field() ?><input type="hidden" name="action" value="create_post">
           <div class="ev-composer-top">
             <?= community_avatar_html($ctx['is_mod'] ? $orgName : $currentUser['name'], (int) $currentUser['id'], $ctx['is_mod']) ?>
             <label class="sr-only" for="evPostBody">Share with the community</label>
-            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? 'You were there. Tell everyone how it was.' : 'Going to this event? Share your excitement.' ?>"><?= htmlspecialchars($postDraft) ?></textarea>
+            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? (($composerHasTicket || $ctx['is_mod']) ? 'You were there. Tell everyone how it was.' : 'Share your thoughts about this event.') : ($composerHasTicket || $ctx['is_mod'] ? 'Going to this event? Share your excitement.' : 'Share what you think about this event.') ?>"><?= htmlspecialchars($postDraft) ?></textarea>
           </div>
           <div class="ev-composer-bar">
             <label class="ev-file"><input type="file" name="image" accept="image/jpeg,image/png,image/webp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span id="evFileName">Photo</span></label>
@@ -358,22 +358,16 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
               <label class="ev-check"><input type="checkbox" name="post_type" value="ORGANIZER_UPDATE" checked> Official update</label>
               <label class="ev-check"><input type="checkbox" name="pin" value="1"> Pin</label>
             <?php else: ?>
-              <span class="ev-composer-note">Posting as a verified attendee</span>
+              <span class="ev-composer-note"><?= $composerHasTicket ? 'Posting as a verified attendee' : 'Posting as ' . htmlspecialchars(community_display_name((string) $currentUser['name'])) . ' &middot; links are for ticket holders' ?></span>
             <?php endif; ?>
             <span class="ev-grow"></span>
             <button type="submit" class="ev-btn ev-btn-dark ev-btn-sm" id="evPostBtn">Post</button>
           </div>
         </form>
-      <?php elseif ($currentUser): ?>
-        <div class="ev-note-card">
-          <b>Only ticket holders can post here.</b>
-          <span><?= $eventHasEnded ? 'This event has ended.' : 'Get a ticket to join in.' ?> Everyone who is logged in can react and comment.</span>
-          <?php if (!$eventHasEnded): ?><a class="ev-btn ev-btn-primary ev-btn-sm" href="#buyPanel">Get tickets</a><?php endif; ?>
-        </div>
       <?php else: ?>
         <div class="ev-note-card">
           <b>Join the conversation</b>
-          <span>Log in to react, comment and follow this event.</span>
+          <span>Log in to post, react, comment and follow this event. No ticket needed.</span>
           <a class="ev-btn ev-btn-dark ev-btn-sm" href="<?= htmlspecialchars($ctx['login_url']) ?>">Log in</a>
         </div>
       <?php endif; ?>
