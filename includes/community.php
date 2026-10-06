@@ -667,6 +667,39 @@ function set_comment_reaction(int $commentId, int $userId, ?string $reaction): a
 // Comments (top level + one level of replies)
 // =====================================================================
 
+/** True once migration 016 has added post_comments.reply_to_comment_id (the page works without it). */
+function community_comments_have_reply_to(): bool
+{
+    static $has = null;
+    if ($has === null) {
+        try {
+            db()->query('SELECT reply_to_comment_id FROM post_comments LIMIT 0');
+            $has = true;
+        } catch (Throwable $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+/**
+ * SELECT columns and JOIN for "replying to": the answered comment's author, a short quote and its
+ * status (a hidden or deleted original never leaks its text). Without the column they are NULL.
+ * @return array{0:string,1:string} [columns, join]
+ */
+function community_reply_to_sql(): array
+{
+    if (!community_comments_have_reply_to()) {
+        return ['NULL AS reply_to_comment_id, NULL AS reply_to_name, NULL AS reply_to_body, NULL AS reply_to_status, 0 AS reply_to_is_organizer', ''];
+    }
+    return [
+        "c.reply_to_comment_id, ru.name AS reply_to_name,
+               IF(rc.status = 'PUBLISHED', LEFT(rc.body, 140), NULL) AS reply_to_body, rc.status AS reply_to_status,
+               (rc.user_id = e.organizer_id) AS reply_to_is_organizer",
+        'LEFT JOIN post_comments rc ON rc.id = c.reply_to_comment_id LEFT JOIN users ru ON ru.id = rc.user_id',
+    ];
+}
+
 /** @return array{ok:bool, id?:int, error?:string} */
 function add_comment(array $user, int $postId, string $body, ?int $parentId = null): array
 {
@@ -690,17 +723,41 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
     if (community_rate_limited('post_comments', 'user_id', (int) $user['id'], COMMENT_RATE_LIMIT, 300)) {
         return ['ok' => false, 'error' => "You're commenting too quickly. Please wait a moment."];
     }
+    // $parentId is the comment being answered. Threads stay one level deep: the reply is filed
+    // under the top-level comment, and reply_to_comment_id remembers exactly who was answered.
+    $replyTo = null;
+    $replyToAuthor = null;
     if ($parentId !== null) {
-        $stmt = db()->prepare("SELECT post_id, parent_id, status FROM post_comments WHERE id = ?");
+        $stmt = db()->prepare("SELECT id, post_id, parent_id, user_id, status FROM post_comments WHERE id = ?");
         $stmt->execute([$parentId]);
-        $parent = $stmt->fetch();
-        if (!$parent || (int) $parent['post_id'] !== $postId || $parent['parent_id'] !== null || $parent['status'] !== 'PUBLISHED') {
+        $target = $stmt->fetch();
+        if (!$target || (int) $target['post_id'] !== $postId || $target['status'] !== 'PUBLISHED') {
             return ['ok' => false, 'error' => "You can't reply to that comment."];
         }
+        $replyTo = (int) $target['id'];
+        $replyToAuthor = (int) $target['user_id'];
+        $parentId = $target['parent_id'] !== null ? (int) $target['parent_id'] : (int) $target['id'];
     }
-    db()->prepare('INSERT INTO post_comments (post_id, user_id, parent_id, body) VALUES (?, ?, ?, ?)')
-        ->execute([$postId, (int) $user['id'], $parentId, $body]);
+    if (community_comments_have_reply_to()) {
+        db()->prepare('INSERT INTO post_comments (post_id, user_id, parent_id, reply_to_comment_id, body) VALUES (?, ?, ?, ?, ?)')
+            ->execute([$postId, (int) $user['id'], $parentId, $replyTo, $body]);
+    } else {
+        db()->prepare('INSERT INTO post_comments (post_id, user_id, parent_id, body) VALUES (?, ?, ?, ?)')
+            ->execute([$postId, (int) $user['id'], $parentId, $body]);
+    }
     $commentId = (int) db()->lastInsertId();
+
+    // Tell the person who was answered (the post's author already hears about every comment below).
+    if ($replyToAuthor !== null && $replyToAuthor !== (int) $user['id'] && $replyToAuthor !== (int) $post['author_id']) {
+        try {
+            create_notification($replyToAuthor, 'comment_reply',
+                community_display_name((string) $user['name']) . ' replied to your comment',
+                mb_substr($body, 0, 150),
+                '/event.php?slug=' . urlencode($post['event_slug']) . '#comment-' . $commentId);
+        } catch (Throwable $e) {
+            error_log('[community] reply notification failed: ' . $e->getMessage());
+        }
+    }
 
     // Tell the post's author (not for their own comment) — one row per comment, never grouped silently away.
     if ((int) $post['author_id'] !== (int) $user['id']) {
@@ -713,7 +770,7 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
             error_log('[community] comment notification failed: ' . $e->getMessage());
         }
     }
-    return ['ok' => true, 'id' => $commentId];
+    return ['ok' => true, 'id' => $commentId, 'parent_id' => $parentId];
 }
 
 /**
@@ -724,8 +781,10 @@ function get_post_comments(int $postId, ?int $viewerId, int $limit = 20, ?int $a
 {
     $limit = max(1, min(50, $limit));
     $viewer = $viewerId ?? 0;
+    [$replyCols, $replyJoin] = community_reply_to_sql();
     $select = "
         SELECT c.id, c.post_id, c.user_id, c.parent_id, c.body, c.created_at, u.name AS author_name,
+               $replyCols,
                (e.organizer_id = c.user_id) AS is_organizer,
                EXISTS(SELECT 1 FROM orders o WHERE o.user_id = c.user_id AND o.event_id = p.event_id AND o.status = 'PAID') AS is_verified_attendee,
                (SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id = c.id) AS reaction_count,
@@ -734,6 +793,7 @@ function get_post_comments(int $postId, ?int $viewerId, int $limit = 20, ?int $a
         JOIN users u ON u.id = c.user_id
         JOIN event_posts p ON p.id = c.post_id
         JOIN events e ON e.id = p.event_id
+        $replyJoin
         WHERE c.post_id = :post AND c.status = 'PUBLISHED' AND u.account_status = 'ACTIVE'
           AND " . community_block_filter('c.user_id');
 
@@ -945,8 +1005,10 @@ function get_hidden_content(int $eventId, int $limit = 20): array
 /** One comment in the same shape get_post_comments() returns, for showing a just-posted comment. */
 function get_comment_for_render(int $commentId, ?int $viewerId): ?array
 {
+    [$replyCols, $replyJoin] = community_reply_to_sql();
     $stmt = db()->prepare("
         SELECT c.id, c.post_id, c.user_id, c.parent_id, c.body, c.created_at, u.name AS author_name,
+               $replyCols,
                (e.organizer_id = c.user_id) AS is_organizer,
                EXISTS(SELECT 1 FROM orders o WHERE o.user_id = c.user_id AND o.event_id = p.event_id AND o.status = 'PAID') AS is_verified_attendee,
                (SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id = c.id) AS reaction_count,
@@ -955,6 +1017,7 @@ function get_comment_for_render(int $commentId, ?int $viewerId): ?array
         JOIN users u ON u.id = c.user_id
         JOIN event_posts p ON p.id = c.post_id
         JOIN events e ON e.id = p.event_id
+        $replyJoin
         WHERE c.id = :id AND c.status = 'PUBLISHED'");
     $stmt->bindValue(':viewer', $viewerId ?? 0, PDO::PARAM_INT);
     $stmt->bindValue(':id', $commentId, PDO::PARAM_INT);

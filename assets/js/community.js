@@ -258,7 +258,15 @@
         form.className = 'ev-comment-form is-reply';
         form.setAttribute('data-post-id', post.getAttribute('data-post-id'));
         form.setAttribute('data-parent-id', comment.getAttribute('data-comment-id'));
-        form.innerHTML = '<label class="sr-only">Write a reply</label><input type="text" name="body" maxlength="1000" placeholder="Write a reply" autocomplete="off"><button type="submit" class="ev-send" aria-label="Send reply"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>';
+        var who = comment.getAttribute('data-name') || 'this comment';
+        var snippet = (comment.querySelector('.ev-comment-text') || {}).textContent || '';
+        snippet = snippet.trim().replace(/\s+/g, ' ');
+        if (snippet.length > 90) snippet = snippet.slice(0, 90) + '…';
+        form.innerHTML = '<div class="ev-replying"><span class="ev-replying-body"><b></b><span></span></span><button type="button" class="ev-replying-x" aria-label="Cancel reply">&times;</button></div>'
+          + '<label class="sr-only">Write a reply</label><input type="text" name="body" maxlength="1000" placeholder="Write a reply" autocomplete="off"><button type="submit" class="ev-send" aria-label="Send reply"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>';
+        form.querySelector('.ev-replying b').textContent = 'Replying to ' + who;
+        form.querySelector('.ev-replying-body span').textContent = snippet;
+        form.querySelector('input').setAttribute('aria-label', 'Reply to ' + who);
         main.insertBefore(form, main.querySelector('.ev-replies'));
         form.querySelector('input').focus();
         return;
@@ -342,10 +350,12 @@
       if (!res.ok) { toast(res.error || 'Could not post your comment.', true); return; }
       var nodes = htmlToNodes(res.html), post = document.getElementById('post-' + postId);
       if (parentId) {
-        var parent = document.getElementById('comment-' + parentId);
-        var replies = parent ? parent.querySelector('.ev-replies') : null;
+        // the server files the reply under the top-level comment, even when it answers another reply
+        var parent = document.getElementById('comment-' + (res.parent_id || parentId));
+        var replies = parent ? parent.querySelector(':scope > .ev-comment-main > .ev-replies') : null;
         if (replies) nodes.forEach(function (n) { replies.appendChild(n); });
         form.remove();
+        if (nodes[0]) flashComment(nodes[0]);
       } else if (post) {
         var holder = post.querySelector('.ev-comments');
         nodes.forEach(function (n) { holder.appendChild(n); });
@@ -354,6 +364,91 @@
       if (post) setCommentCount(post, res.count);
     });
   });
+
+  // ---------- replying-to: quote jump, cancel, swipe to reply ----------
+  function flashComment(el) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('is-flash');
+    void el.offsetWidth;
+    el.classList.add('is-flash');
+    setTimeout(function () { el.classList.remove('is-flash'); }, 1800);
+  }
+
+  root.addEventListener('click', function (e) {
+    var quote = e.target.closest('.ev-quote[data-jump]');
+    if (quote) {
+      var target = document.getElementById('comment-' + quote.getAttribute('data-jump'));
+      if (target) { e.preventDefault(); flashComment(target); }
+      return;
+    }
+    var cancel = e.target.closest('.ev-replying-x');
+    if (cancel) cancel.closest('.ev-comment-form').remove();
+  });
+
+  // Touch/pen only: drag a comment to the right, release past the threshold, and the reply box opens
+  // (same idea as WhatsApp). touch-action: pan-y keeps vertical scrolling native.
+  (function () {
+    var THRESHOLD = 56, MAX = 84;
+    var drag = null;
+
+    function reset(d, animate) {
+      d.bubble.style.transition = animate ? 'transform .25s cubic-bezier(.16,.8,.24,1)' : 'none';
+      d.bubble.style.transform = '';
+      if (d.ico) { d.ico.style.transition = 'opacity .2s'; d.ico.style.opacity = '0'; setTimeout(function () { if (d.ico && d.ico.parentNode) d.ico.remove(); }, 260); }
+    }
+
+    root.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse') return;
+      var bubble = e.target.closest('.ev-bubble');
+      if (!bubble || e.target.closest('button, a, input, .ev-menu')) return;
+      var comment = bubble.closest('.ev-comment');
+      if (!comment) return;
+      drag = { bubble: bubble, comment: comment, x: e.clientX, y: e.clientY, id: e.pointerId, active: false, armed: false, ico: null };
+    });
+
+    root.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.active) {
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+        if (dx < 12 || dx < Math.abs(dy) * 1.5) return;
+        drag.active = true;
+        try { drag.bubble.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+        var ico = document.createElement('span');
+        ico.className = 'ev-swipe-ico';
+        ico.setAttribute('aria-hidden', 'true');
+        ico.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>';
+        drag.bubble.parentNode.insertBefore(ico, drag.bubble);
+        drag.ico = ico;
+      }
+      var pull = Math.max(0, Math.min(MAX, dx * 0.7));
+      drag.bubble.style.transition = 'none';
+      drag.bubble.style.transform = 'translateX(' + pull + 'px)';
+      var p = Math.min(1, pull / THRESHOLD);
+      drag.ico.style.opacity = String(p);
+      drag.ico.style.transform = 'scale(' + (0.5 + p * 0.5) + ')';
+      var armed = pull >= THRESHOLD;
+      if (armed !== drag.armed) {
+        drag.armed = armed;
+        drag.ico.classList.toggle('is-armed', armed);
+        if (armed && navigator.vibrate) navigator.vibrate(12);
+      }
+    });
+
+    function finish(e, cancelled) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var d = drag; drag = null;
+      if (!d.active) return;
+      reset(d, true);
+      if (d.armed && !cancelled) {
+        var btn = d.comment.querySelector(':scope > .ev-comment-main > .ev-comment-meta [data-act="reply"]');
+        if (btn) btn.click();
+      }
+    }
+    root.addEventListener('pointerup', function (e) { finish(e, false); });
+    root.addEventListener('pointercancel', function (e) { finish(e, true); });
+  })();
 
   // ---------- composer niceties ----------
   var fileInput = document.querySelector('#evComposer input[type="file"]');

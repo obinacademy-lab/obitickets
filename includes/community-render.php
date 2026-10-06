@@ -197,7 +197,7 @@ function community_comment_html(array $c, array $ctx, bool $isReply = false): st
     $mine = $c['my_reaction'] ?? null;
     $count = (int) ($c['reaction_count'] ?? 0);
 
-    $h = '<div class="ev-comment' . ($isReply ? ' is-reply' : '') . '" id="comment-' . $id . '" data-comment-id="' . $id . '" data-author="' . (int) $c['user_id'] . '">';
+    $h = '<div class="ev-comment' . ($isReply ? ' is-reply' : '') . '" id="comment-' . $id . '" data-comment-id="' . $id . '" data-author="' . (int) $c['user_id'] . '" data-name="' . ev_h($name) . '">';
     $h .= community_avatar_html($name, (int) $c['user_id'], $isOrganizer, 'sm');
     $h .= '<div class="ev-comment-main"><div class="ev-bubble"><div class="ev-bubble-top"><span class="ev-author-name">' . ev_h($name) . '</span>';
     if ($isOrganizer) {
@@ -206,13 +206,19 @@ function community_comment_html(array $c, array $ctx, bool $isReply = false): st
         $h .= '<span class="ev-chip ev-chip-verified">Verified attendee</span>';
     }
     $h .= community_menu_html('COMMENT', $id, (int) $c['user_id'], $ctx) . '</div>';
+    if (!empty($c['reply_to_comment_id'])) {
+        if (($c['reply_to_status'] ?? '') === 'PUBLISHED' && ($c['reply_to_name'] ?? '') !== '') {
+            $quoted = !empty($c['reply_to_is_organizer']) ? $ctx['org_name'] : community_display_name((string) $c['reply_to_name']);
+            $h .= '<a class="ev-quote" href="#comment-' . (int) $c['reply_to_comment_id'] . '" data-jump="' . (int) $c['reply_to_comment_id'] . '"><b>' . ev_h($quoted) . '</b><span>' . ev_h((string) $c['reply_to_body']) . '</span></a>';
+        } else {
+            $h .= '<div class="ev-quote is-gone"><span>Original comment is no longer available</span></div>';
+        }
+    }
     $h .= '<div class="ev-comment-text">' . nl2br(ev_h($c['body'])) . '</div></div>';
     $h .= '<div class="ev-comment-meta"><span>' . ev_h(community_time_ago($c['created_at'])) . '</span>';
     $h .= '<div class="ev-react-wrap"><button type="button" class="ev-link-btn ev-react-btn' . ($mine ? ' is-on' : '') . '" data-act="react-open" data-target="comment" data-my="' . ev_h((string) $mine) . '">'
         . ($mine && isset(REACTION_TYPES[$mine]) ? REACTION_TYPES[$mine] . ' ' . ev_h(ucfirst(strtolower((string) $mine))) : 'React') . '</button>' . community_reaction_picker_html() . '</div>';
-    if (!$isReply) {
-        $h .= '<button type="button" class="ev-link-btn" data-act="reply">Reply</button>';
-    }
+    $h .= '<button type="button" class="ev-link-btn" data-act="reply">Reply</button>';
     $h .= '<span class="ev-comment-count">' . ($count > 0 ? '&#10084;&#65039; ' . $count : '') . '</span></div>';
     $h .= '<div class="ev-replies">';
     foreach ($c['replies'] ?? [] as $reply) {

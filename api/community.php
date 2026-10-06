@@ -92,7 +92,10 @@ try {
             $row = get_comment_for_render($r['id'], $uid);
             $total = db()->prepare("SELECT COUNT(*) FROM post_comments WHERE post_id = ? AND status = 'PUBLISHED'");
             $total->execute([(int) $post['id']]);
-            json_response(['ok' => true, 'html' => $row ? community_comment_html($row, $ctx, $parent !== null) : '', 'parent_id' => $parent, 'count' => (int) $total->fetchColumn()]);
+            // parent_id is the thread the reply was filed under (the top-level comment), which can differ
+            // from the comment that was answered.
+            $threadId = $r['parent_id'] ?? null;
+            json_response(['ok' => true, 'html' => $row ? community_comment_html($row, $ctx, $threadId !== null) : '', 'parent_id' => $threadId, 'count' => (int) $total->fetchColumn()]);
 
         case 'feed_more':
             $event = get_community_event($intOf($body['event_id'] ?? 0));
