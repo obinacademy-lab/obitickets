@@ -34,6 +34,7 @@ require_once __DIR__ . '/waitlist.php';
 require_once __DIR__ . '/community.php';
 require_once __DIR__ . '/community-render.php';
 require_once __DIR__ . '/moments.php';
+require_once __DIR__ . '/sounds.php';
 require_once __DIR__ . '/admin.php';
 require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';

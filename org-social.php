@@ -72,7 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = delete_moment($actor, (int) ($_POST['id'] ?? 0));
             $result['ok'] ? $back('moment_deleted') : $error = $result['error'];
         } elseif ($action === 'moment_update') {
-            $result = update_moment($actor, (int) ($_POST['id'] ?? 0), (string) ($_POST['caption'] ?? ''), (int) ($_POST['focus_x'] ?? 50), ($_POST['fit'] ?? '') === 'FIT' ? 'FIT' : 'FILL', !empty($_POST['comments_enabled']));
+            $soundOpts = [];
+            if (isset($_POST['sound_id'])) {
+                $newSound = (int) $_POST['sound_id'];
+                $soundOpts = ['sound_id' => $newSound, 'sound_start' => $newSound === (int) ($_POST['sound_prev'] ?? 0) ? (float) ($_POST['sound_start'] ?? 0) : 0, 'sound_mix' => (int) ($_POST['sound_mix'] ?? 70), 'slide_beats' => (int) ($_POST['slide_beats'] ?? 2), 'slide_fx' => (string) ($_POST['slide_fx'] ?? 'ZOOM')];
+            }
+            $result = update_moment($actor, (int) ($_POST['id'] ?? 0), (string) ($_POST['caption'] ?? ''), (int) ($_POST['focus_x'] ?? 50), ($_POST['fit'] ?? '') === 'FIT' ? 'FIT' : 'FILL', !empty($_POST['comments_enabled']), $soundOpts);
             $result['ok'] ? $back('moment_saved') : $error = $result['error'];
         } elseif (in_array($action, ['pin', 'unpin'], true)) {
             $result = set_post_pinned($actor, (int) ($_POST['id'] ?? 0), $action === 'pin');
@@ -98,11 +103,19 @@ $hidden = $event ? get_hidden_content((int) $event['id']) : [];
 $posts = $event ? get_event_feed((int) $event['id'], null, 20) : [];
 $momentsReady = false;
 $orgMoments = [];
+$soundsReady = false;
+$libSounds = [];
+$mySounds = [];
 if ($event) {
     try {
         if (moments_ready()) {
             $momentsReady = true;
             $orgMoments = get_event_moments((int) $event['id'], null, 100);
+            if (sounds_ready()) {
+                $soundsReady = true;
+                $libSounds = array_map('sound_public', get_library_sounds());
+                $mySounds = array_map('sound_public', get_user_sounds((int) $actor['id']));
+            }
         }
     } catch (Throwable $e) {
         error_log('[moments] org page: ' . $e->getMessage());
@@ -188,26 +201,81 @@ render_organizer_head('social', $ctx);
         <div class="muted" style="padding:14px 0">Moments are not switched on yet. Run <code>migration/017_moments.sql</code> to turn them on.</div>
       <?php else: ?>
       <div class="mu" id="mu" data-endpoint="/api/moment-upload.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
-           data-max-video="<?= moment_video_max_bytes() ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>">
+           data-max-video="<?= moment_video_max_bytes() ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
+           data-max-sound="<?= SOUND_MAX_BYTES ?>" data-sounds-on="<?= $soundsReady ? '1' : '0' ?>"
+           data-sounds="<?= htmlspecialchars(json_encode(['library' => $libSounds, 'mine' => $mySounds], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>">
         <div>
-          <div class="mu-frame is-empty" id="muFrame">Choose a video or photo to see how it will look</div>
+          <div class="mu-frame is-empty" id="muFrame">Choose a video or photos to see how they will look</div>
           <div class="mu-hint" id="muHint" hidden>&larr; Drag sideways to choose what stays in frame &rarr;</div>
-          <label class="social-check" style="justify-content:center"><input type="checkbox" id="muGuides" checked> Show where buttons and caption appear</label>
+          <div class="mu-ctrls" id="muCtrls" hidden>
+            <button class="btn btn-line" type="button" id="muPlay" style="width:auto; margin:0">Play preview</button>
+            <button class="btn btn-line" type="button" id="muMute" aria-pressed="false" style="width:auto; margin:0">Sound on</button>
+          </div>
+          <label class="social-check" style="justify-content:center; margin-top:10px"><input type="checkbox" id="muGuides" checked> Show where buttons and caption appear</label>
         </div>
         <div>
-          <div class="mu-row" style="margin-top:0">
-            <label class="btn btn-line" for="muFile" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Choose video or photo</label>
-            <input type="file" id="muFile" accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" hidden>
-            <span class="muted" style="font-size:0.84rem; margin-left:8px">MP4 or WebM up to <?= (int) round(moment_video_max_bytes() / 1048576) ?> MB and <?= MOMENT_MAX_SECONDS ?> seconds &middot; JPG, PNG or WebP up to 5 MB</span>
+          <div class="mu-seg mu-modes" role="group" aria-label="What are you posting"><button type="button" data-mode="single" aria-pressed="true">Video or photo</button><button type="button" data-mode="slides" aria-pressed="false">Photo slideshow (up to <?= MOMENT_MAX_SLIDES ?>)</button></div>
+
+          <div id="muSingleBox">
+            <div class="mu-row" style="margin-top:0">
+              <label class="btn btn-line" for="muFile" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Choose video or photo</label>
+              <input type="file" id="muFile" accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" hidden>
+              <span class="muted" style="font-size:0.84rem; margin-left:8px">MP4 or WebM up to <?= (int) round(moment_video_max_bytes() / 1048576) ?> MB and <?= MOMENT_MAX_SECONDS ?> seconds &middot; JPG, PNG or WebP up to 5 MB</span>
+            </div>
+            <div class="mu-facts" id="muFacts" style="margin-top:12px"></div>
+            <div id="muFit" hidden>
+              <div class="mu-seg" role="group" aria-label="How to fit"><button type="button" data-fit="FILL" aria-pressed="true">Fill the frame</button><button type="button" data-fit="FIT" aria-pressed="false">Fit with blurred sides</button></div>
+            </div>
+            <div class="mu-row" id="muCover" hidden>
+              <label for="muCoverRange">Cover frame <span class="muted" style="font-weight:600">(what people see before they press play)</span></label>
+              <input type="range" id="muCoverRange" min="0" max="100" value="0" step="1">
+            </div>
           </div>
-          <div class="mu-facts" id="muFacts" style="margin-top:12px"></div>
-          <div id="muFit" hidden>
-            <div class="mu-seg" role="group" aria-label="How to fit"><button type="button" data-fit="FILL" aria-pressed="true">Fill the frame</button><button type="button" data-fit="FIT" aria-pressed="false">Fit with blurred sides</button></div>
+
+          <div id="muSlidesBox" hidden>
+            <div class="mu-row" style="margin-top:0">
+              <label class="btn btn-line" for="muPhotos" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Add photos</label>
+              <input type="file" id="muPhotos" accept="image/jpeg,image/png,image/webp" multiple hidden>
+              <span class="muted" style="font-size:0.84rem; margin-left:8px">Up to <?= MOMENT_MAX_SLIDES ?> photos. Each is cropped to 9:16 from the middle. Drag to reorder.</span>
+            </div>
+            <div class="mu-thumbs" id="muThumbs"></div>
+            <div class="muted" style="font-size:0.84rem" id="muPcount">0 of <?= MOMENT_MAX_SLIDES ?> photos</div>
           </div>
-          <div class="mu-row" id="muCover" hidden>
-            <label for="muCoverRange">Cover frame <span class="muted" style="font-weight:600">(what people see before they press play)</span></label>
-            <input type="range" id="muCoverRange" min="0" max="100" value="0" step="1">
+
+          <?php if ($soundsReady): ?>
+          <div class="mu-row" id="muSoundBox">
+            <label>Sound</label>
+            <div class="mu-seg" role="group" aria-label="Sound source"><button type="button" data-src="none" aria-pressed="true">No sound</button><button type="button" data-src="lib" aria-pressed="false">Library</button><button type="button" data-src="mine" aria-pressed="false">My sounds</button><button type="button" data-src="new" aria-pressed="false">Upload new</button></div>
+            <div class="mu-tracks" id="muTracks" hidden></div>
+            <div id="muNewBox" hidden>
+              <div class="mu-own">
+                <b style="font-family:var(--font-display,serif); font-size:1.05rem; display:block">Add an audio file</b>
+                <span class="muted" style="display:block; font-size:0.84rem; margin:4px 0 10px">MP3, M4A, WAV or OGG up to <?= (int) round(SOUND_MAX_BYTES / 1048576) ?> MB. The beat is found automatically.</span>
+                <label class="btn btn-line" for="muAudio" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Choose audio</label>
+                <input type="file" id="muAudio" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/ogg,audio/aac,.mp3,.m4a,.wav,.ogg" hidden>
+              </div>
+              <div class="mu-row"><label for="muOwnTitle">Title</label><input type="text" id="muOwnTitle" maxlength="120" style="width:100%"></div>
+              <div class="mu-row"><label for="muOwnArtist">Artist (optional)</label><input type="text" id="muOwnArtist" maxlength="120" style="width:100%"></div>
+              <label class="social-check" style="margin-top:12px; align-items:flex-start"><input type="checkbox" id="muRights"> <span>I own this sound or have permission to use it publicly. Reported sounds are removed.</span></label>
+            </div>
+            <div id="muSoundCtl" hidden>
+              <div class="mu-wave" id="muWave"><canvas id="muWcv"></canvas><div class="mu-win" id="muWin"></div></div>
+              <div class="mu-wlab"><span id="muWstart">Starts at 0:00</span><span id="muWlen"></span></div>
+              <div class="mu-facts" id="muSfacts" style="margin-top:10px"></div>
+              <div class="mu-btnrow" id="muBpmFix" hidden><button class="btn btn-line" type="button" id="muHalf">Half speed</button><button class="btn btn-line" type="button" id="muDouble">Double speed</button></div>
+              <div class="mu-row" id="muMixRow" hidden><label for="muMix">Sound mix: <span id="muMixV">Music 70% &middot; video 30%</span></label><input type="range" id="muMix" min="0" max="100" value="70"></div>
+            </div>
           </div>
+
+          <div class="mu-row" id="muBeatBox" hidden>
+            <label>Change photo every</label>
+            <div class="mu-seg" role="group" aria-label="Beats per photo"><button type="button" data-beats="1" aria-pressed="false">Beat</button><button type="button" data-beats="2" aria-pressed="true">2 beats</button><button type="button" data-beats="4" aria-pressed="false">Bar (4)</button><button type="button" data-beats="8" aria-pressed="false">2 bars</button></div>
+            <label style="margin-top:12px">Transition</label>
+            <div class="mu-seg" role="group" aria-label="Transition"><button type="button" data-fx="CUT" aria-pressed="false">Cut</button><button type="button" data-fx="FADE" aria-pressed="false">Fade</button><button type="button" data-fx="ZOOM" aria-pressed="true">Zoom pulse</button><button type="button" data-fx="FLASH" aria-pressed="false">Flash</button></div>
+            <div class="mu-facts" id="muTiming" style="margin-top:10px"></div>
+          </div>
+          <?php endif; ?>
+
           <div class="mu-row">
             <label for="muCaption">Caption</label>
             <textarea id="muCaption" maxlength="<?= MOMENT_CAPTION_MAX ?>" placeholder="Doors open at 8. Dress code: all black."></textarea>
@@ -224,7 +292,7 @@ render_organizer_head('social', $ctx);
           <div class="mu-item">
             <div class="mu-thumb">
               <?php if ($thumb): ?><img src="<?= htmlspecialchars($thumb) ?>" alt="" loading="lazy" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"><?php else: ?><video src="<?= htmlspecialchars($m['media_path']) ?>#t=0.5" muted playsinline preload="metadata" style="object-position:<?= (int) $m['focus_x'] ?>% 50%"></video><?php endif; ?>
-              <span class="mu-badge"><?= $isVideo ? 'Video' . ($m['duration_seconds'] !== null ? ' ' . moment_clock((int) $m['duration_seconds']) : '') : 'Photo' ?></span>
+              <span class="mu-badge"><?= $isVideo ? 'Video' . ($m['duration_seconds'] !== null ? ' ' . moment_clock((int) $m['duration_seconds']) : '') : ($m['media_type'] === 'SLIDESHOW' ? count($m['slides'] ?? []) . ' photos' : 'Photo') ?><?= !empty($m['sound_id']) && ($m['sound_status'] ?? '') === 'ACTIVE' ? ' &#9835;' : '' ?></span>
               <span class="mu-meta"><?= htmlspecialchars(moment_compact((int) $m['view_count'])) ?> views &middot; <?= (int) $m['reaction_count'] ?> &#10084;&#65039; &middot; <?= (int) $m['comment_count'] ?> &#128172;</span>
             </div>
             <div class="mu-cap"><?= $m['caption'] ? htmlspecialchars($m['caption']) : '<span class="muted">No caption</span>' ?></div>
@@ -237,6 +305,26 @@ render_organizer_head('social', $ctx);
                 <label class="social-check"><input type="radio" name="fit" value="FILL"<?= $m['fit_mode'] === 'FILL' ? ' checked' : '' ?>> Fill</label>
                 <label class="social-check"><input type="radio" name="fit" value="FIT"<?= $m['fit_mode'] === 'FIT' ? ' checked' : '' ?>> Fit with blurred sides</label>
                 <label class="social-check"><input type="checkbox" name="comments_enabled" value="1"<?= (int) $m['comments_enabled'] === 1 ? ' checked' : '' ?>> Allow comments</label>
+                <?php if ($soundsReady): ?>
+                  <input type="hidden" name="sound_start" value="<?= htmlspecialchars((string) ($m['sound_start'] ?? 0)) ?>"><input type="hidden" name="sound_prev" value="<?= (int) ($m['sound_id'] ?? 0) ?>">
+                  <label class="social-check">Sound
+                    <select name="sound_id" aria-label="Sound" style="flex:1; min-width:0">
+                      <option value="0">No sound</option>
+                      <?php foreach ([['Library', $libSounds], ['My sounds', $mySounds]] as [$grp, $list]): if (!$list) { continue; } ?>
+                        <optgroup label="<?= $grp ?>"><?php foreach ($list as $snd): ?><option value="<?= (int) $snd['id'] ?>"<?= (int) ($m['sound_id'] ?? 0) === $snd['id'] ? ' selected' : '' ?>><?= htmlspecialchars($snd['title'] . ($snd['artist'] !== '' ? ' - ' . $snd['artist'] : '')) ?></option><?php endforeach; ?></optgroup>
+                      <?php endforeach; ?>
+                    </select>
+                  </label>
+                  <label class="social-check">Music volume <input type="range" name="sound_mix" min="0" max="100" value="<?= (int) ($m['sound_mix'] ?? 70) ?>" style="flex:1"></label>
+                  <?php if ($m['media_type'] === 'SLIDESHOW'): ?>
+                  <label class="social-check">Photo changes every
+                    <select name="slide_beats" aria-label="Beats per photo"><?php foreach (MOMENT_SLIDE_BEATS as $bt): ?><option value="<?= $bt ?>"<?= (int) ($m['slide_beats'] ?? 2) === $bt ? ' selected' : '' ?>><?= $bt === 1 ? 'beat' : $bt . ' beats' ?></option><?php endforeach; ?></select>
+                  </label>
+                  <label class="social-check">Transition
+                    <select name="slide_fx" aria-label="Transition"><?php foreach (MOMENT_SLIDE_FX as $fx): ?><option value="<?= $fx ?>"<?= strtoupper((string) ($m['slide_fx'] ?? 'ZOOM')) === $fx ? ' selected' : '' ?>><?= ucfirst(strtolower($fx)) ?></option><?php endforeach; ?></select>
+                  </label>
+                  <?php endif; ?>
+                <?php endif; ?>
                 <button class="social-btn plain" type="submit">Save</button>
               </form>
             </details>
@@ -251,6 +339,8 @@ render_organizer_head('social', $ctx);
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
+      <script src="/assets/js/beat.js?v=<?= @filemtime(__DIR__ . '/assets/js/beat.js') ?: time() ?>"></script>
+      <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
       <script src="/assets/js/org-moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-moments.js') ?: time() ?>"></script>
       <?php endif; ?>
     </div>

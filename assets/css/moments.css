@@ -184,3 +184,67 @@ body.mv-open{overflow:hidden;}
 .mu-cap{font-size:13px; color:var(--muted,#6B6064); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; min-height:2.6em;}
 .mu-item details summary{cursor:pointer; font-weight:800; font-size:13px;}
 .mu-item details form{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+
+/* ---------- sound + slideshow (migration 018) ---------- */
+.mv-snd{display:block; font-size:12px; font-weight:700; margin-bottom:5px; opacity:.92; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.mv-stack, .mu-stack{position:absolute; inset:0;}
+.mv-slide{position:absolute; inset:0; opacity:0; will-change:opacity,transform;}
+.mv-slide.cur{opacity:1; z-index:1;}
+.mv-slide img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; user-select:none; -webkit-user-drag:none;}
+.fx-fade .mv-slide{transition:opacity .35s ease;}
+.fx-cut .mv-slide, .fx-flash .mv-slide{transition:none;}
+.fx-zoom .mv-slide.cur{animation:mvZin .5s var(--mv-ease);}
+@keyframes mvZin{from{transform:scale(1.18);}to{transform:none;}}
+.mv-flash{position:absolute; inset:0; z-index:3; background:#fff; opacity:0; pointer-events:none;}
+.mv-flash.go{animation:mvFl .28s ease-out;}
+@keyframes mvFl{0%{opacity:.75;}100%{opacity:0;}}
+.mv-segs{position:absolute; z-index:6; top:10px; left:10px; right:10px; display:flex; gap:4px; pointer-events:none;}
+.mv-segs i{flex:1; height:3px; border-radius:3px; background:rgba(255,255,255,.3); overflow:hidden; display:block;}
+.mv-segs i b{display:block; height:100%; width:0; background:#fff;}
+.mv-clip.is-slideshow .mv-top{padding-top:26px;}
+.mv-sl{position:absolute; z-index:6; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; border:0; background:rgba(0,0,0,.35); backdrop-filter:blur(6px); color:#fff; font-size:24px; line-height:1; cursor:pointer; opacity:0; transition:opacity .25s ease;}
+.mv-sl-prev{left:8px;} .mv-sl-next{right:8px;}
+.mv-clip:hover .mv-sl{opacity:1;}
+@media (pointer:coarse){.mv-sl{display:none;}}
+.mv-snd2{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; margin:6px 0 2px; overflow:hidden;}
+.mv-snd2[hidden]{display:none;}
+.mv-snd2 .mq{display:block; overflow:hidden; flex:1; -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent); mask-image:linear-gradient(90deg,#000 85%,transparent);}
+.mv-snd2 .mqin{display:inline-flex; gap:40px; white-space:nowrap; animation:mvMq 10s linear infinite;}
+@keyframes mvMq{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.mv-disc{width:44px; height:44px; border-radius:50%; background:conic-gradient(#222,#7a3a60,#222,#9a4a30,#222); border:6px solid #1a1015; display:flex; align-items:center; justify-content:center; animation:mvSpin 4s linear infinite; animation-play-state:paused; margin-top:2px;}
+.mv-disc.spin{animation-play-state:running;}
+.mv-disc::after{content:''; width:12px; height:12px; border-radius:50%; background:#DC2626;}
+@keyframes mvSpin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){.mv-snd2 .mqin, .mv-disc{animation:none !important;} .fx-zoom .mv-slide.cur{animation:none !important;}}
+
+/* composer: sound, beat and slideshow controls */
+.mu-modes{margin-bottom:12px;}
+.mu-thumbs{display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 4px;}
+.mu-th{position:relative; width:64px; aspect-ratio:9/16; border-radius:12px; overflow:hidden; border:2px solid transparent; background:#241520; cursor:grab; transition:transform .25s var(--mv-spring), border-color .2s ease;}
+.mu-th img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; pointer-events:none;}
+.mu-th.drag{opacity:.4;}
+.mu-th .x{position:absolute; z-index:3; top:3px; right:3px; width:20px; height:20px; border-radius:50%; border:0; background:rgba(0,0,0,.6); color:#fff; font-size:13px; line-height:1; padding:0; cursor:pointer;}
+.mu-th .n{position:absolute; z-index:3; left:5px; bottom:4px; font-size:11px; font-weight:800; color:#fff; text-shadow:0 1px 4px #000;}
+.mu-add{width:64px; aspect-ratio:9/16; border-radius:12px; border:2px dashed var(--line-strong,#D9CFCB); background:var(--paper,#F7F3F1); font-size:24px; color:var(--muted,#6B6064); cursor:pointer;}
+.mu-add:hover{border-color:#DC2626; color:#DC2626;}
+.mu-tracks{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+.mu-trk{display:flex; align-items:center; gap:12px; border:1.5px solid var(--line,#E9E1DE); border-radius:14px; padding:10px 12px; background:#fff; text-align:left; width:100%; cursor:pointer; font:inherit; transition:border-color .2s ease, background .2s ease;}
+.mu-trk:hover{border-color:var(--line-strong,#D9CFCB);}
+.mu-trk.on{border-color:#DC2626; background:#FDEDED;}
+.mu-trk .tx{flex:1; min-width:0;}
+.mu-trk .tx b{display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.mu-trk .tx span{font-size:12.5px; color:var(--muted,#6B6064);}
+.mu-trk .bpm{font-size:12px; font-weight:800; background:var(--paper,#F7F3F1); border:1px solid var(--line,#E9E1DE); border-radius:100px; padding:3px 10px; white-space:nowrap;}
+.mu-trk .pv{border:0; background:#1B1417; color:#fff; width:34px; height:34px; border-radius:50%; flex:none; cursor:pointer;}
+.mu-own{border:2px dashed var(--line-strong,#D9CFCB); border-radius:16px; padding:18px; text-align:center; background:var(--paper,#F7F3F1); margin-top:10px;}
+.mu-wave{position:relative; height:96px; border-radius:14px; background:#150d12; overflow:hidden; touch-action:none; cursor:ew-resize; margin-top:8px;}
+.mu-wave canvas{position:absolute; inset:0; width:100%; height:100%;}
+.mu-win{position:absolute; top:0; bottom:0; border:2px solid #fff; border-radius:10px; background:rgba(255,255,255,.12); pointer-events:none;}
+.mu-wlab{display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--muted,#6B6064); margin-top:8px; gap:10px; flex-wrap:wrap;}
+.mu-beat{position:absolute; z-index:5; top:24px; left:12px; display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:#fff; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border-radius:100px; padding:4px 10px;}
+.mu-beat i{width:9px; height:9px; border-radius:50%; background:#555; transition:background .08s ease;}
+.mu-beat i.on{background:#DC2626; box-shadow:0 0 12px #DC2626;}
+.mu-frame .mv-segs{top:10px;}
+.mu-btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+.mu-btnrow .btn{width:auto; margin:0;}
+.mu-ctrls{display:flex; gap:8px; justify-content:center; margin-top:14px; flex-wrap:wrap;}

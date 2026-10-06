@@ -27,6 +27,23 @@ try {
         json_response(['error' => 'Event not found.'], 404);
     }
     $duration = isset($_POST['duration']) && $_POST['duration'] !== '' ? max(0, (int) round((float) $_POST['duration'])) : null;
+    // Photos for a slideshow arrive as photos[]; a sound is either an existing one (sound_id) or a new
+    // upload (own_audio) together with the beat analysis the browser did.
+    $opts = [
+        'photos' => $_FILES['photos'] ?? null,
+        'sound_id' => (int) ($_POST['sound_id'] ?? 0),
+        'own_audio' => $_FILES['own_audio'] ?? null,
+        'own_title' => (string) ($_POST['own_title'] ?? ''),
+        'own_artist' => (string) ($_POST['own_artist'] ?? ''),
+        'own_bpm' => (float) ($_POST['own_bpm'] ?? 100),
+        'own_offset' => (float) ($_POST['own_offset'] ?? 0),
+        'own_duration' => (int) ($_POST['own_duration'] ?? 0),
+        'rights' => !empty($_POST['rights']),
+        'sound_start' => (float) ($_POST['sound_start'] ?? 0),
+        'sound_mix' => (int) ($_POST['sound_mix'] ?? 70),
+        'slide_beats' => (int) ($_POST['slide_beats'] ?? 2),
+        'slide_fx' => (string) ($_POST['slide_fx'] ?? 'ZOOM'),
+    ];
     $result = create_moment(
         $event,
         $user,
@@ -35,7 +52,9 @@ try {
         (string) ($_POST['caption'] ?? ''),
         (int) ($_POST['focus_x'] ?? 50),
         ($_POST['fit'] ?? '') === 'FIT' ? 'FIT' : 'FILL',
-        $duration
+        $duration,
+        true,
+        $opts
     );
     if (!$result['ok']) {
         json_response(['error' => $result['error']], 400);

@@ -97,6 +97,7 @@
             '<button type="button" class="mv-act mv-more" aria-label="Choose a reaction" aria-haspopup="true"><span class="ic">😍</span><span>React</span></button>' +
             '<button type="button" class="mv-act mv-com" aria-label="Comments"><span class="ic">💬</span><span class="n">0</span></button>' +
             '<button type="button" class="mv-act mv-sh" aria-label="Share"><span class="ic">↗</span><span class="n">0</span></button>' +
+            '<div class="mv-disc" aria-hidden="true"></div>' +
             '<div class="mv-picker" role="group" aria-label="Choose a reaction"></div>' +
           '</div>' +
           '<div class="mv-udn"><button type="button" class="mv-round mv-up" aria-label="Previous moment"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></button><button type="button" class="mv-round mv-dn" aria-label="Next moment"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>' +
@@ -112,22 +113,31 @@
 
     var reel = $('.mv-reel', v), pn = $('.mv-pn', v);
     items.forEach(function (it) {
-      var c = el('div', 'mv-clip' + (it.fit === 'fit' ? ' is-fit' : ''));
+      var c = el('div', 'mv-clip' + (it.fit === 'fit' ? ' is-fit' : '') + (it.type === 'slideshow' ? ' is-slideshow' : ''));
       c.setAttribute('data-id', it.id);
       var thumb = it.type === 'video' ? it.poster : it.src;
       if (it.fit === 'fit' && thumb) c.style.setProperty('--mv-bg', "url('" + thumb.replace(/'/g, '%27') + "')");
-      var mediaHtml = it.type === 'video'
+      var mediaHtml = it.type === 'slideshow'
+        ? '<div class="mv-stack"></div><div class="mv-flash"></div><div class="mv-segs"></div>' +
+          '<button type="button" class="mv-sl mv-sl-prev" aria-label="Previous photo">&#8249;</button><button type="button" class="mv-sl mv-sl-next" aria-label="Next photo">&#8250;</button>'
+        : it.type === 'video'
         ? '<video playsinline loop muted preload="none"' + (it.poster ? ' poster="' + it.poster + '"' : '') + ' style="object-position:' + it.focus + '% 50%"></video>'
         : '<img class="is-photo" alt="" draggable="false" style="object-position:' + it.focus + '% 50%">';
       c.innerHTML = mediaHtml + '<div class="mv-sh"></div><div class="mv-pz"><i><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></i></div>' +
         '<div class="mv-top"><span class="t"></span><button type="button" class="mv-round mv-mute" aria-label="Turn sound on"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M23 9l-6 6M17 9l6 6"/></svg></button></div>' +
-        '<div class="mv-cp"><div class="nm"><span class="who"></span><span class="chip">ORGANIZER</span></div><p></p><div class="vm"></div></div>' +
+        '<div class="mv-cp"><div class="nm"><span class="who"></span><span class="chip">ORGANIZER</span></div><p></p><div class="mv-snd2" hidden><span aria-hidden="true">\u266B</span><div class="mq"><div class="mqin"></div></div></div><div class="vm"></div></div>' +
         (it.type === 'video' ? '<div class="mv-pg"><i></i></div>' : '');
-      $('.t', c).textContent = it.type === 'video' ? data.org.name : 'Photo';
+      $('.t', c).textContent = it.type === 'video' ? data.org.name : (it.type === 'slideshow' ? it.slides.length + ' photos' : 'Photo');
+      var pill = it.sound ? it.sound.title + (it.sound.artist ? ' \u00b7 ' + it.sound.artist : '') : (it.type === 'video' ? 'Original sound \u00b7 ' + data.org.name : '');
+      if (pill) {
+        var mq = $('.mqin', c);
+        for (var rep = 0; rep < 2; rep++) { var sp = el('span'); sp.textContent = pill; mq.appendChild(sp); }
+        $('.mv-snd2', c).hidden = false;
+      }
       $('.who', c).textContent = data.org.name;
       var p = $('.mv-cp p', c);
       if (it.caption) p.textContent = it.caption; else p.hidden = true;
-      if (it.type !== 'video') $('.mv-mute', c).hidden = true;
+      if (it.type !== 'video' && !it.sound) $('.mv-mute', c).hidden = true; // nothing to hear
       reel.appendChild(c);
       pn.appendChild(el('i'));
     });
@@ -149,7 +159,20 @@
       if (i !== cur && i >= 0 && i < order.length) { activate(i); if (pushed) history.replaceState({ mv: order[i] }, '', histUrl(order[i])); }
     }, { passive: true });
 
+    // photos: arrows, and a sideways swipe on touch screens
+    var sw = null;
+    reel.addEventListener('pointerdown', function (e) {
+      var c = e.target.closest('.mv-clip.is-slideshow');
+      sw = c && e.pointerType !== 'mouse' ? { x: e.clientX, y: e.clientY } : null;
+    });
+    reel.addEventListener('pointerup', function (e) {
+      if (!sw) return;
+      var dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 2) { var pl = players[order[cur]]; if (pl && pl.next) { dx < 0 ? pl.next() : pl.prev(); } }
+    });
     reel.addEventListener('click', function (e) {
+      var arrow = e.target.closest('.mv-sl');
+      if (arrow) { e.stopPropagation(); var pl = players[order[cur]]; if (pl && pl.next) { arrow.classList.contains('mv-sl-next') ? pl.next() : pl.prev(); } return; }
       var mute = e.target.closest('.mv-mute');
       if (mute) { e.stopPropagation(); setMuted(!muted); return; }
       if (e.target.closest('.mv-top')) return;
@@ -215,6 +238,7 @@
     if (e.key === 'Escape') { if (!closeLayers(true)) closeViewer(); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); go(cur + 1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); go(cur - 1); }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { var pl = players[order[cur]]; if (pl && pl.next) { e.preventDefault(); e.key === 'ArrowRight' ? pl.next() : pl.prev(); } }
     else if (e.key === 'm' || e.key === 'M') { setMuted(!muted); }
     else if (e.key === ' ') { e.preventDefault(); togglePause($$('.mv-clip', V)[cur]); }
     else if (e.key === 'Tab') {
@@ -246,7 +270,8 @@
     // only the clips next to this one hold a media source, so swiping through 30 videos stays light
     items.forEach(function (x) {
       var pos = order.indexOf(x.id), near = pos > -1 && Math.abs(pos - i) <= 1;
-      var c = $('.mv-clip[data-id="' + x.id + '"]', V), m = c && $('video, img', c);
+      var c = $('.mv-clip[data-id="' + x.id + '"]', V), m = x.type === 'slideshow' ? null : c && $('video, img', c);
+      if (!near && players[x.id]) { players[x.id].destroy(); delete players[x.id]; }
       if (!m) return;
       if (near) ensureMedia(x);
       else if (m.getAttribute('src')) { if (m.tagName === 'VIDEO') m.pause(); m.removeAttribute('src'); if (m.tagName === 'VIDEO') m.load(); }
@@ -266,24 +291,73 @@
     pn.forEach(function (d, k) { d.style.display = k < order.length && order.length <= 10 ? '' : 'none'; d.classList.toggle('on', k === i); });
   }
 
-  function pauseAll() { $$('.mv-clip video', V).forEach(function (v) { v.pause(); }); }
+  var players = {}; // id -> SlideshowPlayer or SoundTrack, made when a moment becomes the current one
+
+  /** The player that carries a moment's sound / slideshow, created on first need. */
+  function ensurePlayer(it) {
+    if (players[it.id]) return players[it.id];
+    var c = $('.mv-clip[data-id="' + it.id + '"]', V), p = null;
+    if (it.type === 'slideshow' && window.SlideshowPlayer) {
+      p = SlideshowPlayer.create({
+        stack: $('.mv-stack', c), segs: $('.mv-segs', c), flash: $('.mv-flash', c),
+        urls: it.slides, beats: it.beats, fx: it.fx, bpm: it.sound ? it.sound.bpm : 0,
+        sound: it.sound ? { src: it.sound.src, start: it.sound.start, volume: 1 } : null
+      });
+    } else if (it.sound && window.SoundTrack) {
+      p = SoundTrack.create({ src: it.sound.src, start: it.sound.start, volume: it.type === 'video' ? it.sound.mix / 100 : 1, loopSeconds: 30 });
+      var v = $('video', c);
+      if (v) p.attachVideo(v);
+    }
+    if (p) players[it.id] = p;
+    return p;
+  }
+
+  function discState(playing) { var d = V && $('.mv-disc', V); if (d) d.classList.toggle('spin', !!playing); }
+
+  function pauseAll() {
+    $$('.mv-clip video', V).forEach(function (v) { v.pause(); });
+    Object.keys(players).forEach(function (k) { players[k].pause(); });
+    discState(false);
+  }
   function playCurrent() {
-    var c = $('.mv-clip[data-id="' + order[cur] + '"]', V), v = c && $('video', c);
-    if (!v) return;
+    var it = byId[order[cur]], c = $('.mv-clip[data-id="' + order[cur] + '"]', V);
+    if (!it || !c) return;
     c.classList.remove('is-paused');
-    v.muted = muted;
-    var p = v.play();
-    if (p && p.catch) p.catch(function () { c.classList.add('is-paused'); });
+    var pl = (it.sound || it.type === 'slideshow') ? ensurePlayer(it) : null;
+    if (it.type === 'slideshow') { if (pl) pl.play(muted); discState(!!it.sound); return; }
+    var v = $('video', c);
+    if (v) {
+      v.muted = muted;
+      v.volume = it.sound ? Math.max(0, Math.min(1, (100 - it.sound.mix) / 100)) : 1;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { c.classList.add('is-paused'); });
+      if (pl) pl.play(muted);
+      discState(true);
+    } else if (pl) { pl.play(muted); discState(true); }
+    else discState(false);
   }
   function togglePause(c) {
-    var v = c && $('video', c);
-    if (!v) return;
-    if (v.paused) { c.classList.remove('is-paused'); v.muted = muted; v.play().catch(function () {}); }
-    else { v.pause(); c.classList.add('is-paused'); }
+    if (!c) return;
+    var it = byId[parseInt(c.getAttribute('data-id'), 10)], pl = it && players[it.id];
+    if (it && it.type === 'slideshow') {
+      if (!pl) return;
+      if (pl.running) { pl.pause(); c.classList.add('is-paused'); discState(false); }
+      else { c.classList.remove('is-paused'); pl.play(muted); discState(!!it.sound); }
+      return;
+    }
+    var v = $('video', c);
+    if (v) {
+      if (v.paused) { c.classList.remove('is-paused'); v.muted = muted; v.play().catch(function () {}); if (pl) pl.play(muted); discState(true); }
+      else { v.pause(); if (pl) pl.pause(); c.classList.add('is-paused'); discState(false); }
+    } else if (pl) {
+      if (pl.running) { pl.pause(); c.classList.add('is-paused'); discState(false); }
+      else { c.classList.remove('is-paused'); pl.play(muted); discState(true); }
+    }
   }
   function setMuted(m) {
     muted = m;
     $$('.mv-clip video', V).forEach(function (v) { v.muted = m; });
+    Object.keys(players).forEach(function (k) { players[k].setMuted(m); });
     $$('.mv-mute', V).forEach(function (b) {
       b.classList.toggle('is-on', !m);
       b.setAttribute('aria-label', m ? 'Turn sound on' : 'Turn sound off');
@@ -293,7 +367,6 @@
     });
     if (!m) { var c = $('.mv-clip[data-id="' + order[cur] + '"]', V), v = c && $('video', c); if (v && v.paused && !c.classList.contains('is-paused')) v.play().catch(function () {}); }
   }
-
   function bindProgress() {
     $$('.mv-clip', V).forEach(function (c) {
       var v = $('video', c), bar = $('.mv-pg i', c);
@@ -459,6 +532,7 @@
     if (!V || V.hidden) return;
     closeLayers(true);
     pauseAll();
+    Object.keys(players).forEach(function (k) { players[k].destroy(); delete players[k]; });
     clearTimeout(viewTimer);
     V.hidden = true;
     document.body.classList.remove('mv-open');
@@ -468,7 +542,7 @@
   window.addEventListener('popstate', function (e) {
     if (V && !V.hidden) {
       // Back was pressed: close without touching history again.
-      pushed = false; closeLayers(true); pauseAll(); V.hidden = true; document.body.classList.remove('mv-open');
+      pushed = false; closeLayers(true); pauseAll(); Object.keys(players).forEach(function (k) { players[k].destroy(); delete players[k]; }); V.hidden = true; document.body.classList.remove('mv-open');
     } else if (e.state && e.state.mv && byId[e.state.mv]) {
       openViewer(e.state.mv, null, true); // forward onto a moment we pushed earlier
     }

@@ -53,7 +53,7 @@ $actionLabels = [
     'user.role_change' => 'changed role for user', 'admin.role_assign' => 'assigned admin role to', 'contact.status_change' => 'updated contact message',
     'settings.update' => 'updated a setting',
     'review.delete' => 'removed a review on event',
-    'social.hide' => 'hid community content (id)', 'social.delete' => 'deleted community content (id)', 'social.restore' => 'restored community content (id)', 'social.dismiss' => 'closed reports on community content (id)',
+    'social.hide' => 'hid community content (id)', 'social.delete' => 'deleted community content (id)', 'social.restore' => 'restored community content (id)', 'social.dismiss' => 'closed reports on community content (id)', 'sound.add' => 'added a library sound (id)', 'sound.remove' => 'removed a sound (id)',
     'admin.2fa_enable' => 'turned on two-factor authentication', 'admin.2fa_disable' => 'turned off two-factor authentication', 'admin.2fa_regenerate_codes' => 'regenerated 2FA recovery codes for',
 ];
 
