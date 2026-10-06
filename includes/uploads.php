@@ -200,3 +200,65 @@ function delete_event_media_file(?string $publicPath): void
         unlink($fullPath);
     }
 }
+
+// =====================================================================
+// Community post photos — one image per post.
+// =====================================================================
+
+const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+
+/**
+ * Validates and stores a photo attached to an event community post. Same
+ * rules as the banner (real type sniffed from the bytes, random filename,
+ * fixed destination folder) but no GIFs: animated files are an easy way to
+ * slip heavy or unmoderatable content into a feed.
+ *
+ * @param array $file One entry from $_FILES
+ * @return array{0: bool, 1: ?string, 2: ?string} [success, publicPath, errorMessage]
+ */
+function handle_post_image_upload(array $file): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return [true, null, null];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return [false, null, "We couldn't upload that photo. Please try again."];
+    }
+    if ($file['size'] > POST_IMAGE_MAX_BYTES) {
+        return [false, null, 'That photo is too large. Please use one under 5MB.'];
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        return [false, null, "That upload couldn't be verified. Please try again."];
+    }
+    $info = @getimagesize($file['tmp_name']);
+    $extensionByType = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+    $extension = $info !== false ? ($extensionByType[$info[2]] ?? null) : null;
+    if ($extension === null) {
+        return [false, null, 'Please upload a JPG, PNG or WEBP photo.'];
+    }
+    if ($info[0] > 8000 || $info[1] > 8000) {
+        return [false, null, 'That photo is too large in pixels. Please use a smaller one.'];
+    }
+
+    $destDir = __DIR__ . '/../uploads/posts';
+    if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+        return [false, null, "We couldn't prepare storage for the photo. Please try again."];
+    }
+    $filename = bin2hex(random_bytes(16)) . '.' . $extension;
+    if (!move_uploaded_file($file['tmp_name'], $destDir . '/' . $filename)) {
+        return [false, null, "We couldn't save that photo. Please try again."];
+    }
+    return [true, '/uploads/posts/' . $filename, null];
+}
+
+/** Deletes a stored post photo — only ever inside the posts folder. */
+function delete_post_image(?string $publicPath): void
+{
+    if (!$publicPath) {
+        return;
+    }
+    $fullPath = __DIR__ . '/../uploads/posts/' . basename($publicPath);
+    if (is_file($fullPath)) {
+        unlink($fullPath);
+    }
+}

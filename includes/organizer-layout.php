@@ -48,6 +48,7 @@ function render_organizer_head(string $active, array $orgContext): void
         ['label' => 'Marketing', 'items' => [
             ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/org-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],
             ['key' => 'marketing', 'label' => 'Event Sharing', 'href' => '/org-marketing.php', 'icon' => 'ic-share', 'perm' => 'marketing.view'],
+            ['key' => 'social', 'label' => 'Event Social', 'href' => '/org-social.php', 'icon' => 'ic-heart', 'perm' => 'social.view'],
         ]],
         ['label' => 'Analytics', 'items' => [
             ['key' => 'analytics', 'label' => 'Analytics', 'href' => '/org-analytics.php', 'icon' => 'ic-briefcase', 'perm' => 'analytics.view'],

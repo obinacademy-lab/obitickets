@@ -95,9 +95,25 @@ function is_event_owner(?array $user, array $event): bool
     return $user !== null && (int) $user['id'] === (int) $event['organizer_id'];
 }
 
+/**
+ * The organizer, an admin, or an active team member whose role carries
+ * social.manage (Event Manager, Marketing Manager) for THIS event's organizer.
+ */
 function can_moderate_event(?array $user, array $event): bool
 {
-    return $user !== null && (is_event_owner($user, $event) || $user['role'] === 'ADMIN');
+    if ($user === null) {
+        return false;
+    }
+    if (is_event_owner($user, $event) || $user['role'] === 'ADMIN') {
+        return true;
+    }
+    static $contexts = [];
+    $uid = (int) $user['id'];
+    if (!array_key_exists($uid, $contexts)) {
+        $contexts[$uid] = resolve_organizer_context($user);
+    }
+    $ctx = $contexts[$uid];
+    return $ctx !== null && (int) $ctx['organizer_id'] === (int) $event['organizer_id'] && organizer_can($ctx, 'social.manage');
 }
 
 /** Posting needs a ticket (or being the organizer / an admin). */

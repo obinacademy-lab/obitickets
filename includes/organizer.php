@@ -18,10 +18,10 @@ const ORGANIZER_ROLES = [
 ];
 
 const ORGANIZER_PERMISSIONS = [
-    'EVENT_MANAGER' => ['dashboard.view', 'events.view', 'events.manage', 'tickets.view', 'tickets.manage', 'attendees.view', 'checkin.use', 'analytics.view'],
+    'EVENT_MANAGER' => ['dashboard.view', 'events.view', 'events.manage', 'tickets.view', 'tickets.manage', 'attendees.view', 'checkin.use', 'analytics.view', 'social.view', 'social.manage'],
     'FINANCE_MANAGER' => ['dashboard.view', 'sales.view', 'transactions.view', 'earnings.view', 'payouts.view', 'payouts.request', 'refunds.view', 'refunds.request'],
     'CHECKIN_STAFF' => ['dashboard.view', 'checkin.use'],
-    'MARKETING_MANAGER' => ['dashboard.view', 'promo.view', 'promo.manage', 'marketing.view', 'analytics.view'],
+    'MARKETING_MANAGER' => ['dashboard.view', 'promo.view', 'promo.manage', 'marketing.view', 'analytics.view', 'social.view', 'social.manage'],
 ];
 
 /**
