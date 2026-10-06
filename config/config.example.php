@@ -42,6 +42,14 @@ define('EMAIL_FROM', 'obitickets <info@obitickets.site>');
 define('IOTEC_MSG_CLIENT_ID', '');
 define('IOTEC_MSG_API_KEY', '');
 
+// --- Google sign-in ("Continue with Google") -------------------------------
+// console.cloud.google.com > APIs & Services > Credentials > OAuth client ID
+// (Web application). Authorized redirect URI must be exactly:
+//   <APP_URL>/auth/google-callback.php
+// Leave both blank to hide the button. Run migration/013_google_login.sql first.
+define('GOOGLE_CLIENT_ID', '');
+define('GOOGLE_CLIENT_SECRET', '');
+
 if (APP_ENV === 'development') {
     error_reporting(E_ALL);
     ini_set('display_errors', '1');

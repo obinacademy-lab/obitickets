@@ -21,6 +21,7 @@ require_once __DIR__ . '/geo.php';
 require_once __DIR__ . '/analytics.php';
 require_once __DIR__ . '/totp.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/google-auth.php';
 require_once __DIR__ . '/api.php';
 require_once __DIR__ . '/qr.php';
 require_once __DIR__ . '/email.php';

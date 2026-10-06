@@ -12,6 +12,10 @@ if (current_user()) {
 }
 
 $errors = [];
+if (!empty($_SESSION['google_error'])) {
+    $errors[] = $_SESSION['google_error'];
+}
+unset($_SESSION['google_error']);
 $name = $email = $phone = '';
 $role = 'ATTENDEE';
 
@@ -64,6 +68,8 @@ include __DIR__ . '/includes/header.php';
         <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
       <?php endforeach; ?>
 
+      <?php render_google_button('signup', $next, $role); ?>
+
       <form method="post" novalidate>
         <?= csrf_field() ?>
         <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
@@ -110,5 +116,18 @@ include __DIR__ . '/includes/header.php';
   </section>
 </div>
 
+<script>
+// Keep the Google button's role in step with the "I want to" choice.
+(function () {
+  var btn = document.getElementById('googleBtn'), sel = document.getElementById('role');
+  if (!btn || !sel) return;
+  function sync() {
+    var u = new URL(btn.getAttribute('href'), location.origin);
+    if (sel.value === 'ORGANIZER') u.searchParams.set('role', 'ORGANIZER'); else u.searchParams.delete('role');
+    btn.setAttribute('href', u.pathname + u.search);
+  }
+  sel.addEventListener('change', sync); sync();
+})();
+</script>
 <script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

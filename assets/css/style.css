@@ -1388,3 +1388,9 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .install-sheet-card img{border-radius:14px; display:block; margin:0 auto 14px;}
 .install-sheet-card h3{font-size:1.1rem; line-height:1.3;}
 .install-sheet-card p{margin:8px 0 20px; font-size:0.92rem; line-height:1.55; color:var(--muted);}
+
+/* ---------- "Continue with Google" button + divider on login/sign-up ---------- */
+.btn-google{display:flex; align-items:center; justify-content:center; gap:12px; width:100%; padding:14px 20px; margin-top:6px; border-radius:100px; background:#fff; border:1.5px solid var(--line-strong); color:var(--ink); font-weight:700; font-size:0.98rem; text-decoration:none; transition:background .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);}
+.btn-google:hover{background:#FAFAFB; border-color:var(--muted-2); box-shadow:0 8px 20px -14px rgba(20,10,35,0.35);}
+.auth-or{display:flex; align-items:center; gap:14px; margin:20px 0 6px; color:var(--muted-2); font-size:0.8rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;}
+.auth-or::before, .auth-or::after{content:''; flex:1; height:1px; background:var(--line);}

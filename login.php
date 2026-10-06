@@ -17,6 +17,16 @@ if (!is_string($next) || $next === '' || $next[0] !== '/' || str_starts_with($ne
 $errors = [];
 $email = '';
 
+// Messages left by /auth/google-callback.php (shown once).
+$googleNotice = $_SESSION['google_notice'] ?? null;
+if (!empty($_SESSION['google_error'])) {
+    $errors[] = $_SESSION['google_error'];
+}
+unset($_SESSION['google_notice'], $_SESSION['google_error']);
+if ($googleNotice && !empty($_SESSION['google_link_pending']['email'])) {
+    $email = $_SESSION['google_link_pending']['email']; // prefill: it's the account they must log in to
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
@@ -28,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         [$ok, $err, $needsTwoFactor] = attempt_login($email, $password);
         if ($ok) {
+            google_link_pending_account($email); // connects Google if they just came from "Continue with Google"
             header('Location: ' . ($needsTwoFactor ? '/verify-2fa.php?next=' . urlencode($next) : $next));
             exit;
         }
@@ -50,9 +61,14 @@ include __DIR__ . '/includes/header.php';
       <h1>Welcome back</h1>
       <p class="sub">Log in to manage your tickets or your events.</p>
 
+      <?php if ($googleNotice): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($googleNotice) ?></div>
+      <?php endif; ?>
       <?php foreach ($errors as $e): ?>
         <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
       <?php endforeach; ?>
+
+      <?php render_google_button('login', $next); ?>
 
       <form method="post" novalidate>
         <?= csrf_field() ?>
