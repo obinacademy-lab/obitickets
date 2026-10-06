@@ -394,6 +394,45 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       </div>
     </section>
 
+    <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
+    <section class="ev-section ev-hosting" aria-label="Organizer and attendance">
+      <h2 class="ev-h2">Hosted by</h2>
+      <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
+        <div class="ev-card ev-host-card">
+          <div class="ev-card-head">
+            <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
+            <div class="ev-card-title">
+              <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><span><?= htmlspecialchars($orgName) ?></span><?php endif; ?>
+              <?php if ($communityReady): ?><small><span class="orgFollowersMirror"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></small><?php endif; ?>
+            </div>
+            <?php if ($communityReady): ?>
+              <button type="button" class="ev-btn ev-btn-dark ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
+            <?php endif; ?>
+          </div>
+          <p class="ev-card-text"><?= htmlspecialchars($event['organizer_bio'] ?: 'Event organizer on obitickets.') ?></p>
+          <?php if ($organizerLinks): ?>
+            <div class="ev-card-sub">Follow them elsewhere</div>
+            <div class="ev-social">
+              <?php foreach ($organizerLinks as $link): ?>
+                <a href="<?= htmlspecialchars($link['url']) ?>" target="_blank" rel="noopener noreferrer nofollow" aria-label="<?= htmlspecialchars($link['label']) ?> (opens in a new tab)"><?= htmlspecialchars($link['short']) ?></a>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <?php if ($communityReady): ?>
+        <div class="ev-card ev-going-card">
+          <div class="ev-going-num"><?= number_format($social['going']) ?></div>
+          <div class="ev-card-title-lg"><?= $social['going'] === 1 ? 'person' : 'people' ?> <?= $eventHasEnded ? 'went' : ($social['going'] === 1 ? 'is going' : 'are going') ?></div>
+          <?php if ($currentUser && user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id'])): ?>
+            <div class="ev-going-you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> You have a ticket</div>
+          <?php endif; ?>
+          <p class="ev-card-text">Counted from paid tickets. We never show who is coming without their say-so.</p>
+        </div>
+        <?php endif; ?>
+      </div>
+    </section>
+
       <?php if ($eventMedia):
         // Photos first, then videos — the combined data-gallery-index order
         // the lightbox's Prev/Next walks through matches this same order,
@@ -594,38 +633,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     </aside>
     <?php endif; ?>
     </div>
-
-    <div class="ev-card">
-      <div class="ev-card-head">
-        <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
-        <div class="ev-card-title">
-          <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><span><?= htmlspecialchars($orgName) ?></span><?php endif; ?>
-          <?php if ($communityReady): ?><small><span class="orgFollowersMirror"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></small><?php endif; ?>
-        </div>
-        <?php if ($communityReady): ?>
-          <button type="button" class="ev-btn ev-btn-dark ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
-        <?php endif; ?>
-      </div>
-      <p class="ev-card-text"><?= htmlspecialchars($event['organizer_bio'] ?: 'Event organizer on obitickets.') ?></p>
-      <?php if ($organizerLinks): ?>
-        <div class="ev-card-sub">Follow them elsewhere</div>
-        <div class="ev-social">
-          <?php foreach ($organizerLinks as $link): ?>
-            <a href="<?= htmlspecialchars($link['url']) ?>" target="_blank" rel="noopener noreferrer nofollow" aria-label="<?= htmlspecialchars($link['label']) ?> (opens in a new tab)"><?= htmlspecialchars($link['short']) ?></a>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-    </div>
-
-    <?php if ($communityReady): ?>
-    <div class="ev-card">
-      <div class="ev-card-title-lg"><?= number_format($social['going']) ?> <?= $social['going'] === 1 ? 'person' : 'people' ?> <?= $eventHasEnded ? 'went' : ($social['going'] === 1 ? 'is going' : 'are going') ?></div>
-      <?php if ($currentUser && user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id'])): ?>
-        <div class="ev-going-you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> You have a ticket</div>
-      <?php endif; ?>
-      <p class="ev-card-text">Counted from paid tickets. We never show who is coming without their say-so.</p>
-    </div>
-    <?php endif; ?>
   </aside>
 </div>
 

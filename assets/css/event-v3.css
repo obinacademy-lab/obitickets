@@ -93,7 +93,7 @@ body.event-page{background:#F7F3F1;}
 /* ---------- layout ---------- */
 .ev-grid{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:44px; align-items:start; padding-top:34px; padding-bottom:90px;}
 .ev-main{min-width:0;}
-.ev-side{display:flex; flex-direction:column; gap:24px; min-width:0;}
+.ev-side{display:flex; flex-direction:column; gap:24px; min-width:0; align-self:stretch;}
 .ev-section{margin-bottom:56px; scroll-margin-top:calc(var(--ev-nav) + 64px);}
 .ev-h2{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:30px; line-height:1.15; margin:0 0 20px; color:var(--ink);}
 .ev-about .about-text{font-size:17px; max-width:64ch; color:#3F3639;}
@@ -491,7 +491,7 @@ body.ev-page{background:#F7F3F1;}
 
 /* ---------- scroll reveals (resting state is fully visible) ---------- */
 @supports (animation-timeline:view()){
-  body.ev-motion .ev-section:not(#community), body.ev-motion .ev-side > .ev-card{animation:evReveal linear both; animation-timeline:view(); animation-range:entry 0% entry 30%;}
+  body.ev-motion .ev-section:not(#community){animation:evReveal linear both; animation-timeline:view(); animation-range:entry 0% entry 30%;}
   @keyframes evReveal{from{opacity:0; transform:translateY(34px);}to{opacity:1; transform:none;}}
 }
 
@@ -543,6 +543,23 @@ body.ev-page{background:#F7F3F1;}
 
 @media (prefers-reduced-motion:reduce){
   .ev *, .ev *::before, .ev *::after{animation-duration:.001ms !important; animation-delay:0s !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
-  body.ev-motion .ev-section, body.ev-motion .ev-side > .ev-card{animation:none !important;}
+  body.ev-motion .ev-section{animation:none !important;}
   .ev-glow i{animation:none !important;}
+}
+
+/* ---------- hosted by + attendance (main column, below About) ---------- */
+.ev-hosting-grid{display:grid; grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); gap:20px; align-items:stretch;}
+.ev-hosting-grid.is-single{grid-template-columns:1fr;}
+.ev-hosting .ev-card{display:flex; flex-direction:column; margin:0; padding:24px;}
+.ev-hosting .ev-card-text{margin-top:16px; max-width:56ch;}
+.ev-hosting .ev-card-head{gap:14px;}
+.ev-host-card .ev-card-title a, .ev-host-card .ev-card-title span{font-size:17px;}
+.ev-going-card{justify-content:center; background:linear-gradient(160deg,#fff 40%,#FDEDED);}
+.ev-going-num{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:52px; line-height:1; font-variant-numeric:tabular-nums;}
+.ev-going-card .ev-card-title-lg{margin-top:6px; font-size:16px; color:var(--muted);}
+.ev-going-card .ev-going-you{align-self:flex-start;}
+@media (max-width:760px){
+  .ev-hosting-grid{grid-template-columns:1fr;}
+  .ev-hosting .ev-card{padding:20px;}
+  .ev-going-num{font-size:44px;}
 }
