@@ -76,9 +76,9 @@ body.event-page{background:#F7F3F1;}
 .ev-org-name a:hover{text-decoration:underline;}
 .ev-org-sub{font-size:13px; color:var(--muted-2);}
 .ev-actions{display:flex; gap:10px; margin-top:26px; align-items:center; flex-wrap:wrap;}
-.ev-pulse{display:flex; margin-top:30px;}
-.ev-pulse-item{flex:1; padding:0 18px; border-left:1px solid var(--line);}
-.ev-pulse-item:first-child{padding-left:0; border-left:0;}
+.ev-pulse{display:flex; margin-top:22px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px 0; box-shadow:0 14px 28px -24px rgba(27,20,23,0.35);}
+.ev-pulse-item{flex:1; padding:0 14px; text-align:center; border-left:1px solid var(--line);}
+.ev-pulse-item:first-child{border-left:0;}
 .ev-pulse-item b{display:block; font-family:'Fraunces',Georgia,serif; font-size:30px; font-weight:700; line-height:1;}
 .ev-pulse-item span{display:block; font-size:13px; color:var(--muted-2); margin-top:4px;}
 
@@ -317,12 +317,16 @@ body.event-page{background:#F7F3F1;}
 }
 @media (max-width:640px){
   .ev-wrap{padding:0 16px;}
-  .ev-actions .ev-btn-primary{flex:1 1 100%;}
-  .ev-actions .ev-btn-outline{flex:1;}
-  .ev-pulse{flex-wrap:wrap; row-gap:14px;}
-  .ev-pulse-item{flex:1 1 40%; padding:0 14px;}
-  .ev-pulse-item:nth-child(odd){padding-left:0; border-left:0;}
-  .ev-pulse-item b{font-size:26px;}
+  .ev-actions{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .ev-actions .ev-btn-primary{grid-column:1 / -1;}
+  .ev-actions .ev-event-react, .ev-actions .ev-icons{display:contents;}
+  .ev-actions .ev-grow, .ev-event-react #evEventReactSum{display:none;}
+  .ev-actions .ev-btn, .ev-actions .ev-icon-btn, .ev-actions .share-wrap{width:100%;}
+  .ev-actions .ev-btn{padding-left:12px; padding-right:12px; font-size:14px;}
+  .ev-pulse{padding:14px 0;}
+  .ev-pulse-item{flex:1 1 0; min-width:0; padding:0 4px;}
+  .ev-pulse-item b{font-size:24px;}
+  .ev-pulse-item span{font-size:12px;}
   .ev-tabs-row{gap:24px;}
   .ev-composer{padding:14px;}
   .ev-composer-top{gap:10px;}
@@ -392,12 +396,14 @@ body.ev-page{background:#F7F3F1;}
 }
 
 /* ---------- reactions on the event itself ---------- */
-.ev-event-react{display:flex; align-items:center; gap:14px; margin-top:18px; flex-wrap:wrap;}
+.ev-event-react{display:flex; align-items:center; gap:10px;}
+.ev-icons{display:flex; align-items:center; gap:10px;}
 .ev-event-react .ev-react-wrap{flex:none;}
 .ev-event-react .ev-react-btn.is-on{border-color:#DC2626; color:#991B1B; background:#FDEDED;}
 .ev-event-react .ev-picker{left:0; bottom:calc(100% + 8px);}
 .ev-event-react .ev-react-ico{font-size:16px;}
-.ev-event-react .ev-react-sum{font-size:14px; color:var(--muted);}
+.ev-event-react .ev-react-sum{display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:var(--muted); background:#fff; border:1px solid var(--line); border-radius:100px; padding:7px 14px; white-space:nowrap;}
+.ev-event-react .ev-react-sum[data-total="0"]{display:none;}
 .ev-event-react .ev-react-sum b{color:var(--ink);}
 
 /* ==========================================================================
@@ -529,10 +535,10 @@ body.ev-page{background:#F7F3F1;}
 .ev-stub .poster-foot .btn.ev-sweep::before{animation:evSweep 1.1s var(--ev-ease);}
 .ev-stub .qty .n.ev-bump{display:inline-block; animation:evRoll .35s var(--ev-ease);}
 
-/* ---------- phone ticket bar slides in once the hero buttons are out of view ---------- */
+/* ---------- phone ticket bar slides up shortly after load ---------- */
 @media (max-width:920px){
-  body.ev-motion .mobile-buy-bar{transition:transform .6s var(--ev-ease);}
-  body.ev-motion:not(.ev-bar-on):not(.ticket-sheet-open) .mobile-buy-bar{transform:translateY(120%);}
+  body.ev-motion .mobile-buy-bar{animation:evBarIn .7s var(--ev-ease) 1s both;}
+  @keyframes evBarIn{from{transform:translateY(120%);}to{transform:none;}}
 }
 
 @media (prefers-reduced-motion:reduce){

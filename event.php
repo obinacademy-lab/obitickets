@@ -268,9 +268,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       </div>
 
       <div class="ev-actions">
-        <?php if (!$eventHasEnded && $minPrice !== null): ?>
-          <a class="ev-btn ev-btn-primary" href="#buyPanel">Get tickets <span class="ev-btn-sub">from <?= htmlspecialchars(format_money($minPrice, $currency)) ?></span></a>
-        <?php elseif ($eventHasEnded): ?>
+        <?php if ($eventHasEnded): ?>
           <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
         <?php endif; ?>
         <?php if ($communityReady): ?>
@@ -279,6 +277,20 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
             <span class="ev-follow-label"><?= $followingEvent ? 'Following' : 'Follow event' ?></span>
           </button>
         <?php endif; ?>
+        <?php if ($communityReady && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+        <div class="ev-event-react">
+          <div class="ev-react-wrap">
+            <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
+              <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
+              <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
+            </button>
+            <?= community_reaction_picker_html() ?>
+          </div>
+          <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
+        </div>
+        <?php endif; ?>
+        <span class="ev-grow" aria-hidden="true"></span>
+        <div class="ev-icons">
         <button class="ev-icon-btn like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
           <svg width="18" height="18"><use href="#ic-heart"/></svg>
           <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
@@ -294,20 +306,8 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
             <button class="share-option" type="button" data-copy-link>Copy link</button>
           </div>
         </div>
-      </div>
-
-      <?php if ($communityReady && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
-      <div class="ev-event-react">
-        <div class="ev-react-wrap">
-          <button type="button" class="ev-btn ev-btn-outline ev-btn-sm ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
-            <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
-            <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
-          </button>
-          <?= community_reaction_picker_html() ?>
         </div>
-        <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
       </div>
-      <?php endif; ?>
 
       <?php if ($communityReady): ?>
       <div class="ev-pulse" aria-label="Event activity">

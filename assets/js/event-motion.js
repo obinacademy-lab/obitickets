@@ -273,17 +273,4 @@
     }
   }
 
-  /* ---------- hero button: one sweep after the intro ---------- */
-  var heroBuy = $('.ev-actions .ev-btn-primary');
-  if (heroBuy && !reduce) setTimeout(function () { heroBuy.classList.add('ev-sweep'); }, 1500);
-
-  /* ---------- phone: buy bar slides up once the hero buttons are out of view ---------- */
-  var actions = $('.ev-actions');
-  var bar = $('.mobile-buy-bar');
-  if (actions && bar && 'IntersectionObserver' in window) {
-    new IntersectionObserver(function (entries) {
-      var en = entries[entries.length - 1];
-      document.body.classList.toggle('ev-bar-on', !en.isIntersecting && en.boundingClientRect.bottom < 0);
-    }, { threshold: 0 }).observe(actions);
-  }
 })();
