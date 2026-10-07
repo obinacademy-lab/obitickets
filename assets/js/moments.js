@@ -125,7 +125,7 @@
         : it.type === 'video'
         ? '<video playsinline loop muted preload="none"' + (it.poster ? ' poster="' + it.poster + '"' : '') + ' style="object-position:' + it.focus + '% 50%"></video>'
         : '<img class="is-photo" alt="" draggable="false" style="object-position:' + it.focus + '% 50%">';
-      c.innerHTML = mediaHtml + '<div class="mv-sh"></div><div class="mv-pz"><i><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></i></div>' +
+      c.innerHTML = mediaHtml + '<div class="mv-clipshade"></div><div class="mv-pz"><i><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></i></div>' +
         '<div class="mv-top"><span class="t"></span><button type="button" class="mv-round mv-mute" aria-label="Turn sound on"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M23 9l-6 6M17 9l6 6"/></svg></button></div>' +
         '<div class="mv-cp"><div class="nm"><span class="who"></span><span class="chip">ORGANIZER</span></div><p></p><div class="mv-snd2" hidden><span aria-hidden="true">\u266B</span><div class="mq"><div class="mqin"></div></div></div><div class="vm"></div></div>' +
         (it.type === 'video' ? '<div class="mv-pg"><i></i></div>' : '');

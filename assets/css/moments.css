@@ -54,7 +54,7 @@ body.mv-open{overflow:hidden;}
 .mv-clip.is-fit img, .mv-clip.is-fit video{object-fit:contain;}
 .mv-clip img.is-photo{animation:mvKb 14s ease-in-out infinite alternate;}
 @keyframes mvKb{to{transform:scale(1.07);}}
-.mv-clip .mv-sh{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.5),transparent 22%,transparent 52%,rgba(0,0,0,.82)); pointer-events:none;}
+.mv-clip .mv-clipshade{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.5),transparent 22%,transparent 52%,rgba(0,0,0,.82)); pointer-events:none;}
 .mv-pz{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; transition:opacity .25s ease;}
 .mv-clip.is-paused .mv-pz{opacity:1;}
 .mv-pz i{width:80px; height:80px; border-radius:50%; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center;}
