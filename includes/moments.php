@@ -78,7 +78,22 @@ function moments_sales_ready(): bool
     return $ready;
 }
 
-function moment_select_sql(): string
+/** True once migration 020 (drafts) has been run. */
+function moments_draft_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            db()->query('SELECT is_draft FROM event_moments LIMIT 0');
+            $ready = true;
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+function moment_select_sql(bool $drafts = false): string
 {
     // Sound and slideshow columns exist after migration 018; before it they read as empty.
     $v2 = sounds_ready()
@@ -102,7 +117,7 @@ function moment_select_sql(): string
         JOIN event_posts p ON p.id = m.post_id
         JOIN users u ON u.id = p.author_id
         $join
-        WHERE p.status = 'PUBLISHED' AND m.media_path <> '' AND u.account_status = 'ACTIVE'";
+        WHERE p.status = 'PUBLISHED' AND m.media_path <> '' AND u.account_status = 'ACTIVE'" . (moments_draft_ready() ? ($drafts ? ' AND m.is_draft = 1' : ' AND m.is_draft = 0') : '');
 }
 
 /** Adds the 'slides' list (paths in order) to slideshow rows. */
@@ -478,6 +493,9 @@ function create_moment(array $event, array $user, array $file, ?array $poster, s
                 $slideStmt->execute([$postId, $i, $sp]);
             }
         }
+        if (!empty($opts['draft']) && moments_draft_ready()) {
+            $pdo->prepare('UPDATE event_moments SET is_draft = 1 WHERE post_id = ?')->execute([$postId]);
+        }
         if (moments_sales_ready()) {
             $promo = !empty($opts['promo']) ? 1 : 0;
             $buyBar = array_key_exists('buy_bar', $opts) ? (!empty($opts['buy_bar']) ? 1 : 0) : $promo; // promo videos get the bar unless switched off
@@ -493,10 +511,12 @@ function create_moment(array $event, array $user, array $file, ?array $poster, s
         throw $e;
     }
 
-    try {
-        notify_event_followers_of_moment($event, $caption);
-    } catch (Throwable $e) {
-        error_log('[moments] follower notification failed: ' . $e->getMessage());
+    if (empty($opts['draft'])) {
+        try {
+            notify_event_followers_of_moment($event, $caption);
+        } catch (Throwable $e) {
+            error_log('[moments] follower notification failed: ' . $e->getMessage());
+        }
     }
     return ['ok' => true, 'id' => $postId];
 }
@@ -820,8 +840,114 @@ function get_moment_results(int $eventId): array
                (SELECT COALESCE(SUM(oi.quantity), 0) FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.source_moment_id = p.id AND o.status = 'PAID') AS tickets,
                (SELECT COALESCE(SUM(o.subtotal_amount), 0) FROM orders o WHERE o.source_moment_id = p.id AND o.status = 'PAID') AS revenue
         FROM event_moments m JOIN event_posts p ON p.id = m.post_id
-        WHERE m.event_id = ? AND p.status = 'PUBLISHED' AND m.media_path <> ''
+        WHERE m.event_id = ? AND p.status = 'PUBLISHED' AND m.media_path <> ''" . (moments_draft_ready() ? ' AND m.is_draft = 0' : '') . "
         ORDER BY p.id DESC LIMIT 100");
     $stmt->execute([$eventId]);
     return $stmt->fetchAll();
+}
+
+// ---- drafts: uploaded in the background while the organizer writes the caption (migration 020) ----
+
+/** A draft the person started on this event, or null. Drafts are private to whoever uploaded them. */
+function get_moment_draft(int $postId, array $user): ?array
+{
+    if (!moments_draft_ready()) {
+        return null;
+    }
+    $stmt = db()->prepare(moment_select_sql(true) . ' AND p.id = :id AND p.author_id = :me');
+    $stmt->bindValue(':viewer', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->bindValue(':id', $postId, PDO::PARAM_INT);
+    $stmt->bindValue(':me', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    return $row ? moment_attach_slides([$row])[0] : null;
+}
+
+/** @return list<array<string,mixed>> the person's own unposted drafts for one event, newest first */
+function get_user_drafts(int $eventId, array $user): array
+{
+    if (!moments_draft_ready()) {
+        return [];
+    }
+    $stmt = db()->prepare(moment_select_sql(true) . ' AND m.event_id = :event AND p.author_id = :me ORDER BY p.id DESC LIMIT 20');
+    $stmt->bindValue(':viewer', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->bindValue(':event', $eventId, PDO::PARAM_INT);
+    $stmt->bindValue(':me', (int) $user['id'], PDO::PARAM_INT);
+    $stmt->execute();
+    return moment_attach_slides($stmt->fetchAll());
+}
+
+/** Removes a draft's files and rows for good (nothing was ever public). */
+function moment_drop_draft_rows(int $postId): void
+{
+    $row = db()->prepare('SELECT media_path, poster_path FROM event_moments WHERE post_id = ?');
+    $row->execute([$postId]);
+    $m = $row->fetch();
+    $paths = [];
+    if ($m) {
+        $paths = [$m['media_path'], $m['poster_path']];
+    }
+    if (sounds_ready()) {
+        $sl = db()->prepare('SELECT media_path FROM moment_slides WHERE post_id = ?');
+        $sl->execute([$postId]);
+        $paths = array_merge($paths, $sl->fetchAll(PDO::FETCH_COLUMN));
+    }
+    db()->prepare("DELETE FROM event_posts WHERE id = ? AND post_type = 'MOMENT'")->execute([$postId]); // cascades the moment, slides, reactions
+    foreach ($paths as $p) {
+        moment_delete_file($p);
+    }
+}
+
+/** @return array{ok:bool, error?:string} */
+function discard_moment_draft(array $user, int $postId): array
+{
+    if (!get_moment_draft($postId, $user)) {
+        return ['ok' => false, 'error' => 'Draft not found.'];
+    }
+    moment_drop_draft_rows($postId);
+    return ['ok' => true];
+}
+
+/** Drafts nobody finished within a day are cleared out (run whenever a new one is started). */
+function purge_stale_drafts(): int
+{
+    if (!moments_draft_ready()) {
+        return 0;
+    }
+    $ids = db()->query("SELECT m.post_id FROM event_moments m WHERE m.is_draft = 1 AND m.created_at < (NOW() - INTERVAL 1 DAY) LIMIT 50")->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($ids as $id) {
+        moment_drop_draft_rows((int) $id);
+    }
+    return count($ids);
+}
+
+/**
+ * Posts a draft: sets the caption and options, makes it visible, and tells followers (once per 3 hours).
+ * $opts as for update_moment (buy_bar, sound_id, sound_start, sound_mix, slide_beats, slide_fx), plus 'comments' (bool).
+ * @return array{ok:bool, error?:string}
+ */
+function finish_moment_draft(array $user, int $postId, string $caption, array $opts = []): array
+{
+    $draft = get_moment_draft($postId, $user);
+    if (!$draft) {
+        return ['ok' => false, 'error' => 'Draft not found.'];
+    }
+    $post = get_post($postId);
+    if (!$post || !can_moderate_event($user, get_event_for_post($post))) {
+        return ['ok' => false, 'error' => "You can't post to this event."];
+    }
+    $updated = update_moment($user, $postId, $caption, (int) $draft['focus_x'], $draft['fit_mode'], array_key_exists('comments', $opts) ? !empty($opts['comments']) : true, $opts);
+    if (!$updated['ok']) {
+        return $updated;
+    }
+    db()->prepare('UPDATE event_moments SET is_draft = 0 WHERE post_id = ?')->execute([$postId]);
+    $event = get_event_by_id((int) $draft['event_id']);
+    if ($event) {
+        try {
+            notify_event_followers_of_moment($event, community_clean_text($caption));
+        } catch (Throwable $e) {
+            error_log('[moments] follower notification failed: ' . $e->getMessage());
+        }
+    }
+    return ['ok' => true];
 }

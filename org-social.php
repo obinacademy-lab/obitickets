@@ -27,7 +27,7 @@ $error = null;
 $messages = [
     'posted' => 'Posted.', 'updated' => 'Saved.', 'hidden' => 'Hidden from the community. You can restore it below.',
     'restored' => 'Restored.', 'deleted' => 'Deleted.', 'dismissed' => 'Kept. The reports were closed.', 'links' => 'Social links saved.',
-    'moment' => 'Moment published. Your followers have been told.', 'moment_saved' => 'Moment updated.', 'moment_deleted' => 'Moment deleted.',
+    'moment' => 'Moment published. Your followers have been told.', 'draft' => 'Saved. Find it under Drafts below whenever you are ready.', 'draft_gone' => 'Draft discarded.', 'moment_saved' => 'Moment updated.', 'moment_deleted' => 'Moment deleted.',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -108,6 +108,9 @@ $momentsReady = false;
 $orgMoments = [];
 $soundsReady = false;
 $momentResults = [];
+$drafts = [];
+$draftsReady = false;
+$canBuy = false;
 $salesReady = false;
 $libSounds = [];
 $mySounds = [];
@@ -120,6 +123,10 @@ if ($event) {
                 $salesReady = true;
                 $momentResults = get_moment_results((int) $event['id']);
             }
+            $draftsReady = moments_draft_ready();
+            $drafts = $draftsReady ? get_user_drafts((int) $event['id'], $actor) : [];
+            $fullForBuy = get_event_by_id((int) $event['id']);
+            $canBuy = $salesReady && $fullForBuy && moment_buy_info($fullForBuy) !== null;
             if (sounds_ready()) {
                 $soundsReady = true;
                 $libSounds = array_map('sound_public', get_library_sounds());
@@ -206,12 +213,42 @@ render_organizer_head('social', $ctx);
       <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
       <h3 style="margin-bottom:4px">Moments <span class="muted" style="font-weight:600; font-size:0.85rem">9:16 photos and videos</span></h3>
       <p class="muted" style="font-size:0.86rem; margin:0 0 16px">Short vertical clips and photos from your event. Anyone can watch; people with an account can react, comment and share. Vertical video (1080 &times; 1920) looks best.</p>
-      <?php if ($momentsReady): ?>
-        <div style="margin:0 0 16px"><a class="btn btn-purple" href="/org-promo-video.php?event=<?= (int) $event['id'] ?>" style="width:auto; display:inline-flex">Make a promo video that sells tickets</a></div>
-      <?php endif; ?>
       <?php if (!$momentsReady): ?>
         <div class="muted" style="padding:14px 0">Moments are not switched on yet. Run <code>migration/017_moments.sql</code> to turn them on.</div>
       <?php else: ?>
+      <?php $euSounds = array_merge($libSounds, $mySounds); ?>
+      <div class="eu" id="eu" data-upload="/api/moment-upload.php" data-finish="/api/moment-finish.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
+           data-max-video="<?= moment_video_max_bytes() ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
+           data-draft-ready="<?= $draftsReady ? '1' : '0' ?>" data-can-buy="<?= $canBuy ? '1' : '0' ?>" data-when="<?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?>"
+           data-event-url="<?= htmlspecialchars(rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']), ENT_QUOTES) ?>"
+           data-sounds="<?= htmlspecialchars(json_encode($euSounds, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>"
+           data-drafts="<?= htmlspecialchars(json_encode(array_map(static function ($d) { $p = moment_public($d); return ['id' => $p['id'], 'type' => $p['type'], 'src' => $p['src'], 'poster' => $p['poster'], 'slides' => $p['slides'], 'caption' => $p['caption']]; }, $drafts), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>">
+        <div class="eu-drop">
+          <div class="eu-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg></div>
+          <h3>Upload a video or photos</h3>
+          <p>Drag them onto this page, or choose from your phone or computer.</p>
+          <label class="eu-btn red big" for="euFile" style="cursor:pointer">Upload</label>
+          <input type="file" id="euFile" accept="video/*,image/jpeg,image/png,image/webp" multiple hidden>
+          <div class="eu-assure"><span>Phone videos are fine, we shrink them</span><span>Several photos become a slideshow</span><span>Add music in one tap</span></div>
+          <div class="eu-second"><a class="eu-btn" href="/org-promo-video.php?event=<?= (int) $event['id'] ?>">Make a promo video that sells tickets</a></div>
+        </div>
+      </div>
+      <button type="button" class="eu-fab" id="euFab" aria-label="Upload a video or photos">+</button>
+
+      <?php if ($drafts): ?>
+      <div class="eu-drafts"><h4>Drafts</h4>
+        <?php foreach ($drafts as $d): $dp = moment_public($d); $dthumb = $dp['type'] === 'video' ? $dp['poster'] : ($dp['slides'][0] ?? $dp['src']); ?>
+          <div class="eu-draft">
+            <div class="eu-dthumb"><?php if ($dthumb): ?><img src="<?= htmlspecialchars($dthumb) ?>" alt=""><?php endif; ?></div>
+            <div class="eu-dtx"><b><?= $dp['type'] === 'video' ? 'Video' : ($dp['type'] === 'slideshow' ? count($dp['slides']) . ' photos' : 'Photo') ?></b><span><?= htmlspecialchars($dp['caption'] !== '' ? mb_substr($dp['caption'], 0, 60) : 'Not posted yet') ?></span></div>
+            <button type="button" class="eu-btn sm red" data-eu-draft="<?= (int) $dp['id'] ?>">Finish and post</button>
+            <button type="button" class="eu-btn sm" data-eu-discard="<?= (int) $dp['id'] ?>">Discard</button>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+
+      <details class="eu-adv" id="euAdvanced"><summary>Advanced upload <span>cropping, your own sounds, a cover frame</span></summary>
       <div class="mu" id="mu" data-endpoint="/api/moment-upload.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
            data-max-video="<?= moment_video_max_bytes() ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
            data-max-sound="<?= SOUND_MAX_BYTES ?>" data-sounds-on="<?= $soundsReady ? '1' : '0' ?>"
@@ -298,6 +335,7 @@ render_organizer_head('social', $ctx);
         </div>
       </div>
 
+      </details>
       <?php if ($orgMoments): ?>
       <div class="mu-list">
         <?php foreach ($orgMoments as $m): $isVideo = $m['media_type'] === 'VIDEO'; $thumb = $isVideo ? $m['poster_path'] : $m['media_path']; ?>
@@ -358,6 +396,7 @@ render_organizer_head('social', $ctx);
       <?php endif; ?>
       <script src="/assets/js/beat.js?v=<?= @filemtime(__DIR__ . '/assets/js/beat.js') ?: time() ?>"></script>
       <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
+      <script src="/assets/js/easy-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/easy-upload.js') ?: time() ?>"></script>
       <script src="/assets/js/org-moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-moments.js') ?: time() ?>"></script>
       <?php endif; ?>
     </div>

@@ -44,7 +44,11 @@ try {
         'slide_beats' => (int) ($_POST['slide_beats'] ?? 2),
         'slide_fx' => (string) ($_POST['slide_fx'] ?? 'ZOOM'),
         'promo' => !empty($_POST['promo']),
+        'draft' => !empty($_POST['draft']) && moments_draft_ready(), // uploaded in the background, posted later
     ];
+    if (!empty($opts['draft'])) {
+        purge_stale_drafts();
+    }
     if (isset($_POST['buy_bar'])) {
         $opts['buy_bar'] = !empty($_POST['buy_bar']);
     }
@@ -63,7 +67,7 @@ try {
     if (!$result['ok']) {
         json_response(['error' => $result['error']], 400);
     }
-    $row = get_moment($result['id'], (int) $user['id']);
+    $row = !empty($opts['draft']) ? get_moment_draft($result['id'], $user) : get_moment($result['id'], (int) $user['id']);
     json_response(['ok' => true, 'id' => $result['id'], 'moment' => $row ? moment_public($row) : null]);
 } catch (Throwable $e) {
     error_log('[moments] upload: ' . $e->getMessage());
