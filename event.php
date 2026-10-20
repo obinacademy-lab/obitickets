@@ -5,6 +5,7 @@ $slug = $_GET['slug'] ?? '';
 $event = is_string($slug) && $slug !== '' ? get_event_by_slug($slug) : null;
 
 if (!$event) {
+    http_response_code(404);
     $pageTitle = 'Event not found — obitickets';
     include __DIR__ . '/includes/header.php';
     ?>

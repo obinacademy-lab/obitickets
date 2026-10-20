@@ -5,6 +5,7 @@ $slug = $_GET['slug'] ?? '';
 $organizer = is_string($slug) && $slug !== '' ? get_organizer_profile_by_slug($slug) : null;
 
 if (!$organizer) {
+    http_response_code(404);
     $pageTitle = 'Organizer not found — obitickets';
     $bodyClass = 'classic-page';
     include __DIR__ . '/includes/header.php';

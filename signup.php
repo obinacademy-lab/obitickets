@@ -37,6 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Your password must be at least 8 characters.';
     } elseif ($password !== $confirm) {
         $errors[] = 'Passwords do not match.';
+    } elseif (mb_strlen($name) > 100) {
+        $errors[] = 'Please use a shorter name (100 characters or fewer).';
+    } elseif ($phone !== '' && !preg_match('/^\+?[0-9][0-9 ()\-]{7,19}$/', $phone)) {
+        $errors[] = 'Please enter a valid phone number, for example +256 7xx xxx xxx, or leave it blank.';
     }
 
     if (!$errors) {

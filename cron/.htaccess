@@ -1,0 +1,3 @@
+# Not part of the website: nothing here should ever be fetched by URL.
+# (The deployed web root is the repo root, so these folders are reachable unless blocked.)
+Require all denied

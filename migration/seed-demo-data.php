@@ -13,8 +13,21 @@
 
 declare(strict_types=1);
 
+// The deployed web root is the repo root, so this file is reachable by URL and it WIPES and re-creates
+// demo accounts. Refuse web requests before loading anything (REQUEST_METHOD is set only by a web server).
+if (PHP_SAPI !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
+    http_response_code(403);
+    exit('Forbidden');
+}
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/db.php';
+
+// Never seed fake events into the live site, even from the command line.
+if (defined('APP_ENV') && APP_ENV === 'production') {
+    fwrite(STDERR, "Refusing to seed demo data: APP_ENV is production.\n");
+    exit(1);
+}
 
 $pdo = db();
 
