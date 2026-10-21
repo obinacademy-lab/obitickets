@@ -220,6 +220,7 @@ if ($openMoment && $momentsReady) {
     }
 }
 $bodyClass = 'event-page';
+$hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
 

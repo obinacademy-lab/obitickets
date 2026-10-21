@@ -34,6 +34,7 @@
         <h4>Support</h4>
         <a href="/help.php">Help centre</a>
         <a href="/refunds.php">Refunds</a>
+        <a class="foot-wa" href="<?= htmlspecialchars(support_whatsapp_url()) ?>" target="_blank" rel="noopener"><svg width="15" height="15" aria-hidden="true"><use href="#ic-whatsapp"/></svg> WhatsApp us</a>
       </div>
       <div class="foot-col">
         <h4>Legal</h4>
@@ -55,6 +56,11 @@
     </div>
   </div>
 </footer>
+<?php if (empty($hideWhatsApp)): ?>
+<a class="wa-float" href="<?= htmlspecialchars(support_whatsapp_url()) ?>" target="_blank" rel="noopener" aria-label="Chat with obitickets on WhatsApp" title="Questions? Chat with us on WhatsApp">
+  <svg width="28" height="28" aria-hidden="true"><use href="#ic-whatsapp"/></svg>
+</a>
+<?php endif; ?>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 </body>
 </html>

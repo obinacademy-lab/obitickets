@@ -50,6 +50,7 @@ try {
 }
 
 $pageTitle = 'Checkout — obitickets';
+$hideWhatsApp = true; // keep the pay button and totals uncluttered
 include __DIR__ . '/includes/header.php';
 ?>
 

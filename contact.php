@@ -92,6 +92,11 @@ include __DIR__ . '/includes/header.php';
 
       <div class="contact-card">
         <h3>Other ways to reach us</h3>
+        <a class="wa-card" href="<?= htmlspecialchars(support_whatsapp_url()) ?>" target="_blank" rel="noopener" data-wa-chat>
+          <span class="wa-card-ic"><svg width="26" height="26" aria-hidden="true"><use href="#ic-whatsapp"/></svg></span>
+          <span class="wa-card-tx"><b>Chat on WhatsApp</b><span><?= htmlspecialchars(support_whatsapp_display()) ?></span></span>
+          <svg class="wa-card-go" width="18" height="18" aria-hidden="true"><use href="#ic-chev"/></svg>
+        </a>
         <div class="contact-info-list">
           <div class="contact-info-item">
             <div class="ic"><svg width="18" height="18"><use href="#ic-share"/></svg></div>

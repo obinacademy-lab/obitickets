@@ -1437,3 +1437,19 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .social-preview-label{font-size:0.74rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.64);}
 .social-chip{width:40px; height:40px; border-radius:50%; border:1px solid rgba(255,255,255,0.28); display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:0.74rem;}
 .social-link-row input[type=text]:placeholder-shown + .social-switch{opacity:0.35;}
+
+/* ---------- WhatsApp: floating chat button, contact-page card, footer link ---------- */
+.wa-float{position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); z-index:40; width:56px; height:56px; border-radius:50%; background:#25D366; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 26px -8px rgba(18,140,70,0.65), 0 2px 6px rgba(0,0,0,0.18); transition:transform .2s var(--ease), box-shadow .2s var(--ease), background .2s var(--ease);}
+.wa-float:hover{transform:translateY(-2px) scale(1.04); background:#1fbd5a; box-shadow:0 14px 30px -8px rgba(18,140,70,0.7), 0 2px 6px rgba(0,0,0,0.2);}
+.wa-float:focus-visible, .wa-card:focus-visible, .foot-wa:focus-visible{outline:3px solid #fff; outline-offset:2px; box-shadow:0 0 0 6px #128C46;}
+.wa-card{display:flex; align-items:center; gap:14px; margin-top:20px; padding:14px 16px; border-radius:16px; background:#128C46; color:#fff; text-decoration:none; box-shadow:0 12px 26px -14px rgba(18,140,70,0.8); transition:transform .2s var(--ease), background .2s var(--ease);}
+.wa-card:hover{background:#0f7a3c; transform:translateY(-1px);}
+.wa-card-ic{width:46px; height:46px; border-radius:13px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; flex:none;}
+.wa-card-tx{display:flex; flex-direction:column; gap:2px; min-width:0;}
+.wa-card-tx b{font-size:1rem; font-weight:800; color:#fff;}
+.wa-card-tx span{font-size:0.84rem; color:rgba(255,255,255,0.92);}
+.wa-card-go{margin-left:auto; flex:none; color:#fff;}
+.foot-col a.foot-wa{display:flex; align-items:center; gap:8px; color:#6BE59A;}
+.foot-col a.foot-wa:hover{color:#9CF0BC;}
+@media (max-width:640px){ .wa-float{right:14px; width:52px; height:52px;} }
+@media print{ .wa-float{display:none;} }
