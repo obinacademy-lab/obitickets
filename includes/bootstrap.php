@@ -33,6 +33,11 @@ foreach ($_POST as $postKey => $postValue) {
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+// The live site is HTTPS-only, so tell browsers to never try plain http for it again (one year; not
+// applied to subdomains or the preload list, so nothing else on the domain is affected).
+if (APP_ENV === 'production' && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')) {
+    header('Strict-Transport-Security: max-age=31536000');
+}
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/geo.php';
