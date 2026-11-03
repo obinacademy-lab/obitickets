@@ -232,7 +232,7 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-night ev-momo'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
+$bodyClass = 'event-page ev-wallet'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
 include __DIR__ . '/includes/header.php';
 ?>
 
@@ -271,20 +271,32 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 
+<?php
+$wlStart = strtotime((string) $event['starts_at']);
+$wlEnd = strtotime((string) $event['ends_at']);
+$wlDate = date('D j M Y', $wlStart);
+$wlTime = date('g:i A', $wlStart) . ' – ' . (date('Y-m-d', $wlStart) === date('Y-m-d', $wlEnd) ? date('g:i A', $wlEnd) : date('D j M, g:i A', $wlEnd)) . ' EAT';
+$wlPlace = $isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name'] . ($isOnline ? ' + online' : '');
+$wlLeft = 0;
+foreach ($tiers as $wlT) { $wlLeft += max(0, (int) $wlT['quantity_total'] - (int) $wlT['quantity_sold']); }
+$wlPrice = $minPrice === null ? '' : ($eventIsFree ? 'Free entry' : 'From ' . format_money((string) $minPrice, $currency));
+$wlRib = array_values(array_filter([$wlPlace, $wlDate, date('g:i A', $wlStart) . ' EAT', (!$eventHasEnded && $wlLeft > 0) ? number_format($wlLeft) . ' tickets left' : '', $wlPrice]));
+$wlIc = static function (string $n): string {
+    $p = [
+        'cal' => '<rect x="4" y="5.5" width="16" height="14.5" rx="2.4"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5"/>',
+        'clk' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+        'pin' => '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+        'scr' => '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+        'tk'  => '<path d="M4 8a2 2 0 0 0 0 4v0a2 2 0 0 0 0 4v1.5h16V16a2 2 0 0 0 0-4v0a2 2 0 0 0 0-4V6.5H4z"/>',
+    ][$n];
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
+};
+?>
+<div class="wl-rib" aria-hidden="true"><div><?php for ($wlR = 0; $wlR < 4; $wlR++) { foreach ($wlRib as $wlItem) { echo '<span>' . htmlspecialchars($wlItem) . '</span>'; } } ?></div></div>
+
 <!-- ===== hero ===== -->
-<section class="ev-hero"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
+<section class="ev-hero<?= $eventHasEnded ? ' wl-ended' : '' ?>"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
   <div class="ev-wrap ev-hero-grid">
-
-    <div class="ev-eyebrow">
-      <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
-      <span class="ev-dot" aria-hidden="true"></span>
-      <?php if ($eventHasEnded): ?>
-        <span class="ev-eyebrow-state">Event ended</span>
-      <?php else: ?>
-        <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
-      <?php endif; ?>
-    </div>
-
 
     <?php if (!empty($event['banner_image'])): ?>
       <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
@@ -295,6 +307,15 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php endif; ?>
 
     <div class="ev-hero-text">
+    <div class="ev-eyebrow">
+      <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
+      <span class="ev-dot" aria-hidden="true"></span>
+      <?php if ($eventHasEnded): ?>
+        <span class="ev-eyebrow-state">Event ended</span>
+      <?php else: ?>
+        <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
+      <?php endif; ?>
+    </div>
       <?php if ($isOnline || $hasFreeTier): ?>
         <div class="ev-badges">
           <?php if ($isOnline): ?><span class="ev-badge ev-badge-online"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
@@ -302,15 +323,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         </div>
       <?php endif; ?>
       <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
-
-      <ul class="ev-meta">
-        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.4"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5"/></svg><?= htmlspecialchars($evWhen) ?></li>
-        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><?= htmlspecialchars($evWhere) ?></li>
-      </ul>
-
-      <?php if (!$eventHasEnded): $mqDays = (int) ceil((strtotime((string) $event['starts_at']) - time()) / 86400); ?>
-      <span class="ev-days"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.4"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5"/></svg><?= $mqDays <= 0 ? 'Today' : ($mqDays === 1 ? 'Tomorrow' : 'In ' . $mqDays . ' days') ?></span>
-      <?php endif; ?>
 
       <div class="ev-org-row">
         <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
@@ -368,227 +380,9 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 </section>
 
 
-<div class="ev-wrap ev-grid">
+<div class="ev-wrap wl-bento">
 
-  <main class="ev-main">
-
-    <!-- ===== about ===== -->
-    <section id="about" class="ev-section">
-      <h2 class="ev-h2">About this event</h2>
-      <div class="ev-about">
-        <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
-          <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
-        <?php endforeach; ?>
-      </div>
-    </section>
-
-    <?php if ($showCommunityUi): ?>
-      <?php if ($momentsReady && $moments): ?>
-    <section id="moments" class="ev-section ev-moments">
-      <?= moments_shelf_html($moments, $orgName, $evOrgInitials) ?>
-      <script type="application/json" id="momentsData"><?= json_encode([
-          'eventUrl' => $eventUrl,
-          'open' => $openMoment,
-          'org' => ['id' => (int) $event['organizer_id'], 'name' => $orgName, 'initials' => $evOrgInitials, 'following' => !empty($followingOrganizer)],
-          'buy' => moment_buy_info($event),
-          'items' => array_map('moment_public', $moments),
-      ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
-    </section>
-      <?php elseif (!$momentsReady && $eventMedia):
-        // Photos first, then videos — the combined data-gallery-index order
-        // the lightbox's Prev/Next walks through matches this same order,
-        // so browsing the lightbox mirrors browsing the page top-to-bottom.
-        $eventPhotos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] !== 'VIDEO'));
-        $eventVideos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] === 'VIDEO'));
-      ?>
-    <section id="moments" class="ev-section ev-gallery">
-      <h2 class="ev-h2">Moments</h2>
-
-      <?php if ($eventPhotos): ?>
-      <div class="gallery-section reveal">
-        <div class="gallery-section-head">
-          <h3>Photos</h3>
-          <span class="count"><?= str_pad((string) count($eventPhotos), 2, '0', STR_PAD_LEFT) ?></span>
-        </div>
-        <div class="photo-grid">
-          <?php foreach ($eventPhotos as $idx => $media): ?>
-            <button type="button" class="photo-item<?= $idx === 0 ? ' featured' : '' ?>" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="photo">
-              <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
-              <span class="expand-ic"><svg width="12" height="12"><use href="#ic-expand"/></svg></span>
-            </button>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <?php if ($eventVideos): ?>
-      <div class="gallery-section reveal" style="margin-top:28px">
-        <div class="gallery-section-head">
-          <h3>Videos</h3>
-          <span class="count"><?= str_pad((string) count($eventVideos), 2, '0', STR_PAD_LEFT) ?></span>
-        </div>
-        <div class="video-grid">
-          <?php foreach ($eventVideos as $vIdx => $media):
-              $idx = count($eventPhotos) + $vIdx;
-          ?>
-            <button type="button" class="video-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="video">
-              <video src="<?= htmlspecialchars($media['file_path']) ?>" preload="metadata" muted playsinline></video>
-              <span class="video-play"><svg width="16" height="16"><use href="#ic-play"/></svg></span>
-              <span class="video-duration" data-video-duration-src="<?= htmlspecialchars($media['file_path']) ?>" hidden></span>
-            </button>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <?php endif; ?>
-      </section>
-      <?php endif; ?>
-
-
-    <?php endif; /* showCommunityUi: moments + gallery */ ?>
-
-    <!-- ===== tickets (read only; buying happens in the ticket panel) ===== -->
-    <?php if (!$eventHasEnded && $tiers): ?>
-    <section id="tickets" class="ev-section mq-sec">
-      <h2 class="ev-h2">Tickets</h2>
-      <ul class="mq-rows">
-        <?php foreach ($tiers as $tier): $mqAvail = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']); ?>
-          <li><span class="mq-tn"><?= htmlspecialchars($tier['name']) ?><?php if ($mqAvail === 0): ?> <em>Sold out</em><?php endif; ?></span><span class="mq-tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?></span></li>
-        <?php endforeach; ?>
-      </ul>
-      <p class="mq-note"><?= $eventIsFree ? 'Free entry. Your ticket is confirmed straight away.' : 'Pay with MTN MoMo or Airtel Money.' ?></p>
-    </section>
-    <?php endif; ?>
-
-    <!-- ===== venue ===== -->
-    <section id="venue" class="ev-section mq-sec">
-      <h2 class="ev-h2">Venue</h2>
-      <div class="mq-card mq-venue">
-        <div>
-          <b><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name']) ?></b>
-          <?php if ($isOnlineOnly): ?><span>The link arrives with your ticket.</span>
-          <?php elseif ($event['venue_address']): ?><span><?= htmlspecialchars($event['venue_address']) ?></span><?php endif; ?>
-        </div>
-        <?php if (!$isOnlineOnly): ?>
-          <a href="https://www.google.com/maps/search/?api=1&amp;query=<?= urlencode($event['venue_name'] . ' ' . (string) $event['venue_address']) ?>" target="_blank" rel="noopener">DIRECTIONS</a>
-        <?php endif; ?>
-      </div>
-    </section>
-
-    <!-- ===== your ticket ===== -->
-    <section id="your-ticket" class="ev-section mq-sec">
-      <h2 class="ev-h2">Your ticket</h2>
-      <div class="mq-card mq-how">
-        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span><p><b>Sent instantly</b>By email, and in your account.</p></div>
-        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2M14 20v-2"/></svg></span><p><b>QR code grants entry</b>Show it on your phone at the gate.</p></div>
-        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/><path d="M6 6l3.8 3.8M18 6l-3.8 3.8M6 18l3.8-3.8M18 18l-3.8-3.8"/></svg></span><p><b>Lost it?</b>Sign in to get it again. <a href="/my-tickets.php">Find my tickets</a></p></div>
-      </div>
-    </section>
-
-    <?php if ($communityReady && $showCommunityUi): ?>
-    <!-- ===== community ===== -->
-    <section id="community" class="ev-section">
-      <h2 class="ev-h2"><?= $eventHasEnded ? 'Relive the experience' : 'Community' ?></h2>
-
-      <?php if ($postError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($postError) ?></div><?php endif; ?>
-      <?php if (isset($_GET['posted'])): ?><div class="alert alert-success" style="margin-bottom:16px">Posted.</div><?php endif; ?>
-
-      <?php if ($ctx['can_post']): $composerHasTicket = user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id']); ?>
-        <form method="post" enctype="multipart/form-data" class="ev-composer" id="evComposer">
-          <?= csrf_field() ?><input type="hidden" name="action" value="create_post">
-          <div class="ev-composer-top">
-            <?= community_avatar_html($ctx['is_mod'] ? $orgName : $currentUser['name'], (int) $currentUser['id'], $ctx['is_mod']) ?>
-            <label class="sr-only" for="evPostBody">Share with the community</label>
-            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? (($composerHasTicket || $ctx['is_mod']) ? 'You were there. Tell everyone how it was.' : 'Share your thoughts about this event.') : ($composerHasTicket || $ctx['is_mod'] ? 'Going to this event? Share your excitement.' : 'Share what you think about this event.') ?>"><?= htmlspecialchars($postDraft) ?></textarea>
-          </div>
-          <div class="ev-composer-bar">
-            <label class="ev-file"><input type="file" name="image" accept="image/jpeg,image/png,image/webp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span id="evFileName">Photo</span></label>
-            <?php if ($ctx['is_mod']): ?>
-              <label class="ev-check"><input type="checkbox" name="post_type" value="ORGANIZER_UPDATE" checked> Official update</label>
-              <label class="ev-check"><input type="checkbox" name="pin" value="1"> Pin</label>
-            <?php else: ?>
-              <span class="ev-composer-note"><?= $composerHasTicket ? 'Posting as a verified attendee' : 'Posting as ' . htmlspecialchars(community_display_name((string) $currentUser['name'])) . ' &middot; links are for ticket holders' ?></span>
-            <?php endif; ?>
-            <span class="ev-grow"></span>
-            <button type="submit" class="ev-btn ev-btn-dark ev-btn-sm" id="evPostBtn">Post</button>
-          </div>
-        </form>
-      <?php else: ?>
-        <div class="ev-note-card">
-          <b>Join the conversation</b>
-          <span>Log in to post, react, comment and follow this event. No ticket needed.</span>
-          <a class="ev-btn ev-btn-dark ev-btn-sm" href="<?= htmlspecialchars($ctx['login_url']) ?>">Log in</a>
-        </div>
-      <?php endif; ?>
-
-      <div class="ev-feed" id="evFeed" data-has-more="<?= count($feed) === FEED_PAGE_SIZE ? '1' : '0' ?>" data-last-id="<?= $feed ? (int) (end($feed)['id']) : 0 ?>">
-        <?php foreach ($feed as $post) { echo community_post_html($post, $ctx); } ?>
-        <?php if (!$feed): ?>
-          <div class="ev-empty" id="evEmpty"><b>No posts yet</b><span>Be the first to share something about this event.</span></div>
-        <?php endif; ?>
-      </div>
-      <?php if (count($feed) === FEED_PAGE_SIZE): ?>
-        <div class="ev-more"><button type="button" class="ev-btn ev-btn-outline" id="evMore">Show more posts</button></div>
-      <?php endif; ?>
-    </section>
-    <?php endif; ?>
-
-      <?php if ($eventHasEnded || $reviews): ?>
-    <section id="reviews" class="ev-section ev-reviews">
-      <h2 class="ev-h2">Reviews</h2>
-
-      <div class="review-summary reveal">
-        <?php if ($reviewSummary['count'] > 0): ?>
-          <span class="avg"><?= number_format($reviewSummary['average'], 1) ?></span>
-          <?= render_star_rating($reviewSummary['average']) ?>
-          <span style="color:var(--muted-2); font-size:0.86rem;"><?= $reviewSummary['count'] ?> review<?= $reviewSummary['count'] === 1 ? '' : 's' ?></span>
-        <?php else: ?>
-          <span style="color:var(--muted-2);">No reviews yet.</span>
-        <?php endif; ?>
-      </div>
-
-      <?php if ($reviewError): ?>
-        <div class="alert alert-error" style="max-width:460px; margin-bottom:16px"><?= htmlspecialchars($reviewError) ?></div>
-      <?php endif; ?>
-
-      <?php if ($canReview): ?>
-        <form method="post" class="review-form reveal">
-          <?= csrf_field() ?>
-          <input type="hidden" name="action" value="submit_review">
-          <div style="font-weight:700; margin-bottom:10px"><?= $myReview ? 'Update your review' : 'How was it?' ?></div>
-          <div class="star-picker" role="radiogroup" aria-label="Rating">
-            <?php for ($s = 5; $s >= 1; $s--): ?>
-              <input type="radio" id="rate<?= $s ?>" name="rating" value="<?= $s ?>" required<?= $myReview && (int) $myReview['rating'] === $s ? ' checked' : '' ?>>
-              <label for="rate<?= $s ?>" title="<?= $s ?> star<?= $s === 1 ? '' : 's' ?>">&#9733;</label>
-            <?php endfor; ?>
-          </div>
-          <div class="field" style="margin-top:14px">
-            <textarea name="comment" rows="3" maxlength="1000" placeholder="Tell others what you thought (optional)" style="width:100%"><?= htmlspecialchars($myReview['comment'] ?? '') ?></textarea>
-          </div>
-          <button class="btn btn-purple" type="submit" style="margin-top:12px"><?= $myReview ? 'Update review' : 'Post review' ?></button>
-        </form>
-      <?php elseif ($eventHasEnded && !$currentUser): ?>
-        <p class="reveal" style="color:var(--muted-2); font-size:0.9rem; margin-bottom:20px"><a href="/login.php?next=<?= urlencode('/event.php?slug=' . $event['slug'] . '#reviews') ?>" style="color:var(--purple-light); font-weight:700">Log in</a> if you attended to leave a review.</p>
-      <?php endif; ?>
-
-      <?php foreach ($reviews as $r): ?>
-        <div class="review-row reveal">
-          <div class="review-row-head">
-            <span class="organizer-avatar" style="width:36px; height:36px; font-size:0.78rem"><?= htmlspecialchars(initials_from_name($r['reviewer_name'])) ?></span>
-            <div>
-              <div class="who"><?= htmlspecialchars($r['reviewer_name']) ?></div>
-              <?= render_star_rating((float) $r['rating']) ?>
-            </div>
-            <span class="when"><?= htmlspecialchars(date('j M Y', strtotime($r['created_at']))) ?></span>
-          </div>
-          <?php if ($r['comment']): ?><p class="review-comment"><?= nl2br(htmlspecialchars($r['comment'])) ?></p><?php endif; ?>
-        </div>
-      <?php endforeach; ?>
-      </section>
-      <?php endif; ?>
-
-  </main>
-
-  <aside class="ev-side">
+  <aside class="ev-side wl-s4" style="--d:0">
     <?php if (!$eventHasEnded && $minPrice !== null): ?>
     <div class="mq-from">
       <span class="mq-from-l"><?= $eventIsFree ? 'ENTRY' : 'FROM' ?></span>
@@ -701,6 +495,235 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php endif; ?>
     </div>
   </aside>
+
+  <div class="wl-card wl-s8 wl-facts" style="--d:1">
+    <div class="wl-fk">
+      <div><span class="wl-bx"><?= $wlIc('cal') ?></span><span><small>Date</small><b><?= htmlspecialchars($wlDate) ?></b></span></div>
+      <div><span class="wl-bx"><?= $wlIc('clk') ?></span><span><small>Time</small><b><?= htmlspecialchars($wlTime) ?></b></span></div>
+      <div><span class="wl-bx"><?= $wlIc($isOnlineOnly ? 'scr' : 'pin') ?></span><span><small>Where</small><b><?= htmlspecialchars($wlPlace) ?></b><?php if (!$isOnlineOnly && $event['venue_address']): ?><em><?= htmlspecialchars($event['venue_address']) ?></em><?php endif; ?></span></div>
+      <?php if ($tiers): ?><div><span class="wl-bx"><?= $wlIc('tk') ?></span><span><small>Tickets</small><b><?= $eventHasEnded ? 'Event ended' : ($wlLeft > 0 ? number_format($wlLeft) . ' left' : 'Sold out') ?></b></span></div><?php endif; ?>
+    </div>
+  </div>
+    <!-- ===== about ===== -->
+    <section id="about" class="ev-section wl-card wl-s7" style="--d:2">
+      <h2 class="ev-h2">About this event</h2>
+      <div class="ev-about">
+        <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
+          <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
+        <?php endforeach; ?>
+      </div>
+    </section>
+
+    <!-- ===== your ticket ===== -->
+    <section id="your-ticket" class="ev-section mq-sec wl-card wl-s5 wl-dark" style="--d:3">
+      <h2 class="ev-h2">Your ticket</h2>
+      <div class="mq-card mq-how">
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span><p><b>Sent instantly</b>By email, and in your account.</p></div>
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2M14 20v-2"/></svg></span><p><b>QR code grants entry</b>Show it on your phone at the gate.</p></div>
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/><path d="M6 6l3.8 3.8M18 6l-3.8 3.8M6 18l3.8-3.8M18 18l-3.8-3.8"/></svg></span><p><b>Lost it?</b>Sign in to get it again. <a href="/my-tickets.php">Find my tickets</a></p></div>
+      </div>
+    </section>
+
+    <!-- ===== tickets (read only; buying happens in the ticket panel) ===== -->
+    <?php if (!$eventHasEnded && $tiers): ?>
+    <section id="tickets" class="ev-section mq-sec wl-card wl-s7" style="--d:4">
+      <h2 class="ev-h2">Tickets</h2>
+      <ul class="mq-rows">
+        <?php foreach ($tiers as $tier): $mqAvail = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']); ?>
+          <li><span class="mq-tn"><?= htmlspecialchars($tier['name']) ?><?php if ($mqAvail === 0): ?> <em>Sold out</em><?php endif; ?></span><span class="mq-tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?></span></li>
+        <?php endforeach; ?>
+      </ul>
+      <p class="mq-note"><?= $eventIsFree ? 'Free entry. Your ticket is confirmed straight away.' : 'Pay with MTN MoMo or Airtel Money.' ?></p>
+    </section>
+    <?php endif; ?>
+
+    <!-- ===== venue ===== -->
+    <section id="venue" class="ev-section mq-sec wl-card wl-s5" style="--d:5">
+      <h2 class="ev-h2">Venue</h2>
+      <div class="mq-card mq-venue">
+        <div>
+          <b><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name']) ?></b>
+          <?php if ($isOnlineOnly): ?><span>The link arrives with your ticket.</span>
+          <?php elseif ($event['venue_address']): ?><span><?= htmlspecialchars($event['venue_address']) ?></span><?php endif; ?>
+        </div>
+        <?php if (!$isOnlineOnly): ?>
+          <a href="https://www.google.com/maps/search/?api=1&amp;query=<?= urlencode($event['venue_name'] . ' ' . (string) $event['venue_address']) ?>" target="_blank" rel="noopener">DIRECTIONS</a>
+        <?php endif; ?>
+      </div>
+    </section>
+
+</div>
+
+<div class="ev-wrap wl-extra-wrap">
+  <main class="ev-main wl-extra">
+
+    <?php if ($showCommunityUi): ?>
+      <?php if ($momentsReady && $moments): ?>
+    <section id="moments" class="ev-section ev-moments">
+      <?= moments_shelf_html($moments, $orgName, $evOrgInitials) ?>
+      <script type="application/json" id="momentsData"><?= json_encode([
+          'eventUrl' => $eventUrl,
+          'open' => $openMoment,
+          'org' => ['id' => (int) $event['organizer_id'], 'name' => $orgName, 'initials' => $evOrgInitials, 'following' => !empty($followingOrganizer)],
+          'buy' => moment_buy_info($event),
+          'items' => array_map('moment_public', $moments),
+      ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?></script>
+    </section>
+      <?php elseif (!$momentsReady && $eventMedia):
+        // Photos first, then videos — the combined data-gallery-index order
+        // the lightbox's Prev/Next walks through matches this same order,
+        // so browsing the lightbox mirrors browsing the page top-to-bottom.
+        $eventPhotos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] !== 'VIDEO'));
+        $eventVideos = array_values(array_filter($eventMedia, static fn ($m) => $m['media_type'] === 'VIDEO'));
+      ?>
+    <section id="moments" class="ev-section ev-gallery">
+      <h2 class="ev-h2">Moments</h2>
+
+      <?php if ($eventPhotos): ?>
+      <div class="gallery-section reveal">
+        <div class="gallery-section-head">
+          <h3>Photos</h3>
+          <span class="count"><?= str_pad((string) count($eventPhotos), 2, '0', STR_PAD_LEFT) ?></span>
+        </div>
+        <div class="photo-grid">
+          <?php foreach ($eventPhotos as $idx => $media): ?>
+            <button type="button" class="photo-item<?= $idx === 0 ? ' featured' : '' ?>" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="photo">
+              <img src="<?= htmlspecialchars($media['file_path']) ?>" alt="">
+              <span class="expand-ic"><svg width="12" height="12"><use href="#ic-expand"/></svg></span>
+            </button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <?php if ($eventVideos): ?>
+      <div class="gallery-section reveal" style="margin-top:28px">
+        <div class="gallery-section-head">
+          <h3>Videos</h3>
+          <span class="count"><?= str_pad((string) count($eventVideos), 2, '0', STR_PAD_LEFT) ?></span>
+        </div>
+        <div class="video-grid">
+          <?php foreach ($eventVideos as $vIdx => $media):
+              $idx = count($eventPhotos) + $vIdx;
+          ?>
+            <button type="button" class="video-item" data-lightbox-src="<?= htmlspecialchars($media['file_path']) ?>" data-gallery-index="<?= $idx ?>" data-gallery-type="video">
+              <video src="<?= htmlspecialchars($media['file_path']) ?>" preload="metadata" muted playsinline></video>
+              <span class="video-play"><svg width="16" height="16"><use href="#ic-play"/></svg></span>
+              <span class="video-duration" data-video-duration-src="<?= htmlspecialchars($media['file_path']) ?>" hidden></span>
+            </button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+      </section>
+      <?php endif; ?>
+
+
+    <?php endif; /* showCommunityUi: moments + gallery */ ?>
+
+    <?php if ($communityReady && $showCommunityUi): ?>
+    <!-- ===== community ===== -->
+    <section id="community" class="ev-section">
+      <h2 class="ev-h2"><?= $eventHasEnded ? 'Relive the experience' : 'Community' ?></h2>
+
+      <?php if ($postError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($postError) ?></div><?php endif; ?>
+      <?php if (isset($_GET['posted'])): ?><div class="alert alert-success" style="margin-bottom:16px">Posted.</div><?php endif; ?>
+
+      <?php if ($ctx['can_post']): $composerHasTicket = user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id']); ?>
+        <form method="post" enctype="multipart/form-data" class="ev-composer" id="evComposer">
+          <?= csrf_field() ?><input type="hidden" name="action" value="create_post">
+          <div class="ev-composer-top">
+            <?= community_avatar_html($ctx['is_mod'] ? $orgName : $currentUser['name'], (int) $currentUser['id'], $ctx['is_mod']) ?>
+            <label class="sr-only" for="evPostBody">Share with the community</label>
+            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? (($composerHasTicket || $ctx['is_mod']) ? 'You were there. Tell everyone how it was.' : 'Share your thoughts about this event.') : ($composerHasTicket || $ctx['is_mod'] ? 'Going to this event? Share your excitement.' : 'Share what you think about this event.') ?>"><?= htmlspecialchars($postDraft) ?></textarea>
+          </div>
+          <div class="ev-composer-bar">
+            <label class="ev-file"><input type="file" name="image" accept="image/jpeg,image/png,image/webp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span id="evFileName">Photo</span></label>
+            <?php if ($ctx['is_mod']): ?>
+              <label class="ev-check"><input type="checkbox" name="post_type" value="ORGANIZER_UPDATE" checked> Official update</label>
+              <label class="ev-check"><input type="checkbox" name="pin" value="1"> Pin</label>
+            <?php else: ?>
+              <span class="ev-composer-note"><?= $composerHasTicket ? 'Posting as a verified attendee' : 'Posting as ' . htmlspecialchars(community_display_name((string) $currentUser['name'])) . ' &middot; links are for ticket holders' ?></span>
+            <?php endif; ?>
+            <span class="ev-grow"></span>
+            <button type="submit" class="ev-btn ev-btn-dark ev-btn-sm" id="evPostBtn">Post</button>
+          </div>
+        </form>
+      <?php else: ?>
+        <div class="ev-note-card">
+          <b>Join the conversation</b>
+          <span>Log in to post, react, comment and follow this event. No ticket needed.</span>
+          <a class="ev-btn ev-btn-dark ev-btn-sm" href="<?= htmlspecialchars($ctx['login_url']) ?>">Log in</a>
+        </div>
+      <?php endif; ?>
+
+      <div class="ev-feed" id="evFeed" data-has-more="<?= count($feed) === FEED_PAGE_SIZE ? '1' : '0' ?>" data-last-id="<?= $feed ? (int) (end($feed)['id']) : 0 ?>">
+        <?php foreach ($feed as $post) { echo community_post_html($post, $ctx); } ?>
+        <?php if (!$feed): ?>
+          <div class="ev-empty" id="evEmpty"><b>No posts yet</b><span>Be the first to share something about this event.</span></div>
+        <?php endif; ?>
+      </div>
+      <?php if (count($feed) === FEED_PAGE_SIZE): ?>
+        <div class="ev-more"><button type="button" class="ev-btn ev-btn-outline" id="evMore">Show more posts</button></div>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
+      <?php if ($eventHasEnded || $reviews): ?>
+    <section id="reviews" class="ev-section ev-reviews">
+      <h2 class="ev-h2">Reviews</h2>
+
+      <div class="review-summary reveal">
+        <?php if ($reviewSummary['count'] > 0): ?>
+          <span class="avg"><?= number_format($reviewSummary['average'], 1) ?></span>
+          <?= render_star_rating($reviewSummary['average']) ?>
+          <span style="color:var(--muted-2); font-size:0.86rem;"><?= $reviewSummary['count'] ?> review<?= $reviewSummary['count'] === 1 ? '' : 's' ?></span>
+        <?php else: ?>
+          <span style="color:var(--muted-2);">No reviews yet.</span>
+        <?php endif; ?>
+      </div>
+
+      <?php if ($reviewError): ?>
+        <div class="alert alert-error" style="max-width:460px; margin-bottom:16px"><?= htmlspecialchars($reviewError) ?></div>
+      <?php endif; ?>
+
+      <?php if ($canReview): ?>
+        <form method="post" class="review-form reveal">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="submit_review">
+          <div style="font-weight:700; margin-bottom:10px"><?= $myReview ? 'Update your review' : 'How was it?' ?></div>
+          <div class="star-picker" role="radiogroup" aria-label="Rating">
+            <?php for ($s = 5; $s >= 1; $s--): ?>
+              <input type="radio" id="rate<?= $s ?>" name="rating" value="<?= $s ?>" required<?= $myReview && (int) $myReview['rating'] === $s ? ' checked' : '' ?>>
+              <label for="rate<?= $s ?>" title="<?= $s ?> star<?= $s === 1 ? '' : 's' ?>">&#9733;</label>
+            <?php endfor; ?>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <textarea name="comment" rows="3" maxlength="1000" placeholder="Tell others what you thought (optional)" style="width:100%"><?= htmlspecialchars($myReview['comment'] ?? '') ?></textarea>
+          </div>
+          <button class="btn btn-purple" type="submit" style="margin-top:12px"><?= $myReview ? 'Update review' : 'Post review' ?></button>
+        </form>
+      <?php elseif ($eventHasEnded && !$currentUser): ?>
+        <p class="reveal" style="color:var(--muted-2); font-size:0.9rem; margin-bottom:20px"><a href="/login.php?next=<?= urlencode('/event.php?slug=' . $event['slug'] . '#reviews') ?>" style="color:var(--purple-light); font-weight:700">Log in</a> if you attended to leave a review.</p>
+      <?php endif; ?>
+
+      <?php foreach ($reviews as $r): ?>
+        <div class="review-row reveal">
+          <div class="review-row-head">
+            <span class="organizer-avatar" style="width:36px; height:36px; font-size:0.78rem"><?= htmlspecialchars(initials_from_name($r['reviewer_name'])) ?></span>
+            <div>
+              <div class="who"><?= htmlspecialchars($r['reviewer_name']) ?></div>
+              <?= render_star_rating((float) $r['rating']) ?>
+            </div>
+            <span class="when"><?= htmlspecialchars(date('j M Y', strtotime($r['created_at']))) ?></span>
+          </div>
+          <?php if ($r['comment']): ?><p class="review-comment"><?= nl2br(htmlspecialchars($r['comment'])) ?></p><?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+      </section>
+      <?php endif; ?>
+
+  </main>
 </div>
 
 <!-- shared report dialog -->
@@ -726,35 +749,36 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
 </div><!-- /.ev -->
 
-<?php $mqMore = array_slice(array_values(array_filter($similarEvents ?: [], static fn ($e) => (int) $e['id'] !== (int) $event['id'])), 0, 4); ?>
-<?php if ($mqMore): ?>
-<section class="mq-more" aria-label="More events">
-  <div class="mq-wrap">
-    <h2>More events</h2>
-    <div class="mq-more-grid">
-      <?php foreach ($mqMore as $m):
-          $mqSame = (int) $m['organizer_id'] === (int) $event['organizer_id'] ? 'Also by ' . ($m['org_name'] ?? $orgName) : (strcasecmp((string) $m['venue_name'], (string) $event['venue_name']) === 0 ? 'Same venue' : date('j M', strtotime((string) $m['starts_at'])) . ' · ' . $m['venue_name']);
-      ?>
-        <a class="mq-ev" href="/event.php?slug=<?= urlencode($m['slug']) ?>">
-          <span class="mq-th"><?php if (!empty($m['banner_image'])): ?><img src="<?= htmlspecialchars($m['banner_image']) ?>" alt="" loading="lazy"><?php else: ?><i><?= htmlspecialchars((string) $m['banner_emoji']) ?></i><?php endif; ?></span>
-          <span class="mq-tx"><b><?= htmlspecialchars($m['title']) ?></b><em><?= htmlspecialchars($mqSame) ?></em><small><?= isset($m['min_price']) && $m['min_price'] !== null ? ((float) $m['min_price'] <= 0 ? 'Free' : 'From ' . htmlspecialchars(format_money((string) $m['min_price'], $m['min_price_currency'] ?? 'UGX'))) : '' ?></small></span>
-        </a>
-      <?php endforeach; ?>
-    </div>
-  </div>
-</section>
-<?php endif; ?>
 
 <script>
 (function () {
-  var open = document.querySelector('[data-open-tickets]');
-  if (!open) return;
   var close = function () { document.body.classList.remove('ticket-sheet-open'); };
-  open.addEventListener('click', function (e) { e.preventDefault(); document.body.classList.add('ticket-sheet-open'); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-  var bd = document.getElementById('sheetBackdrop'), cl = document.getElementById('sheetClose');
-  if (bd) bd.addEventListener('click', close);
-  if (cl) cl.addEventListener('click', close);
+  var open = document.querySelector('[data-open-tickets]');
+  if (open) {
+    open.addEventListener('click', function (e) {
+      var bb = open.getBoundingClientRect(), d = Math.max(bb.width, bb.height), r = document.createElement('span');
+      r.className = 'wl-rp';
+      r.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - bb.left - d / 2) + 'px;top:' + (e.clientY - bb.top - d / 2) + 'px';
+      open.appendChild(r);
+      setTimeout(function () { r.remove(); }, 650);
+      e.preventDefault();
+      document.body.classList.add('ticket-sheet-open');
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    var bd = document.getElementById('sheetBackdrop'), cl = document.getElementById('sheetClose');
+    if (bd) bd.addEventListener('click', close);
+    if (cl) cl.addEventListener('click', close);
+  }
+  /* the cards tilt a little toward the pointer (mouse only, and not when motion is reduced) */
+  if (window.matchMedia('(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference)').matches) {
+    [].forEach.call(document.querySelectorAll('.wl-card'), function (c) {
+      c.addEventListener('mousemove', function (e) {
+        var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        c.style.transform = 'perspective(900px) rotateY(' + (x * 5) + 'deg) rotateX(' + (-y * 5) + 'deg) translateY(-3px)';
+      });
+      c.addEventListener('mouseleave', function () { c.style.transform = ''; });
+    });
+  }
 })();
 </script>
 <script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
