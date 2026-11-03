@@ -753,7 +753,7 @@ function moment_buy_info(array $event): ?array
         }
         $left += $remaining;
         $currency = (string) $t['currency'];
-        $tiers[] = ['id' => (int) $t['id'], 'name' => (string) $t['name'], 'price' => (float) $t['price'], 'left' => $remaining];
+        $tiers[] = ['id' => (int) $t['id'], 'name' => (string) $t['name'], 'price' => (float) $t['price'], 'left' => $remaining, 'limit' => tier_person_limit($t)];
     }
     if (!$tiers) {
         return null;
@@ -773,7 +773,7 @@ function moment_buy_info(array $event): ?array
         'slug' => (string) $event['slug'],
         'title' => (string) $event['title'],
         'when' => format_event_date_range($event['starts_at'], $event['ends_at']),
-        'where' => (string) ($event['venue_name'] ?? ''),
+        'where' => event_is_online($event) ? (event_attend_mode($event) === 'ONLINE' ? event_online_label($event) : (string) ($event['venue_name'] ?? '') . ' + online') : (string) ($event['venue_name'] ?? ''),
         'currency' => $currency,
         'fee' => SERVICE_FEE_PER_TICKET,
         'from' => min(array_column($tiers, 'price')),

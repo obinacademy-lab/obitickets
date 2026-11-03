@@ -121,7 +121,7 @@ render_organizer_head('my-events', $ctx);
                 <?php else: ?>
                   <span class="avatar"><?= htmlspecialchars($e['banner_emoji']) ?></span>
                 <?php endif; ?>
-                <div><?= htmlspecialchars($e['title']) ?><br><span class="muted" style="font-weight:400; font-size:0.8rem"><?= htmlspecialchars($e['category']) ?> &middot; <?= htmlspecialchars($e['venue_name']) ?></span></div>
+                <div><?= htmlspecialchars($e['title']) ?><br><span class="muted" style="font-weight:400; font-size:0.8rem"><?= htmlspecialchars($e['category']) ?> &middot; <?= htmlspecialchars(event_is_online($e) ? event_online_label($e) : $e['venue_name']) ?></span></div>
               </div>
             </td>
             <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($e['starts_at']))) ?></td>

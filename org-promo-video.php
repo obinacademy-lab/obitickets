@@ -69,7 +69,7 @@ if ($event && $ready) {
         'eventId' => (int) $full['id'],
         'title' => (string) $full['title'],
         'when' => format_event_date_range($full['starts_at'], $full['ends_at']),
-        'where' => (string) ($full['venue_name'] ?? ''),
+        'where' => event_is_online($full) ? (event_attend_mode($full) === 'ONLINE' ? event_online_label($full) : (string) ($full['venue_name'] ?? '') . ' + online') : (string) ($full['venue_name'] ?? ''),
         'currency' => $currency,
         'from' => $from,
         'left' => $left,

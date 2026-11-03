@@ -537,7 +537,7 @@ function get_attendees_for_organizer(int $organizerId, array $filters = [], int 
     [$whereSql, $params] = build_organizer_attendee_where($organizerId, $filters);
     $stmt = db()->prepare("
         SELECT t.*, tt.name AS tier_name, e.title AS event_title, e.id AS event_id,
-            u.name AS attendee_name, u.email AS attendee_email, u.phone AS attendee_phone, o.id AS order_id, o.status AS payment_status, o.created_at AS purchased_at
+            u.id AS attendee_user_id, u.name AS attendee_name, u.email AS attendee_email, u.phone AS attendee_phone, o.id AS order_id, o.status AS payment_status, o.created_at AS purchased_at
         FROM tickets t
         JOIN order_items oi ON oi.id = t.order_item_id
         JOIN ticket_types tt ON tt.id = oi.ticket_type_id
@@ -676,13 +676,15 @@ function duplicate_event_for_organizer(int $organizerId, int $actorId, int $even
     }
     $tiers = array_map(static fn ($t) => [
         'name' => $t['name'], 'description' => $t['description'] ?? '', 'price' => $t['price'],
-        'currency' => $t['currency'], 'quantity_total' => $t['quantity_total'],
+        'currency' => $t['currency'], 'quantity_total' => $t['quantity_total'], 'max_per_person' => $t['max_per_person'] ?? null,
     ], get_ticket_types_for_event($eventId));
 
     $newId = create_event($organizerId, [
         'title' => $existing['title'] . ' (copy)', 'category' => $existing['category'], 'description' => $existing['description'],
         'venue_name' => $existing['venue_name'], 'venue_address' => $existing['venue_address'], 'banner_emoji' => $existing['banner_emoji'],
         'banner_image' => $existing['banner_image'], 'starts_at' => $existing['starts_at'], 'ends_at' => $existing['ends_at'], 'status' => 'DRAFT',
+        'attend_mode' => $existing['attend_mode'] ?? 'IN_PERSON', 'online_platform' => $existing['online_platform'] ?? null,
+        'online_url' => $existing['online_url'] ?? null, 'online_notes' => $existing['online_notes'] ?? null,
     ], $tiers);
     log_organizer_action($organizerId, $actorId, 'event.duplicate', 'event', $newId, ['from' => $eventId]);
 

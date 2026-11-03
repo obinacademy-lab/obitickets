@@ -5,8 +5,9 @@ $q = trim((string) ($_GET['q'] ?? ''));
 $category = (string) ($_GET['category'] ?? '');
 $category = in_array($category, EVENT_CATEGORIES, true) ? $category : '';
 $freeOnly = isset($_GET['free']);
+$onlineOnly = isset($_GET['online']);
 
-$results = search_events($q, $category ?: null, $freeOnly);
+$results = search_events($q, $category ?: null, $freeOnly, 60, $onlineOnly);
 
 $titleBits = [];
 if ($q !== '') {
@@ -20,12 +21,13 @@ $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
 /** Builds a search.php URL that keeps the current q while changing category/free. */
-function search_url(string $q, string $category = '', bool $freeOnly = false): string
+function search_url(string $q, string $category = '', bool $freeOnly = false, bool $onlineOnly = false): string
 {
     $params = array_filter([
         'q' => $q !== '' ? $q : null,
         'category' => $category !== '' ? $category : null,
         'free' => $freeOnly ? '1' : null,
+        'online' => $onlineOnly ? '1' : null,
     ], static fn ($v) => $v !== null);
     return '/search.php' . ($params ? '?' . http_build_query($params) : '');
 }
@@ -78,7 +80,7 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
     </form>
 
     <div class="search-cats">
-      <a class="cat-chip <?= $category === '' && !$freeOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q)) ?>">
+      <a class="cat-chip <?= $category === '' && !$freeOnly && !$onlineOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q)) ?>">
         <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-grid"/></svg></span>
         <span class="cat-chip-label">All</span>
       </a>
@@ -92,6 +94,12 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
         <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-ticket"/></svg></span>
         <span class="cat-chip-label">Free</span>
       </a>
+      <?php if (events_online_ready()): ?>
+      <a class="cat-chip <?= $onlineOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q, '', false, true)) ?>">
+        <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-monitor"/></svg></span>
+        <span class="cat-chip-label">Online</span>
+      </a>
+      <?php endif; ?>
     </div>
 
     <div class="sec-head" style="margin-top:32px">
@@ -125,7 +133,8 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
       <div class="event-tile-grid" style="margin-top:32px">
         <?php foreach ($results as $event):
             $price = format_money($event['min_price'] ?? null, $event['min_price_currency'] ?? 'UGX');
-            $priceLabel = $price === 'Free entry' ? $price : 'From ' . $price;
+            $priceLabel = $price === 'Free entry' ? (((int) ($event['paid_tier_count'] ?? 0)) > 0 ? 'Free tickets available' : $price) : 'From ' . $price;
+            $tileOnline = ($event['attend_mode'] ?? 'IN_PERSON') !== 'IN_PERSON';
             $hasImage = !empty($event['banner_image']);
             $eventUrl = '/event.php?slug=' . urlencode($event['slug']);
         ?>
@@ -143,7 +152,7 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
             </a>
             <div class="event-tile-body">
               <h3><a href="<?= htmlspecialchars($eventUrl) ?>"><?= htmlspecialchars($event['title']) ?></a></h3>
-              <div class="event-tile-meta"><svg width="14" height="14"><use href="#ic-pin"/></svg> <?= htmlspecialchars($event['venue_name']) ?></div>
+              <div class="event-tile-meta"><svg width="14" height="14"><use href="#<?= $tileOnline ? 'ic-monitor' : 'ic-pin' ?>"/></svg> <?= htmlspecialchars($event['venue_name'] . (($event['attend_mode'] ?? '') === 'HYBRID' ? ' + online' : '')) ?></div>
               <div class="event-tile-price"><?= htmlspecialchars($priceLabel) ?></div>
             </div>
             <a class="btn btn-purple" href="<?= htmlspecialchars($eventUrl) ?>">Get tickets <svg width="14" height="14" class="btn-arrow"><use href="#ic-arrow"/></svg></a>

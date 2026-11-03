@@ -46,7 +46,7 @@ function generate_ticket_code(): string
  * from anything client-supplied.
  * @return array{event:array,lineItems:list<array>,subtotal:float,fee:float,total:float,currency:string}|array{error:string}
  */
-function resolve_checkout_cart(array $pending): array
+function resolve_checkout_cart(array $pending, ?int $userId = null): array
 {
     $event = get_event_by_slug((string) ($pending['event_slug'] ?? ''));
     if (!$event) {
@@ -65,8 +65,11 @@ function resolve_checkout_cart(array $pending): array
 
     $lineItems = [];
     $subtotal = 0.0;
-    $ticketCount = 0;
+    $ticketCount = 0;      // every ticket in the cart
+    $paidTicketCount = 0;  // only these carry the service fee
     $currency = null;
+    $notices = [];
+    $hitLimit = false;
     foreach (($pending['qty'] ?? []) as $tierId => $qty) {
         $qty = (int) $qty;
         $tierId = (int) $tierId;
@@ -76,12 +79,27 @@ function resolve_checkout_cart(array $pending): array
         $tier = $tiersById[$tierId];
         $available = !empty($tier['sales_paused']) ? 0 : max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
         $qty = min($qty, $available); // never let a stale cart request more than is actually left (paused tiers show 0 available)
+        // A per-person limit (free tickets default to a few each) also counts what this person already holds.
+        $limit = tier_person_limit($tier);
+        if ($limit !== null && $qty > 0) {
+            $allowed = $userId !== null ? max(0, $limit - tickets_held_by_user_for_tier($userId, $tierId)) : $limit;
+            if ($qty > $allowed) {
+                $notices[] = $allowed > 0
+                    ? "\"{$tier['name']}\" is limited to {$limit} per person, so we kept {$allowed} in your order."
+                    : "You already have the maximum of {$limit} \"{$tier['name']}\" ticket(s) for this event.";
+                $qty = $allowed;
+                $hitLimit = true;
+            }
+        }
         if ($qty < 1) {
             continue;
         }
         $lineTotal = $qty * (float) $tier['price'];
         $subtotal += $lineTotal;
         $ticketCount += $qty;
+        if ((float) $tier['price'] > 0) {
+            $paidTicketCount += $qty;
+        }
         $currency = $currency ?? $tier['currency'];
         $lineItems[] = [
             'tier_id' => $tierId,
@@ -93,11 +111,13 @@ function resolve_checkout_cart(array $pending): array
     }
 
     if (!$lineItems) {
-        return ['error' => 'no_tickets_selected'];
+        return ['error' => $hitLimit ? 'limit_reached' : 'no_tickets_selected', 'notices' => $notices];
     }
 
     $currency = $currency ?? 'UGX';
-    $fee = $ticketCount * SERVICE_FEE_PER_TICKET;
+    // The service fee is charged per PAID ticket. A free ticket costs nothing, and a cart of only free tickets
+    // totals zero, which skips the payment step entirely.
+    $fee = $paidTicketCount * SERVICE_FEE_PER_TICKET;
 
     return [
         'event' => $event,
@@ -106,6 +126,9 @@ function resolve_checkout_cart(array $pending): array
         'fee' => $fee,
         'total' => $subtotal + $fee,
         'currency' => $currency,
+        'paidTicketCount' => $paidTicketCount,
+        'isFree' => ($subtotal + $fee) <= 0.0,
+        'notices' => $notices,
     ];
 }
 
@@ -146,12 +169,20 @@ function create_pending_order(
     $pdo->beginTransaction();
     try {
         foreach ($lineItems as $item) {
-            $stmt = $pdo->prepare('SELECT quantity_total, quantity_sold, sales_paused FROM ticket_types WHERE id = ? FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT * FROM ticket_types WHERE id = ? FOR UPDATE');
             $stmt->execute([$item['tier_id']]);
             $row = $stmt->fetch();
             if (!$row || !empty($row['sales_paused']) || ($row['quantity_sold'] + $item['quantity']) > $row['quantity_total']) {
                 throw new InsufficientTicketsException(
                     "Sorry, \"{$item['name']}\" no longer has enough tickets available. Please go back and adjust your order."
+                );
+            }
+            // Re-check the per-person limit now that this ticket type is locked, so two quick submissions
+            // cannot both slip under it.
+            $limit = tier_person_limit($row);
+            if ($limit !== null && tickets_held_by_user_for_tier($userId, (int) $item['tier_id']) + $item['quantity'] > $limit) {
+                throw new InsufficientTicketsException(
+                    "\"{$item['name']}\" is limited to {$limit} per person and you already have your share."
                 );
             }
         }
@@ -160,9 +191,10 @@ function create_pending_order(
 
         $stmt = $pdo->prepare('
             INSERT INTO orders (user_id, event_id, status, subtotal_amount, service_fee_amount, commission_amount, total_amount, currency, payment_method, phone)
-            VALUES (?, ?, "PENDING", ?, ?, ?, ?, ?, "MOBILE_MONEY", ?)
+            VALUES (?, ?, "PENDING", ?, ?, ?, ?, ?, ?, ?)
         ');
-        $stmt->execute([$userId, $eventId, $subtotal, $fee, $commission, $total, $currency, $phone]);
+        // A free order has no payment method and no phone to charge.
+        $stmt->execute([$userId, $eventId, $subtotal, $fee, $commission, $total, $currency, $total > 0 ? 'MOBILE_MONEY' : null, $total > 0 ? $phone : null]);
         $orderId = (int) $pdo->lastInsertId();
 
         foreach ($lineItems as $item) {
@@ -177,6 +209,18 @@ function create_pending_order(
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
+    }
+
+    if ($total <= 0.0) {
+        // Free: nothing to collect. Confirm straight away so the tickets and emails go out; if that fails for any
+        // reason, release the reserved stock instead of leaving the order stuck.
+        try {
+            finalize_order_success($orderId, 'Free ticket');
+        } catch (Throwable $e) {
+            error_log('[free] finalize failed for order ' . $orderId . ': ' . $e->getMessage());
+            fail_order($orderId, 'We could not confirm your free ticket. Please try again.');
+        }
+        return $orderId;
     }
 
     try {
@@ -550,10 +594,11 @@ function get_order_for_user(int $orderId, int $userId): ?array
  */
 function get_order_ticket_details(int $orderId): ?array
 {
+    $online = events_online_ready() ? ', e.attend_mode, e.online_platform, e.online_url, e.online_notes' : '';
     $stmt = db()->prepare('
         SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.category, e.banner_emoji, e.banner_image,
                e.starts_at AS event_starts_at, e.ends_at AS event_ends_at, e.venue_name, e.venue_address,
-               u.name AS buyer_name, u.email AS buyer_email
+               u.name AS buyer_name, u.email AS buyer_email' . $online . '
         FROM orders o
         JOIN events e ON e.id = o.event_id
         JOIN users u ON u.id = o.user_id

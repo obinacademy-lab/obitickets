@@ -425,13 +425,15 @@
   /* ---------- selling: the Get tickets bar and ticket picker ---------- */
   var BUY = data.buy || null;
   var cartQty = {};
-  function money(n) { return (BUY ? BUY.currency : 'UGX') + ' ' + Math.round(n).toLocaleString('en-US'); }
+  function money(n) { return n <= 0 ? 'Free' : (BUY ? BUY.currency : 'UGX') + ' ' + Math.round(n).toLocaleString('en-US'); }
   function syncBuy(it) {
     var bar = $('.mv-buy', V), show = !!(BUY && it.buyBar);
     bar.hidden = !show;
     V.classList.toggle('has-buy', show);
     if (!show) return;
     $('b', bar).textContent = money(BUY.from);
+    $('small', bar).textContent = BUY.from <= 0 ? 'Entry' : 'From';
+    $('.mv-buybtn', bar).textContent = BUY.from <= 0 && BUY.tiers.every(function (t) { return t.price <= 0; }) ? 'Get free ticket' : 'Get tickets';
     var u = $('.urg', bar), bits = [];
     if (BUY.left != null) bits.push(BUY.left + ' left');
     if (BUY.now) bits.push('Happening now');
@@ -441,9 +443,9 @@
     if (bits.length) u.appendChild(document.createTextNode(bits.join(' \u00b7 ')));
   }
   function cartTotals() {
-    var n = 0, sub = 0;
-    BUY.tiers.forEach(function (t) { var q = cartQty[t.id] || 0; n += q; sub += q * t.price; });
-    return { n: n, total: sub + n * BUY.fee };
+    var n = 0, sub = 0, paid = 0; // the service fee is charged per PAID ticket only
+    BUY.tiers.forEach(function (t) { var q = cartQty[t.id] || 0; n += q; sub += q * t.price; if (t.price > 0) paid += q; });
+    return { n: n, total: sub + paid * BUY.fee };
   }
   function paintCart() {
     var rows = $('.mv-tsheet .trows', V); rows.innerHTML = '';
@@ -451,10 +453,10 @@
       var q = cartQty[t.id] || 0, row = el('div', 'trow' + (q ? ' on' : ''));
       row.innerHTML = '<div class="a"><b></b><span></span></div><div class="qty"><button type="button" aria-label="Fewer">\u2212</button><output>' + q + '</output><button type="button" aria-label="More">+</button></div>';
       $('b', row).textContent = t.name;
-      $('.a span', row).textContent = money(t.price) + ' \u00b7 ' + t.left + ' left';
+      $('.a span', row).textContent = money(t.price) + ' \u00b7 ' + t.left + ' left' + (t.price <= 0 && t.limit ? ' \u00b7 limit ' + t.limit + ' each' : '');
       var btns = row.querySelectorAll('.qty button');
       btns[0].addEventListener('click', function () { cartQty[t.id] = Math.max(0, q - 1); paintCart(); });
-      btns[1].addEventListener('click', function () { cartQty[t.id] = Math.min(Math.min(10, t.left), q + 1); paintCart(); });
+      btns[1].addEventListener('click', function () { cartQty[t.id] = Math.min(Math.min(10, t.left, t.limit || 10), q + 1); paintCart(); });
       rows.appendChild(row);
     });
     var c = cartTotals();

@@ -6,14 +6,28 @@ $organizerId = $ctx['organizer_id'];
 
 $filters = ['status' => $_GET['status'] ?? '', 'q' => trim((string) ($_GET['q'] ?? ''))];
 
+/** For an online event: how many times this attendee pressed Join, or null when the event is not online. */
+$joinCache = [];
+$joinedFor = static function (array $a) use (&$joinCache): ?int {
+    if (!events_online_ready()) {
+        return null;
+    }
+    $eid = (int) $a['event_id'];
+    if (!isset($joinCache[$eid])) {
+        $ev = get_event_by_id($eid);
+        $joinCache[$eid] = ($ev && event_is_online($ev)) ? get_online_joiners($eid) : null;
+    }
+    return $joinCache[$eid] === null ? null : ($joinCache[$eid][(int) $a['attendee_user_id']] ?? 0);
+};
+
 if (($_GET['export'] ?? '') === 'csv') {
     $rows = get_attendees_for_organizer($organizerId, $filters, 10000, 0);
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="attendees.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['Name', 'Email', 'Phone', 'Event', 'Tier', 'Ticket code', 'Order #', 'Payment status', 'Check-in status', 'Purchased at']);
+    fputcsv($out, ['Name', 'Email', 'Phone', 'Event', 'Tier', 'Ticket code', 'Order #', 'Payment status', 'Check-in status', 'Purchased at', 'Joined online']);
     foreach ($rows as $r) {
-        fputcsv($out, [$r['attendee_name'], $r['attendee_email'], $r['attendee_phone'], $r['event_title'], $r['tier_name'], $r['ticket_code'], $r['order_id'], $r['payment_status'], $r['status'], $r['purchased_at']]);
+        fputcsv($out, [$r['attendee_name'], $r['attendee_email'], $r['attendee_phone'], $r['event_title'], $r['tier_name'], $r['ticket_code'], $r['order_id'], $r['payment_status'], $r['status'], $r['purchased_at'], ($j = $joinedFor($r)) === null ? '' : ($j > 0 ? 'Yes' : 'No')]);
     }
     fclose($out);
     exit;
@@ -68,7 +82,7 @@ render_organizer_head('attendees', $ctx);
 <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
-      <thead><tr><th>Attendee</th><th>Event</th><th>Tier</th><th>Code</th><th>Order</th><th>Status</th></tr></thead>
+      <thead><tr><th>Attendee</th><th>Event</th><th>Tier</th><th>Code</th><th>Order</th><th>Status</th><th>Online</th></tr></thead>
       <tbody>
         <?php foreach ($attendees as $a): ?>
           <tr>
@@ -78,6 +92,7 @@ render_organizer_head('attendees', $ctx);
             <td class="mono"><?= htmlspecialchars($a['ticket_code']) ?></td>
             <td><a class="link" href="/org-order-detail.php?id=<?= (int) $a['order_id'] ?>">#<?= (int) $a['order_id'] ?></a></td>
             <td><span class="admin-badge <?= $statusMeta[$a['status']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($a['status']) ?><?= $a['checked_in_at'] ? ' · ' . htmlspecialchars(date('d M H:i', strtotime($a['checked_in_at']))) : '' ?></span></td>
+            <td><?php $jn = $joinedFor($a); if ($jn === null): ?><span class="muted">&mdash;</span><?php elseif ($jn > 0): ?><span class="admin-badge admin-badge-success">Joined<?= $jn > 1 ? ' &times;' . $jn : '' ?></span><?php else: ?><span class="admin-badge admin-badge-muted">Not yet</span><?php endif; ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>

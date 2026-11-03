@@ -30,16 +30,22 @@ function initials_from_name(string $name): string
  * Shared select list + join used by every event listing query below, so a
  * card always has what it needs (title, venue, dates, cheapest ticket).
  */
-const EVENT_SELECT = "
-    e.id, e.title, e.slug, e.category, e.venue_name, e.banner_emoji, e.banner_image, e.starts_at, e.ends_at,
+function event_select_sql(): string
+{
+    // attend_mode only exists once migration 021 has run; until then every event reads as in person.
+    $mode = events_online_ready() ? 'e.attend_mode' : "'IN_PERSON'";
+    return "
+    e.id, e.title, e.slug, e.category, e.venue_name, e.banner_emoji, e.banner_image, e.starts_at, e.ends_at, {$mode} AS attend_mode,
     (SELECT MIN(t.price) FROM ticket_types t WHERE t.event_id = e.id) AS min_price,
+    (SELECT COUNT(*) FROM ticket_types t WHERE t.event_id = e.id AND t.price > 0) AS paid_tier_count,
     (SELECT t.currency FROM ticket_types t WHERE t.event_id = e.id ORDER BY t.price ASC LIMIT 1) AS min_price_currency
 ";
+}
 
 function trending_music_events(int $limit = 6): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.category = 'Music'
         ORDER BY e.starts_at ASC
@@ -52,7 +58,7 @@ function trending_music_events(int $limit = 6): array
 function this_weekend_events(int $limit = 6): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.starts_at BETWEEN NOW() AND NOW() + INTERVAL 14 DAY
         ORDER BY e.starts_at ASC
@@ -65,7 +71,7 @@ function this_weekend_events(int $limit = 6): array
 function free_community_events(int $limit = 6): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
           AND EXISTS (SELECT 1 FROM ticket_types t WHERE t.event_id = e.id AND t.price = 0)
@@ -81,7 +87,7 @@ function free_community_events(int $limit = 6): array
  * description), an optional exact category, and an optional "free events
  * only" filter — any combination of the three, all AND-ed together.
  */
-function search_events(?string $q, ?string $category, bool $freeOnly = false, int $limit = 60): array
+function search_events(?string $q, ?string $category, bool $freeOnly = false, int $limit = 60, bool $onlineOnly = false): array
 {
     $conditions = ["e.status = 'PUBLISHED'", 'e.ends_at >= NOW()'];
     $params = [];
@@ -102,7 +108,11 @@ function search_events(?string $q, ?string $category, bool $freeOnly = false, in
         $conditions[] = 'EXISTS (SELECT 1 FROM ticket_types t WHERE t.event_id = e.id AND t.price = 0)';
     }
 
-    $sql = 'SELECT ' . EVENT_SELECT . ' FROM events e WHERE ' . implode(' AND ', $conditions)
+    if ($onlineOnly && events_online_ready()) {
+        $conditions[] = "e.attend_mode IN ('ONLINE', 'HYBRID')";
+    }
+
+    $sql = 'SELECT ' . event_select_sql() . ' FROM events e WHERE ' . implode(' AND ', $conditions)
         . ' ORDER BY e.starts_at ASC LIMIT ' . (int) $limit;
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
@@ -140,7 +150,7 @@ function get_category_counts(): array
 function get_hero_carousel_events(int $limit = 4): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.banner_image IS NOT NULL
         ORDER BY e.starts_at ASC
@@ -153,7 +163,7 @@ function get_hero_carousel_events(int $limit = 4): array
     }
 
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
         ORDER BY e.starts_at ASC
@@ -166,7 +176,7 @@ function get_hero_carousel_events(int $limit = 4): array
 /** Feeds the homepage's large-card grid, below the hero carousel. */
 function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
 {
-    $sql = "SELECT " . EVENT_SELECT . " FROM events e WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()";
+    $sql = "SELECT " . event_select_sql() . " FROM events e WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()";
     $params = [];
     $excludeEventIds = array_filter(array_map('intval', $excludeEventIds));
     if ($excludeEventIds) {
@@ -183,7 +193,7 @@ function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
 /**
  * Same row shape as upcoming_events(), plus the organizer's display name —
  * only the homepage's event cards need this (for the avatar-initials
- * badge), so a dedicated query rather than growing the shared EVENT_SELECT
+ * badge), so a dedicated query rather than growing the shared event_select_sql()
  * for every other caller that doesn't need it.
  */
 /**
@@ -196,7 +206,7 @@ function upcoming_events(int $limit = 8, array $excludeEventIds = []): array
 function upcoming_events_with_organizer(int $limit = 6): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . ", COALESCE(op.org_name, u.name) AS organizer_name
+        SELECT " . event_select_sql() . ", COALESCE(op.org_name, u.name) AS organizer_name
         FROM events e
         JOIN users u ON u.id = e.organizer_id
         LEFT JOIN organizer_profiles op ON op.user_id = u.id
@@ -248,7 +258,7 @@ function past_events(?string $q = null, ?string $category = null, int $limit = 2
 
     // Rating columns come from a LEFT JOIN so a missing reviews table (migration
     // 011 not applied yet) can't take the whole page down — falls back below.
-    $select = "SELECT " . EVENT_SELECT . ",
+    $select = "SELECT " . event_select_sql() . ",
             (SELECT ROUND(AVG(r.rating), 1) FROM event_reviews r WHERE r.event_id = e.id) AS avg_rating,
             (SELECT COUNT(*) FROM event_reviews r WHERE r.event_id = e.id) AS review_count
         FROM events e WHERE $where ORDER BY e.ends_at DESC LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset;
@@ -257,7 +267,7 @@ function past_events(?string $q = null, ?string $category = null, int $limit = 2
         $stmt->execute($params);
         $events = $stmt->fetchAll();
     } catch (PDOException $e) {
-        $stmt = db()->prepare("SELECT " . EVENT_SELECT . ", NULL AS avg_rating, 0 AS review_count
+        $stmt = db()->prepare("SELECT " . event_select_sql() . ", NULL AS avg_rating, 0 AS review_count
             FROM events e WHERE $where ORDER BY e.ends_at DESC LIMIT " . (int) $limit . ' OFFSET ' . (int) $offset);
         $stmt->execute($params);
         $events = $stmt->fetchAll();
@@ -299,7 +309,7 @@ function get_event_media(int $eventId): array
 function get_similar_events(int $eventId, string $category, int $limit = 2): array
 {
     $stmt = db()->prepare("
-        SELECT " . EVENT_SELECT . "
+        SELECT " . event_select_sql() . "
         FROM events e
         WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW() AND e.category = ? AND e.id != ?
         ORDER BY e.starts_at ASC
@@ -376,7 +386,7 @@ function render_poster_card(array $event): void
       <?php endif; ?>
       <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
       <div class="poster-card-meta"><?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?></div>
-      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
+      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name'] . (($event['attend_mode'] ?? 'IN_PERSON') === 'HYBRID' ? ' + online' : '')) ?></div>
     </a>
     <?php
 }
@@ -401,7 +411,7 @@ function render_past_event_card(array $event): void
       </span>
       <h3 class="poster-card-title"><?= htmlspecialchars($event['title']) ?></h3>
       <div class="poster-card-meta"><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?></div>
-      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name']) ?></div>
+      <div class="poster-card-meta poster-card-venue"><?= htmlspecialchars($event['venue_name'] . (($event['attend_mode'] ?? 'IN_PERSON') === 'HYBRID' ? ' + online' : '')) ?></div>
       <?php if ($reviewCount > 0): ?>
         <div class="past-card-rating">
           <?= render_star_rating((float) $event['avg_rating']) ?>
@@ -624,6 +634,7 @@ function parse_tier_submission(array $post): array
     $prices = $post['tier_price'] ?? [];
     $currencies = $post['tier_currency'] ?? [];
     $quantities = $post['tier_quantity'] ?? [];
+    $limits = $post['tier_limit'] ?? [];
     $ids = $post['tier_id'] ?? [];
 
     $tiers = [];
@@ -639,6 +650,7 @@ function parse_tier_submission(array $post): array
             'price' => $prices[$i] ?? '0',
             'currency' => in_array($currencies[$i] ?? '', TICKET_CURRENCIES, true) ? $currencies[$i] : 'UGX',
             'quantity_total' => $quantities[$i] ?? '0',
+            'max_per_person' => trim((string) ($limits[$i] ?? '')),
         ];
     }
     return $tiers;
@@ -660,6 +672,13 @@ function validate_tiers(array $tiers): array
             $errors[] = "Ticket \"{$t['name']}\" needs a quantity of at least 1.";
             continue;
         }
+        $lim = (string) ($t['max_per_person'] ?? '');
+        if ($lim !== '' && (!ctype_digit($lim) || (int) $lim < 1 || (int) $lim > FREE_TICKET_MAX_LIMIT)) {
+            $errors[] = "Ticket \"{$t['name']}\": the limit per person must be a number from 1 to " . FREE_TICKET_MAX_LIMIT . ' (or leave it blank).';
+            continue;
+        }
+        // A free ticket always has a limit so one account cannot take them all; a paid one only if the organizer set it.
+        $t['max_per_person'] = $lim !== '' ? (int) $lim : ((float) $t['price'] <= 0 ? FREE_TICKET_DEFAULT_LIMIT : null);
         $valid[] = $t;
     }
     if (!$valid) {
@@ -675,15 +694,20 @@ function create_event(int $organizerId, array $fields, array $tiers): int
     $pdo->beginTransaction();
     try {
         $slug = generate_unique_slug($fields['title']);
-        $stmt = $pdo->prepare('
-            INSERT INTO events (organizer_id, title, slug, category, description, venue_name, venue_address, banner_emoji, banner_image, starts_at, ends_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ');
-        $stmt->execute([
+        $cols = 'organizer_id, title, slug, category, description, venue_name, venue_address, banner_emoji, banner_image, starts_at, ends_at, status';
+        $marks = '?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?';
+        $vals = [
             $organizerId, $fields['title'], $slug, $fields['category'], $fields['description'],
             $fields['venue_name'], $fields['venue_address'], $fields['banner_emoji'], $fields['banner_image'] ?? null,
             $fields['starts_at'], $fields['ends_at'], $fields['status'],
-        ]);
+        ];
+        if (events_online_ready()) {
+            $cols .= ', attend_mode, online_platform, online_url, online_notes';
+            $marks .= ', ?, ?, ?, ?';
+            array_push($vals, event_attend_mode($fields), $fields['online_platform'] ?? null, $fields['online_url'] ?? null, $fields['online_notes'] ?? null);
+        }
+        $stmt = $pdo->prepare("INSERT INTO events ({$cols}) VALUES ({$marks})");
+        $stmt->execute($vals);
         $eventId = (int) $pdo->lastInsertId();
 
         $sort = 0;
@@ -693,6 +717,9 @@ function create_event(int $organizerId, array $fields, array $tiers): int
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ');
             $stmt->execute([$eventId, $tier['name'], $tier['description'], $tier['price'], $tier['currency'], $tier['quantity_total'], $sort++]);
+            if (events_online_ready()) {
+                $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, (int) $pdo->lastInsertId()]);
+            }
         }
 
         $pdo->commit();
@@ -715,6 +742,10 @@ function update_event(int $eventId, array $fields): void
         $fields['venue_address'], $fields['banner_emoji'], $fields['banner_image'] ?? null, $fields['starts_at'], $fields['ends_at'],
         $fields['status'], $eventId,
     ]);
+    if (events_online_ready() && isset($fields['attend_mode'])) {
+        db()->prepare('UPDATE events SET attend_mode = ?, online_platform = ?, online_url = ?, online_notes = ? WHERE id = ?')
+            ->execute([event_attend_mode($fields), $fields['online_platform'] ?? null, $fields['online_url'] ?? null, $fields['online_notes'] ?? null, $eventId]);
+    }
 }
 
 function count_event_media(int $eventId): int
@@ -812,9 +843,15 @@ function replace_ticket_types(int $eventId, array $tiers): void
             if (!empty($tier['id'])) {
                 $stmt = $pdo->prepare('UPDATE ticket_types SET name = ?, description = ?, price = ?, currency = ?, quantity_total = ?, sort_order = ? WHERE id = ? AND event_id = ?');
                 $stmt->execute([$tier['name'], $tier['description'], $tier['price'], $tier['currency'], $tier['quantity_total'], $sort, $tier['id'], $eventId]);
+                if (events_online_ready()) {
+                    $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ? AND event_id = ?')->execute([$tier['max_per_person'] ?? null, $tier['id'], $eventId]);
+                }
             } else {
                 $stmt = $pdo->prepare('INSERT INTO ticket_types (event_id, name, description, price, currency, quantity_total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
                 $stmt->execute([$eventId, $tier['name'], $tier['description'], $tier['price'], $tier['currency'], $tier['quantity_total'], $sort]);
+                if (events_online_ready()) {
+                    $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, (int) $pdo->lastInsertId()]);
+                }
             }
             $sort++;
         }

@@ -22,7 +22,7 @@
     head: (cfg.title || '').toUpperCase().slice(0, 30),
     sub: cfg.where || '',
     when: cfg.when || '',
-    price: cfg.from != null ? 'From ' + money(cfg.from) : '',
+    price: cfg.from != null ? (cfg.from <= 0 ? 'Free entry' : 'From ' + money(cfg.from)) : '',
     cta: 'Get tickets',
     left: cfg.left,
     days: cfg.days

@@ -22,7 +22,7 @@ foreach ($_GET as $getKey => $getValue) {
 // Same for form posts: only these fields are ever arrays (ticket tiers, cart quantities, gallery removals,
 // social links). An array sent to any other field (name[]=x) used to be a fatal error inside trim() on
 // login, signup and every other form, so drop it before the page sees it.
-$arrayPostFields = ['qty', 'tier_id', 'tier_name', 'tier_description', 'tier_price', 'tier_currency', 'tier_quantity', 'remove_media', 'link_url', 'link_on'];
+$arrayPostFields = ['qty', 'tier_id', 'tier_name', 'tier_description', 'tier_price', 'tier_currency', 'tier_quantity', 'tier_limit', 'remove_media', 'link_url', 'link_on'];
 foreach ($_POST as $postKey => $postValue) {
     if (is_array($postValue) && !in_array($postKey, $arrayPostFields, true)) {
         unset($_POST[$postKey]);
@@ -62,6 +62,7 @@ require_once __DIR__ . '/admin.php';
 require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';
 require_once __DIR__ . '/contact.php';
+require_once __DIR__ . '/online.php';
 require_once __DIR__ . '/organizer.php';
 require_once __DIR__ . '/organizer-layout.php';
 

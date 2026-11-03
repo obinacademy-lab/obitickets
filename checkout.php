@@ -30,18 +30,22 @@ if (!$event) {
     exit;
 }
 
-$cart = resolve_checkout_cart($pending);
+$cart = resolve_checkout_cart($pending, (int) $user['id']);
 if (isset($cart['error'])) {
     unset($_SESSION['pending_checkout']);
     $errorParam = match ($cart['error']) {
         'no_tickets_selected' => 'select_tickets',
         'event_ended' => 'ended',
+        'limit_reached' => 'limit',
         default => 'sold_out',
     };
     header('Location: /event.php?slug=' . urlencode($pending['event_slug']) . '&error=' . $errorParam);
     exit;
 }
 ['lineItems' => $lineItems, 'subtotal' => $subtotal, 'fee' => $fee, 'total' => $total, 'currency' => $currency] = $cart;
+$isFree = !empty($cart['isFree']);
+$paidTicketCount = (int) ($cart['paidTicketCount'] ?? array_sum(array_column($lineItems, 'quantity')));
+$cartNotices = $cart['notices'] ?? [];
 $ticketCount = array_sum(array_column($lineItems, 'quantity'));
 try {
     moment_record_checkout((int) $event['id']); // only counts when the visitor came from a moment
@@ -64,15 +68,23 @@ include __DIR__ . '/includes/header.php';
       <?php foreach ($lineItems as $item): ?>
         <div class="checkout-line">
           <span><?= (int) $item['quantity'] ?> &times; <?= htmlspecialchars($item['name']) ?></span>
-          <span class="mono"><?= htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) ?></span>
+          <span class="mono"><?= $item['line_total'] > 0 ? htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) : 'Free' ?></span>
         </div>
       <?php endforeach; ?>
-      <div class="checkout-line"><span>Service fee (UGX 700 &times; <?= $ticketCount ?>)</span><span class="mono"><?= htmlspecialchars($currency . ' ' . number_format($fee, 0)) ?></span></div>
-      <div class="checkout-line total"><span>Total</span><span class="mono"><?= htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></span></div>
+      <div class="checkout-line"><span>Service fee<?= $paidTicketCount > 0 ? ' (UGX ' . number_format(SERVICE_FEE_PER_TICKET) . ' &times; ' . $paidTicketCount . ' paid)' : '' ?></span><span class="mono"><?= $fee > 0 ? htmlspecialchars($currency . ' ' . number_format($fee, 0)) : htmlspecialchars($currency) . ' 0' ?></span></div>
+      <div class="checkout-line total"><span><?= $isFree ? 'Total' : 'Pay now' ?></span><span class="mono"><?= $isFree ? 'Free' : htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></span></div>
     </div>
+    <?php foreach ($cartNotices as $n): ?><div class="alert alert-error" style="margin-top:14px"><?= htmlspecialchars($n) ?></div><?php endforeach; ?>
 
-    <div data-payment-widget data-initiate-url="/api/initiate-payment.php" data-order-url="/order.php?id=" style="margin-top:24px">
+    <div data-payment-widget data-initiate-url="/api/initiate-payment.php" data-order-url="/order.php?id=" data-free="<?= $isFree ? '1' : '0' ?>" style="margin-top:24px">
 
+      <?php if ($isFree): ?>
+      <div data-state="phone">
+        <div data-error class="alert alert-error hidden"></div>
+        <button type="button" data-action="pay" class="btn btn-lg btn-block free-confirm" style="margin-top:4px">Confirm and get my ticket</button>
+        <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> No payment needed &middot; your ticket and QR code appear straight away</div>
+      </div>
+      <?php else: ?>
       <div data-state="phone">
         <div class="field">
           <label for="phone">Mobile money phone number</label>
@@ -83,6 +95,7 @@ include __DIR__ . '/includes/header.php';
         <button type="button" data-action="pay" class="btn btn-purple btn-lg btn-block" style="margin-top:16px">Pay <?= htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></button>
         <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
       </div>
+      <?php endif; ?>
 
       <div data-state="waiting" class="hidden pay-waiting">
         <div class="pay-spinner"></div>

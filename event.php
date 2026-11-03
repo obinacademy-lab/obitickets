@@ -34,7 +34,8 @@ $likeSessionToken = $likeUserId ? null : session_id();
 $userLikedEvent = has_liked_event((int) $event['id'], $likeUserId, $likeSessionToken);
 
 $eventUrl = rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']);
-$shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'];
+$whereForText = event_is_online_only($event) ? 'online' : ($event['venue_name'] . (event_is_online($event) ? ' and online' : ''));
+$shareText = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $whereForText;
 $organizerSlug = get_or_create_organizer_slug((int) $event['organizer_id']);
 
 // The join/leave buttons live inside the checkout <form> (nested forms aren't
@@ -201,8 +202,19 @@ foreach ($tiers as $tier) {
     }
 }
 
+$isOnline = event_is_online($event);
+$isOnlineOnly = event_is_online_only($event);
+$onlineLabel = event_online_label($event);
+$eventIsFree = event_is_free($tiers);
+$hasFreeTier = false;
+foreach ($tiers as $tCheck) {
+    if (ticket_is_free($tCheck)) { $hasFreeTier = true; }
+}
+// Only a ticket holder (or the host) ever gets the meeting details; everyone else gets null.
+$onlineAccess = $isOnline ? get_online_access($event, $currentUser) : null;
+
 $pageTitle = $event['title'] . ' — obitickets';
-$pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' at ' . $event['venue_name'] . '.';
+$pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' ' . ($isOnlineOnly ? 'online' : 'at ' . $event['venue_name'] . ($isOnline ? ' and online' : '')) . '.';
 if (!empty($event['banner_image'])) {
     $ogImage = rtrim(APP_URL, '/') . $event['banner_image'];
 }
@@ -219,7 +231,7 @@ if ($openMoment && $momentsReady) {
         }
     }
 }
-$bodyClass = 'event-page';
+$bodyClass = 'event-page ev-night'; // "Night" look. Remove ev-night here to return the event page to the light look.
 $hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
@@ -227,6 +239,11 @@ include __DIR__ . '/includes/header.php';
 <?php
 $evWhen = format_event_date_range($event['starts_at'], $event['ends_at']);
 $evWhere = $event['venue_name'] . ($event['venue_address'] ? ', ' . $event['venue_address'] : '');
+if ($isOnlineOnly) {
+    $evWhere = 'Online' . ($event['online_platform'] ? ' on ' . $event['online_platform'] : '') . '. The link arrives with your ticket.';
+} elseif ($isOnline) {
+    $evWhere .= ' and online' . ($event['online_platform'] ? ' on ' . $event['online_platform'] : '');
+}
 $evOrgInitials = initials_from_name($orgName);
 $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 ?>
@@ -245,10 +262,10 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 <?php if ($minPrice !== null && !$eventHasEnded): ?>
 <a class="mobile-buy-bar" href="#buyPanel">
   <span>
-    <span class="lbl">From</span>
-    <span class="amt"><?= htmlspecialchars(format_money($minPrice, $currency)) ?></span>
+    <span class="lbl"><?= $eventIsFree ? 'Entry' : 'From' ?></span>
+    <span class="amt"><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span>
   </span>
-  <span class="btn btn-purple">Get Tickets</span>
+  <span class="btn btn-purple"><?= $eventIsFree ? 'Get free ticket' : 'Get Tickets' ?></span>
 </a>
 <?php endif; ?>
 
@@ -277,6 +294,12 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         <?php endif; ?>
       </div>
 
+      <?php if ($isOnline || $hasFreeTier): ?>
+        <div class="ev-badges">
+          <?php if ($isOnline): ?><span class="ev-badge ev-badge-online"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
+          <?php if ($hasFreeTier): ?><span class="ev-badge ev-badge-free"><?= $eventIsFree ? 'Free' : 'Free tickets available' ?></span><?php endif; ?>
+        </div>
+      <?php endif; ?>
       <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
 
       <ul class="ev-meta">
@@ -607,8 +630,14 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         <div class="ev-stub-label">ADMIT ONE</div>
         <div class="ev-stub-title"><?= htmlspecialchars($event['title']) ?></div>
         <div class="ev-stub-when"><?= htmlspecialchars($evWhen) ?></div>
-        <div class="ev-stub-where"><?= htmlspecialchars($event['venue_name']) ?></div>
+        <div class="ev-stub-where"><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name'] . ($isOnline ? ' + online' : '')) ?></div>
       </div>
+
+      <?php if ($onlineAccess): ?>
+        <div class="ev-join-wrap"><?= render_join_card_html($event, $onlineAccess) ?></div>
+      <?php elseif ($isOnline): ?>
+        <div class="ev-online-note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Online access unlocks with your ticket.<?= $currentUser ? '' : ' Sign in after you register to see it.' ?></span></div>
+      <?php endif; ?>
 
       <?php if ($waitlistNotice): ?>
         <div class="alert alert-<?= $waitlistNotice[0] ?>" style="margin:16px 22px 0"><?= htmlspecialchars($waitlistNotice[1]) ?></div>
@@ -616,6 +645,8 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
       <?php if (isset($_GET['error']) && $_GET['error'] === 'select_tickets'): ?>
         <div class="alert alert-error" style="margin:16px 22px 0">Please select at least one ticket.</div>
+      <?php elseif (isset($_GET['error']) && $_GET['error'] === 'limit'): ?>
+        <div class="alert alert-error" style="margin:16px 22px 0">You already have the maximum number of tickets allowed per person for this event.</div>
       <?php elseif (isset($_GET['error']) && $_GET['error'] === 'sold_out'): ?>
         <div class="alert alert-error" style="margin:16px 22px 0">Sorry, one of the tickets you selected sold out. Please pick another.</div>
       <?php endif; ?>
@@ -628,13 +659,15 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
           <?php foreach ($tiers as $tier):
               $available = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
               $soldOut = $available === 0;
+              $tierLimit = tier_person_limit($tier);
+              $maxPick = $tierLimit !== null ? min($available, $tierLimit) : $available;
           ?>
-            <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $available ?>">
+            <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $maxPick ?>">
               <div class="tier-row">
                 <div>
                   <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
-                  <div class="tp"><?= htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
+                  <div class="tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?><?php if ($tierLimit !== null && ticket_is_free($tier)): ?> <span class="tlim">Limit <?= $tierLimit ?> per person</span><?php endif; ?></div>
                 </div>
                 <?php if ($soldOut): ?>
                   <div class="waitlist-box">
@@ -664,9 +697,9 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
           <div class="r total"><span>Total</span><span class="v mono" id="total-amount"><?= htmlspecialchars($currency) ?> 0</span></div>
         </div>
         <div class="poster-foot">
-          <button class="btn btn-purple btn-block btn-lg" type="submit">Get Tickets</button>
-          <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
-          <div class="pay-icons">
+          <button class="btn btn-purple btn-block btn-lg" type="submit" id="buySubmit"><?= $eventIsFree ? 'Get free ticket' : 'Get Tickets' ?></button>
+          <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> <?= $eventIsFree ? 'No payment needed &middot; instant QR ticket' : 'Secure checkout &middot; instant QR ticket' ?></div>
+          <div class="pay-icons"<?= $eventIsFree ? ' hidden' : '' ?>>
             <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span>
             <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span>
           </div>
@@ -712,6 +745,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 </div>
 <?php endif; ?>
 
+<script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
 <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
 <script src="/assets/js/moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/moments.js') ?: time() ?>"></script>

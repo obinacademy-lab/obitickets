@@ -15,8 +15,12 @@ $event = [
     'starts_at' => '',
     'ends_at' => '',
     'status' => 'DRAFT',
+    'attend_mode' => 'IN_PERSON',
+    'online_platform' => 'Zoom',
+    'online_url' => '',
+    'online_notes' => '',
 ];
-$tiers = [['name' => '', 'description' => '', 'price' => '', 'currency' => 'UGX', 'quantity_total' => '']];
+$tiers = [['name' => '', 'description' => '', 'price' => '', 'currency' => 'UGX', 'quantity_total' => '', 'max_per_person' => '']];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -39,9 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($event['title'] === '') {
         $errors[] = 'Please give your event a title.';
     }
-    if ($event['venue_name'] === '') {
+    $event = array_merge($event, parse_online_fields($_POST));
+    if (!events_online_ready()) {
+        $event['attend_mode'] = 'IN_PERSON'; // migration 021 not run yet: the form has no format question
+    }
+    if ($event['attend_mode'] !== 'ONLINE' && $event['venue_name'] === '') {
         $errors[] = 'Please add a venue name.';
     }
+    $errors = array_merge($errors, validate_online_fields($event));
     if ($event['starts_at'] === '' || $event['ends_at'] === '') {
         $errors[] = 'Please set a start and end date/time.';
     } elseif (strtotime($event['ends_at']) < strtotime($event['starts_at'])) {

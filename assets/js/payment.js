@@ -42,16 +42,18 @@
       errorBox.classList.toggle('hidden', !msg);
     }
 
+    const isFree = root.dataset.free === '1';
+
     payBtn?.addEventListener('click', async () => {
       const phone = phoneInput?.value.trim() || '';
-      if (phone.replace(/\D/g, '').length < 9) {
+      if (!isFree && phone.replace(/\D/g, '').length < 9) {
         setError('Enter a valid phone number.');
         return;
       }
       setError('');
       payBtn.disabled = true; // guard against a double-click reserving stock twice
       show('waiting');
-      if (statusText) statusText.textContent = 'Starting payment...';
+      if (statusText) statusText.textContent = isFree ? 'Getting your ticket...' : 'Starting payment...';
 
       try {
         const res = await fetch(initiateUrl, {
@@ -67,6 +69,11 @@
           return;
         }
         currentOrderId = data.orderId;
+        if (data.free) {
+          // Nothing to pay: the ticket already exists.
+          window.location.href = orderUrlBase + currentOrderId + '&success=1';
+          return;
+        }
         if (statusText) statusText.textContent = 'Check your phone and approve the mobile money prompt.';
         pollCount = 0;
         pollStatus();

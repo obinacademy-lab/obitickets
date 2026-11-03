@@ -10,22 +10,27 @@ $body = json_body();
 api_csrf_verify($body);
 
 $phone = trim((string) ($body['phone'] ?? ''));
-if (strlen(preg_replace('/\D/', '', $phone)) < 9) {
-    json_response(['error' => 'Enter a valid phone number.'], 400);
-}
 
 $pending = $_SESSION['pending_checkout'] ?? null;
 if (!$pending) {
     json_response(['error' => 'Your cart has expired. Please start again.'], 400);
 }
 
-$cart = resolve_checkout_cart($pending);
+$cart = resolve_checkout_cart($pending, (int) $user['id']);
 if (isset($cart['error'])) {
+    if ($cart['error'] === 'limit_reached') {
+        json_response(['error' => $cart['notices'][0] ?? 'You have reached the per-person ticket limit for this event.'], 400);
+    }
     if ($cart['error'] === 'event_ended') {
         unset($_SESSION['pending_checkout']);
         json_response(['error' => 'This event has ended, so tickets are no longer on sale.'], 400);
     }
     json_response(['error' => 'This event or ticket selection is no longer available.'], 400);
+}
+
+// A cart that totals zero (only free tickets) needs no phone number and no payment.
+if (empty($cart['isFree']) && strlen(preg_replace('/\D/', '', $phone)) < 9) {
+    json_response(['error' => 'Enter a valid phone number.'], 400);
 }
 
 try {
@@ -38,7 +43,7 @@ try {
         $cart['fee'],
         $cart['total'],
         $cart['currency'],
-        $phone
+        !empty($cart['isFree']) ? '' : $phone
     );
 } catch (InsufficientTicketsException $e) {
     unset($_SESSION['pending_checkout']);
@@ -63,4 +68,4 @@ if ($order && $order['status'] === 'FAILED') {
     json_response(['error' => $order['status_message'] ?? "We couldn't start the mobile money payment. Please try again."], 400);
 }
 
-json_response(['orderId' => $orderId]);
+json_response(['orderId' => $orderId, 'free' => !empty($cart['isFree'])]);

@@ -11,6 +11,12 @@ declare(strict_types=1);
  */
 function resend_send(string $to, string $subject, string $html): void
 {
+    // Reserved and demo domains can never receive mail (and tests and seed data use them), so do not spend a send on them.
+    if (preg_match('/@(example\.(com|org|net)|obitickets\.demo|[^@]+\.(test|invalid|localhost|example))$/i', trim($to))) {
+        error_log("[email] skipping send to reserved/demo address $to");
+        return;
+    }
+
     if (!RESEND_API_KEY) {
         error_log("[email] RESEND_API_KEY is not set — skipping send to $to. Subject: $subject");
         return;
@@ -72,9 +78,37 @@ function send_password_reset_email(string $to, string $name, string $resetUrl): 
  * whole email. Shared by the "your tickets are ready" email and the
  * day-before reminder below — neither carries its own copy of this markup.
  */
+/**
+ * The "Join online" block for an online or hybrid event: platform, a button to the meeting link, and the
+ * organizer's joining notes. Only ever built for the buyer's own ticket email, so the link goes to ticket holders.
+ * Returns '' for an in-person event.
+ */
+function render_online_email_block(array $order): string
+{
+    $mode = (string) ($order['attend_mode'] ?? 'IN_PERSON');
+    $url = normalize_meeting_url((string) ($order['online_url'] ?? ''));
+    if ($mode === 'IN_PERSON' || $url === null) {
+        return '';
+    }
+    $platform = htmlspecialchars((string) ($order['online_platform'] ?? '')) ?: 'the meeting';
+    $href = htmlspecialchars($url);
+    $notes = trim((string) ($order['online_notes'] ?? ''));
+    $notesHtml = $notes !== ''
+        ? '<p style="margin:10px 0 0; font-size:14px; color:#1C1526;"><strong>Notes:</strong> ' . htmlspecialchars($notes) . '</p>'
+        : '';
+    return '<div style="background:#150D1C; border-radius:14px; padding:18px 20px; margin:18px 0; color:#ffffff;">'
+        . '<p style="margin:0; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#F0A5A5;">Join online</p>'
+        . '<p style="margin:6px 0 12px; font-size:16px; font-weight:700; color:#ffffff;">This event is on ' . $platform . '. The room opens ' . ONLINE_JOIN_OPENS_MINUTES . ' minutes before the start (East Africa Time).</p>'
+        . '<a href="' . $href . '" style="display:inline-block; background:#2E9E5E; color:#ffffff; text-decoration:none; font-weight:800; padding:12px 22px; border-radius:12px;">Open the meeting link</a>'
+        . ($notes !== '' ? '<p style="margin:12px 0 0; font-size:14px; color:#E6E0EE;"><strong>Notes:</strong> ' . htmlspecialchars($notes) . '</p>' : '')
+        . '<p style="margin:12px 0 0; font-size:12px; color:#B3ADC0;">This link is for ticket holders only. Please do not forward it.</p>'
+        . '</div>';
+}
+
 function render_ticket_cards_html(array $order): string
 {
     $buyerName = htmlspecialchars($order['buyer_name']);
+    $onlineOnly = ($order['attend_mode'] ?? 'IN_PERSON') === 'ONLINE'; // nothing is scanned at a door
 
     $cards = '';
     foreach ($order['items'] as $item) {
@@ -85,6 +119,11 @@ function render_ticket_cards_html(array $order): string
             $qrHtml = $qrUrl
                 ? '<img src="' . htmlspecialchars($qrUrl) . '" width="180" height="180" alt="QR code for ' . $code . '" style="display:block; margin:0 auto; border-radius:8px;">'
                 : '<div style="width:180px; height:180px; margin:0 auto; border:1px dashed #D8D2E4; border-radius:8px; display:table-cell; text-align:center; vertical-align:middle; color:#726C7E; font-size:12px;">QR unavailable &mdash; use the code below</div>';
+
+            if ($onlineOnly) {
+                $qrHtml = '';
+            }
+            $qrCaption = $onlineOnly ? 'Online ticket. Use the join link above to enter the meeting.' : 'Show this QR code at the entrance';
 
             $cards .= <<<HTML
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; margin:0 auto 24px; border:1px solid #E8E4EF; border-radius:16px; overflow:hidden;">
@@ -102,7 +141,7 @@ function render_ticket_cards_html(array $order): string
                     <p style="margin:2px 0 20px; font-family:sans-serif; font-size:15px; font-weight:700; color:#991B1B;">{$tierName}</p>
                     {$qrHtml}
                     <p style="margin:16px 0 0; font-family:monospace; font-size:13px; letter-spacing:0.04em; color:#726C7E; text-align:center;">{$code}</p>
-                    <p style="margin:6px 0 0; font-family:sans-serif; font-size:12px; color:#948FA0; text-align:center;">Show this QR code at the entrance</p>
+                    <p style="margin:6px 0 0; font-family:sans-serif; font-size:12px; color:#948FA0; text-align:center;">{$qrCaption}</p>
                   </td>
                 </tr>
               </table>
@@ -115,6 +154,7 @@ function render_ticket_cards_html(array $order): string
 
 function render_ticket_email_html(array $order): string
 {
+    $onlineBlock = render_online_email_block($order);
     $eventTitle = htmlspecialchars($order['event_title']);
     $buyerName = htmlspecialchars($order['buyer_name']);
     $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
@@ -126,6 +166,7 @@ function render_ticket_email_html(array $order): string
         <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
           <h2 style="color:#991B1B;">Your tickets are ready 🎉</h2>
           <p>Hi {$buyerName}, thanks for your order &mdash; your tickets to {$eventTitle} are below.</p>
+          {$onlineBlock}
           <p style="background:#FEF2F2; border-radius:12px; padding:14px 16px; color:#1C1526;">
             <strong>{$eventTitle}</strong><br>
             {$dateRange}<br>
@@ -173,6 +214,7 @@ function send_order_tickets_email(int $orderId): void
 
 function render_ticket_reminder_email_html(array $order): string
 {
+    $onlineBlock = render_online_email_block($order);
     $eventTitle = htmlspecialchars($order['event_title']);
     $buyerName = htmlspecialchars($order['buyer_name']);
     $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
@@ -183,7 +225,8 @@ function render_ticket_reminder_email_html(array $order): string
     return <<<HTML
         <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
           <h2 style="color:#991B1B;">See you soon? 🎟️</h2>
-          <p>Hi {$buyerName}, just a reminder that {$eventTitle} is coming up &mdash; your tickets are below, ready to scan at the gate.</p>
+          <p>Hi {$buyerName}, just a reminder that {$eventTitle} is coming up &mdash; your tickets are below.</p>
+          {$onlineBlock}
           <p style="background:#FEF2F2; border-radius:12px; padding:14px 16px; color:#1C1526;">
             <strong>{$eventTitle}</strong><br>
             {$dateRange}<br>

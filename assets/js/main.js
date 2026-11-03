@@ -327,15 +327,18 @@ document.addEventListener('DOMContentLoaded', function () {
     var currency = buyForm.getAttribute('data-currency') || '';
     var subtotal = 0;
     var ticketCount = 0;
+    var paidCount = 0; // the service fee is charged per PAID ticket only
 
     buyForm.querySelectorAll('.tier').forEach(function (tierEl) {
       var price = parseFloat(tierEl.getAttribute('data-price')) || 0;
-      var qty = parseInt(tierEl.querySelector('.qty .n').textContent, 10) || 0;
+      var qtyEl = tierEl.querySelector('.qty .n');
+      var qty = qtyEl ? (parseInt(qtyEl.textContent, 10) || 0) : 0;
       subtotal += price * qty;
       ticketCount += qty;
+      if (price > 0) paidCount += qty;
     });
 
-    var fee = ticketCount * SERVICE_FEE_PER_TICKET;
+    var fee = paidCount * SERVICE_FEE_PER_TICKET;
     var total = subtotal + fee;
 
     var subtotalLabel = document.getElementById('subtotal-label');
@@ -346,9 +349,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (subtotalLabel) subtotalLabel.textContent = 'Subtotal (' + ticketCount + ' ticket' + (ticketCount === 1 ? '' : 's') + ')';
     if (subtotalAmount) subtotalAmount.textContent = currency + ' ' + formatAmount(subtotal);
-    if (feeLabel) feeLabel.textContent = 'Service fee (UGX 700 × ' + ticketCount + ')';
+    if (feeLabel) feeLabel.textContent = paidCount ? 'Service fee (UGX 700 × ' + paidCount + ')' : 'Service fee';
     if (feeAmount) feeAmount.textContent = currency + ' ' + formatAmount(fee);
-    if (totalAmount) totalAmount.textContent = currency + ' ' + formatAmount(total);
+    var isFreeCart = ticketCount > 0 && total === 0;
+    if (totalAmount) totalAmount.textContent = isFreeCart ? 'Free' : currency + ' ' + formatAmount(total);
+    var submit = document.getElementById('buySubmit');
+    if (submit) submit.textContent = isFreeCart ? 'Get free ticket' : (submit.getAttribute('data-paid-label') || 'Get Tickets');
   }
 
   document.querySelectorAll('.qty').forEach(function (qty) {
