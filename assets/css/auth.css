@@ -1,0 +1,61 @@
+/* ---------- Log in, sign up, forgot / reset password, two-factor: the "Photo card" look ----------
+   One crisp white card on a darkened event photo. Scoped to body.auth-photo, so the other pages that reuse .auth-card are untouched. */
+body.auth-photo .auth-stage{max-width:none; padding:0; position:relative; isolation:isolate; display:flex; justify-content:center}
+body.auth-photo .auth-stage::before{content:""; position:absolute; inset:0; z-index:-2; background:url(/assets/images/auth/auth-bg.jpg) center 40%/cover no-repeat; background-color:#17110F}
+body.auth-photo .auth-stage::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg,rgba(18,8,10,.72),rgba(18,8,10,.9))}
+body.auth-photo .auth-section{width:100%; min-height:min(760px,calc(100vh - 150px)); align-items:center; padding:48px 24px 64px}
+
+body.auth-photo .auth-card{max-width:440px; padding:36px 34px 30px; border:0; border-radius:26px; background:#fff; color:#1B1417; box-shadow:0 50px 80px -40px rgba(0,0,0,.8)}
+body.auth-photo .auth-top{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:22px}
+body.auth-photo .auth-card .logo{justify-content:flex-start; margin:0; color:#1B1417}
+body.auth-photo .auth-badge{font:600 .6rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:#B91C1C; background:#FDEDED; padding:6px 10px; border-radius:99px; white-space:nowrap}
+body.auth-photo .auth-card h1{margin:0; text-align:left; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-size:1.7rem; font-weight:800; line-height:1.1; letter-spacing:-.03em; color:#1B1417}
+body.auth-photo .auth-card .sub{margin-top:8px; text-align:left; font-size:.95rem; color:#6B6064}
+
+/* Continue with Google */
+body.auth-photo .btn-google{height:52px; margin-top:22px; padding:0 20px; border-radius:12px; border:1.5px solid #DCD3CE; font-size:.94rem; gap:10px; transition:border-color .25s, box-shadow .3s var(--ease), transform .3s var(--ease)}
+body.auth-photo .btn-google:hover{background:#fff; border-color:#1B1417; transform:translateY(-1px); box-shadow:0 14px 24px -18px rgba(27,20,23,.6)}
+body.auth-photo .auth-or{margin:20px 0 6px; font:600 .66rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.16em; color:#8A7F83}
+body.auth-photo .auth-or::before,body.auth-photo .auth-or::after{background:#E5DCD6}
+
+/* fields */
+body.auth-photo .field{margin-top:15px}
+body.auth-photo .field label,body.auth-photo .field .field-label{display:block; margin-bottom:6px; font-size:.78rem; font-weight:700; color:#3A3034}
+body.auth-photo .field input,body.auth-photo .field select,body.auth-photo .field textarea{height:52px; padding:0 16px; border:1.5px solid #DCD3CE; border-radius:12px; background:#fff; color:#1B1417; font-size:.96rem; font-weight:500; transition:border-color .2s, box-shadow .2s}
+body.auth-photo .field textarea{height:auto; padding:12px 16px}
+body.auth-photo .field input::placeholder{color:#A99FA3}
+body.auth-photo .field input:focus,body.auth-photo .field select:focus{outline:0; border-color:#B91C1C; box-shadow:0 0 0 4px rgba(220,38,38,.14)}
+body.auth-photo .field-hint{margin-top:6px; font-size:.76rem; color:#8A7F83}
+
+/* "I want to": two cards (real radio buttons, so it works without scripts) */
+body.auth-photo .role-pick{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+body.auth-photo .role-pick .role-opt{position:relative; display:block; margin:0; cursor:pointer}
+body.auth-photo .role-pick .role-opt input{position:absolute; opacity:0; width:1px; height:1px; margin:0}
+body.auth-photo .role-pick .role-opt span{display:flex; align-items:center; min-height:56px; padding:12px 14px; border:1.5px solid #DCD3CE; border-radius:12px; background:#fff; color:#3A3034; font-size:.84rem; font-weight:700; line-height:1.25; transition:border-color .2s, background .2s, box-shadow .2s}
+body.auth-photo .role-pick .role-opt:hover span{border-color:#B9ADA7}
+body.auth-photo .role-pick .role-opt input:checked + span{border-color:#B91C1C; background:#FDF0F0; box-shadow:0 0 0 3px rgba(220,38,38,.12); color:#1B1417}
+body.auth-photo .role-pick .role-opt input:focus-visible + span{outline:3px solid #B91C1C; outline-offset:2px}
+
+/* the main button */
+body.auth-photo .auth-card .btn-block{height:54px; margin-top:22px !important; padding:0 24px; border:0; border-radius:13px; background:#B91C1C; color:#fff; font-size:1rem; font-weight:800; box-shadow:0 18px 30px -20px rgba(185,28,28,.9); transition:transform .3s var(--ease), background .25s}
+body.auth-photo .auth-card .btn-block:hover{background:#991B1B; transform:translateY(-2px)}
+body.auth-photo .auth-card .btn-block:focus-visible{outline:3px solid #B91C1C; outline-offset:3px}
+
+/* links under the form */
+body.auth-photo .auth-foot{margin-top:18px; color:#6B6064; font-size:.9rem}
+body.auth-photo .auth-foot + .auth-foot{margin-top:8px}
+body.auth-photo .auth-foot a{color:#B91C1C; font-weight:800}
+body.auth-photo .auth-foot a:hover{text-decoration:underline}
+
+@media (max-width:560px){
+  body.auth-photo .auth-section{padding:28px 14px 40px; min-height:0}
+  body.auth-photo .auth-card{padding:28px 22px 24px; border-radius:22px}
+  body.auth-photo .auth-card h1{font-size:1.5rem}
+}
+@media (max-width:380px){
+  body.auth-photo .role-pick{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  body.auth-photo .btn-google,body.auth-photo .auth-card .btn-block{transition:none}
+  body.auth-photo .btn-google:hover,body.auth-photo .auth-card .btn-block:hover{transform:none}
+}

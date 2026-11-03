@@ -52,6 +52,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
+<?php if (str_contains($bodyClass ?? '', 'auth-photo')): ?>
+<link rel="stylesheet" href="/assets/css/auth.css?v=<?= @filemtime(__DIR__ . '/../assets/css/auth.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'about-mosaic')): ?>
 <link rel="stylesheet" href="/assets/css/about.css?v=<?= @filemtime(__DIR__ . '/../assets/css/about.css') ?: time() ?>">
 <?php endif; ?>

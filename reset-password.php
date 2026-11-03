@@ -7,9 +7,9 @@ $done = false;
 
 if (!is_string($token) || $token === '') {
     $pageTitle = 'Reset password — obitickets';
-    $bodyClass = 'classic-page';
+    $bodyClass = 'classic-page auth-photo';
     include __DIR__ . '/includes/header.php';
-    echo '<div class="wrap"><section class="auth-section"><div class="auth-card"><h1>Invalid link</h1><p class="sub">This password reset link is missing its token.</p><div class="auth-foot"><a href="/forgot-password.php">Request a new link</a></div></div></section></div>';
+    echo '<div class="wrap auth-stage"><section class="auth-section"><div class="auth-card"><h1>Invalid link</h1><p class="sub">This password reset link is missing its token.</p><div class="auth-foot"><a href="/forgot-password.php">Request a new link</a></div></div></section></div>';
     include __DIR__ . '/includes/footer.php';
     exit;
 }
@@ -27,9 +27,9 @@ $reset = find_valid_reset($token);
 
 if (!$reset) {
     $pageTitle = 'Reset password — obitickets';
-    $bodyClass = 'classic-page';
+    $bodyClass = 'classic-page auth-photo';
     include __DIR__ . '/includes/header.php';
-    echo '<div class="wrap"><section class="auth-section"><div class="auth-card"><h1>Link expired</h1><p class="sub">This password reset link is invalid or has expired.</p><div class="auth-foot"><a href="/forgot-password.php">Request a new link</a></div></div></section></div>';
+    echo '<div class="wrap auth-stage"><section class="auth-section"><div class="auth-card"><h1>Link expired</h1><p class="sub">This password reset link is invalid or has expired.</p><div class="auth-foot"><a href="/forgot-password.php">Request a new link</a></div></div></section></div>';
     include __DIR__ . '/includes/footer.php';
     exit;
 }
@@ -54,17 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Reset password — obitickets';
-$bodyClass = 'classic-page';
+$bodyClass = 'classic-page auth-photo';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="wrap">
+<div class="wrap auth-stage">
   <section class="auth-section">
     <div class="auth-card reveal">
-      <a class="logo" href="/">
+      <div class="auth-top"><a class="logo" href="/">
         <svg class="logo-mark" viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="var(--purple)" stroke="#fff" stroke-width="1.6"/></svg>
         obitickets
-      </a>
+      </a><span class="auth-badge">Password</span></div>
 
       <?php if ($done): ?>
         <h1>Password updated</h1>

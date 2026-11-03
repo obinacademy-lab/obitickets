@@ -54,17 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Sign up — obitickets';
-$bodyClass = 'classic-page';
+$bodyClass = 'classic-page auth-photo';
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="wrap">
+<div class="wrap auth-stage">
   <section class="auth-section">
     <div class="auth-card reveal">
-      <a class="logo" href="/">
+      <div class="auth-top"><a class="logo" href="/">
         <svg class="logo-mark" viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="var(--purple)" stroke="#fff" stroke-width="1.6"/></svg>
         obitickets
-      </a>
+      </a><span class="auth-badge">Sign up</span></div>
       <h1>Create your account</h1>
       <p class="sub">Buy tickets or start selling &mdash; it only takes a minute.</p>
 
@@ -94,11 +94,11 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <div class="field">
-          <label for="role">I want to</label>
-          <select id="role" name="role">
-            <option value="ATTENDEE" <?= $role === 'ATTENDEE' ? 'selected' : '' ?>>Attend events</option>
-            <option value="ORGANIZER" <?= $role === 'ORGANIZER' ? 'selected' : '' ?>>Sell tickets for my events</option>
-          </select>
+          <span class="field-label" id="role-label">I want to</span>
+          <div class="role-pick" role="radiogroup" aria-labelledby="role-label">
+            <label class="role-opt"><input type="radio" name="role" value="ATTENDEE" <?= $role === 'ATTENDEE' ? 'checked' : '' ?>><span>Attend events</span></label>
+            <label class="role-opt"><input type="radio" name="role" value="ORGANIZER" <?= $role === 'ORGANIZER' ? 'checked' : '' ?>><span>Sell tickets for my events</span></label>
+          </div>
         </div>
 
         <div class="field">
@@ -123,14 +123,16 @@ include __DIR__ . '/includes/header.php';
 <script>
 // Keep the Google button's role in step with the "I want to" choice.
 (function () {
-  var btn = document.getElementById('googleBtn'), sel = document.getElementById('role');
-  if (!btn || !sel) return;
+  var btn = document.getElementById('googleBtn'), radios = document.querySelectorAll('input[name="role"]');
+  if (!btn || !radios.length) return;
   function sync() {
+    var on = document.querySelector('input[name="role"]:checked');
     var u = new URL(btn.getAttribute('href'), location.origin);
-    if (sel.value === 'ORGANIZER') u.searchParams.set('role', 'ORGANIZER'); else u.searchParams.delete('role');
+    if (on && on.value === 'ORGANIZER') u.searchParams.set('role', 'ORGANIZER'); else u.searchParams.delete('role');
     btn.setAttribute('href', u.pathname + u.search);
   }
-  sel.addEventListener('change', sync); sync();
+  radios.forEach(function (r) { r.addEventListener('change', sync); });
+  sync();
 })();
 </script>
 <script src="/assets/js/cinematic.js"></script>
