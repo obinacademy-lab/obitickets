@@ -53,6 +53,16 @@ function get_upcoming_tickets_for_user(int $userId, int $limit = 8): array
     $stmt->execute([$userId]);
     return $stmt->fetchAll();
 }
+/** Inline style that gives a flyer frame its blurred backdrop (the flyer itself, softened). */
+function flyer_backdrop_style(?string $path): string
+{
+    $path = trim((string) $path);
+    if ($path === '') {
+        return '';
+    }
+    $safe = str_replace(["'", '"', '\\', '(', ')', ' ', "\n", "\r"], '', $path);
+    return ' style="--art:url(' . htmlspecialchars($safe, ENT_QUOTES) . ')"';
+}
 /** A stable colour for an event that has no poster, chosen by its category. */
 function landing_gradient(array $event): string
 {
@@ -97,7 +107,7 @@ function render_landing_poster(array $event): void
 {
     $url = '/event.php?slug=' . urlencode($event['slug']);
     ?>
-    <a class="ld-pc" href="<?= htmlspecialchars($url) ?>" tabindex="-1" aria-hidden="true">
+    <a class="ld-pc<?= !empty($event['banner_image']) ? ' has-img' : '' ?>" href="<?= htmlspecialchars($url) ?>" tabindex="-1" aria-hidden="true"<?= flyer_backdrop_style($event['banner_image'] ?? null) ?>>
       <?php if (!empty($event['banner_image'])): ?>
         <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy">
       <?php else: ?>
@@ -117,7 +127,7 @@ function render_landing_card(array $event): void
     $where = (string) $event['venue_name'] . ((($event['attend_mode'] ?? '') === 'HYBRID') ? ' + online' : '');
     ?>
     <a class="ld-fc reveal" href="<?= htmlspecialchars($url) ?>">
-      <span class="ld-art">
+      <span class="ld-art"<?= flyer_backdrop_style($event['banner_image'] ?? null) ?>>
         <?php if (!empty($event['banner_image'])): ?>
           <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy">
         <?php else: ?>

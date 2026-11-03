@@ -1453,3 +1453,10 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .foot-col a.foot-wa:hover{color:#9CF0BC;}
 @media (max-width:640px){ .wa-float{right:14px; width:52px; height:52px;} }
 @media print{ .wa-float{display:none;} }
+
+/* Event cards show the whole flyer in a 4:5 frame, on a softened copy of itself (no cropping). */
+.poster-card-art{position:relative; display:block; aspect-ratio:4/5; border-radius:14px; overflow:hidden; isolation:isolate; background:var(--purple-tint-2); transition:transform .4s var(--ease), box-shadow .4s var(--ease)}
+.poster-card-art::before{content:""; position:absolute; inset:-14%; z-index:-1; background:var(--art) center/cover no-repeat; filter:blur(22px) saturate(1.15) brightness(.85)}
+.poster-card-art .poster-card-img{position:absolute; inset:0; width:100%; height:100%; aspect-ratio:auto; object-fit:contain; border-radius:0; background:none; box-shadow:none}
+.poster-card:hover .poster-card-art{transform:translateY(-4px); box-shadow:var(--shadow-lg)}
+.poster-card:hover .poster-card-art .poster-card-img{transform:none; box-shadow:none}

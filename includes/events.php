@@ -395,7 +395,7 @@ function render_poster_card(array $event): void
     ?>
     <a class="poster-card reveal" href="/event.php?slug=<?= urlencode($event['slug']) ?>">
       <?php if (!empty($event['banner_image'])): ?>
-        <img class="poster-card-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+        <span class="poster-card-art"<?= flyer_backdrop_style($event['banner_image']) ?>><img class="poster-card-img" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy"></span>
       <?php else: ?>
         <div class="poster-card-img poster-card-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
       <?php endif; ?>

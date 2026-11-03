@@ -24,7 +24,7 @@
 .ld-col.r{animation-direction:reverse; margin-top:-64px}
 .ld-wall:hover .ld-col{animation-play-state:paused}
 @keyframes ldUp{to{transform:translateY(-50%)}}
-.ld-pc{position:relative; display:block; flex:none; aspect-ratio:3/4; border-radius:16px; overflow:hidden; background:#EFEAF5; box-shadow:0 18px 30px -22px rgba(28,21,38,.55)}
+.ld-pc{position:relative; display:block; flex:none; aspect-ratio:4/5; border-radius:16px; overflow:hidden; background:#EFEAF5; isolation:isolate; box-shadow:0 18px 30px -22px rgba(28,21,38,.55)}
 .ld-pc img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
 .ld-bg{position:absolute; inset:0}
 .ld-pc em,.ld-art em{position:absolute; right:12px; top:8px; font-style:normal; font-size:2.6rem}
@@ -56,9 +56,10 @@
 .ld-feat{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; margin-top:26px}
 .ld-fc{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--surface); color:inherit; transition:transform .3s cubic-bezier(.16,.8,.24,1), box-shadow .3s}
 .ld-fc:hover{transform:translateY(-5px); box-shadow:0 26px 42px -26px rgba(28,21,38,.5)}
-.ld-art{position:relative; display:block; aspect-ratio:4/3; overflow:hidden; background:#EFEAF5}
-.ld-art img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; transition:transform .7s cubic-bezier(.16,.8,.24,1)}
-.ld-fc:hover .ld-art img{transform:scale(1.05)}
+.ld-art{position:relative; display:block; aspect-ratio:4/5; overflow:hidden; background:#EFEAF5; isolation:isolate}
+.ld-art::before{content:""; position:absolute; inset:-14%; z-index:-1; background:var(--art) center/cover no-repeat; filter:blur(24px) saturate(1.15) brightness(.82)}
+.ld-art img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; transition:transform .7s cubic-bezier(.16,.8,.24,1)}
+.ld-fc:hover .ld-art img{transform:scale(1.025)}
 .ld-fb{display:block; padding:18px 20px 20px}
 .ld-fb h3{font-size:1.08rem; font-weight:800; line-height:1.25}
 .ld-fb p{font-size:.86rem; color:var(--muted); margin:4px 0 0}
@@ -119,3 +120,8 @@
 .ld-nx-pause[aria-pressed="true"] span{font-size:0}
 .ld-nx-pause[aria-pressed="true"] span::before{font-size:.7rem}
 @media (max-width:640px){.ld-nx-slide .btn{flex:1 1 auto}}
+
+/* flyers are shown whole on the poster wall */
+.ld-pc.has-img::before{content:""; position:absolute; inset:-14%; z-index:-1; background:var(--art) center/cover no-repeat; filter:blur(22px) saturate(1.15) brightness(.85)}
+.ld-pc.has-img img{object-fit:contain}
+.ld-pc.has-img::after,.ld-pc.has-img .ld-pt{display:none}
