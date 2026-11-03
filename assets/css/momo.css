@@ -1,0 +1,123 @@
+/* ==========================================================================
+   Event page, "Momo" look. Loaded after night.css and event-v3.css when the page body has .ev-momo.
+   Structure follows a dark ticketing-marketplace event page: a gradient hero band with a small tag line,
+   poster on the left, big heavy title on the right with "Organized by", date, venue and a days-to-go chip;
+   below it a reading column (About, Tickets, Venue, Your ticket) next to a small "From / Buy now" card,
+   then a full-width "More events" list. Buying opens the ticket panel as a side drawer (a bottom sheet on
+   phones). Colors and type are obitickets' own (deep ink, red accent). All hooks (#buyPanel, #cd-text,
+   .tier, .qty ...) are untouched.
+   To go back: change the body class in public/event.php (e.g. 'event-page ev-classic').
+   ========================================================================== */
+
+body.ev-momo{background:#0D0911}
+body.ev-momo .ev{--ev-nav:68px; background:#0D0911; color:#F6F2FA; font-family:'Manrope',system-ui,sans-serif}
+body.ev-momo .ev-wrap{max-width:1128px; padding:0 32px}
+body.ev-momo .ev-glow,body.ev-momo .ev-cd,body.ev-momo .ev-pulse,body.ev-momo .ev-event-react{display:none !important}
+
+/* ---------- hero band ---------- */
+body.ev-momo .ev-hero{padding:34px 0 52px; background:linear-gradient(180deg,#34111B 0%,#1A0C14 55%,#0D0911 100%)}
+body.ev-momo .ev-hero-grid{position:relative; display:grid; grid-template-columns:260px minmax(0,1fr); column-gap:40px; align-items:start}
+body.ev-momo .ev-hero-text{display:flex; flex-direction:column; min-width:0}
+body.ev-momo .ev-hero-text > *{animation:none}
+body.ev-momo .ev-eyebrow{grid-column:1 / -1; margin-bottom:22px; padding-right:60px}
+body.ev-momo .ev-eyebrow-cat{border-left:3px solid #F26262; padding-left:9px; font-size:12px; font-weight:800; letter-spacing:.08em; color:#fff; line-height:1.1}
+body.ev-momo .ev-eyebrow .ev-dot,body.ev-momo .ev-eyebrow-state{display:none}
+body.ev-momo .ev-cover{grid-column:1; align-self:start; width:260px; max-width:260px; border-radius:12px; animation:none}
+body.ev-momo .ev-cover img{border-radius:12px; width:100%; max-height:none; box-shadow:0 18px 40px -18px rgba(0,0,0,.7); border:1px solid rgba(255,255,255,.12)}
+body.ev-momo .ev-cover-fallback{aspect-ratio:4/5; border-radius:12px}
+body.ev-momo .ev-badges{order:0; margin:0 0 12px}
+body.ev-momo .ev-title{order:1; font-family:'Manrope',system-ui,sans-serif; font-size:clamp(2.2rem,5.2vw,3.75rem); font-weight:800; line-height:1.1; letter-spacing:-.025em; color:#fff; margin:0; text-shadow:none}
+body.ev-momo .ev-org-row{order:2; display:block; margin:18px 0 0; padding:0; border:0}
+body.ev-momo .ev-org-row::before{content:"Organized by:"; display:block; font-size:12px; font-weight:600; color:#B3ADC0}
+body.ev-momo .ev-org-row .ev-avatar,body.ev-momo .ev-org-sub,body.ev-momo .ev-org-row [data-ev-follow]{display:none}
+body.ev-momo .ev-org-info{margin-top:2px}
+body.ev-momo .ev-org-name{font-size:18px; font-weight:800; color:#F26262}
+body.ev-momo .ev-org-name a{color:#F26262; text-decoration:none}
+body.ev-momo .ev-org-name a:hover{text-decoration:underline}
+body.ev-momo .ev-meta{order:3; margin:12px 0 0; gap:6px}
+body.ev-momo .ev-meta li{font-size:16px; font-weight:800; color:#fff; gap:8px; align-items:center}
+body.ev-momo .ev-meta li + li{font-size:14px; font-weight:700; color:#B3ADC0}
+body.ev-momo .ev-meta svg{width:16px; height:16px; color:#B3ADC0}
+body.ev-momo .ev-meta li:first-child svg{display:none}
+body.ev-momo .ev-days{order:4; align-self:start; justify-self:start; display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:6px 11px; border-radius:8px; background:rgba(255,255,255,.1); color:#fff; font-size:12px; font-weight:800}
+body.ev-momo .ev-days svg{color:#F26262}
+body.ev-momo .ev-actions{position:absolute; top:-4px; right:0; margin:0; padding:0; z-index:3}
+body.ev-momo .ev-icons{display:flex; gap:8px}
+body.ev-momo .ev-icon-btn{width:38px; min-width:38px; height:38px; padding:0; border-radius:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff}
+body.ev-momo .ev-icon-btn:hover{border-color:rgba(255,255,255,.4); transform:none}
+
+/* ---------- reading column + From card ---------- */
+body.ev-momo .ev-grid{grid-template-columns:minmax(0,1fr) 300px; gap:56px; padding-top:30px; padding-bottom:56px; align-items:start}
+body.ev-momo .ev-side{gap:16px; align-self:start}
+body.ev-momo .ev-section{margin:0 0 40px; padding:0; background:none; border:0; border-radius:0}
+body.ev-momo .ev-h2{font-family:'Manrope',system-ui,sans-serif; font-size:24px; font-weight:800; letter-spacing:-.01em; margin:0 0 16px; color:#F6F2FA}
+body.ev-momo .ev-about .about-text{font-size:15px; line-height:1.6; font-weight:600; color:#B3ADC0; max-width:62ch}
+
+body.ev-momo .mq-from{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:22px}
+body.ev-momo .mq-from-l{display:block; font-size:11px; font-weight:800; letter-spacing:.1em; color:#B3ADC0}
+body.ev-momo .mq-from-p{display:block; margin:4px 0 18px; font-size:26px; font-weight:800; letter-spacing:-.01em; color:#fff}
+body.ev-momo .mq-buy{display:flex; align-items:center; justify-content:center; height:52px; padding:0 24px; border-radius:14px; background:#EF4444; color:#fff !important; font-weight:800; font-size:16px; text-decoration:none; transition:background .2s}
+body.ev-momo .mq-buy:hover{background:#DC2626}
+
+body.ev-momo .mq-rows{list-style:none; margin:0; padding:0; display:grid; gap:8px}
+body.ev-momo .mq-rows li{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 16px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1)}
+body.ev-momo .mq-tn{font-size:14px; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:#fff}
+body.ev-momo .mq-tn em{font-style:normal; margin-left:8px; font-size:11px; padding:2px 8px; border-radius:6px; background:rgba(255,255,255,.12); color:#B3ADC0; text-transform:none}
+body.ev-momo .mq-tp{font-size:14px; font-weight:800; color:#fff; white-space:nowrap}
+body.ev-momo .mq-note{margin:12px 0 0; font-size:13px; font-weight:600; color:#B3ADC0}
+body.ev-momo .mq-card{border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1)}
+body.ev-momo .mq-venue{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px}
+body.ev-momo .mq-venue b{display:block; font-size:16px; font-weight:800; color:#fff}
+body.ev-momo .mq-venue span{display:block; font-size:13px; font-weight:600; color:#B3ADC0; margin-top:2px}
+body.ev-momo .mq-venue a{font-size:13px; font-weight:800; letter-spacing:.08em; color:#F26262; text-decoration:none}
+body.ev-momo .mq-venue a:hover{text-decoration:underline}
+body.ev-momo .mq-how > div{display:flex; gap:14px; align-items:flex-start; padding:16px 20px}
+body.ev-momo .mq-how > div + div{border-top:1px solid rgba(255,255,255,.1)}
+body.ev-momo .mq-ic{width:38px; height:38px; flex:none; border-radius:50%; display:grid; place-items:center; background:rgba(255,255,255,.07); color:#F26262}
+body.ev-momo .mq-how p{margin:0; font-size:14px; font-weight:600; color:#B3ADC0}
+body.ev-momo .mq-how b{display:block; font-size:15px; font-weight:800; color:#fff}
+body.ev-momo .mq-how a{color:#F26262; font-weight:800; text-decoration:none}
+body.ev-momo .mq-how a:hover{text-decoration:underline}
+
+/* ---------- ticket panel: a side drawer instead of a card in the column ---------- */
+@media (min-width:921px){
+  body.ev-momo .ev-stub-wrap{position:static; filter:none; animation:none}
+  body.ev-momo .buy-panel.ev-stub{position:fixed; top:0; right:0; bottom:0; left:auto; width:min(440px,100%); z-index:80; overflow-y:auto; border-radius:0; border:0; border-left:1px solid rgba(255,255,255,.14);
+    -webkit-mask:none; mask:none; transform:translateX(100%); visibility:hidden; transition:transform .35s cubic-bezier(.16,1,.3,1), visibility 0s linear .35s}
+  body.ev-momo.ticket-sheet-open .buy-panel.ev-stub,body.ev-momo .buy-panel.ev-stub:target{transform:none; visibility:visible; transition:transform .35s cubic-bezier(.16,1,.3,1), visibility 0s}
+  body.ev-momo.ticket-sheet-open{overflow:hidden}
+  body.ev-momo .sheet-close{display:flex; color:#fff; background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2)}
+  body.ev-momo .ev-stub-top{height:auto; padding-top:30px; padding-bottom:20px}
+  body.ev-momo .ev .ended-panel{border-radius:16px}
+}
+
+/* ---------- More events ---------- */
+body.ev-momo .mq-more{background:#0D0911; border-top:1px solid rgba(255,255,255,.1); padding:40px 0 64px; color:#F6F2FA}
+body.ev-momo .mq-wrap{max-width:1128px; margin:0 auto; padding:0 32px}
+body.ev-momo .mq-more h2{margin:0 0 22px; font-size:22px; font-weight:800; letter-spacing:-.01em; color:#fff}
+body.ev-momo .mq-more-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 56px}
+body.ev-momo .mq-ev{display:flex; gap:16px; align-items:center; text-decoration:none; color:inherit}
+body.ev-momo .mq-th{width:62px; height:82px; flex:none; border-radius:8px; overflow:hidden; background:#1E1626; display:grid; place-items:center}
+body.ev-momo .mq-th img{width:100%; height:100%; object-fit:cover}
+body.ev-momo .mq-th i{font-style:normal; font-size:1.8rem}
+body.ev-momo .mq-tx{min-width:0}
+body.ev-momo .mq-tx b{display:block; font-size:16px; font-weight:800; color:#fff; line-height:1.3}
+body.ev-momo .mq-tx em{display:block; font-style:normal; font-size:14px; font-weight:800; color:#F26262; margin-top:2px}
+body.ev-momo .mq-tx small{display:block; font-size:14px; font-weight:700; color:#B3ADC0; margin-top:2px}
+body.ev-momo .mq-ev:hover .mq-tx b{text-decoration:underline}
+
+/* ---------- tablet and phone ---------- */
+@media (max-width:920px){
+  body.ev-momo .ev-grid{grid-template-columns:1fr; gap:0}
+  body.ev-momo .mq-from{display:none}
+  body.ev-momo .ev-side{gap:0}
+}
+@media (max-width:760px){
+  body.ev-momo .ev-wrap,body.ev-momo .mq-wrap{padding:0 16px}
+  body.ev-momo .ev-hero{padding:22px 0 34px}
+  body.ev-momo .ev-hero-grid{grid-template-columns:1fr; column-gap:0}
+  body.ev-momo .ev-eyebrow{margin-bottom:16px}
+  body.ev-momo .ev-cover{grid-column:1; width:min(220px,64%); max-width:220px; margin-bottom:22px}
+  body.ev-momo .ev-title{font-size:clamp(1.9rem,9vw,2.6rem)}
+  body.ev-momo .mq-more-grid{grid-template-columns:1fr}
+}

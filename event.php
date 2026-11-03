@@ -24,7 +24,7 @@ if (!$event) {
 }
 
 $tiers = get_ticket_types_for_event((int) $event['id']);
-$similarEvents = get_similar_events((int) $event['id'], $event['category'], 3);
+$similarEvents = get_similar_events((int) $event['id'], $event['category'], 4);
 $eventMedia = get_event_media((int) $event['id']);
 $currency = $tiers[0]['currency'] ?? 'UGX';
 
@@ -232,7 +232,7 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-classic'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
+$bodyClass = 'event-page ev-night ev-momo'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
 $hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
@@ -272,11 +272,20 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 
-<nav class="ev-crumb ev-wrap" aria-label="Breadcrumb"><a href="/">Events</a> / <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> / <span><?= htmlspecialchars($event['title']) ?></span></nav>
-
 <!-- ===== hero ===== -->
 <section class="ev-hero"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
   <div class="ev-wrap ev-hero-grid">
+
+    <div class="ev-eyebrow">
+      <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
+      <span class="ev-dot" aria-hidden="true"></span>
+      <?php if ($eventHasEnded): ?>
+        <span class="ev-eyebrow-state">Event ended</span>
+      <?php else: ?>
+        <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
+      <?php endif; ?>
+    </div>
+
 
     <?php if (!empty($event['banner_image'])): ?>
       <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
@@ -287,16 +296,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php endif; ?>
 
     <div class="ev-hero-text">
-      <div class="ev-eyebrow">
-        <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
-        <span class="ev-dot" aria-hidden="true"></span>
-        <?php if ($eventHasEnded): ?>
-          <span class="ev-eyebrow-state">Event ended</span>
-        <?php else: ?>
-          <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
-        <?php endif; ?>
-      </div>
-
       <?php if ($isOnline || $hasFreeTier): ?>
         <div class="ev-badges">
           <?php if ($isOnline): ?><span class="ev-badge ev-badge-online"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
@@ -310,6 +309,10 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><?= htmlspecialchars($evWhere) ?></li>
       </ul>
 
+      <?php if (!$eventHasEnded): $mqDays = (int) ceil((strtotime((string) $event['starts_at']) - time()) / 86400); ?>
+      <span class="ev-days"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2.4"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5"/></svg><?= $mqDays <= 0 ? 'Today' : ($mqDays === 1 ? 'Tomorrow' : 'In ' . $mqDays . ' days') ?></span>
+      <?php endif; ?>
+
       <div class="ev-org-row">
         <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
         <div class="ev-org-info">
@@ -319,23 +322,11 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
           </div>
           <?php if ($communityReady): ?><div class="ev-org-sub"><span id="orgFollowers"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></div><?php endif; ?>
         </div>
-        <?php if ($communityReady): ?>
-          <button type="button" class="ev-btn ev-btn-outline ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
-        <?php endif; ?>
       </div>
 
       <div class="ev-actions">
-        <?php if (!$eventHasEnded && $minPrice !== null): ?>
-          <a class="ev-btn ev-btn-primary ev-hero-cta" href="#buyPanel"><?= $eventIsFree ? 'Get free ticket' : 'Get tickets' ?><span class="ev-btn-sub"> &middot; <?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span></a>
-        <?php endif; ?>
         <?php if ($eventHasEnded): ?>
           <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
-        <?php endif; ?>
-        <?php if ($communityReady): ?>
-          <button type="button" class="ev-btn ev-btn-outline" data-ev-follow="event" data-id="<?= (int) $event['id'] ?>" aria-pressed="<?= $followingEvent ? 'true' : 'false' ?>">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 16 6 10z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>
-            <span class="ev-follow-label"><?= $followingEvent ? 'Following' : 'Follow event' ?></span>
-          </button>
         <?php endif; ?>
         <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
         <div class="ev-event-react">
@@ -351,10 +342,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         <?php endif; ?>
         <span class="ev-grow" aria-hidden="true"></span>
         <div class="ev-icons">
-        <button class="ev-icon-btn like-btn<?= $userLikedEvent ? ' liked' : '' ?>" id="likeBtn" type="button" aria-label="Like this event" aria-pressed="<?= $userLikedEvent ? 'true' : 'false' ?>" data-event-id="<?= (int) $event['id'] ?>">
-          <svg width="18" height="18"><use href="#ic-heart"/></svg>
-          <span id="likeCount"><?= (int) $event['likes_count'] ?></span>
-        </button>
         <div class="share-wrap">
           <button class="ev-icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
             <svg width="18" height="18"><use href="#ic-share"/></svg>
@@ -381,16 +368,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
   </div>
 </section>
 
-<!-- ===== tabs ===== -->
-<nav class="ev-tabs" aria-label="Sections">
-  <div class="ev-wrap ev-tabs-row">
-    <a href="#about" class="is-active" data-tab="about">About</a>
-    <?php if ($showCommunityUi && ($momentsReady ? $moments : $eventMedia)): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
-    <a href="#host" data-tab="host">Host</a>
-    <?php if ($showCommunityUi && $communityReady): ?><a href="#community" data-tab="community"><?= $eventHasEnded ? 'Relive' : 'Community' ?></a><?php endif; ?>
-    <?php if ($eventHasEnded || $reviews): ?><a href="#reviews" data-tab="reviews">Reviews</a><?php endif; ?>
-  </div>
-</nav>
 
 <div class="ev-wrap ev-grid">
 
@@ -470,42 +447,41 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
     <?php endif; /* showCommunityUi: moments + gallery */ ?>
 
-    <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
-    <section id="host" class="ev-section ev-hosting" aria-label="Organizer and attendance">
-      <h2 class="ev-h2">Hosted by</h2>
-      <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
-        <div class="ev-card ev-host-card">
-          <div class="ev-card-head">
-            <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
-            <div class="ev-card-title">
-              <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><span><?= htmlspecialchars($orgName) ?></span><?php endif; ?>
-              <?php if ($communityReady): ?><small><span class="orgFollowersMirror"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></small><?php endif; ?>
-            </div>
-            <?php if ($communityReady): ?>
-              <button type="button" class="ev-btn ev-btn-dark ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
-            <?php endif; ?>
-          </div>
-          <p class="ev-card-text"><?= htmlspecialchars($event['organizer_bio'] ?: 'Event organizer on obitickets.') ?></p>
-          <?php if ($organizerLinks): ?>
-            <div class="ev-card-sub">Follow them elsewhere</div>
-            <div class="ev-social">
-              <?php foreach ($organizerLinks as $link): ?>
-                <a href="<?= htmlspecialchars($link['url']) ?>" target="_blank" rel="noopener noreferrer nofollow" aria-label="<?= htmlspecialchars($link['label']) ?> (opens in a new tab)"><?= htmlspecialchars($link['short']) ?></a>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
+    <!-- ===== tickets (read only; buying happens in the ticket panel) ===== -->
+    <?php if (!$eventHasEnded && $tiers): ?>
+    <section id="tickets" class="ev-section mq-sec">
+      <h2 class="ev-h2">Tickets</h2>
+      <ul class="mq-rows">
+        <?php foreach ($tiers as $tier): $mqAvail = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']); ?>
+          <li><span class="mq-tn"><?= htmlspecialchars($tier['name']) ?><?php if ($mqAvail === 0): ?> <em>Sold out</em><?php endif; ?></span><span class="mq-tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?></span></li>
+        <?php endforeach; ?>
+      </ul>
+      <p class="mq-note"><?= $eventIsFree ? 'Free entry. Your ticket is confirmed straight away.' : 'Pay with MTN MoMo or Airtel Money.' ?></p>
+    </section>
+    <?php endif; ?>
 
-        <?php if ($communityReady): ?>
-        <div class="ev-card ev-going-card">
-          <div class="ev-going-num"><?= number_format($social['going']) ?></div>
-          <div class="ev-card-title-lg"><?= $social['going'] === 1 ? 'person' : 'people' ?> <?= $eventHasEnded ? 'went' : ($social['going'] === 1 ? 'is going' : 'are going') ?></div>
-          <?php if ($currentUser && user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id'])): ?>
-            <div class="ev-going-you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> You have a ticket</div>
-          <?php endif; ?>
-          <p class="ev-card-text">Counted from paid tickets. We never show who is coming without their say-so.</p>
+    <!-- ===== venue ===== -->
+    <section id="venue" class="ev-section mq-sec">
+      <h2 class="ev-h2">Venue</h2>
+      <div class="mq-card mq-venue">
+        <div>
+          <b><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name']) ?></b>
+          <?php if ($isOnlineOnly): ?><span>The link arrives with your ticket.</span>
+          <?php elseif ($event['venue_address']): ?><span><?= htmlspecialchars($event['venue_address']) ?></span><?php endif; ?>
         </div>
+        <?php if (!$isOnlineOnly): ?>
+          <a href="https://www.google.com/maps/search/?api=1&amp;query=<?= urlencode($event['venue_name'] . ' ' . (string) $event['venue_address']) ?>" target="_blank" rel="noopener">DIRECTIONS</a>
         <?php endif; ?>
+      </div>
+    </section>
+
+    <!-- ===== your ticket ===== -->
+    <section id="your-ticket" class="ev-section mq-sec">
+      <h2 class="ev-h2">Your ticket</h2>
+      <div class="mq-card mq-how">
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span><p><b>Sent instantly</b>By email, and in your account.</p></div>
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2M14 20v-2"/></svg></span><p><b>QR code grants entry</b>Show it on your phone at the gate.</p></div>
+        <div><span class="mq-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/><path d="M6 6l3.8 3.8M18 6l-3.8 3.8M6 18l3.8-3.8M18 18l-3.8-3.8"/></svg></span><p><b>Lost it?</b>Sign in to get it again. <a href="/my-tickets.php">Find my tickets</a></p></div>
       </div>
     </section>
 
@@ -614,6 +590,13 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
   </main>
 
   <aside class="ev-side">
+    <?php if (!$eventHasEnded && $minPrice !== null): ?>
+    <div class="mq-from">
+      <span class="mq-from-l"><?= $eventIsFree ? 'ENTRY' : 'FROM' ?></span>
+      <span class="mq-from-p"><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span>
+      <a class="mq-buy" href="#buyPanel" data-open-tickets><?= $eventIsFree ? 'Get free ticket' : 'Buy now' ?></a>
+    </div>
+    <?php endif; ?>
     <div class="ev-stub-wrap">
     <?php if ($eventHasEnded): ?>
     <aside class="ended-panel" id="endedPanel">
@@ -744,17 +727,37 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
 </div><!-- /.ev -->
 
-<?php if ($similarEvents): ?>
-<div class="wrap">
-  <section class="reveal event-full-section" style="margin-top:0; padding:44px 0 10px;">
-    <h2>Similar events</h2>
-    <div class="poster-grid">
-      <?php foreach ($similarEvents as $simEvent) render_poster_card($simEvent); ?>
+<?php $mqMore = array_slice(array_values(array_filter($similarEvents ?: [], static fn ($e) => (int) $e['id'] !== (int) $event['id'])), 0, 4); ?>
+<?php if ($mqMore): ?>
+<section class="mq-more" aria-label="More events">
+  <div class="mq-wrap">
+    <h2>More events</h2>
+    <div class="mq-more-grid">
+      <?php foreach ($mqMore as $m):
+          $mqSame = (int) $m['organizer_id'] === (int) $event['organizer_id'] ? 'Also by ' . ($m['org_name'] ?? $orgName) : (strcasecmp((string) $m['venue_name'], (string) $event['venue_name']) === 0 ? 'Same venue' : date('j M', strtotime((string) $m['starts_at'])) . ' · ' . $m['venue_name']);
+      ?>
+        <a class="mq-ev" href="/event.php?slug=<?= urlencode($m['slug']) ?>">
+          <span class="mq-th"><?php if (!empty($m['banner_image'])): ?><img src="<?= htmlspecialchars($m['banner_image']) ?>" alt="" loading="lazy"><?php else: ?><i><?= htmlspecialchars((string) $m['banner_emoji']) ?></i><?php endif; ?></span>
+          <span class="mq-tx"><b><?= htmlspecialchars($m['title']) ?></b><em><?= htmlspecialchars($mqSame) ?></em><small><?= isset($m['min_price']) && $m['min_price'] !== null ? ((float) $m['min_price'] <= 0 ? 'Free' : 'From ' . htmlspecialchars(format_money((string) $m['min_price'], $m['min_price_currency'] ?? 'UGX'))) : '' ?></small></span>
+        </a>
+      <?php endforeach; ?>
     </div>
-  </section>
-</div>
+  </div>
+</section>
 <?php endif; ?>
 
+<script>
+(function () {
+  var open = document.querySelector('[data-open-tickets]');
+  if (!open) return;
+  var close = function () { document.body.classList.remove('ticket-sheet-open'); };
+  open.addEventListener('click', function (e) { e.preventDefault(); document.body.classList.add('ticket-sheet-open'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  var bd = document.getElementById('sheetBackdrop'), cl = document.getElementById('sheetClose');
+  if (bd) bd.addEventListener('click', close);
+  if (cl) cl.addEventListener('click', close);
+})();
+</script>
 <script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
 <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>

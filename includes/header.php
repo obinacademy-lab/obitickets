@@ -50,6 +50,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'event-page') || str_contains($bodyClass ?? '', 'ev-page')): ?>
 <link rel="stylesheet" href="/assets/css/event-v3.css?v=<?= @filemtime(__DIR__ . '/../assets/css/event-v3.css') ?: time() ?>">
+<?php if (str_contains($bodyClass ?? '', 'ev-momo')): ?>
+<link rel="stylesheet" href="/assets/css/momo.css?v=<?= @filemtime(__DIR__ . '/../assets/css/momo.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'ev-classic')): ?>
 <link rel="stylesheet" href="/assets/css/classic.css?v=<?= @filemtime(__DIR__ . '/../assets/css/classic.css') ?: time() ?>">
 <?php endif; ?>
