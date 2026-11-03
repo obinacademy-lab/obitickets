@@ -68,9 +68,9 @@ body.ev-marquee .ev-org-row{order:7}
 body.ev-marquee .ev-pulse{order:8}
 
 body.ev-marquee .ev-eyebrow{gap:10px}
-body.ev-marquee .ev-eyebrow-cat{font:600 .68rem 'IBM Plex Mono',monospace; letter-spacing:.1em; border:1px solid currentColor; padding:6px 10px}
+body.ev-marquee .ev-eyebrow-cat{font:600 .68rem 'JetBrains Mono',monospace; letter-spacing:.1em; border:1px solid currentColor; padding:6px 10px}
 body.ev-marquee .ev-badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
-body.ev-marquee .ev-badge{font:600 .68rem 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; padding:6px 10px}
+body.ev-marquee .ev-badge{font:600 .68rem 'JetBrains Mono',monospace; letter-spacing:.1em; text-transform:uppercase; padding:6px 10px}
 body.ev-marquee .ev-badge-online{background:#DC2626; color:#fff}
 body.ev-marquee .ev-title{font-size:clamp(2.1rem,5vw,4.2rem); line-height:1; letter-spacing:-.03em; margin-top:18px}
 

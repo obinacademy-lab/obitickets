@@ -46,7 +46,7 @@ render_admin_head('checkin');
         <?= csrf_field() ?>
         <div class="admin-form-row">
           <label>Ticket code</label>
-          <input type="text" name="code" value="" autofocus placeholder="Scan or type the ticket code" style="font-family:'IBM Plex Mono',monospace; font-size:1.1rem; text-transform:uppercase" autocomplete="off">
+          <input type="text" name="code" value="" autofocus placeholder="Scan or type the ticket code" style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; text-transform:uppercase" autocomplete="off">
         </div>
         <button class="btn btn-purple btn-block btn-lg" type="submit">Validate &amp; check in</button>
       </form>

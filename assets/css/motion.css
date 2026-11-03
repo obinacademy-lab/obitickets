@@ -45,7 +45,7 @@ body.classic-page .home-hero-v2::before{content:""; position:absolute; inset:-14
 
 /* ---------- stats + call-to-action bands ---------- */
 .mo-stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:12px 0 8px}
-.mo-stats b{display:block; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(2.2rem,5vw,3.4rem); letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums; color:var(--ink)}
+.mo-stats b{display:block; font-family:'Outfit',Georgia,serif; font-weight:700; font-size:clamp(2.2rem,5vw,3.4rem); letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums; color:var(--ink)}
 .mo-stats span{display:block; margin-top:8px; font-weight:600; font-size:.9rem; color:var(--muted)}
 .mo-band{position:relative; overflow:hidden; display:flex; gap:22px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:#1C1526; color:#fff; border-radius:26px; padding:46px 40px; margin:0 0 70px}
 .mo-band::after{content:""; position:absolute; right:-70px; top:-70px; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle,rgba(220,38,38,.6),transparent 70%); animation:moDrift 10s ease-in-out infinite alternate; pointer-events:none}

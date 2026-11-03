@@ -774,10 +774,16 @@ $wlIc = static function (string $n): string {
     [].forEach.call(document.querySelectorAll('.wl-card'), function (c) {
       c.addEventListener('mousemove', function (e) {
         var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
         c.style.transform = 'perspective(900px) rotateY(' + (x * 5) + 'deg) rotateX(' + (-y * 5) + 'deg) translateY(-3px)';
       });
       c.addEventListener('mouseleave', function () { c.style.transform = ''; });
     });
+    /* a soft red light follows the pointer across the hero */
+    var hero = document.querySelector('.ev-hero');
+    if (hero) {
+      hero.addEventListener('mousemove', function (e) { var r = hero.getBoundingClientRect(); hero.style.setProperty('--hx', (e.clientX - r.left) + 'px'); hero.style.setProperty('--hy', (e.clientY - r.top) + 'px'); });
+    }
   }
 })();
 </script>

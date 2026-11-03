@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Event page "Wallet" look: extra polish. Transitions, hover effects and ambient animation only.
+   Nothing here changes sizes, order or positions, so the layout stays exactly as it is. Everything is
+   switched off for people who prefer reduced motion. Loaded after wallet.css (body.ev-wallet).
+   ========================================================================== */
+
+/* ---------- reading progress line across the very top ---------- */
+@supports (animation-timeline:scroll()){
+  body.ev-wallet::after{content:""; position:fixed; top:0; left:0; right:0; height:3px; z-index:200; pointer-events:none;
+    background:linear-gradient(90deg,#B91C1C,#E5383B,#FF8A8A); transform-origin:left; transform:scaleX(0);
+    animation:wlProg linear both; animation-timeline:scroll(root)}
+  @keyframes wlProg{to{transform:scaleX(1)}}
+}
+
+/* ---------- ribbon: pauses when you point at it, items brighten ---------- */
+.wl-rib{transition:background .3s}
+.wl-rib:hover div{animation-play-state:paused}
+.wl-rib span{transition:color .3s, letter-spacing .4s cubic-bezier(.16,.84,.24,1)}
+.wl-rib span:hover{color:#FFB3B3; letter-spacing:.2em}
+.wl-rib span::after{display:inline-block; animation:wlSpin 6s linear infinite}
+@keyframes wlSpin{to{transform:rotate(360deg)}}
+
+/* ---------- hero: a soft red light that follows the pointer, and a slow idle drift ---------- */
+body.ev-wallet .ev-hero{position:relative; overflow:hidden}
+body.ev-wallet .ev-hero::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(520px circle at var(--hx,72%) var(--hy,30%), rgba(229,56,59,.13), transparent 70%); transition:background .15s}
+body.ev-wallet .ev-hero-grid{position:relative; z-index:1}
+body.ev-wallet .ev-cover{animation:wlDrift 8s ease-in-out 1.4s infinite alternate}
+@keyframes wlDrift{to{translate:0 -9px}}
+body.ev-wallet .ev-cover::after{content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.5) 48%,transparent 60%); background-size:260% 100%; background-position:130% 0; mix-blend-mode:soft-light;
+  animation:wlSheen 1.6s .9s ease-out 1 both}
+body.ev-wallet .ev-cover:hover::after{animation:wlSheen 1s ease-out 1 both}
+@keyframes wlSheen{from{background-position:130% 0}to{background-position:-40% 0}}
+body.ev-wallet .ev-cover{position:relative}
+
+/* title words lift slightly on hover */
+body.ev-wallet .ev-w > span{transition:color .3s, transform .4s cubic-bezier(.16,.84,.24,1)}
+body.ev-wallet .ev-title:hover .ev-w > span{color:#16111C}
+body.ev-wallet .ev-w:hover > span{color:#E5383B; transform:translateY(-3px)}
+
+/* flip clock: the seconds tile glows, every tile lifts on hover */
+body.ev-wallet .ev-cd-u b{transition:transform .35s cubic-bezier(.16,.84,.24,1), box-shadow .35s}
+body.ev-wallet .ev-cd-u:hover b{transform:translateY(-4px); box-shadow:0 24px 34px -16px rgba(22,17,28,.85)}
+body.ev-wallet .ev-cd-u.is-sec b{animation:wlGlow 2s ease-in-out infinite}
+@keyframes wlGlow{0%,100%{box-shadow:0 18px 30px -18px rgba(229,56,59,.8),0 0 0 0 rgba(229,56,59,.45)}50%{box-shadow:0 18px 30px -18px rgba(229,56,59,.8),0 0 0 8px rgba(229,56,59,0)}}
+
+/* organizer name: underline draws in */
+body.ev-wallet .ev-org-name a{background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat; transition:background-size .4s cubic-bezier(.16,.84,.24,1); text-decoration:none !important}
+body.ev-wallet .ev-org-name a:hover{background-size:100% 2px}
+
+/* share button */
+body.ev-wallet .ev-icon-btn{transition:transform .35s cubic-bezier(.2,1.4,.4,1), background .25s, color .25s, border-color .25s}
+body.ev-wallet .ev-icon-btn:hover{transform:translateY(-3px) rotate(-6deg); background:#16111C; color:#fff}
+
+/* ---------- cards: light follows the pointer, edge lights up, icons wake up ---------- */
+body.ev-wallet .wl-card{position:relative; isolation:isolate; transition:box-shadow .4s cubic-bezier(.16,.84,.24,1), border-color .35s, transform .25s ease-out}
+body.ev-wallet .wl-card::after{content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1; opacity:0; transition:opacity .35s;
+  background:radial-gradient(280px circle at var(--mx,-999px) var(--my,-999px), rgba(229,56,59,.11), transparent 70%)}
+body.ev-wallet .wl-card:hover{border-color:rgba(229,56,59,.45)}
+body.ev-wallet .wl-card:hover::after{opacity:1}
+body.ev-wallet .wl-dark:hover{border-color:rgba(255,138,138,.6)}
+body.ev-wallet .wl-dark::after{background:radial-gradient(280px circle at var(--mx,-999px) var(--my,-999px), rgba(255,107,107,.2), transparent 70%)}
+body.ev-wallet .wl-card .ev-h2{position:relative; display:inline-block}
+body.ev-wallet .wl-card .ev-h2::after{content:""; position:absolute; left:0; right:100%; bottom:-6px; height:3px; border-radius:3px; background:#E5383B; transition:right .55s cubic-bezier(.16,.84,.24,1)}
+body.ev-wallet .wl-card:hover .ev-h2::after{right:0}
+
+/* From card: a slow shimmer across it, the button breathes, the arrow slides */
+body.ev-wallet .mq-from{position:relative; overflow:hidden}
+body.ev-wallet .mq-from::before{content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%); background-size:250% 100%; background-position:150% 0; animation:wlShimmer 5s 1.5s ease-in-out infinite}
+@keyframes wlShimmer{0%{background-position:150% 0}45%,100%{background-position:-60% 0}}
+body.ev-wallet .mq-from > *{position:relative}
+body.ev-wallet .mq-buy{animation:wlBreathe 2.8s ease-in-out 2s infinite; transition:background .25s, transform .3s cubic-bezier(.2,1.4,.4,1)}
+body.ev-wallet .mq-buy:hover{transform:translateY(-2px) scale(1.02); animation-play-state:paused}
+body.ev-wallet .mq-buy:active{transform:scale(.97)}
+@keyframes wlBreathe{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}60%{box-shadow:0 0 0 12px rgba(255,255,255,0)}}
+
+/* facts: icons bounce */
+body.ev-wallet .wl-bx{transition:transform .45s cubic-bezier(.2,1.4,.4,1), background .25s, color .25s}
+body.ev-wallet .wl-fk > div:hover .wl-bx{transform:translateY(-4px) rotate(-8deg) scale(1.1); background:#E5383B; color:#fff}
+body.ev-wallet .wl-fk b{transition:color .25s}
+body.ev-wallet .wl-fk > div:hover b{color:#B91C1C}
+
+/* tickets: a red bar slides in, price and name move */
+body.ev-wallet .mq-rows li{position:relative; overflow:hidden}
+body.ev-wallet .mq-rows li::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:#E5383B; transform:scaleY(0); transform-origin:top; transition:transform .4s cubic-bezier(.77,0,.18,1)}
+body.ev-wallet .mq-rows li:hover::before{transform:scaleY(1)}
+body.ev-wallet .mq-tn,body.ev-wallet .mq-tp{transition:transform .35s cubic-bezier(.16,.84,.24,1), color .25s}
+body.ev-wallet .mq-rows li:hover .mq-tn{transform:translateX(8px)}
+body.ev-wallet .mq-rows li:hover .mq-tp{color:#B91C1C; transform:scale(1.06)}
+
+/* venue: the directions arrow */
+body.ev-wallet .mq-venue a::after{content:" \2197"; display:inline-block; transition:transform .35s cubic-bezier(.16,.84,.24,1)}
+body.ev-wallet .mq-venue a:hover::after{transform:translate(4px,-4px)}
+body.ev-wallet .mq-venue{transition:border-color .3s, background .3s}
+body.ev-wallet .mq-venue:hover{border-color:#E5383B; background:#fff}
+
+/* your ticket: icons pulse in turn, rows slide on hover */
+body.ev-wallet .mq-ic{transition:transform .45s cubic-bezier(.2,1.4,.4,1), background .25s, color .25s}
+body.ev-wallet .mq-how > div{transition:transform .35s cubic-bezier(.16,.84,.24,1)}
+body.ev-wallet .mq-how > div:hover{transform:translateX(6px)}
+body.ev-wallet .mq-how > div:hover .mq-ic{transform:scale(1.15) rotate(-8deg); background:#E5383B; color:#fff}
+body.ev-wallet .mq-how > div:nth-child(1) .mq-ic{animation:wlPulse 3.6s 2s infinite}
+body.ev-wallet .mq-how > div:nth-child(2) .mq-ic{animation:wlPulse 3.6s 3.2s infinite}
+body.ev-wallet .mq-how > div:nth-child(3) .mq-ic{animation:wlPulse 3.6s 4.4s infinite}
+@keyframes wlPulse{0%,70%,100%{box-shadow:0 0 0 0 rgba(229,56,59,0)}8%{box-shadow:0 0 0 0 rgba(229,56,59,.55)}30%{box-shadow:0 0 0 10px rgba(229,56,59,0)}}
+body.ev-wallet .mq-how a{background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat; transition:background-size .35s}
+body.ev-wallet .mq-how a:hover{background-size:100% 2px; text-decoration:none}
+
+/* About: paragraphs fade up one by one */
+body.ev-wallet .ev-about .about-text{animation:wlText .9s cubic-bezier(.16,.84,.24,1) backwards}
+body.ev-wallet .ev-about .about-text:nth-child(1){animation-delay:.9s}
+body.ev-wallet .ev-about .about-text:nth-child(2){animation-delay:1.05s}
+body.ev-wallet .ev-about .about-text:nth-child(n+3){animation-delay:1.2s}
+@keyframes wlText{from{opacity:0; transform:translateY(14px)}}
+
+/* ---------- buying: backdrop blur, drawer content arrives in sequence ---------- */
+body.ev-wallet .sheet-backdrop{-webkit-backdrop-filter:blur(0); backdrop-filter:blur(0); transition:opacity .3s, visibility 0s linear .3s, backdrop-filter .4s, -webkit-backdrop-filter .4s}
+body.ev-wallet.ticket-sheet-open .sheet-backdrop{-webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+body.ev-wallet.ticket-sheet-open .buy-panel .ev-stub-top{animation:wlIn .55s .12s cubic-bezier(.16,.84,.24,1) backwards}
+body.ev-wallet.ticket-sheet-open .buy-panel .tier{animation:wlIn .55s cubic-bezier(.16,.84,.24,1) backwards}
+body.ev-wallet.ticket-sheet-open .buy-panel .tier:nth-child(1){animation-delay:.2s}
+body.ev-wallet.ticket-sheet-open .buy-panel .tier:nth-child(2){animation-delay:.28s}
+body.ev-wallet.ticket-sheet-open .buy-panel .tier:nth-child(n+3){animation-delay:.36s}
+body.ev-wallet.ticket-sheet-open .buy-panel .poster-summary{animation:wlIn .55s .4s cubic-bezier(.16,.84,.24,1) backwards}
+body.ev-wallet.ticket-sheet-open .buy-panel .poster-foot{animation:wlIn .55s .48s cubic-bezier(.16,.84,.24,1) backwards}
+@keyframes wlIn{from{opacity:0; transform:translateX(26px)}}
+body.ev-wallet .buy-panel .poster-foot .btn{transition:transform .3s cubic-bezier(.2,1.4,.4,1), box-shadow .3s}
+body.ev-wallet .buy-panel .poster-foot .btn:hover{transform:translateY(-2px)}
+body.ev-wallet .ev-stub .qty .n.ev-bump{animation:wlPop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes wlPop{0%{transform:scale(1)}40%{transform:scale(1.5);color:#FF8A8A}100%{transform:scale(1)}}
+
+/* ---------- keyboard focus ---------- */
+body.ev-wallet .ev a:focus-visible,body.ev-wallet .ev button:focus-visible{outline:3px solid #FF8A8A; outline-offset:3px; border-radius:10px}
+
+@media (prefers-reduced-motion:reduce){
+  body.ev-wallet::after{display:none}
+  .wl-rib span::after,body.ev-wallet .ev-cover,body.ev-wallet .ev-cover::after,body.ev-wallet .ev-cd-u.is-sec b,body.ev-wallet .mq-from::before,
+  body.ev-wallet .mq-buy,body.ev-wallet .mq-how .mq-ic,body.ev-wallet .ev-about .about-text,
+  body.ev-wallet.ticket-sheet-open .buy-panel *{animation:none !important}
+  body.ev-wallet *,body.ev-wallet *::before,body.ev-wallet *::after{transition-duration:.001ms !important}
+}

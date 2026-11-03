@@ -10,7 +10,7 @@
    ========================================================================== */
 
 body.ev-momo{background:#0D0911}
-body.ev-momo .ev{--ev-nav:68px; background:#0D0911; color:#F6F2FA; font-family:'Manrope',system-ui,sans-serif}
+body.ev-momo .ev{--ev-nav:68px; background:#0D0911; color:#F6F2FA; font-family:'Plus Jakarta Sans',system-ui,sans-serif}
 body.ev-momo .ev-wrap{max-width:1128px; padding:0 32px}
 body.ev-momo .ev-glow,body.ev-momo .ev-cd,body.ev-momo .ev-pulse,body.ev-momo .ev-event-react{display:none !important}
 
@@ -26,7 +26,7 @@ body.ev-momo .ev-cover{grid-column:1; align-self:start; width:260px; max-width:2
 body.ev-momo .ev-cover img{border-radius:12px; width:100%; max-height:none; box-shadow:0 18px 40px -18px rgba(0,0,0,.7); border:1px solid rgba(255,255,255,.12)}
 body.ev-momo .ev-cover-fallback{aspect-ratio:4/5; border-radius:12px}
 body.ev-momo .ev-badges{order:0; margin:0 0 12px}
-body.ev-momo .ev-title{order:1; font-family:'Manrope',system-ui,sans-serif; font-size:clamp(2.2rem,5.2vw,3.75rem); font-weight:800; line-height:1.1; letter-spacing:-.025em; color:#fff; margin:0; text-shadow:none}
+body.ev-momo .ev-title{order:1; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:clamp(2.2rem,5.2vw,3.75rem); font-weight:800; line-height:1.1; letter-spacing:-.025em; color:#fff; margin:0; text-shadow:none}
 body.ev-momo .ev-org-row{order:2; display:block; margin:18px 0 0; padding:0; border:0}
 body.ev-momo .ev-org-row::before{content:"Organized by:"; display:block; font-size:12px; font-weight:600; color:#B3ADC0}
 body.ev-momo .ev-org-row .ev-avatar,body.ev-momo .ev-org-sub,body.ev-momo .ev-org-row [data-ev-follow]{display:none}
@@ -50,7 +50,7 @@ body.ev-momo .ev-icon-btn:hover{border-color:rgba(255,255,255,.4); transform:non
 body.ev-momo .ev-grid{grid-template-columns:minmax(0,1fr) 300px; gap:56px; padding-top:30px; padding-bottom:56px; align-items:start}
 body.ev-momo .ev-side{gap:16px; align-self:start}
 body.ev-momo .ev-section{margin:0 0 40px; padding:0; background:none; border:0; border-radius:0}
-body.ev-momo .ev-h2{font-family:'Manrope',system-ui,sans-serif; font-size:24px; font-weight:800; letter-spacing:-.01em; margin:0 0 16px; color:#F6F2FA}
+body.ev-momo .ev-h2{font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:24px; font-weight:800; letter-spacing:-.01em; margin:0 0 16px; color:#F6F2FA}
 body.ev-momo .ev-about .about-text{font-size:15px; line-height:1.6; font-weight:600; color:#B3ADC0; max-width:62ch}
 
 body.ev-momo .mq-from{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:22px}

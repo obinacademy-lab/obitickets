@@ -88,14 +88,14 @@
   function txt(c, s, x, y, size, o) {
     o = o || {};
     c.save(); c.globalAlpha = o.a == null ? 1 : o.a;
-    c.font = (o.w || 800) + ' ' + size + 'px ' + (o.f || 'Manrope, system-ui, sans-serif');
+    c.font = (o.w || 800) + ' ' + size + 'px ' + (o.f || '"Plus Jakarta Sans", system-ui, sans-serif');
     c.textAlign = o.al || 'left'; c.fillStyle = o.col || '#fff';
     c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = o.sh == null ? 18 : o.sh;
     c.fillText(s, x, y); c.restore();
   }
   function wrap(c, s, x, y, size, maxW, lh, o) {
     var words = String(s).split(' '), line = '', yy = y;
-    c.save(); c.font = ((o && o.w) || 800) + ' ' + size + 'px ' + ((o && o.f) || 'Manrope, system-ui, sans-serif');
+    c.save(); c.font = ((o && o.w) || 800) + ' ' + size + 'px ' + ((o && o.f) || '"Plus Jakarta Sans", system-ui, sans-serif');
     var lines = [];
     words.forEach(function (w) { var test = line ? line + ' ' + w : w; if (c.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; });
     lines.push(line); c.restore();
@@ -107,7 +107,7 @@
     c.save(); c.translate(cx0, cy0); c.scale(sc, sc);
     c.shadowColor = 'rgba(220,38,38,.6)'; c.shadowBlur = 40; c.fillStyle = '#DC2626';
     c.beginPath(); c.moveTo(-w / 2 + r, -h / 2); c.lineTo(w / 2 - r, -h / 2); c.arc(w / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2); c.lineTo(-w / 2 + r, h / 2); c.arc(-w / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5); c.fill();
-    c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 44px Manrope, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 44px "Plus Jakarta Sans", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(label, 0, 3); c.restore();
   }
   function endCard(c, t, i, lines) {
@@ -116,7 +116,7 @@
     button(c, D.cta || 'Get tickets', W / 2, H * .62, Math.max(0, Math.sin(t * 5)) * ease(t * 3));
     txt(c, cfg.siteHost, W / 2, H * .62 + 120, 32, { al: 'center', a: ease((t - .5) * 3), w: 700, sh: 0, col: 'rgba(255,255,255,.85)' });
   }
-  var SERIF = 'Fraunces, Georgia, serif';
+  var SERIF = 'Outfit, system-ui, sans-serif';
 
   /* ---------- the templates: every scene is a whole number of beats ---------- */
   var TPLS = [

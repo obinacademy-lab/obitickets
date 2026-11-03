@@ -152,12 +152,12 @@ render_organizer_head('dashboard', $ctx);
         <path d="<?= htmlspecialchars($chartLine) ?>" fill="none" stroke="var(--purple)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="admin-line-path"></path>
         <?php foreach ($chartPoints as $p): ?>
           <?php if ($p['peak']): ?>
-            <text x="<?= $p['x'] ?>" y="<?= max(11, $p['y'] - 9) ?>" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--success); font-family:'IBM Plex Mono',monospace;"><?= htmlspecialchars($currency) ?> <?= number_format($p['total'], 0) ?></text>
+            <text x="<?= $p['x'] ?>" y="<?= max(11, $p['y'] - 9) ?>" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--success); font-family:'JetBrains Mono',monospace;"><?= htmlspecialchars($currency) ?> <?= number_format($p['total'], 0) ?></text>
           <?php endif; ?>
           <circle cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="<?= $p['peak'] ? 4.5 : 3 ?>" style="fill:<?= $p['peak'] ? 'var(--success)' : 'var(--purple)' ?>; stroke:var(--surface); stroke-width:1.5;">
             <title><?= htmlspecialchars(date('d M Y', strtotime($p['day']))) ?>: <?= htmlspecialchars($currency) ?> <?= number_format($p['total'], 0) ?></title>
           </circle>
-          <text x="<?= $p['x'] ?>" y="<?= $chartH - 6 ?>" text-anchor="middle" font-size="9" style="fill:var(--muted-2); font-family:'IBM Plex Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($p['day']))) ?></text>
+          <text x="<?= $p['x'] ?>" y="<?= $chartH - 6 ?>" text-anchor="middle" font-size="9" style="fill:var(--muted-2); font-family:'JetBrains Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($p['day']))) ?></text>
         <?php endforeach; ?>
       </svg>
     <?php endif; ?>

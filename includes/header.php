@@ -38,9 +38,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php include __DIR__ . '/pwa-head.php'; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <?php if (str_contains($bodyClass ?? '', 'classic-page') || str_contains($bodyClass ?? '', 'event-page')): ?>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
@@ -52,6 +52,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/event-v3.css?v=<?= @filemtime(__DIR__ . '/../assets/css/event-v3.css') ?: time() ?>">
 <?php if (str_contains($bodyClass ?? '', 'ev-wallet')): ?>
 <link rel="stylesheet" href="/assets/css/wallet.css?v=<?= @filemtime(__DIR__ . '/../assets/css/wallet.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/wallet-fx.css?v=<?= @filemtime(__DIR__ . '/../assets/css/wallet-fx.css') ?: time() ?>">
 <?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'ev-momo')): ?>
 <link rel="stylesheet" href="/assets/css/momo.css?v=<?= @filemtime(__DIR__ . '/../assets/css/momo.css') ?: time() ?>">
