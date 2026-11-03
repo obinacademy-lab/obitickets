@@ -1,0 +1,114 @@
+/* ==========================================================================
+   Checkout page, "Stepper" design. A progress line (Tickets, Payment, Your ticket) across the top, one calm
+   column below it: the order folds into a single summary bar, and the phone number and Pay button get the
+   whole screen. Loaded when the page body has .ck-stepper. Hooks used by payment.js are untouched:
+   [data-payment-widget], [data-state], [data-error], [data-status-text], [data-fail-text],
+   [data-phone-input], [data-action="pay"], [data-action="retry"].
+   ========================================================================== */
+
+body.ck-stepper{background:#fff; color:#16111C}
+body.ck-stepper .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums}
+body.ck-stepper .hidden{display:none !important}
+body.ck-stepper{--ck-ease:cubic-bezier(.22,.8,.24,1); --ck-red:#E5383B; --ck-red-d:#B91C1C; --ck-tint:#FDEDED; --ck-mute:#6B6577; --ck-line:#E6E3EC; --ck-paper:#F5F5F7}
+
+/* ---------- progress line ---------- */
+.ck-steps{list-style:none; display:flex; align-items:flex-start; justify-content:center; max-width:540px; margin:0 auto; padding:30px 0 6px}
+.ck-steps .s{display:flex; flex-direction:column; align-items:center; gap:8px; flex:none; width:96px; text-align:center; font-size:.78rem; font-weight:700; color:var(--ck-mute)}
+.ck-steps .dot{width:32px; height:32px; border-radius:50%; display:grid; place-items:center; border:2px solid #D5D1DD; background:#fff; font:700 .8rem 'JetBrains Mono',ui-monospace,monospace; transition:background .35s, border-color .35s, color .35s, box-shadow .35s}
+.ck-steps .dot .ck-ic{width:15px; height:15px; display:none}
+.ck-steps .dot .n{font-weight:700}
+.ck-steps .s.done,.ck-steps .s.now{color:#16111C}
+.ck-steps .s.done .dot{background:var(--ck-red); border-color:var(--ck-red); color:#fff}
+.ck-steps .s.done .dot .ck-ic{display:block}
+.ck-steps .s.now .dot{border-color:var(--ck-red); color:var(--ck-red); box-shadow:0 0 0 5px rgba(229,56,59,.12)}
+.ck-steps .s.now .dot .ck-ic{display:none}
+.ck-steps .bar{flex:1; height:2px; margin-top:15px; background:#D5D1DD; position:relative; overflow:hidden}
+.ck-steps .bar.done::after,.ck-steps.is-paying .bar2::after{content:""; position:absolute; inset:0; background:var(--ck-red); transform-origin:left; animation:ckGrow .9s var(--ck-ease) backwards}
+@keyframes ckGrow{from{transform:scaleX(0)}}
+.ck-steps.is-paying .s.pay .dot{background:var(--ck-red); border-color:var(--ck-red); color:#fff; box-shadow:none}
+.ck-steps.is-paying .s.pay .dot .n{display:none}
+.ck-steps.is-paying .s.pay .dot .ck-ic{display:block}
+.ck-steps.is-paying .s:last-child{color:#16111C}
+.ck-steps.is-paying .s:last-child .dot{border-color:var(--ck-red); color:var(--ck-red); box-shadow:0 0 0 5px rgba(229,56,59,.12)}
+
+/* ---------- column ---------- */
+.ck-wrap{max-width:620px; margin:0 auto; padding:22px 16px 90px}
+.ck-wrap h1{font:800 clamp(1.6rem,3vw,2.1rem)/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; margin:0 0 4px; text-align:center}
+.ck-sub{text-align:center; color:var(--ck-mute); margin:0 0 24px}
+.ck-wrap > *{animation:ckUp .8s var(--ck-ease) backwards}
+.ck-wrap > .ck-sum{animation-delay:.08s}
+.ck-wrap > .ck-pay{animation-delay:.16s}
+@keyframes ckUp{from{opacity:0; transform:translateY(14px)}}
+
+/* ---------- order summary, folded ---------- */
+.ck-sum{border:1px solid var(--ck-line); border-radius:16px; background:var(--ck-paper); margin-bottom:22px; transition:box-shadow .3s}
+.ck-sum[open]{box-shadow:0 18px 36px -28px rgba(22,17,28,.35)}
+.ck-sum summary{list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 20px}
+.ck-sum summary::-webkit-details-marker{display:none}
+.ck-sum summary .l{display:flex; align-items:center; gap:10px; font-weight:800}
+.ck-sum summary .l small{font-size:.76rem; font-weight:700; color:var(--ck-mute); padding:3px 9px; border-radius:99px; background:#fff; border:1px solid var(--ck-line)}
+.ck-sum summary .l::after{content:"+"; order:3; font:600 1.4rem 'Plus Jakarta Sans',sans-serif; color:var(--ck-red); transition:transform .3s var(--ck-ease)}
+.ck-sum[open] summary .l::after{transform:rotate(45deg)}
+.ck-sum summary b{font:800 1.2rem 'Outfit','Plus Jakarta Sans',sans-serif}
+.ck-sum .in{padding:0 20px 20px; display:grid; gap:12px; font-size:.94rem}
+.ck-sum .ev{display:flex; gap:14px; align-items:center; padding-bottom:14px; border-bottom:1px solid var(--ck-line)}
+.ck-sum .ev b{display:block; font-weight:800; line-height:1.3}
+.ck-sum .ev span{display:block; color:var(--ck-mute); font-size:.84rem; margin-top:2px}
+.ck-sum .thumb{width:60px; aspect-ratio:4/5; object-fit:cover; border-radius:10px; flex:none; background:var(--ck-tint)}
+.ck-sum .thumb-emoji{display:grid; place-items:center; font-size:1.6rem}
+.ck-sum .ln{display:flex; justify-content:space-between; gap:16px; align-items:baseline}
+.ck-sum .ln span:first-child{color:#3D3847}
+.ck-sum .ln .mono{font-weight:600; white-space:nowrap}
+.ck-sum .ln.tt{padding-top:12px; border-top:1px solid var(--ck-line); font-weight:800}
+.ck-sum .ln.tt span:first-child{color:#16111C}
+
+/* ---------- payment card ---------- */
+.ck-pay{border:1px solid var(--ck-line); border-radius:18px; padding:26px; box-shadow:0 24px 44px -34px rgba(22,17,28,.4); background:#fff}
+.ck-pay h2{font:700 1.15rem 'Outfit','Plus Jakarta Sans',sans-serif; margin:0 0 18px}
+.ck-lead{color:var(--ck-mute); margin:-8px 0 20px; font-size:.92rem}
+.ck-field label{display:block; font-weight:700; font-size:.86rem; margin-bottom:8px}
+.ck-box{position:relative; display:flex; align-items:center}
+.ck-box input{width:100%; height:56px; border-radius:14px; border:1.5px solid #D5D1DD; background:#fff; padding:0 140px 0 18px; font:600 1.1rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.02em; color:#16111C; transition:border-color .25s, box-shadow .25s}
+.ck-box input::placeholder{color:#A7A1B2}
+.ck-box input:focus{border-color:var(--ck-red); box-shadow:0 0 0 4px rgba(229,56,59,.12); outline:none}
+.ck-chip{position:absolute; right:10px; display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 12px; border-radius:99px; background:var(--ck-tint); color:var(--ck-red-d); font-size:.78rem; font-weight:800; opacity:0; transform:translateX(6px); transition:opacity .25s, transform .3s var(--ck-ease); pointer-events:none}
+.ck-chip.on{opacity:1; transform:none}
+.ck-chip .ck-ic{width:14px; height:14px}
+.ck-hint{font-size:.82rem; color:var(--ck-mute); margin-top:8px; line-height:1.45}
+.ck-alert{display:block; padding:14px 16px; border-radius:12px; font-size:.9rem; line-height:1.45; background:var(--ck-tint); color:#7A1414; margin:16px 0 0}
+.ck-cta{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:58px; margin-top:20px; border:0; border-radius:14px; background:var(--ck-red); color:#fff; font:800 1.04rem 'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:background .25s, transform .3s var(--ck-ease), box-shadow .3s var(--ck-ease)}
+.ck-cta::after{content:"\2192"; transition:transform .35s var(--ck-ease)}
+.ck-cta:hover:not(:disabled){background:var(--ck-red-d); transform:translateY(-2px); box-shadow:0 18px 30px -16px rgba(185,28,28,.85)}
+.ck-cta:hover:not(:disabled)::after{transform:translateX(5px)}
+.ck-cta:active:not(:disabled){transform:none}
+.ck-cta:disabled{background:#D9D5E0; color:#8A8494; cursor:not-allowed}
+.ck-cta:disabled::after{display:none}
+.ck-sec{display:flex; align-items:center; justify-content:center; gap:7px; font-size:.82rem; color:var(--ck-mute); margin-top:14px; text-align:center}
+.ck-logos{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; font-size:.78rem; color:var(--ck-mute)}
+.ck-logos .b{display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border-radius:10px; background:#fff; border:1px solid var(--ck-line)}
+.ck-logos img{height:20px; width:auto; display:block}
+.ck-wait{text-align:center; padding:12px 0 6px}
+.ck-spin{width:54px; height:54px; border-radius:50%; border:4px solid #E6E3EC; border-top-color:var(--ck-red); margin:0 auto 18px; animation:ckSpin 1s linear infinite}
+@keyframes ckSpin{to{transform:rotate(360deg)}}
+.ck-wait h3{font:700 1.25rem 'Outfit','Plus Jakarta Sans',sans-serif; margin:0 0 6px}
+.ck-wait p{margin:0 auto; max-width:34ch; color:var(--ck-mute); font-size:.92rem}
+
+body.ck-stepper :focus-visible{outline:3px solid #FF9B9B; outline-offset:2px}
+@media (max-width:520px){
+  .ck-steps .s{width:78px; font-size:.72rem}
+  .ck-pay{padding:22px 18px}
+  .ck-box input{padding-right:128px; font-size:1.02rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .ck-wrap > *,.ck-steps .bar::after,.ck-spin{animation:none !important}
+  .ck-spin{border-top-color:var(--ck-red)}
+  body.ck-stepper *{transition-duration:.001ms !important}
+}
+.ck-sum summary .l{white-space:nowrap}
+.ck-sum summary b{white-space:nowrap}
+@media (max-width:420px){
+  .ck-sum summary{padding:16px 16px}
+  .ck-sum summary .l small{display:none}
+  .ck-sum summary b{font-size:1.08rem}
+}
+.ck-sum .ck-k{font:700 .66rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.18em; text-transform:uppercase; color:var(--ck-red-d)}

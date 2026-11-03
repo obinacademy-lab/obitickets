@@ -54,6 +54,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php if (str_contains($bodyClass ?? '', 'landing-home')): ?>
 <link rel="stylesheet" href="/assets/css/landing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/landing.css') ?: time() ?>">
 <?php endif; ?>
+<?php if (str_contains($bodyClass ?? '', 'ck-stepper')): ?>
+<link rel="stylesheet" href="/assets/css/checkout.css?v=<?= @filemtime(__DIR__ . '/../assets/css/checkout.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'event-page') || str_contains($bodyClass ?? '', 'ev-page')): ?>
 <link rel="stylesheet" href="/assets/css/event-v3.css?v=<?= @filemtime(__DIR__ . '/../assets/css/event-v3.css') ?: time() ?>">
 <?php if (str_contains($bodyClass ?? '', 'ev-wallet')): ?>
