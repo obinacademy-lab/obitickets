@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function openSheet() { document.body.classList.add('ticket-sheet-open'); }
     function closeSheet() { document.body.classList.remove('ticket-sheet-open'); }
     mobileBuyBar.addEventListener('click', function (e) {
-      if (window.matchMedia('(max-width: 920px)').matches) {
+      if (!document.body.classList.contains('ev-wallet') && window.matchMedia('(max-width: 920px)').matches) {
         e.preventDefault();
         openSheet();
       }

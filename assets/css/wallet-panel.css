@@ -118,3 +118,24 @@ body.ev-wallet .buy-panel .buy-bar #buySubmit{flex:1; min-width:0; width:auto}
 @media (max-width:920px){
   body.ev-wallet .buy-panel .buy-bar{margin:0 -20px; padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px))}
 }
+
+/* ==========================================================================
+   Phones and tablets (up to 920px): no pop-up sheet. The ticket panel is a normal card in the page, right
+   below the top of the event, so every part of it is reached by scrolling and nothing can sit behind a
+   browser toolbar. The bar at the bottom of the screen scrolls to it, then turns into Total + Continue.
+   ========================================================================== */
+@media (max-width:920px){
+  body.ev-wallet .buy-panel.ev-stub{position:static !important; transform:none !important; opacity:1 !important; visibility:visible !important; transition:none !important;
+    left:auto; right:auto; bottom:auto; width:auto; max-height:none; overflow:visible; z-index:auto; border-radius:24px; border:1px solid rgba(255,255,255,.1);
+    padding:24px 20px 22px; gap:18px; scroll-margin-top:84px; grid-column:1 / -1}
+  body.ev-wallet .buy-panel .sheet-handle,body.ev-wallet .buy-panel .sheet-close,body.ev-wallet .sheet-backdrop{display:none !important}
+  body.ev-wallet .buy-panel .ev-stub-top{margin-top:0}
+  body.ev-wallet .buy-panel .ev-stub-label{font-size:.7rem}
+  body.ev-wallet .buy-panel .ev-stub-label::after{content:" \00B7  CHOOSE YOUR TICKETS"; color:#B9B2C6}
+  body.ev-wallet .buy-panel .ev-stub-title,body.ev-wallet .buy-panel .ev-stub-meta{display:none}
+  body.ev-wallet .buy-panel .buy-bar{position:static; margin:0; padding:0; background:none}
+  body.ev-wallet .buy-panel .buy-bar-tot{display:none}
+  body.ev-wallet .buy-panel .buy-bar #buySubmit{flex:1 1 100%}
+  body.ev-wallet .ev-side{margin:0}
+  body.ev-wallet .ev-stub-wrap{grid-column:1 / -1; min-width:0; width:100%}
+}

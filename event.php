@@ -803,9 +803,31 @@ $wlIc = static function (string $n): string {
   form.addEventListener('click', function (e) { if (e.target.closest('.qty button')) setTimeout(sync, 0); });
   var sumEl = document.getElementById('total-amount'), barEl = document.getElementById('barTotal');
   if (sumEl && barEl) {
-    var mirror = function () { barEl.textContent = sumEl.textContent; };
+    var mirror = function () { barEl.textContent = sumEl.textContent; if (window.__wlBarSync) window.__wlBarSync(); };
     new MutationObserver(mirror).observe(sumEl, { childList: true, characterData: true, subtree: true });
     mirror();
+  }
+  /* phones: the bar at the bottom of the screen reads Total + Continue once a ticket is chosen, and Continue submits the form */
+  var bar = document.querySelector('.mobile-buy-bar');
+  if (bar) {
+    var lbl = bar.querySelector('.lbl'), amt = bar.querySelector('.amt'), bb = bar.querySelector('.btn');
+    var o = { l: lbl ? lbl.textContent : '', a: amt ? amt.textContent : '', b: bb ? bb.textContent : '' };
+    var picked = 0;
+    var barSync = function () {
+      picked = 0;
+      ins.forEach(function (i) { picked += parseInt(i.value, 10) || 0; });
+      if (lbl) lbl.textContent = picked ? 'Total' : o.l;
+      if (amt) amt.textContent = picked ? (sumEl ? sumEl.textContent : o.a) : o.a;
+      if (bb) bb.textContent = picked ? 'Continue' : o.b;
+    };
+    window.__wlBarSync = barSync; /* the summary total is animated, so the bar follows it as it changes */
+    form.addEventListener('click', function (e) { if (e.target.closest('.qty button')) setTimeout(barSync, 40); });
+    bar.addEventListener('click', function (e) {
+      if (picked && window.matchMedia('(max-width: 920px)').matches) {
+        e.preventDefault();
+        if (form.requestSubmit) { form.requestSubmit(btn); } else { btn.click(); }
+      }
+    });
   }
   sync();
   window.addEventListener('load', sync); /* main.js writes its own label on load; the empty state wins */
