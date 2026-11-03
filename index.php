@@ -7,13 +7,19 @@ include __DIR__ . '/includes/header.php';
 $upcoming = upcoming_events_with_organizer(12);
 $picks = array_slice($upcoming, 0, 4);
 $grid = array_slice($upcoming, 4);
+try {
+    $stats = home_stats();
+} catch (Throwable $e) {
+    $stats = ['events' => 0, 'organizers' => 0, 'free' => 0];
+}
 
 ?>
 
 <section class="home-hero-v2">
   <div class="wrap home-hero-v2-inner">
     <div class="home-hero-v2-copy">
-      <h1 class="reveal">Never miss a moment worth showing up for.</h1>
+      <span class="mo-eyebrow"><i aria-hidden="true"></i>Tickets on sale across Uganda</span>
+      <h1 data-rise>Never miss a moment worth showing up for.</h1>
       <p class="reveal">Discover concerts, conferences, comedy and festivals across Uganda &mdash; and pay securely with MTN MoMo or Airtel Money.</p>
       <form class="home-search reveal" action="/search.php" method="get">
         <div class="home-search-field home-search-field-q">
@@ -81,10 +87,14 @@ $grid = array_slice($upcoming, 4);
   </div>
 </section>
 
+<div class="mo-ticker" aria-hidden="true"><div class="t">
+  <?php for ($i = 0; $i < 4; $i++): ?><span class="row"><span class="i">Now selling <b>&#10022;</b></span><span class="i">MTN MoMo &amp; Airtel Money <b>&#10022;</b></span><span class="i">Free events <b>&#10022;</b></span><span class="i">Online events <b>&#10022;</b></span><span class="i">Instant QR tickets <b>&#10022;</b></span><span class="i">Kampala &middot; Jinja &middot; Entebbe <b>&#10022;</b></span></span><?php endfor; ?>
+</div></div>
+
 <?php if ($picks): ?>
 <section class="picks-section">
   <div class="wrap">
-    <div class="evt-section-head">
+    <div class="evt-section-head reveal">
       <div><h2>Our Picks</h2><p class="section-sub">Hand-picked by the obitickets team</p></div>
       <a style="font-size:0.86rem; font-weight:700; color:var(--purple-deep)" href="/search.php">See more &rarr;</a>
     </div>
@@ -97,9 +107,23 @@ $grid = array_slice($upcoming, 4);
 
 <?php if ($grid): ?>
 <section class="wrap" style="padding:8px 0 64px;">
-  <h2 style="margin-bottom:22px;">More events</h2>
+  <h2 class="reveal" style="margin-bottom:22px;">More events</h2>
   <div class="poster-grid">
     <?php foreach ($grid as $event) render_poster_card($event); ?>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php if ($stats['events'] > 0): ?>
+<section class="wrap" style="padding:8px 0 56px">
+  <div class="mo-stats reveal">
+    <div><b data-count="<?= (int) $stats['events'] ?>"><?= (int) $stats['events'] ?></b><span>event<?= $stats['events'] === 1 ? '' : 's' ?> on sale right now</span></div>
+    <div><b data-count="<?= (int) $stats['organizers'] ?>"><?= (int) $stats['organizers'] ?></b><span>organizer<?= $stats['organizers'] === 1 ? '' : 's' ?> hosting them</span></div>
+    <?php if ($stats['free'] > 0): ?>
+    <div><b data-count="<?= (int) $stats['free'] ?>"><?= (int) $stats['free'] ?></b><span>event<?= $stats['free'] === 1 ? '' : 's' ?> you can get into free</span></div>
+    <?php else: ?>
+    <div><b data-count="2">2</b><span>mobile money networks: MTN and Airtel</span></div>
+    <?php endif; ?>
   </div>
 </section>
 <?php endif; ?>
@@ -107,6 +131,16 @@ $grid = array_slice($upcoming, 4);
 <?php if (!$upcoming): ?>
   <p style="text-align:center; padding:40px 0 80px">No events published yet — check back soon.</p>
 <?php endif; ?>
+
+<section class="wrap">
+  <div class="mo-band reveal">
+    <div>
+      <h2>Selling tickets? Start in minutes.</h2>
+      <p>Create a free or paid event, in person or online, and get paid straight to mobile money.</p>
+    </div>
+    <a class="btn btn-purple btn-lg" href="/my-events.php">Create an event</a>
+  </div>
+</section>
 
 <script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

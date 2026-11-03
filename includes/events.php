@@ -68,6 +68,21 @@ function this_weekend_events(int $limit = 6): array
     return $stmt->fetchAll();
 }
 
+/**
+ * Real, live numbers for the home page stats band: events on sale, how many organizers are hosting them, and how many
+ * have a free ticket.
+ * @return array{events:int, organizers:int, free:int}
+ */
+function home_stats(): array
+{
+    $r = db()->query("
+        SELECT COUNT(*) AS events, COUNT(DISTINCT e.organizer_id) AS organizers,
+               COALESCE(SUM(EXISTS (SELECT 1 FROM ticket_types t WHERE t.event_id = e.id AND t.price = 0)), 0) AS free_events
+        FROM events e WHERE e.status = 'PUBLISHED' AND e.ends_at >= NOW()
+    ")->fetch();
+    return ['events' => (int) $r['events'], 'organizers' => (int) $r['organizers'], 'free' => (int) $r['free_events']];
+}
+
 function free_community_events(int $limit = 6): array
 {
     $stmt = db()->prepare("

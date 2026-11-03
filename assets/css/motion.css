@@ -1,0 +1,81 @@
+/* ==========================================================================
+   Motion layer ("Light with motion"), loaded on every public page.
+   Adds: a page-to-page wipe, a word-rise headline, a drifting colour wash behind the home hero, mouse parallax,
+   a scrolling ticker, a stats band and a call-to-action band, plus hover polish.
+   Everything is progressive and calm by default:
+   - nothing is hidden waiting for a script (the word-rise starts from visible text),
+   - every animation is switched off for people who ask for reduced motion.
+   ========================================================================== */
+
+/* ---------- page transitions: the next page wipes up over the old one (Chrome, Edge, Safari 18.2+; others just navigate) ---------- */
+@view-transition{navigation:auto}
+::view-transition{background:#991B1B}
+::view-transition-old(root){animation:moVtOut .4s cubic-bezier(.76,0,.24,1) both}
+::view-transition-new(root){animation:moVtIn .62s cubic-bezier(.76,0,.24,1) both}
+@keyframes moVtOut{to{transform:translateY(-3%) scale(.97); opacity:.55}}
+@keyframes moVtIn{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+.site-nav{view-transition-name:mo-site-nav}
+::view-transition-group(mo-site-nav){animation-duration:0s}
+@media (prefers-reduced-motion: reduce){
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none !important}
+}
+
+/* ---------- home hero: drifting colour wash, eyebrow pill, word-rise, parallax ---------- */
+body.classic-page .home-hero-v2{position:relative; overflow:hidden; isolation:isolate}
+body.classic-page .home-hero-v2::before{content:""; position:absolute; inset:-14% -8% auto; height:118%; z-index:-1; pointer-events:none; filter:blur(6px);
+  background:radial-gradient(480px 320px at 82% 18%,rgba(220,38,38,.2),transparent 62%),radial-gradient(520px 340px at 8% 30%,rgba(255,170,120,.28),transparent 62%),radial-gradient(420px 300px at 52% 92%,rgba(140,110,255,.15),transparent 62%);
+  animation:moDrift 18s ease-in-out infinite alternate}
+@keyframes moDrift{to{transform:translate3d(-40px,24px,0) scale(1.08)}}
+.mo-eyebrow{display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:.78rem; background:#fff; border:1px solid var(--line); border-radius:99px; padding:7px 14px; box-shadow:0 6px 18px -10px rgba(28,21,38,.3); color:var(--ink); margin-bottom:18px}
+.mo-eyebrow i{width:7px; height:7px; border-radius:50%; background:var(--purple); animation:moPulse 1.8s infinite}
+@keyframes moPulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.55)}70%{box-shadow:0 0 0 9px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+[data-rise] .mo-w{display:inline-block; overflow:hidden; vertical-align:bottom; padding-bottom:.1em; margin-bottom:-.1em}
+[data-rise] .mo-w>span{display:inline-block; animation:moWord .95s cubic-bezier(.16,.8,.24,1) both; animation-delay:calc(var(--i) * 70ms)}
+@keyframes moWord{from{transform:translateY(112%)}to{transform:none}}
+.home-hero-v2-collage{transform:translate(calc(var(--px,0) * -14px), calc(var(--py,0) * -10px)); transition:transform .3s ease-out}
+
+/* ---------- ticker band ---------- */
+.mo-ticker{background:var(--purple); color:#fff; overflow:hidden; padding:15px 0; font-weight:800; font-size:1.02rem; letter-spacing:.02em; white-space:nowrap}
+.mo-ticker .t{display:inline-flex; animation:moMarq 34s linear infinite}
+.mo-ticker:hover .t{animation-play-state:paused}
+.mo-ticker .row{display:inline-flex}
+.mo-ticker span.i{margin-right:34px}
+.mo-ticker b{color:#FFD2D2; margin-left:10px}
+@keyframes moMarq{to{transform:translateX(-50%)}}
+
+/* ---------- stats + call-to-action bands ---------- */
+.mo-stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:12px 0 8px}
+.mo-stats b{display:block; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(2.2rem,5vw,3.4rem); letter-spacing:-.02em; line-height:1; font-variant-numeric:tabular-nums; color:var(--ink)}
+.mo-stats span{display:block; margin-top:8px; font-weight:600; font-size:.9rem; color:var(--muted)}
+.mo-band{position:relative; overflow:hidden; display:flex; gap:22px; align-items:center; justify-content:space-between; flex-wrap:wrap; background:#1C1526; color:#fff; border-radius:26px; padding:46px 40px; margin:0 0 70px}
+.mo-band::after{content:""; position:absolute; right:-70px; top:-70px; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle,rgba(220,38,38,.6),transparent 70%); animation:moDrift 10s ease-in-out infinite alternate; pointer-events:none}
+.mo-band h2{position:relative; font-size:clamp(1.6rem,3.4vw,2.3rem); max-width:18ch; color:#fff; letter-spacing:-.02em; text-wrap:balance}
+.mo-band p{position:relative; margin-top:8px; max-width:42ch; color:#CFC8DC}
+.mo-band .btn{position:relative}
+
+/* ---------- hover polish ---------- */
+.nav-links a.ghost{position:relative}
+.nav-links a.ghost::after{content:""; position:absolute; left:0; right:100%; bottom:-5px; height:2px; background:var(--purple); transition:right .35s cubic-bezier(.16,.8,.24,1)}
+.nav-links a.ghost:hover::after{right:0}
+.btn-purple{position:relative; overflow:hidden}
+.btn-purple::before{content:""; position:absolute; top:0; bottom:0; width:40%; left:-60%; background:linear-gradient(100deg,transparent,rgba(255,255,255,.4),transparent); transform:skewX(-20deg); pointer-events:none}
+.btn-purple:hover::before{animation:moShine .8s ease}
+@keyframes moShine{to{left:130%}}
+.poster-card:hover .poster-card-title{color:var(--purple)}
+.poster-card:hover .poster-card-img{transform:translateY(-8px) scale(1.015); box-shadow:0 34px 60px -28px rgba(28,21,38,.5)}
+.picks-row .poster-card:nth-child(2),.poster-grid .poster-card:nth-child(2){transition-delay:.06s}
+.picks-row .poster-card:nth-child(3),.poster-grid .poster-card:nth-child(3){transition-delay:.12s}
+.picks-row .poster-card:nth-child(4),.poster-grid .poster-card:nth-child(4){transition-delay:.18s}
+.poster-grid .poster-card:nth-child(5){transition-delay:.24s}
+.poster-grid .poster-card:nth-child(6){transition-delay:.3s}
+.evt-section-head h2,.mo-sec-title{position:relative}
+
+@media (max-width:760px){
+  .mo-stats{grid-template-columns:minmax(0,1fr); gap:18px}
+  .mo-band{padding:34px 24px; border-radius:22px}
+  .mo-ticker{font-size:.94rem}
+}
+@media (prefers-reduced-motion: reduce){
+  body.classic-page .home-hero-v2::before,.mo-band::after,.mo-ticker .t,.mo-eyebrow i,[data-rise] .mo-w>span{animation:none !important}
+  .home-hero-v2-collage{transform:none; transition:none}
+}
