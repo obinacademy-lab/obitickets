@@ -73,6 +73,7 @@ $colB = $fill($colB);
     <div class="ld-nx-bar">
       <span><?= $nextList ? 'Your tickets and what&rsquo;s coming up' : 'Coming up' ?></span>
       <div class="ld-nx-ctl">
+        <button type="button" class="ld-nx-btn ld-nx-pause" data-nx="pause" aria-label="Pause auto-slide" aria-pressed="false"><span aria-hidden="true">&#10073;&#10073;</span></button>
         <button type="button" class="ld-nx-btn" data-nx="prev" aria-label="Previous event">&lsaquo;</button>
         <button type="button" class="ld-nx-btn" data-nx="next" aria-label="Next event">&rsaquo;</button>
       </div>
@@ -99,10 +100,9 @@ $colB = $fill($colB);
         <div class="ld-nx-cd ld-cd" aria-live="off">&nbsp;</div>
         <?php if ($isTicket): ?>
           <?php if ($nxJoin): ?><a class="btn btn-purple" href="/join.php?event=<?= (int) $nx['id'] ?>">Join now</a><?php endif; ?>
-          <a class="btn <?= $nxJoin ? 'btn-line' : 'btn-purple' ?>" href="/order.php?id=<?= (int) $nx['order_id'] ?>">View ticket</a>
-        <?php else: ?>
-          <a class="btn btn-line" href="/event.php?slug=<?= urlencode($nx['slug']) ?>">View event</a>
+          <a class="btn btn-purple" href="/order.php?id=<?= (int) $nx['order_id'] ?>">View ticket</a>
         <?php endif; ?>
+        <a class="btn btn-purple ld-nx-ev" href="/event.php?slug=<?= urlencode($nx['slug']) ?>">View event</a>
       </div>
       <?php endforeach; ?>
     </div>

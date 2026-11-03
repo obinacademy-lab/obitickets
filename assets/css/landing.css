@@ -113,3 +113,9 @@
   .ld-nx-track{scroll-behavior:auto}
   .ld-nx[data-multi="1"] .ld-nx-slide{transition:none}
 }
+.ld-nx-pause{font-size:.62rem; letter-spacing:-1px}
+.ld-nx-pause[aria-pressed="true"] span{display:inline-block; transform:translateX(1px)}
+.ld-nx-pause[aria-pressed="true"] span::before{content:"\25B6"; letter-spacing:0}
+.ld-nx-pause[aria-pressed="true"] span{font-size:0}
+.ld-nx-pause[aria-pressed="true"] span::before{font-size:.7rem}
+@media (max-width:640px){.ld-nx-slide .btn{flex:1 1 auto}}

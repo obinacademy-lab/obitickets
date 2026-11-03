@@ -29,7 +29,8 @@
   /* slider */
   var dots = [].slice.call(box.querySelectorAll('.ld-nx-dot'));
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var cur = 0, timer = null, paused = false;
+  var cur = 0, timer = null, paused = false, userPaused = false;
+  var gap = reduce ? 7500 : 5500; /* people who asked for less motion still get the slides, just slower and without the glide */
 
   function mark(i) {
     cur = i;
@@ -54,6 +55,13 @@
 
   box.addEventListener('click', function (e) {
     var b = e.target.closest('[data-nx]');
+    if (b && b.getAttribute('data-nx') === 'pause') {
+      userPaused = !userPaused;
+      b.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+      b.setAttribute('aria-label', userPaused ? 'Play auto-slide' : 'Pause auto-slide');
+      if (userPaused) stop(); else start();
+      return;
+    }
     if (b) { go(cur + (b.getAttribute('data-nx') === 'next' ? 1 : -1)); restart(); return; }
     var d = e.target.closest('.ld-nx-dot');
     if (d) { go(parseInt(d.getAttribute('data-i'), 10)); restart(); }
@@ -65,9 +73,10 @@
 
   /* slow auto-slide, off for reduced motion, paused while the person is interacting or the tab is hidden */
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
-  function start() { if (reduce || paused || timer) return; timer = setInterval(function () { if (!document.hidden) go(cur + 1); }, 5500); }
+  function start() { if (paused || userPaused || timer) return; timer = setInterval(function () { if (!document.hidden) go(cur + 1); }, gap); }
   function restart() { stop(); start(); }
-  ['mouseenter', 'focusin', 'touchstart'].forEach(function (ev) { box.addEventListener(ev, function () { paused = true; stop(); }, { passive: true }); });
+  ['mouseenter', 'touchstart'].forEach(function (ev) { box.addEventListener(ev, function () { paused = true; stop(); }, { passive: true }); });
+  box.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches(':focus-visible')) { paused = true; stop(); } });
   ['mouseleave', 'focusout'].forEach(function (ev) { box.addEventListener(ev, function () { paused = false; start(); }); });
   box.addEventListener('touchend', function () { setTimeout(function () { paused = false; start(); }, 4000); }, { passive: true });
   window.addEventListener('resize', function () { track.scrollTo({ left: slides[cur].offsetLeft - track.offsetLeft, behavior: 'auto' }); });

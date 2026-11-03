@@ -150,7 +150,7 @@ body.ev-wallet .wl-extra .ev-section{margin:0 0 16px; padding:26px; background:#
 @media (max-width:920px){
   body.ev-wallet .mq-from{display:none}
   body.ev-wallet .ev-side{grid-column:1 / -1}
-  body.ev-wallet .ev-side:not(:has(.ended-panel)){display:none}
+  body.ev-wallet .ev-side:not(:has(.ended-panel)){display:contents}
 }
 @media (max-width:900px){
   body.ev-wallet .ev-hero-grid{grid-template-columns:minmax(0,1fr); gap:34px; padding:34px 16px 20px}
