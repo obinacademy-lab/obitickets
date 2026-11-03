@@ -33,7 +33,7 @@ $hasFilter = $q !== '' || $category !== '';
 
 $pageTitle = 'Past events — obitickets';
 $pageDescription = 'Look back at events that have happened on obitickets — photos, ratings and reviews from the people who were there.';
-$bodyClass = 'classic-page';
+$bodyClass = 'classic-page stage';
 include __DIR__ . '/includes/header.php';
 ?>
 
