@@ -13,7 +13,7 @@ $more = array_values(array_filter(
     static fn ($e) => !in_array((int) $e['id'], $featuredIds, true)
 ));
 $currentUser = current_user();
-$next = $currentUser ? get_next_ticket_for_user((int) $currentUser['id']) : null;
+$nextList = $currentUser ? get_upcoming_tickets_for_user((int) $currentUser['id']) : [];
 
 // Two columns of posters that drift in opposite directions. Each column needs enough tiles to fill the height
 // before it is doubled for a seamless loop.
@@ -56,17 +56,37 @@ $colB = $fill($colB);
   </div>
 </section>
 
-<?php if ($next):
-    $nxTs = strtotime((string) $next['starts_at']);
-    $nxEvent = events_online_ready() ? get_event_by_id((int) $next['id']) : null;
-    $nxJoin = ($nxEvent && event_is_online($nxEvent) && online_join_window($nxEvent)['state'] === 'open');
-?>
+<?php if ($nextList): $multi = count($nextList) > 1; ?>
 <div class="wrap">
-  <div class="ld-next" id="ldNext" data-start="<?= $nxTs ?>" data-end="<?= (int) strtotime((string) $next['ends_at']) ?>">
-    <div class="ld-nx-tx"><small>Your next event</small><b><?= htmlspecialchars($next['title']) ?></b><span><?= htmlspecialchars(date('D j M, g:ia', $nxTs)) ?> &middot; <?= htmlspecialchars($next['venue_name']) ?></span></div>
-    <div class="ld-nx-cd" id="ldCd" aria-live="off">&nbsp;</div>
-    <?php if ($nxJoin): ?><a class="btn btn-purple" href="/join.php?event=<?= (int) $next['id'] ?>">Join now</a><?php endif; ?>
-    <a class="btn <?= $nxJoin ? 'btn-line' : 'btn-purple' ?>" href="/order.php?id=<?= (int) $next['order_id'] ?>">View ticket</a>
+  <div class="ld-nx" id="ldNext" data-multi="<?= $multi ? '1' : '0' ?>">
+    <?php if ($multi): ?>
+    <div class="ld-nx-bar">
+      <span><?= count($nextList) ?> upcoming events</span>
+      <div class="ld-nx-ctl">
+        <button type="button" class="ld-nx-btn" data-nx="prev" aria-label="Previous event">&lsaquo;</button>
+        <button type="button" class="ld-nx-btn" data-nx="next" aria-label="Next event">&rsaquo;</button>
+      </div>
+    </div>
+    <?php endif; ?>
+    <div class="ld-nx-track"<?= $multi ? ' tabindex="0" role="group" aria-roledescription="carousel" aria-label="Your upcoming events"' : '' ?>>
+      <?php foreach ($nextList as $nxi => $nx):
+          $nxTs = strtotime((string) $nx['starts_at']);
+          $nxEvent = events_online_ready() ? get_event_by_id((int) $nx['id']) : null;
+          $nxJoin = ($nxEvent && event_is_online($nxEvent) && online_join_window($nxEvent)['state'] === 'open');
+      ?>
+      <div class="ld-next ld-nx-slide" data-start="<?= $nxTs ?>" data-end="<?= (int) strtotime((string) $nx['ends_at']) ?>"<?= $multi ? ' role="group" aria-roledescription="slide" aria-label="' . ($nxi + 1) . ' of ' . count($nextList) . '"' : '' ?>>
+        <div class="ld-nx-tx"><small><?= $nxi === 0 ? 'Your next event' : 'Coming up' ?></small><b><?= htmlspecialchars($nx['title']) ?></b><span><?= htmlspecialchars(date('D j M, g:ia', $nxTs)) ?> &middot; <?= htmlspecialchars($nx['venue_name']) ?></span></div>
+        <div class="ld-nx-cd ld-cd" aria-live="off">&nbsp;</div>
+        <?php if ($nxJoin): ?><a class="btn btn-purple" href="/join.php?event=<?= (int) $nx['id'] ?>">Join now</a><?php endif; ?>
+        <a class="btn <?= $nxJoin ? 'btn-line' : 'btn-purple' ?>" href="/order.php?id=<?= (int) $nx['order_id'] ?>">View ticket</a>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php if ($multi): ?>
+    <div class="ld-nx-dots" role="tablist" aria-label="Choose an event">
+      <?php foreach ($nextList as $nxi => $nx): ?><button type="button" role="tab" class="ld-nx-dot" data-i="<?= $nxi ?>" aria-label="Event <?= $nxi + 1 ?>: <?= htmlspecialchars($nx['title']) ?>" aria-selected="<?= $nxi === 0 ? 'true' : 'false' ?>"></button><?php endforeach; ?>
+    </div>
+    <?php endif; ?>
   </div>
 </div>
 <?php endif; ?>

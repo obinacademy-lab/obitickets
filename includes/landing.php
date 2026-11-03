@@ -36,6 +36,23 @@ function get_next_ticket_for_user(int $userId): ?array
     return $stmt->fetch() ?: null;
 }
 
+/**
+ * Every upcoming event this person holds a paid or free ticket for, soonest first, one row per event.
+ * @return list<array<string,mixed>>
+ */
+function get_upcoming_tickets_for_user(int $userId, int $limit = 8): array
+{
+    $stmt = db()->prepare("
+        SELECT e.id, e.title, e.slug, e.starts_at, e.ends_at, e.venue_name, e.banner_image, e.banner_emoji, e.category,
+               MIN(o.id) AS order_id
+        FROM orders o JOIN events e ON e.id = o.event_id
+        WHERE o.user_id = ? AND o.status = 'PAID' AND e.status = 'PUBLISHED' AND e.ends_at >= NOW()
+        GROUP BY e.id, e.title, e.slug, e.starts_at, e.ends_at, e.venue_name, e.banner_image, e.banner_emoji, e.category
+        ORDER BY e.starts_at ASC
+        LIMIT " . (int) $limit);
+    $stmt->execute([$userId]);
+    return $stmt->fetchAll();
+}
 /** A stable colour for an event that has no poster, chosen by its category. */
 function landing_gradient(array $event): string
 {

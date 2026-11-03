@@ -32,6 +32,8 @@
 .ld-pt{position:absolute; z-index:2; left:14px; right:14px; bottom:13px; color:#fff; font:700 1rem/1.12 'Outfit',Georgia,serif; text-shadow:0 1px 10px rgba(0,0,0,.4)}
 
 /* ---------- next-event strip (signed-in people with a ticket) ---------- */
+.ld-nx{margin-top:-26px; position:relative; z-index:3}
+.ld-nx .ld-next{margin-top:0}
 .ld-next{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:-26px; position:relative; z-index:3; background:var(--surface); border:1px solid #F3CFCF; border-left:5px solid var(--purple); border-radius:14px; padding:16px 20px; box-shadow:0 22px 40px -28px rgba(28,21,38,.5)}
 .ld-nx-tx{flex:1; min-width:200px}
 .ld-nx-tx small{display:block; font:700 .68rem 'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--purple)}
@@ -83,10 +85,31 @@
   .ld-wall{height:320px}
   .ld-steps,.ld-feat{grid-template-columns:minmax(0,1fr)}
   .ld-org{grid-template-columns:minmax(0,1fr); padding:32px 24px; margin:50px 0 60px}
-  .ld-next{margin-top:-14px}
+  .ld-nx{margin-top:-14px}
 }
 @media (prefers-reduced-motion: reduce){
   .ld-col{animation:none !important}
   .ld-wall{height:auto; max-height:440px; overflow:hidden}
   .ld-fc,.ld-art img{transition:none}
+}
+
+/* ---------- next events: slides move sideways ---------- */
+.ld-nx-track{display:flex; gap:16px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; scrollbar-width:none; -webkit-overflow-scrolling:touch; border-radius:14px; padding-bottom:2px}
+.ld-nx-track::-webkit-scrollbar{display:none}
+.ld-nx-track:focus-visible{outline:3px solid #FCA5A5; outline-offset:3px}
+.ld-nx-slide{flex:0 0 100%; scroll-snap-align:start; min-width:0}
+.ld-nx[data-multi="1"] .ld-nx-slide{transition:opacity .5s, transform .5s var(--ease)}
+.ld-nx[data-multi="1"] .ld-nx-slide:not(.is-on){opacity:.55; transform:scale(.985)}
+.ld-nx-bar{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; padding:0 4px}
+.ld-nx-bar span{font:700 .68rem 'IBM Plex Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--purple-deep)}
+.ld-nx-ctl{display:flex; gap:8px}
+.ld-nx-btn{width:36px; height:36px; border-radius:50%; border:1px solid #F3CFCF; background:#fff; color:var(--purple-deep); font-size:1.4rem; line-height:1; cursor:pointer; display:grid; place-items:center; transition:background .2s, color .2s, transform .25s var(--ease)}
+.ld-nx-btn:hover{background:var(--purple); color:#fff; transform:scale(1.08)}
+.ld-nx-btn:focus-visible,.ld-nx-dot:focus-visible{outline:3px solid #FCA5A5; outline-offset:2px}
+.ld-nx-dots{display:flex; justify-content:center; gap:8px; margin-top:12px}
+.ld-nx-dot{width:8px; height:8px; padding:0; border:0; border-radius:99px; background:#E3C9C9; cursor:pointer; transition:width .35s var(--ease), background .25s}
+.ld-nx-dot[aria-selected="true"]{width:26px; background:var(--purple)}
+@media (prefers-reduced-motion: reduce){
+  .ld-nx-track{scroll-behavior:auto}
+  .ld-nx[data-multi="1"] .ld-nx-slide{transition:none}
 }
