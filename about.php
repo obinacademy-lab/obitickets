@@ -91,12 +91,15 @@ $aboutWhy = [
 
   <section class="wrap am-endwrap">
     <div class="am-end reveal">
-      <h2>OBITICKETS &mdash; DISCOVER. BOOK. ATTEND.</h2>
-      <p>Uganda's Events. One Destination.</p>
-      <div class="am-paystrip"><span>Pay with</span><img src="/assets/images/brands/mtn-momo-logo.png" width="63" height="36" alt="MTN MoMo"><img src="/assets/images/brands/airtel-money-logo.png" width="36" height="36" alt="Airtel Money"></div>
-      <div class="am-btns">
+      <img class="am-end-img" src="/assets/images/about/about-club.jpg" width="1170" height="1560" alt="" loading="lazy">
+      <div class="am-end-copy">
+        <h2><span class="am-end-brand">OBITICKETS &mdash;</span> <span class="am-w">DISCOVER.</span> <span class="am-w">BOOK.</span> <span class="am-w am-w3">ATTEND.</span></h2>
+        <p class="am-end-sub">Uganda's Events. One Destination.</p>
+      </div>
+      <div class="am-glass">
+        <div class="am-paystrip"><span>Pay with</span><img src="/assets/images/brands/mtn-momo-logo.png" width="63" height="36" alt="MTN MoMo"><img src="/assets/images/brands/airtel-money-logo.png" width="36" height="36" alt="Airtel Money"></div>
         <a class="am-btn am-btn-red" href="/">Browse events <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
-        <a class="am-btn am-btn-ghost" href="/signup.php">Start selling &mdash; it's free</a>
+        <a class="am-btn am-btn-white" href="/signup.php">Start selling &mdash; it's free</a>
       </div>
     </div>
   </section>
