@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Event page, "Marquee" look. Loaded after event-v3.css when the page body has .ev-marquee.
+   Light, editorial, sharp-edged: a big headline that rises line by line, the poster wiping in over a red
+   block, a facts bar ruled in ink, a dark ticket card that follows you, and a red rule that draws in above
+   each section. All class and id hooks (#buyPanel, #cd-text, .tier, .qty ...) are untouched.
+   To go back: set the body class in public/event.php to 'event-page' (light) or 'event-page ev-night'.
+   ========================================================================== */
+
+body.ev-marquee{background:#F6F6F8}
+body.ev-marquee .ev{
+  --ink:#14101A; --muted:#6B6577; --muted-2:#6B6577;
+  --line:#E3E1E8; --line-strong:#CBC7D3; --paper:#F6F6F8; --surface:#fff;
+  --mq-ease:cubic-bezier(.16,.84,.24,1); --mq-sharp:cubic-bezier(.77,0,.18,1);
+  background:#F6F6F8;
+}
+
+/* ---------- square edges everywhere (round avatars and the reaction bubbles stay round) ---------- */
+body.ev-marquee .ev .ev-btn,
+body.ev-marquee .ev .ev-icon-btn,
+body.ev-marquee .ev .ev-card,
+body.ev-marquee .ev .ev-note-card,
+body.ev-marquee .ev .ev-composer,
+body.ev-marquee .ev .ev-empty,
+body.ev-marquee .ev .ev-post,
+body.ev-marquee .ev .ev-thread,
+body.ev-marquee .ev .ev-bubble,
+body.ev-marquee .ev .ev-pulse,
+body.ev-marquee .ev .ev-file,
+body.ev-marquee .ev .ev-chip,
+body.ev-marquee .ev .ev-badge,
+body.ev-marquee .ev .ev-composer textarea,
+body.ev-marquee .ev .ev-comment-form input,
+body.ev-marquee .ev .ev-menu,
+body.ev-marquee .ev .ev-modal-card,
+body.ev-marquee .ev .ev-event-react .ev-react-sum,
+body.ev-marquee .ev .review-form,
+body.ev-marquee .ev .review-row,
+body.ev-marquee .ev .photo-item,
+body.ev-marquee .ev .video-item,
+body.ev-marquee .ev .ev-going-you{border-radius:0}
+body.ev-marquee .ev .ev-post-photo,
+body.ev-marquee .ev .ev-quote,
+body.ev-marquee .ev .ev-replying{border-radius:0}
+
+/* ---------- hero ---------- */
+body.ev-marquee .ev-hero{padding:34px 0 60px}
+body.ev-marquee .ev-glow{display:none}
+body.ev-marquee .ev-hero-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); gap:56px; align-items:center}
+
+/* poster: right-hand side, wipes up out of the page, red block slides in behind it */
+body.ev-marquee .ev-cover{order:2; justify-self:center; width:min(100%,430px); max-width:430px; border-radius:0; isolation:isolate; animation:none}
+body.ev-marquee .ev-cover::before{content:""; position:absolute; inset:30px -26px -26px 30px; z-index:-1; background:#DC2626; animation:mqBlock 1s .1s var(--mq-sharp) backwards}
+body.ev-marquee .ev-cover img{border-radius:0; max-height:none; object-fit:cover; aspect-ratio:4/5; box-shadow:0 40px 60px -34px rgba(20,16,26,.6); animation:mqWipe 1.15s .25s var(--mq-sharp) backwards}
+body.ev-marquee .ev-cover-fallback{aspect-ratio:4/5; border-radius:0}
+body.ev-marquee .ev-shine{border-radius:0}
+@keyframes mqWipe{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0)}}
+@keyframes mqBlock{from{transform:translate(-40px,-40px); opacity:0}}
+
+/* copy column reads top to bottom: tag line, title, facts, button, countdown, host, activity */
+body.ev-marquee .ev-hero-text{display:flex; flex-direction:column}
+body.ev-marquee .ev-eyebrow{order:1}
+body.ev-marquee .ev-badges{order:2}
+body.ev-marquee .ev-title{order:3}
+body.ev-marquee .ev-meta{order:4}
+body.ev-marquee .ev-actions{order:5}
+body.ev-marquee .ev-cd{order:6}
+body.ev-marquee .ev-org-row{order:7}
+body.ev-marquee .ev-pulse{order:8}
+
+body.ev-marquee .ev-eyebrow{gap:10px}
+body.ev-marquee .ev-eyebrow-cat{font:600 .68rem 'IBM Plex Mono',monospace; letter-spacing:.1em; border:1px solid currentColor; padding:6px 10px}
+body.ev-marquee .ev-badges{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+body.ev-marquee .ev-badge{font:600 .68rem 'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; padding:6px 10px}
+body.ev-marquee .ev-badge-online{background:#DC2626; color:#fff}
+body.ev-marquee .ev-title{font-size:clamp(2.1rem,5vw,4.2rem); line-height:1; letter-spacing:-.03em; margin-top:18px}
+
+/* facts bar */
+body.ev-marquee .ev-meta{margin-top:26px; padding:0; border-top:2px solid var(--ink); display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0}
+body.ev-marquee .ev-meta li{padding:14px 16px 0 0; font-weight:800}
+body.ev-marquee .ev-meta li+li{padding-left:18px; border-left:1px solid var(--line)}
+
+/* call to action + countdown */
+body.ev-marquee .ev-actions{margin-top:26px}
+body.ev-marquee .ev-btn{padding:16px 26px}
+body.ev-marquee .ev-btn-primary{box-shadow:none; background:#DC2626}
+body.ev-marquee .ev-btn-primary:hover{background:#B91C1C; box-shadow:none}
+body.ev-marquee .ev-btn:hover,body.ev-marquee .ev-icon-btn:hover{transform:none}
+body.ev-marquee .ev-hero-cta{padding:18px 30px; font-size:16px}
+body.ev-marquee .ev-hero-cta::after{content:"\2192"; transition:transform .35s var(--mq-ease)}
+body.ev-marquee .ev-hero-cta:hover::after{transform:translateX(6px)}
+body.ev-marquee .ev-btn-outline{border-color:var(--ink); border-width:1.5px}
+body.ev-marquee .ev-btn-outline:hover{background:var(--ink); color:#fff}
+body.ev-marquee .ev-icon-btn{border-color:var(--ink)}
+body.ev-marquee .ev-cd{margin-top:22px; gap:8px}
+body.ev-marquee .ev-cd-u{border-radius:0; box-shadow:none; background:#fff; min-width:66px}
+body.ev-marquee .ev-cd-u.is-sec{background:#DC2626; border-color:#DC2626}
+body.ev-marquee .ev-org-row{margin-top:26px}
+body.ev-marquee .ev-pulse{border-width:1px; border-top:2px solid var(--ink); box-shadow:none}
+body.ev-marquee .ev-pulse-item b{font-size:28px}
+
+/* ---------- tabs ---------- */
+body.ev-marquee .ev-tabs{background:rgba(246,246,248,.94)}
+body.ev-marquee .ev-tabs a.is-active{border-bottom-color:#14101A}
+body.ev-marquee .ev-tab-ink{background:#DC2626; border-radius:0}
+
+/* ---------- sections: a red rule draws in above each one ---------- */
+body.ev-marquee .ev-grid{padding-top:10px}
+body.ev-marquee .ev-section{margin-bottom:0; padding-block:34px; border-top:1px solid var(--line)}
+body.ev-marquee .ev-section:first-child{border-top:0}
+body.ev-marquee .ev-section::before{content:""; display:block; width:72px; height:3px; margin-bottom:22px; background:#DC2626; transform-origin:left}
+@supports (animation-timeline:view()){
+  body.ev-marquee .ev-section::before{animation:mqDraw linear both; animation-timeline:view(); animation-range:entry 10% entry 90%}
+}
+@keyframes mqDraw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+body.ev-marquee .ev-h2{font-size:clamp(1.5rem,3vw,2.1rem); letter-spacing:-.02em}
+body.ev-marquee .ev-about .about-text{color:#3E3848}
+body.ev-marquee .ev-hosting .ev-h2{margin-bottom:16px}
+body.ev-marquee .ev-going-card{background:#fff}
+body.ev-marquee .ev-post.is-official{background:#FDECEC}
+
+/* ---------- the ticket card: ink, flat, red top edge, follows you down the page ---------- */
+body.ev-marquee .ev-stub{--st-bg:#14101A}
+body.ev-marquee .ev-stub-wrap{filter:none}
+body.ev-marquee .buy-panel.ev-stub{border-radius:0; -webkit-mask:none; mask:none; border-top:5px solid #DC2626}
+body.ev-marquee .ev-stub-label{color:#FCA5A5}
+body.ev-marquee .ev-stub .qty button{border-radius:0}
+body.ev-marquee .ev-stub .poster-summary{border-radius:0}
+body.ev-marquee .ev-stub .btn-purple,
+body.ev-marquee .ev-stub .poster-foot .btn{border-radius:0}
+body.ev-marquee .ev .ended-panel{border-radius:0}
+@media (min-width:921px){
+  body.ev-marquee.ev-motion .ev-stub-wrap{animation:mqStub 1s .5s var(--mq-ease) both}
+  @keyframes mqStub{from{opacity:0; transform:translateY(40px)}to{opacity:1; transform:none}}
+}
+
+/* ---------- phone ---------- */
+@media (max-width:920px){
+  body.ev-marquee .buy-panel.ev-stub{border-radius:0}
+  body.ev-marquee .mobile-buy-bar .btn{border-radius:0}
+}
+@media (max-width:900px){
+  body.ev-marquee .ev-hero{padding:26px 0 40px}
+  body.ev-marquee .ev-hero-grid{grid-template-columns:1fr; gap:34px}
+  body.ev-marquee .ev-cover{order:0; width:min(86%,380px)}
+  body.ev-marquee .ev-title{font-size:clamp(1.9rem,8vw,2.7rem)}
+}
+@media (max-width:560px){
+  body.ev-marquee .ev-meta{grid-template-columns:1fr}
+  body.ev-marquee .ev-meta li+li{padding-left:0; border-left:0; border-top:1px solid var(--line); margin-top:12px; padding-top:12px}
+}

@@ -231,7 +231,7 @@ if ($openMoment && $momentsReady) {
         }
     }
 }
-$bodyClass = 'event-page ev-night'; // "Night" look. Remove ev-night here to return the event page to the light look.
+$bodyClass = 'event-page ev-marquee'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
 $hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
@@ -322,6 +322,9 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       </div>
 
       <div class="ev-actions">
+        <?php if (!$eventHasEnded && $minPrice !== null): ?>
+          <a class="ev-btn ev-btn-primary ev-hero-cta" href="#buyPanel"><?= $eventIsFree ? 'Get free ticket' : 'Get tickets' ?><span class="ev-btn-sub"> &middot; <?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span></a>
+        <?php endif; ?>
         <?php if ($eventHasEnded): ?>
           <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
         <?php endif; ?>
@@ -378,10 +381,10 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 <!-- ===== tabs ===== -->
 <nav class="ev-tabs" aria-label="Sections">
   <div class="ev-wrap ev-tabs-row">
-    <?php if ($communityReady): ?><a href="#community" class="is-active" data-tab="community">Community</a><?php endif; ?>
-    <a href="#about" data-tab="about">About</a>
+    <a href="#about" class="is-active" data-tab="about">About</a>
     <?php if (!$eventHasEnded): ?><a href="#buyPanel" data-tab="tickets">Tickets</a><?php endif; ?>
     <?php if ($momentsReady ? $moments : $eventMedia): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
+    <?php if ($communityReady): ?><a href="#community" data-tab="community"><?= $eventHasEnded ? 'Relive' : 'Community' ?></a><?php endif; ?>
     <?php if ($eventHasEnded || $reviews): ?><a href="#reviews" data-tab="reviews">Reviews</a><?php endif; ?>
   </div>
 </nav>
@@ -390,54 +393,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
   <main class="ev-main">
 
-    <?php if ($communityReady): ?>
-    <!-- ===== community ===== -->
-    <section id="community" class="ev-section">
-      <h2 class="ev-h2"><?= $eventHasEnded ? 'Relive the experience' : 'Community' ?></h2>
-
-      <?php if ($postError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($postError) ?></div><?php endif; ?>
-      <?php if (isset($_GET['posted'])): ?><div class="alert alert-success" style="margin-bottom:16px">Posted.</div><?php endif; ?>
-
-      <?php if ($ctx['can_post']): $composerHasTicket = user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id']); ?>
-        <form method="post" enctype="multipart/form-data" class="ev-composer" id="evComposer">
-          <?= csrf_field() ?><input type="hidden" name="action" value="create_post">
-          <div class="ev-composer-top">
-            <?= community_avatar_html($ctx['is_mod'] ? $orgName : $currentUser['name'], (int) $currentUser['id'], $ctx['is_mod']) ?>
-            <label class="sr-only" for="evPostBody">Share with the community</label>
-            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? (($composerHasTicket || $ctx['is_mod']) ? 'You were there. Tell everyone how it was.' : 'Share your thoughts about this event.') : ($composerHasTicket || $ctx['is_mod'] ? 'Going to this event? Share your excitement.' : 'Share what you think about this event.') ?>"><?= htmlspecialchars($postDraft) ?></textarea>
-          </div>
-          <div class="ev-composer-bar">
-            <label class="ev-file"><input type="file" name="image" accept="image/jpeg,image/png,image/webp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span id="evFileName">Photo</span></label>
-            <?php if ($ctx['is_mod']): ?>
-              <label class="ev-check"><input type="checkbox" name="post_type" value="ORGANIZER_UPDATE" checked> Official update</label>
-              <label class="ev-check"><input type="checkbox" name="pin" value="1"> Pin</label>
-            <?php else: ?>
-              <span class="ev-composer-note"><?= $composerHasTicket ? 'Posting as a verified attendee' : 'Posting as ' . htmlspecialchars(community_display_name((string) $currentUser['name'])) . ' &middot; links are for ticket holders' ?></span>
-            <?php endif; ?>
-            <span class="ev-grow"></span>
-            <button type="submit" class="ev-btn ev-btn-dark ev-btn-sm" id="evPostBtn">Post</button>
-          </div>
-        </form>
-      <?php else: ?>
-        <div class="ev-note-card">
-          <b>Join the conversation</b>
-          <span>Log in to post, react, comment and follow this event. No ticket needed.</span>
-          <a class="ev-btn ev-btn-dark ev-btn-sm" href="<?= htmlspecialchars($ctx['login_url']) ?>">Log in</a>
-        </div>
-      <?php endif; ?>
-
-      <div class="ev-feed" id="evFeed" data-has-more="<?= count($feed) === FEED_PAGE_SIZE ? '1' : '0' ?>" data-last-id="<?= $feed ? (int) (end($feed)['id']) : 0 ?>">
-        <?php foreach ($feed as $post) { echo community_post_html($post, $ctx); } ?>
-        <?php if (!$feed): ?>
-          <div class="ev-empty" id="evEmpty"><b>No posts yet</b><span>Be the first to share something about this event.</span></div>
-        <?php endif; ?>
-      </div>
-      <?php if (count($feed) === FEED_PAGE_SIZE): ?>
-        <div class="ev-more"><button type="button" class="ev-btn ev-btn-outline" id="evMore">Show more posts</button></div>
-      <?php endif; ?>
-    </section>
-    <?php endif; ?>
-
     <!-- ===== about ===== -->
     <section id="about" class="ev-section">
       <h2 class="ev-h2">About this event</h2>
@@ -445,45 +400,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
           <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
         <?php endforeach; ?>
-      </div>
-    </section>
-
-    <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
-    <section class="ev-section ev-hosting" aria-label="Organizer and attendance">
-      <h2 class="ev-h2">Hosted by</h2>
-      <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
-        <div class="ev-card ev-host-card">
-          <div class="ev-card-head">
-            <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
-            <div class="ev-card-title">
-              <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><span><?= htmlspecialchars($orgName) ?></span><?php endif; ?>
-              <?php if ($communityReady): ?><small><span class="orgFollowersMirror"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></small><?php endif; ?>
-            </div>
-            <?php if ($communityReady): ?>
-              <button type="button" class="ev-btn ev-btn-dark ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
-            <?php endif; ?>
-          </div>
-          <p class="ev-card-text"><?= htmlspecialchars($event['organizer_bio'] ?: 'Event organizer on obitickets.') ?></p>
-          <?php if ($organizerLinks): ?>
-            <div class="ev-card-sub">Follow them elsewhere</div>
-            <div class="ev-social">
-              <?php foreach ($organizerLinks as $link): ?>
-                <a href="<?= htmlspecialchars($link['url']) ?>" target="_blank" rel="noopener noreferrer nofollow" aria-label="<?= htmlspecialchars($link['label']) ?> (opens in a new tab)"><?= htmlspecialchars($link['short']) ?></a>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-
-        <?php if ($communityReady): ?>
-        <div class="ev-card ev-going-card">
-          <div class="ev-going-num"><?= number_format($social['going']) ?></div>
-          <div class="ev-card-title-lg"><?= $social['going'] === 1 ? 'person' : 'people' ?> <?= $eventHasEnded ? 'went' : ($social['going'] === 1 ? 'is going' : 'are going') ?></div>
-          <?php if ($currentUser && user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id'])): ?>
-            <div class="ev-going-you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> You have a ticket</div>
-          <?php endif; ?>
-          <p class="ev-card-text">Counted from paid tickets. We never show who is coming without their say-so.</p>
-        </div>
-        <?php endif; ?>
       </div>
     </section>
 
@@ -546,6 +462,94 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       <?php endif; ?>
       </section>
       <?php endif; ?>
+
+
+    <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
+    <section class="ev-section ev-hosting" aria-label="Organizer and attendance">
+      <h2 class="ev-h2">Hosted by</h2>
+      <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
+        <div class="ev-card ev-host-card">
+          <div class="ev-card-head">
+            <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
+            <div class="ev-card-title">
+              <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><span><?= htmlspecialchars($orgName) ?></span><?php endif; ?>
+              <?php if ($communityReady): ?><small><span class="orgFollowersMirror"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></small><?php endif; ?>
+            </div>
+            <?php if ($communityReady): ?>
+              <button type="button" class="ev-btn ev-btn-dark ev-btn-sm" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $followingOrganizer ? 'true' : 'false' ?>"><?= $followingOrganizer ? 'Following' : 'Follow' ?></button>
+            <?php endif; ?>
+          </div>
+          <p class="ev-card-text"><?= htmlspecialchars($event['organizer_bio'] ?: 'Event organizer on obitickets.') ?></p>
+          <?php if ($organizerLinks): ?>
+            <div class="ev-card-sub">Follow them elsewhere</div>
+            <div class="ev-social">
+              <?php foreach ($organizerLinks as $link): ?>
+                <a href="<?= htmlspecialchars($link['url']) ?>" target="_blank" rel="noopener noreferrer nofollow" aria-label="<?= htmlspecialchars($link['label']) ?> (opens in a new tab)"><?= htmlspecialchars($link['short']) ?></a>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <?php if ($communityReady): ?>
+        <div class="ev-card ev-going-card">
+          <div class="ev-going-num"><?= number_format($social['going']) ?></div>
+          <div class="ev-card-title-lg"><?= $social['going'] === 1 ? 'person' : 'people' ?> <?= $eventHasEnded ? 'went' : ($social['going'] === 1 ? 'is going' : 'are going') ?></div>
+          <?php if ($currentUser && user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id'])): ?>
+            <div class="ev-going-you"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> You have a ticket</div>
+          <?php endif; ?>
+          <p class="ev-card-text">Counted from paid tickets. We never show who is coming without their say-so.</p>
+        </div>
+        <?php endif; ?>
+      </div>
+    </section>
+
+    <?php if ($communityReady): ?>
+    <!-- ===== community ===== -->
+    <section id="community" class="ev-section">
+      <h2 class="ev-h2"><?= $eventHasEnded ? 'Relive the experience' : 'Community' ?></h2>
+
+      <?php if ($postError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($postError) ?></div><?php endif; ?>
+      <?php if (isset($_GET['posted'])): ?><div class="alert alert-success" style="margin-bottom:16px">Posted.</div><?php endif; ?>
+
+      <?php if ($ctx['can_post']): $composerHasTicket = user_has_ticket_for_event((int) $currentUser['id'], (int) $event['id']); ?>
+        <form method="post" enctype="multipart/form-data" class="ev-composer" id="evComposer">
+          <?= csrf_field() ?><input type="hidden" name="action" value="create_post">
+          <div class="ev-composer-top">
+            <?= community_avatar_html($ctx['is_mod'] ? $orgName : $currentUser['name'], (int) $currentUser['id'], $ctx['is_mod']) ?>
+            <label class="sr-only" for="evPostBody">Share with the community</label>
+            <textarea id="evPostBody" name="body" rows="2" maxlength="<?= POST_MAX_CHARS ?>" placeholder="<?= $eventHasEnded ? (($composerHasTicket || $ctx['is_mod']) ? 'You were there. Tell everyone how it was.' : 'Share your thoughts about this event.') : ($composerHasTicket || $ctx['is_mod'] ? 'Going to this event? Share your excitement.' : 'Share what you think about this event.') ?>"><?= htmlspecialchars($postDraft) ?></textarea>
+          </div>
+          <div class="ev-composer-bar">
+            <label class="ev-file"><input type="file" name="image" accept="image/jpeg,image/png,image/webp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span id="evFileName">Photo</span></label>
+            <?php if ($ctx['is_mod']): ?>
+              <label class="ev-check"><input type="checkbox" name="post_type" value="ORGANIZER_UPDATE" checked> Official update</label>
+              <label class="ev-check"><input type="checkbox" name="pin" value="1"> Pin</label>
+            <?php else: ?>
+              <span class="ev-composer-note"><?= $composerHasTicket ? 'Posting as a verified attendee' : 'Posting as ' . htmlspecialchars(community_display_name((string) $currentUser['name'])) . ' &middot; links are for ticket holders' ?></span>
+            <?php endif; ?>
+            <span class="ev-grow"></span>
+            <button type="submit" class="ev-btn ev-btn-dark ev-btn-sm" id="evPostBtn">Post</button>
+          </div>
+        </form>
+      <?php else: ?>
+        <div class="ev-note-card">
+          <b>Join the conversation</b>
+          <span>Log in to post, react, comment and follow this event. No ticket needed.</span>
+          <a class="ev-btn ev-btn-dark ev-btn-sm" href="<?= htmlspecialchars($ctx['login_url']) ?>">Log in</a>
+        </div>
+      <?php endif; ?>
+
+      <div class="ev-feed" id="evFeed" data-has-more="<?= count($feed) === FEED_PAGE_SIZE ? '1' : '0' ?>" data-last-id="<?= $feed ? (int) (end($feed)['id']) : 0 ?>">
+        <?php foreach ($feed as $post) { echo community_post_html($post, $ctx); } ?>
+        <?php if (!$feed): ?>
+          <div class="ev-empty" id="evEmpty"><b>No posts yet</b><span>Be the first to share something about this event.</span></div>
+        <?php endif; ?>
+      </div>
+      <?php if (count($feed) === FEED_PAGE_SIZE): ?>
+        <div class="ev-more"><button type="button" class="ev-btn ev-btn-outline" id="evMore">Show more posts</button></div>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
 
       <?php if ($eventHasEnded || $reviews): ?>
     <section id="reviews" class="ev-section ev-reviews">
