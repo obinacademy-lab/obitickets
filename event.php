@@ -752,38 +752,37 @@ $wlIc = static function (string $n): string {
 
 <script>
 (function () {
-  var close = function () { document.body.classList.remove('ticket-sheet-open'); };
+  var body = document.body;
+  var close = function () { body.classList.remove('ticket-sheet-open'); };
   var open = document.querySelector('[data-open-tickets]');
   if (open) {
-    open.addEventListener('click', function (e) {
-      var bb = open.getBoundingClientRect(), d = Math.max(bb.width, bb.height), r = document.createElement('span');
-      r.className = 'wl-rp';
-      r.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - bb.left - d / 2) + 'px;top:' + (e.clientY - bb.top - d / 2) + 'px';
-      open.appendChild(r);
-      setTimeout(function () { r.remove(); }, 650);
-      e.preventDefault();
-      document.body.classList.add('ticket-sheet-open');
-    });
+    open.addEventListener('click', function (e) { e.preventDefault(); body.classList.add('ticket-sheet-open'); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
     var bd = document.getElementById('sheetBackdrop'), cl = document.getElementById('sheetClose');
     if (bd) bd.addEventListener('click', close);
     if (cl) cl.addEventListener('click', close);
   }
-  /* the cards tilt a little toward the pointer (mouse only, and not when motion is reduced) */
-  if (window.matchMedia('(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference)').matches) {
-    [].forEach.call(document.querySelectorAll('.wl-card'), function (c) {
-      c.addEventListener('mousemove', function (e) {
-        var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-        c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
-        c.style.transform = 'perspective(900px) rotateY(' + (x * 5) + 'deg) rotateX(' + (-y * 5) + 'deg) translateY(-3px)';
+  /* the cards ease in, a little apart from each other, as they come into view */
+  var items = [].slice.call(document.querySelectorAll('.wl-card, .mq-from, .ended-panel, .wl-extra .ev-section'));
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (items.length && 'IntersectionObserver' in window && !calm) {
+    body.classList.add('wl-js');
+    var fired = 0;
+    var io = new IntersectionObserver(function (entries) {
+      var n = 0;
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        fired++;
+        var el = en.target;
+        io.unobserve(el);
+        el.style.transitionDelay = (n++ * 90) + 'ms';
+        el.classList.add('in');
+        setTimeout(function () { el.style.transitionDelay = ''; }, 1300);
       });
-      c.addEventListener('mouseleave', function () { c.style.transform = ''; });
-    });
-    /* a soft red light follows the pointer across the hero */
-    var hero = document.querySelector('.ev-hero');
-    if (hero) {
-      hero.addEventListener('mousemove', function (e) { var r = hero.getBoundingClientRect(); hero.style.setProperty('--hx', (e.clientX - r.left) + 'px'); hero.style.setProperty('--hy', (e.clientY - r.top) + 'px'); });
-    }
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.06 });
+    items.forEach(function (el) { io.observe(el); });
+    /* safety net: if the observer never reports anything, show every card rather than leave the page blank */
+    setTimeout(function () { if (!fired) items.forEach(function (el) { el.classList.add('in'); }); }, 2500);
   }
 })();
 </script>
