@@ -67,11 +67,49 @@ function require_organizer_access(string $permission): array
         exit('Admins manage organizers from the admin dashboard.');
     }
     $context = resolve_organizer_context($user);
+    if (!$context && $user['role'] === 'ATTENDEE') {
+        // A regular account tapping "Create event" / "Sell tickets": offer the one-step upgrade instead of a dead end.
+        header('Location: /become-organizer.php?next=' . urlencode((string) ($_SERVER['REQUEST_URI'] ?? '/my-events.php')));
+        exit;
+    }
     if (!$context || !organizer_can($context, $permission)) {
         http_response_code(403);
         exit('You do not have permission to view this page.');
     }
     return $context;
+}
+
+/**
+ * Turns a regular (attendee) account into an organizer account so the person can sell tickets. Their tickets,
+ * orders and login stay exactly as they were; this only adds the organizer profile and the role.
+ * Only ATTENDEE accounts are upgraded: admins and existing organizers are left untouched.
+ */
+function upgrade_attendee_to_organizer(int $userId, string $orgName): bool
+{
+    $orgName = trim($orgName);
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare("UPDATE users SET role = 'ORGANIZER' WHERE id = ? AND role = 'ATTENDEE'");
+        $stmt->execute([$userId]);
+        if ($stmt->rowCount() !== 1) {
+            $pdo->rollBack();
+            return false;
+        }
+        $stmt = $pdo->prepare('SELECT id FROM organizer_profiles WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        if (!$stmt->fetch()) {
+            $pdo->prepare('INSERT INTO organizer_profiles (user_id, org_name, slug) VALUES (?, ?, ?)')
+                ->execute([$userId, $orgName, generate_unique_organizer_slug($orgName)]);
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+    return true;
 }
 
 // =====================================================================
