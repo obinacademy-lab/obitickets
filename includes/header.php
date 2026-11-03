@@ -59,6 +59,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php if (str_contains($bodyClass ?? '', 'ev-wallet')): ?>
 <link rel="stylesheet" href="/assets/css/wallet.css?v=<?= @filemtime(__DIR__ . '/../assets/css/wallet.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/wallet-fx.css?v=<?= @filemtime(__DIR__ . '/../assets/css/wallet-fx.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/wallet-panel.css?v=<?= @filemtime(__DIR__ . '/../assets/css/wallet-panel.css') ?: time() ?>">
 <?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'ev-momo')): ?>
 <link rel="stylesheet" href="/assets/css/momo.css?v=<?= @filemtime(__DIR__ . '/../assets/css/momo.css') ?: time() ?>">

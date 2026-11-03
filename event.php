@@ -426,8 +426,10 @@ $wlIc = static function (string $n): string {
       <div class="ev-stub-top">
         <div class="ev-stub-label">ADMIT ONE</div>
         <div class="ev-stub-title"><?= htmlspecialchars($event['title']) ?></div>
-        <div class="ev-stub-when"><?= htmlspecialchars($evWhen) ?></div>
-        <div class="ev-stub-where"><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name'] . ($isOnline ? ' + online' : '')) ?></div>
+        <div class="ev-stub-meta">
+          <div class="ev-stub-when"><?= $wlIc('cal') ?><span><?= htmlspecialchars($evWhen) ?></span></div>
+          <div class="ev-stub-where"><?= $wlIc($isOnlineOnly ? 'scr' : 'pin') ?><span><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name'] . ($isOnline ? ' + online' : '')) ?></span></div>
+        </div>
       </div>
 
       <?php if ($onlineAccess): ?>
@@ -461,11 +463,14 @@ $wlIc = static function (string $n): string {
           ?>
             <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $maxPick ?>">
               <div class="tier-row">
-                <div>
+                <div class="tier-info">
                   <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
-                  <div class="tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?><?php if ($tierLimit !== null && ticket_is_free($tier)): ?> <span class="tlim">Limit <?= $tierLimit ?> per person</span><?php endif; ?></div>
+                  <?php if ($tierLimit !== null && ticket_is_free($tier)): ?><div class="tlim">Limit <?= $tierLimit ?> per person</div><?php endif; ?>
                 </div>
+                <div class="tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?></div>
+              </div>
+              <div class="tier-foot">
                 <?php if ($soldOut): ?>
                   <div class="waitlist-box">
                     <div class="tag-pill" style="background:var(--line); color:var(--muted); flex:none">Sold out</div>
@@ -477,10 +482,11 @@ $wlIc = static function (string $n): string {
                     <?php endif; ?>
                   </div>
                 <?php else: ?>
+                  <small>Quantity</small>
                   <div class="qty">
-                    <button type="button">&minus;</button>
+                    <button type="button" aria-label="Fewer tickets">&minus;</button>
                     <span class="n">0</span>
-                    <button type="button">+</button>
+                    <button type="button" aria-label="More tickets">+</button>
                     <input type="hidden" class="qty-input" name="qty[<?= (int) $tier['id'] ?>]" value="0">
                   </div>
                 <?php endif; ?>
@@ -777,6 +783,25 @@ $wlIc = static function (string $n): string {
 </div><!-- /.ev -->
 
 
+<script>
+(function () {
+  /* Get Tickets waits for a quantity: it reads "Choose a ticket" until at least one ticket is picked */
+  var form = document.querySelector('#buyPanel form[action="/checkout.php"]');
+  var btn = document.getElementById('buySubmit');
+  if (!form || !btn) return;
+  var ins = [].slice.call(form.querySelectorAll('.qty-input'));
+  if (!ins.length) return;
+  function sync() {
+    var n = 0;
+    ins.forEach(function (i) { n += parseInt(i.value, 10) || 0; });
+    btn.disabled = n < 1;
+    if (n < 1) btn.textContent = 'Choose a ticket'; /* with a ticket picked, main.js sets the right label (paid or free) */
+  }
+  form.addEventListener('click', function (e) { if (e.target.closest('.qty button')) setTimeout(sync, 0); });
+  sync();
+  window.addEventListener('load', sync); /* main.js writes its own label on load; the empty state wins */
+})();
+</script>
 <script>
 (function () {
   var body = document.body;

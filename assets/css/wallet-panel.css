@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Event page ticket panel, "Night" design. Dark glass with a soft red glow, lots of air, one focus at a time:
+   the event, the online-access note, a card per ticket (name, description and price, then quantity), the
+   totals, and a single red button. Used as the side drawer on desktop and the bottom sheet on phones.
+   Hooks untouched: #buyPanel, form, .tier[data-price], .qty .n, .qty-input, #subtotal-amount, #fee-amount,
+   #total-amount, #buySubmit, waitlist buttons. Loaded after wallet.css (body.ev-wallet).
+   ========================================================================== */
+
+body.ev-wallet .buy-panel.ev-stub{
+  --st-bg:#17111F; --st-ink:#fff; --st-muted:#B9B2C6; --st-line:rgba(255,255,255,.14); --st-ctl:rgba(255,255,255,.4); --st-field:rgba(255,255,255,.06);
+  display:flex; flex-direction:column; gap:26px; padding:34px 30px 30px; color:#fff;
+  background:radial-gradient(520px 260px at 100% -10%, rgba(229,56,59,.28), transparent 65%), #17111F;
+  border:1px solid rgba(255,255,255,.1); overflow-x:hidden;
+}
+body.ev-wallet .buy-panel.ev-stub > *{min-width:0}
+body.ev-wallet .buy-panel .sheet-handle{background:rgba(255,255,255,.3); margin:-18px auto -6px; flex:none}
+body.ev-wallet .buy-panel .sheet-close{color:#fff; background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2); top:calc(16px + env(safe-area-inset-top,0px)); right:16px; z-index:2}
+body.ev-wallet .buy-panel .sheet-close:hover{background:#fff; color:#17111F}
+
+/* ---------- header ---------- */
+body.ev-wallet .ev-stub-top{height:auto; padding:0; overflow:visible; margin-top:6px}
+body.ev-wallet .ev-stub-top::after{display:none}
+body.ev-wallet .ev-stub-label{font:600 .7rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.22em; color:#FF9B9B}
+body.ev-wallet .ev-stub-title{display:block; -webkit-line-clamp:unset; overflow:visible; margin:10px 44px 0 0; font:700 1.6rem/1.18 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.015em; color:#fff; text-wrap:balance}
+body.ev-wallet .ev-stub-meta{display:grid; gap:10px; margin-top:20px}
+body.ev-wallet .ev-stub-when,body.ev-wallet .ev-stub-where{display:flex; gap:12px; align-items:center; margin:0; font-size:.92rem; font-weight:600; color:#CFC8DA; white-space:normal; overflow:visible; text-overflow:clip}
+body.ev-wallet .ev-stub-when svg,body.ev-wallet .ev-stub-where svg{flex:none; color:#FF9B9B}
+
+/* ---------- online access note ---------- */
+body.ev-wallet .buy-panel .ev-online-note{margin:0; padding:16px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:#CFC8DA; font-size:.88rem; line-height:1.5}
+body.ev-wallet .buy-panel .ev-online-note svg{color:#FF9B9B; margin-top:2px}
+body.ev-wallet .buy-panel .ev-join-wrap{margin:0}
+body.ev-wallet .buy-panel .alert{margin:0 !important}
+
+/* ---------- the form ---------- */
+body.ev-wallet .buy-panel form{display:grid; gap:26px}
+body.ev-wallet .buy-panel .poster-tiers{display:grid; gap:14px; padding:0}
+
+/* ticket card */
+body.ev-wallet .buy-panel .tier{padding:22px; margin:0; border:1px solid rgba(255,255,255,.14); border-radius:18px;
+  background:linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.03)); transition:border-color .35s, box-shadow .35s, background .35s}
+body.ev-wallet .buy-panel .tier.has{border-color:#FF6B6B; background:linear-gradient(160deg, rgba(229,56,59,.2), rgba(255,255,255,.03)); box-shadow:0 0 0 1px #FF6B6B, 0 20px 40px -24px rgba(229,56,59,.8)}
+body.ev-wallet .buy-panel .tier-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px}
+body.ev-wallet .buy-panel .tier-info{min-width:0}
+body.ev-wallet .buy-panel .tier .tn{font:800 .8rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; color:#fff}
+body.ev-wallet .buy-panel .tier .td{margin:8px 0 0; max-width:34ch; font-size:.86rem; line-height:1.5; color:#B9B2C6; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+body.ev-wallet .buy-panel .tier .tlim{margin-top:8px; font-size:.76rem; font-weight:700; color:#FFB3B3}
+body.ev-wallet .buy-panel .tier .tp{margin:0; font:800 1.65rem/1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.01em; white-space:nowrap; color:#fff}
+body.ev-wallet .buy-panel .tier-foot{display:flex; justify-content:space-between; align-items:center; gap:14px; margin-top:20px; padding-top:18px; border-top:1px solid rgba(255,255,255,.12)}
+body.ev-wallet .buy-panel .tier-foot small{font-size:.74rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#B9B2C6}
+
+/* quantity stepper */
+body.ev-wallet .buy-panel .qty{display:flex; align-items:center; gap:8px; border:0; border-radius:0; overflow:visible; background:none}
+body.ev-wallet .buy-panel .qty button{width:38px; height:38px; border-radius:50%; border:1.5px solid rgba(255,255,255,.4); background:transparent; color:#fff; font-size:1.2rem; line-height:1; display:grid; place-items:center; cursor:pointer; padding:0;
+  transition:background .25s cubic-bezier(.22,.8,.24,1), color .25s, transform .25s cubic-bezier(.22,.8,.24,1), border-color .25s}
+body.ev-wallet .buy-panel .qty button:hover{background:#fff; color:#17111F; border-color:#fff; transform:scale(1.07)}
+body.ev-wallet .buy-panel .qty button:active{transform:scale(.94)}
+body.ev-wallet .buy-panel .qty .n{border:0; width:auto; min-width:30px; height:auto; text-align:center; font:600 1.1rem 'JetBrains Mono',ui-monospace,monospace; color:#fff}
+
+/* sold out and waitlist, in the same place as the stepper */
+body.ev-wallet .buy-panel .waitlist-box{width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+body.ev-wallet .buy-panel .waitlist-btn{border-radius:99px; border:1.5px solid rgba(255,255,255,.4); color:#fff; background:transparent; padding:9px 16px; font-weight:800; font-size:.82rem; cursor:pointer; transition:background .25s, color .25s}
+body.ev-wallet .buy-panel .waitlist-btn:hover{background:#fff; color:#17111F}
+body.ev-wallet .buy-panel .waitlist-btn.primary{background:#E5383B; border-color:#E5383B; color:#fff}
+body.ev-wallet .buy-panel .waitlist-state{color:#FFB3B3; font-weight:700; font-size:.84rem}
+
+/* totals */
+body.ev-wallet .buy-panel .poster-summary{margin:0; padding:0; background:none; border:0; border-radius:0; display:grid; gap:10px}
+body.ev-wallet .buy-panel .poster-summary .r{display:flex; justify-content:space-between; gap:12px; font-size:.92rem; color:#B9B2C6}
+body.ev-wallet .buy-panel .poster-summary .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-variant-numeric:tabular-nums; color:#fff}
+body.ev-wallet .buy-panel .poster-summary .r.total{margin-top:4px; padding-top:16px; border-top:1px solid rgba(255,255,255,.16); color:#fff; font-weight:800}
+body.ev-wallet .buy-panel .poster-summary .r.total .v{font-size:1.1rem}
+
+/* the one button */
+body.ev-wallet .buy-panel .poster-foot{padding:0; display:grid; gap:16px}
+body.ev-wallet .buy-panel #buySubmit{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:56px; padding:0 20px; border:0; border-radius:14px; font:800 1.02rem 'Plus Jakarta Sans',sans-serif; color:#fff; cursor:pointer;
+  background:linear-gradient(180deg,#F26262,#D93434); box-shadow:0 16px 30px -14px rgba(240,82,82,.8); transition:transform .3s cubic-bezier(.22,.8,.24,1), box-shadow .3s, background .25s, opacity .25s}
+body.ev-wallet .buy-panel #buySubmit::after{content:"\2192"; transition:transform .35s cubic-bezier(.22,.8,.24,1)}
+body.ev-wallet .buy-panel #buySubmit:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 22px 34px -14px rgba(240,82,82,.9)}
+body.ev-wallet .buy-panel #buySubmit:hover:not(:disabled)::after{transform:translateX(5px)}
+body.ev-wallet .buy-panel #buySubmit:active:not(:disabled){transform:none}
+body.ev-wallet .buy-panel #buySubmit:disabled{background:rgba(255,255,255,.12); color:rgba(255,255,255,.5); box-shadow:none; cursor:not-allowed}
+body.ev-wallet .buy-panel #buySubmit:disabled::after{display:none}
+body.ev-wallet .buy-panel .secure-note{display:flex; align-items:center; justify-content:center; gap:7px; font-size:.8rem; color:#B9B2C6; text-align:center}
+body.ev-wallet .buy-panel .pay-icons{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap}
+body.ev-wallet .buy-panel .pay-icons::before{content:"Pay with"; font-size:.78rem; color:#B9B2C6}
+body.ev-wallet .buy-panel .pay-icons[hidden]{display:none}
+body.ev-wallet .buy-panel .pay-badge{height:38px; padding:0 14px; border-radius:10px; background:#fff; box-shadow:none}
+
+/* ---------- phones: the same panel as a bottom sheet ---------- */
+@media (max-width:920px){
+  body.ev-wallet .buy-panel.ev-stub{border-radius:24px 24px 0 0; border-bottom:0; padding:28px 22px calc(26px + env(safe-area-inset-bottom,0px)); gap:22px; max-height:90vh}
+  body.ev-wallet .buy-panel .ev-stub-title{font-size:1.4rem; margin-right:40px}
+  body.ev-wallet .buy-panel .tier{padding:18px}
+  body.ev-wallet .buy-panel .tier .tp{font-size:1.45rem}
+}
