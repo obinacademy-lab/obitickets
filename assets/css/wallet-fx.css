@@ -19,10 +19,10 @@ body.ev-wallet .ev-hero-text > :nth-child(6){animation-delay:.5s}
 body.ev-wallet .ev-hero-text > .ev-title{animation:none}
 body.ev-wallet .ev-cd{animation:wlUp .9s .32s var(--fx) backwards}
 
-/* the poster stays still when you point at it (no tilt from the old motion script) */
+/* the flyer is plain: straight, no shadow, no hover effect (and no tilt from the old motion script) */
 body.ev-wallet .ev-cover{transform:none !important; transition:none}
-body.ev-wallet .ev-cover img{transition:transform .7s var(--fx), box-shadow .7s var(--fx)}
-body.ev-wallet .ev-cover:hover img{transform:rotate(0) scale(1.015); box-shadow:0 44px 70px -32px rgba(22,17,28,.6)}
+
+
 
 /* ---------- cards ease in as they come into view ---------- */
 body.ev-wallet.wl-js .wl-card,
