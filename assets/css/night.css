@@ -154,3 +154,6 @@ body.ev-night .site-nav{background:rgba(13,9,17,.78); border-bottom:1px solid rg
 .ticket-issued-qr{width:164px; padding:10px; border-radius:16px; box-shadow:0 14px 30px -14px rgba(0,0,0,.6)}
 .ticket-issued-code{color:#fff}
 .ticket-issued-hint{color:#C9C0D6}
+
+/* the footer keeps the home page's red gradient: the token flip above must not reach it */
+body.ev-night #site-footer{--purple-deep:#991B1B; --ink:#1B1417; --muted:#6B6064; --line:#E9E1DE; --line-strong:#D9CFCB; --purple-tint:#FDEDED}

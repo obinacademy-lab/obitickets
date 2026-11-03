@@ -233,7 +233,6 @@ if ($openMoment && $momentsReady) {
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
 $bodyClass = 'event-page ev-night ev-momo'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
-$hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
 

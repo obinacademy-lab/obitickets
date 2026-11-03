@@ -585,3 +585,6 @@ a.ev-quote:hover{background:#F0E9E5;}
 .ev-replying-x:hover{background:rgba(27,20,23,.06); color:var(--ink);}
 .ev-swipe-ico{position:absolute; left:2px; top:10px; z-index:0; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid var(--line-strong); color:var(--muted); opacity:0; pointer-events:none; transition:background .2s ease, color .2s ease, border-color .2s ease;}
 .ev-swipe-ico.is-armed{background:#DC2626; border-color:#DC2626; color:#fff;}
+
+/* the floating WhatsApp button shows on the event page like everywhere else; on phones the ticket bar owns that corner */
+@media (max-width:920px){body.event-page .wa-float{display:none}}
