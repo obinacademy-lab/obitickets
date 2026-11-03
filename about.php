@@ -3,7 +3,7 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $pageTitle = 'About — obitickets';
 $pageDescription = 'Obitickets is a modern event discovery and ticketing platform designed to transform how people discover events, purchase tickets and manage event experiences.';
-$bodyClass = 'classic-page';
+$bodyClass = 'classic-page about-mosaic';
 include __DIR__ . '/includes/header.php';
 
 $aboutWhy = [
@@ -16,114 +16,87 @@ $aboutWhy = [
 ];
 ?>
 
-<div class="wrap">
+<div class="am">
 
-  <section class="ah-hero">
-    <div class="hero-glow" id="heroGlow"></div>
-    <span class="orb orb1"></span><span class="orb orb2"></span><span class="orb orb3"></span>
-    <div class="ah-hero-grid">
-      <div>
-        <span class="kicker hero-in d1"><i></i>About Obitickets</span>
-        <h1><span class="split-heading" data-split id="heroHeading">Ticketing Made Simple</span><span class="ah-sub hero-in d3">&mdash; For Organizers and Attendees Across Africa.</span></h1>
-        <p class="dek hero-in d3">Obitickets is a modern event discovery and ticketing platform designed to transform how people discover events, purchase tickets and manage event experiences.</p>
-        <div class="ah-hero-btns hero-in d4">
-          <span class="magnetic"><a class="btn btn-purple" href="/">Browse events</a></span>
-          <span class="magnetic"><a class="btn btn-line" href="/signup.php">Start selling</a></span>
-        </div>
+  <section class="wrap am-hero">
+    <div class="am-copy">
+      <span class="am-kick hero-in d1">About Obitickets</span>
+      <h1 class="hero-in d1">Ticketing Made <em>Simple</em></h1>
+      <p class="am-sub hero-in d3">&mdash; For Organizers and Attendees Across Africa.</p>
+      <p class="am-lead hero-in d3">Obitickets is a modern event discovery and ticketing platform designed to transform how people discover events, purchase tickets and manage event experiences.</p>
+      <div class="am-btns hero-in d4">
+        <a class="am-btn am-btn-red" href="/">Browse events <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
+        <a class="am-btn am-btn-line" href="/signup.php">Start selling</a>
       </div>
-      <div class="tilt-wrap hero-in d5" id="tiltHero">
-        <div class="glow-frame reveal" id="heroImgWrap">
-          <div class="frame-inner curtain" id="heroCurtain"><img src="/assets/images/about/dancers.jpg" alt="Traditional dance troupe performing at a community festival in Uganda"></div>
-          <div class="badge"><span class="n mono">10%</span><span class="l">Commission &mdash;<br>only when you sell</span></div>
-        </div>
-      </div>
+    </div>
+    <div class="am-mos hero-in d5">
+      <figure class="am-ph am-m1"><img src="/assets/images/about/about-friends.jpg" width="640" height="1146" alt="Two friends sharing drinks and smiling" fetchpriority="high"><span class="am-tag"><b>10%</b><small>Commission, only when you sell</small></span></figure>
+      <figure class="am-ph"><img src="/assets/images/about/about-rugby.jpg" width="640" height="954" alt="Players competing for the ball in a rugby match"></figure>
+      <figure class="am-ph"><img src="/assets/images/about/about-party.jpg" width="560" height="560" alt="Guests laughing at a party"></figure>
     </div>
   </section>
 
-  <section class="ah-section">
-    <div class="story-grid">
-      <div class="story-media curtain parallax" data-speed="0.12"><img src="/assets/images/about/crowd.jpg" alt="Crowd dancing at a night event"></div>
-      <div class="story-text ah-lead">
-        <p class="reveal">We bring event organizers, promoters and attendees together in one convenient digital marketplace, making it easier to publish events, sell tickets online and connect people with experiences worth attending.</p>
-        <p class="reveal reveal-delay-1">Our mission is to simplify event ticketing through accessible technology, convenient digital payments and smarter event management solutions.</p>
-      </div>
-    </div>
+  <section class="wrap am-two">
+    <p class="reveal">We bring event organizers, promoters and attendees together in one convenient digital marketplace, making it easier to publish events, sell tickets online and connect people with experiences worth attending.</p>
+    <p class="reveal reveal-delay-1">Our mission is to simplify event ticketing through accessible technology, convenient digital payments and smarter event management solutions.</p>
   </section>
 
-  <section class="ah-section">
-    <div class="ah-section-head">
-      <h2 class="reveal">What We Do</h2>
-      <p class="reveal reveal-delay-1">Obitickets provides a platform where:</p>
-    </div>
-    <div class="principle-grid principle-grid-2 principle-grid-wide">
-      <div class="principle-card reveal tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-briefcase"/></svg></div>
+  <section class="wrap am-what">
+    <h2 class="reveal">What We Do</h2>
+    <p class="am-ln reveal reveal-delay-1">Obitickets provides a platform where:</p>
+    <div class="am-grid">
+      <div class="am-g reveal">
+        <span class="am-ic"><svg width="22" height="22" aria-hidden="true"><use href="#ic-briefcase"/></svg></span>
         <p><strong>Event Organizers</strong> can register, publish events, promote their experiences and manage ticket sales.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-1 tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-people"/></svg></div>
+      <div class="am-g reveal reveal-delay-1">
+        <span class="am-ic"><svg width="22" height="22" aria-hidden="true"><use href="#ic-people"/></svg></span>
         <p><strong>Attendees</strong> can discover upcoming events, explore available tickets and book their places online.</p>
       </div>
-      <div class="principle-card reveal tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-ticket"/></svg></div>
+      <div class="am-g reveal">
+        <span class="am-ic"><svg width="22" height="22" aria-hidden="true"><use href="#ic-ticket"/></svg></span>
         <p><strong>Secure Digital Ticketing</strong> makes it easier to generate and validate tickets using QR code technology.</p>
       </div>
-      <div class="principle-card reveal reveal-delay-1 tilt-card">
-        <div class="principle-ic"><svg width="20" height="20"><use href="#ic-cash"/></svg></div>
-        <p><strong>Convenient Payments</strong> allow customers to purchase tickets through supported mobile money payment options, including MTN Mobile Money and Airtel Money.</p>
+      <div class="am-g reveal reveal-delay-1">
+        <span class="am-ic"><svg width="22" height="22" aria-hidden="true"><use href="#ic-cash"/></svg></span>
+        <p><strong>Convenient Payments</strong> allow customers to purchase tickets through supported mobile money payment options, including MTN Mobile Money and Airtel Money.
+          <span class="am-pay"><img src="/assets/images/brands/mtn-momo-logo.png" width="63" height="36" alt="MTN MoMo"><img src="/assets/images/brands/airtel-money-logo.png" width="36" height="36" alt="Airtel Money"></span></p>
       </div>
     </div>
   </section>
 
-  <section class="ah-section">
-    <div class="story-grid">
-      <div class="story-media curtain parallax" data-speed="0.14"><img src="/assets/images/about/dancers.jpg" alt="Traditional dance troupe performing at a community festival in Uganda"></div>
-      <div class="story-text ah-lead">
-        <span class="kicker reveal">Our Vision</span>
-        <p class="reveal reveal-delay-1">To become a trusted event discovery and ticketing destination across Africa, connecting people to experiences while empowering event organizers with accessible digital tools to grow their events.</p>
-      </div>
-    </div>
+  <section class="am-band am-v">
+    <img src="/assets/images/about/about-club.jpg" width="1170" height="1560" alt="" loading="lazy">
+    <div class="wrap"><div class="am-band-in reveal"><span class="am-kick">Our Vision</span><p>To become a trusted event discovery and ticketing destination across Africa, connecting people to experiences while empowering event organizers with accessible digital tools to grow their events.</p></div></div>
   </section>
 
-  <section class="ah-section">
-    <div class="story-grid">
-      <div class="story-media curtain parallax" data-speed="0.1"><img src="/assets/images/about/attendee.jpg" alt="Attendee laughing at a night event"></div>
-      <div class="story-text ah-lead">
-        <span class="kicker reveal">Our Mission</span>
-        <p class="reveal reveal-delay-1">To make event discovery, ticket booking and event management simpler, more accessible and more efficient through technology and innovation.</p>
-      </div>
-    </div>
+  <section class="am-band am-m">
+    <img src="/assets/images/about/about-conference.jpg" width="736" height="1120" alt="" loading="lazy">
+    <div class="wrap"><div class="am-band-in reveal"><span class="am-kick">Our Mission</span><p>To make event discovery, ticket booking and event management simpler, more accessible and more efficient through technology and innovation.</p></div></div>
   </section>
 
-  <section class="ah-section">
-    <div class="ah-section-head">
-      <h2 class="reveal">Why Choose Obitickets?</h2>
-    </div>
-    <ul class="why-grid">
+  <section class="wrap am-why">
+    <h2 class="reveal">Why Choose Obitickets?</h2>
+    <ul class="am-six">
       <?php foreach ($aboutWhy as $i => $why): ?>
-        <li class="why-item reveal<?= $i % 3 ? ' reveal-delay-' . ($i % 3) : '' ?>"><span class="why-ic"><svg width="16" height="16" aria-hidden="true"><use href="#ic-check"/></svg></span><span><?= htmlspecialchars($why) ?></span></li>
+        <li class="reveal<?= $i % 3 ? ' reveal-delay-' . ($i % 3) : '' ?>"><svg width="18" height="18" aria-hidden="true"><use href="#ic-check"/></svg><span><?= htmlspecialchars($why) ?></span></li>
       <?php endforeach; ?>
     </ul>
   </section>
 
-  <section class="ah-section" style="padding-top:0">
-    <div class="ah-promise reveal">
-      <span class="kicker" style="justify-content:center">Our Promise</span>
-      <p>At Obitickets, we believe every great event begins with an opportunity to connect. We are committed to making the journey from discovering an event to attending it simpler and more convenient for everyone.</p>
-    </div>
+  <section class="wrap am-promise reveal">
+    <span class="am-kick">Our Promise</span>
+    <p>At Obitickets, we believe every great event begins with an opportunity to connect. We are committed to making the journey from discovering an event to attending it simpler and more convenient for everyone.</p>
   </section>
 
-  <section class="ah-section" style="padding-top:0">
-    <div class="ah-cta reveal">
-      <div class="cta-ring"></div>
-      <div class="ah-cta-inner">
-        <span class="kicker" style="justify-content:center">Get started</span>
-        <h2>OBITICKETS &mdash; DISCOVER. BOOK. ATTEND.</h2>
-        <p>Uganda's Events. One Destination.</p>
-        <div class="ah-cta-btns">
-          <span class="magnetic"><a class="btn btn-purple" href="/">Browse events</a></span>
-          <span class="magnetic"><a class="btn btn-line" href="/signup.php">Start selling &mdash; it's free</a></span>
-        </div>
+  <section class="wrap am-endwrap">
+    <div class="am-end reveal">
+      <h2>OBITICKETS &mdash; DISCOVER. BOOK. ATTEND.</h2>
+      <p>Uganda's Events. One Destination.</p>
+      <div class="am-paystrip"><span>Pay with</span><img src="/assets/images/brands/mtn-momo-logo.png" width="63" height="36" alt="MTN MoMo"><img src="/assets/images/brands/airtel-money-logo.png" width="36" height="36" alt="Airtel Money"></div>
+      <div class="am-btns">
+        <a class="am-btn am-btn-red" href="/">Browse events <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
+        <a class="am-btn am-btn-ghost" href="/signup.php">Start selling &mdash; it's free</a>
       </div>
     </div>
   </section>

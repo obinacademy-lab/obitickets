@@ -489,17 +489,6 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .ah-cta-inner{position:relative; z-index:2; max-width:520px; margin:0 auto;}
 .ah-cta h2{font-size:2.1rem; margin-top:16px;}
 .ah-cta p{margin-top:14px;}
-.ah-sub{display:block; margin-top:14px; font-size:clamp(1.05rem,1.7vw,1.3rem); font-weight:600; line-height:1.35; letter-spacing:-.01em; color:var(--muted);}
-.ah-lead p{font-size:1.06rem; line-height:1.75;}
-.principle-grid-wide{max-width:none;}
-.principle-grid-wide .principle-card p{margin-top:18px; font-size:.98rem; line-height:1.65;}
-.principle-grid-wide .principle-card strong{color:var(--ink);}
-.why-grid{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
-.why-item{display:flex; align-items:flex-start; gap:14px; padding:22px 22px; background:var(--surface); border:1px solid var(--line); border-radius:18px; font-weight:600; line-height:1.5; color:var(--ink); transition:border-color .3s var(--ease), box-shadow .4s var(--ease), transform .3s var(--ease-back);}
-.why-item:hover{border-color:var(--line-strong); box-shadow:0 22px 40px -26px rgba(153,27,27,.5); transform:translateY(-3px);}
-.why-ic{flex:none; width:30px; height:30px; border-radius:50%; background:var(--purple-tint); color:var(--purple); display:grid; place-items:center;}
-.ah-promise{max-width:760px; margin:0 auto; text-align:center; padding:44px 36px; border:1px solid var(--line); border-radius:24px; background:var(--surface);}
-.ah-promise p{margin-top:16px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-size:clamp(1.15rem,2.2vw,1.45rem); line-height:1.55; font-weight:600; color:var(--ink); text-wrap:balance;}
 .ah-cta-btns{display:flex; gap:12px; justify-content:center; margin-top:30px; flex-wrap:wrap;}
 
 /* ---------- pricing page (shares the dark-page/cinematic system above) ---------- */
@@ -1017,7 +1006,6 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
   .glow-frame img{height:300px;}
   .story-grid{grid-template-columns:1fr; gap:32px;}
   .principle-grid{grid-template-columns:1fr;}
-  .why-grid{grid-template-columns:repeat(2,1fr);}
   .moment-strip{grid-template-columns:1fr;}
   .moment-strip .stack{flex-direction:row;}
   .stat-band{grid-template-columns:1fr;}
@@ -1034,8 +1022,6 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
   .my-event-row{flex-wrap:wrap;}
   .ah-hero{padding:44px 0 10px;}
   .ah-section{padding:56px 0;}
-  .why-grid{grid-template-columns:1fr;}
-  .ah-promise{padding:32px 22px;}
   .moment-strip .stack{flex-direction:column;}
 }
 
