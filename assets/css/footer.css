@@ -9,11 +9,13 @@
 #site-footer a:focus-visible,#site-footer button:focus-visible{outline:3px solid #fff; outline-offset:3px; border-radius:4px}
 
 .foot-main-section{padding:60px 0 0}
-.foot-main{position:relative; z-index:1; display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:36px; align-items:start}
+.foot-main{position:relative; z-index:1; display:grid; grid-template-columns:3fr repeat(4,minmax(0,1fr)); gap:36px; align-items:start}
 .foot-brand .logo{color:#fff}
 .foot-brand .logo-mark{transition:transform .4s var(--ease-back)}
 .foot-brand .logo:hover .logo-mark{transform:rotate(-12deg) scale(1.08)}
-.foot-brand p{margin:16px 0 18px; font-size:.9rem; max-width:30ch; line-height:1.65}
+.foot-brand p{margin:12px 0 0; font-size:.88rem; max-width:46ch; line-height:1.7}
+#site-footer .foot-brand .foot-tagline{margin-top:18px; font:700 1.02rem/1.4 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.01em; color:#fff; max-width:30ch}
+.foot-brand .pay-row{margin-top:20px}
 
 .foot-col h4{font:600 .7rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--ft-head); margin:4px 0 18px}
 .foot-col a{display:block; width:fit-content; font-size:.92rem; color:var(--ft-text); margin-bottom:11px}
