@@ -63,7 +63,7 @@ require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';
 require_once __DIR__ . '/contact.php';
 require_once __DIR__ . '/online.php';
-require_once __DIR__ . '/stage.php';
+require_once __DIR__ . '/landing.php';
 require_once __DIR__ . '/organizer.php';
 require_once __DIR__ . '/organizer-layout.php';
 

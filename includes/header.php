@@ -45,8 +45,8 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
-<?php if (str_contains($bodyClass ?? '', 'stage')): ?>
-<link rel="stylesheet" href="/assets/css/stage.css?v=<?= @filemtime(__DIR__ . '/../assets/css/stage.css') ?: time() ?>">
+<?php if (str_contains($bodyClass ?? '', 'landing-home')): ?>
+<link rel="stylesheet" href="/assets/css/landing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/landing.css') ?: time() ?>">
 <?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'event-page') || str_contains($bodyClass ?? '', 'ev-page')): ?>
 <link rel="stylesheet" href="/assets/css/event-v3.css?v=<?= @filemtime(__DIR__ . '/../assets/css/event-v3.css') ?: time() ?>">

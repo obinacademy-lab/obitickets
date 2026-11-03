@@ -17,7 +17,7 @@ if ($category !== '') {
     $titleBits[] = $category;
 }
 $pageTitle = ($titleBits ? implode(' · ', $titleBits) . ' — ' : '') . 'Search — obitickets';
-$bodyClass = 'classic-page stage';
+$bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
 /** Builds a search.php URL that keeps the current q while changing category/free. */
