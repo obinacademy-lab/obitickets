@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Event page, "Single column" look. Loaded after event-v3.css when the page body has .ev-column.
+   One narrow column: a header card with the poster and title, the ticket card, then collapsible sections,
+   with a ticket bar pinned to the bottom. White and grey, one red accent, thin rules, 12px corners.
+   All class and id hooks (#buyPanel, #cd-text, .tier, .qty ...) are untouched, and on phones the existing
+   ticket bottom-sheet still does the buying.
+   To go back to the earlier looks, change the body class in public/event.php.
+   ========================================================================== */
+
+body.ev-column{background:#F5F5F7}
+body.ev-column .ev{
+  --ink:#17131D; --muted:#6A6575; --muted-2:#6A6575; --line:#E6E4EA; --line-strong:#D5D2DB;
+  --paper:#F5F5F7; --surface:#fff; background:#F5F5F7;
+}
+body.ev-column .ev-wrap{max-width:792px}
+body.ev-column .ev-glow{display:none}
+
+/* ---------- header card ---------- */
+body.ev-column .ev-hero{padding:22px 0 0}
+body.ev-column .ev-hero-grid{grid-template-columns:200px minmax(0,1fr); gap:24px; align-items:start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px}
+body.ev-column .ev-cover{max-width:200px; border-radius:10px; animation:none}
+body.ev-column .ev-cover img{border-radius:10px; box-shadow:none; max-height:none; object-fit:cover; aspect-ratio:4/5}
+body.ev-column .ev-cover-fallback{aspect-ratio:4/5; border-radius:10px; font-size:3.4rem}
+body.ev-column .ev-shine{border-radius:10px}
+body.ev-column .ev-title{font-size:clamp(1.5rem,3.2vw,2.15rem); line-height:1.12; letter-spacing:-.02em; margin-top:12px}
+body.ev-column .ev-eyebrow-cat{font-size:11px; background:#fff; border:1px solid var(--line-strong); border-radius:99px; padding:5px 11px; color:#403A4B}
+body.ev-column .ev-badge{border-radius:99px}
+body.ev-column .ev-meta{margin-top:16px; gap:10px}
+body.ev-column .ev-org-row{margin-top:18px; padding:12px 0}
+body.ev-column .ev-actions{margin-top:16px}
+body.ev-column .ev-btn{border-radius:10px; padding:13px 20px}
+body.ev-column .ev-btn-primary{background:#DC2626; box-shadow:none}
+body.ev-column .ev-btn-primary:hover{background:#B91C1C; box-shadow:none}
+body.ev-column .ev-icon-btn{border-radius:10px; height:44px}
+body.ev-column .ev-cd{margin-top:16px; gap:6px}
+body.ev-column .ev-cd-u{min-width:58px; padding:8px 8px 6px; border-radius:8px; box-shadow:none}
+body.ev-column .ev-cd-u b{font-size:20px}
+body.ev-column .ev-cd-u.is-sec{background:#17131D; border-color:#17131D}
+
+/* ---------- one column: ticket card first, then the sections ---------- */
+body.ev-column .ev-grid{display:flex; flex-direction:column; gap:12px; padding-top:16px; padding-bottom:40px}
+body.ev-column .ev-side{order:-1; align-self:stretch; width:100%}
+body.ev-column .ev-main{width:100%}
+body.ev-column .ev-section{margin:0 0 12px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:0}
+body.ev-column .ev-fold > summary{list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:18px 20px; font-size:1.15rem}
+body.ev-column .ev-fold > summary::-webkit-details-marker{display:none}
+body.ev-column .ev-fold > summary::after{content:"+"; font:600 1.5rem/1 'Manrope',system-ui,sans-serif; color:#DC2626; transition:transform .25s ease}
+body.ev-column .ev-fold[open] > summary::after{transform:rotate(45deg)}
+body.ev-column .ev-fold > :not(summary){margin-left:20px; margin-right:20px}
+body.ev-column .ev-fold > :last-child{margin-bottom:20px}
+body.ev-column .ev-about .about-text{font-size:16px; color:#3D3847}
+body.ev-column .ev-hosting-grid{grid-template-columns:1fr}
+body.ev-column .ev-hosting .ev-card{border:0; padding:0; box-shadow:none; background:none}
+body.ev-column .ev-going-card{display:none}
+body.ev-column .ev-reviews{padding:20px}
+body.ev-column .ev-card,body.ev-column .ev-post,body.ev-column .ev-composer,body.ev-column .ev-note-card{border-radius:12px}
+
+/* ---------- the ticket card ---------- */
+body.ev-column .ev-stub{--st-bg:#17131D}
+body.ev-column .ev .ended-panel{border-radius:12px}
+@media (min-width:921px){
+  body.ev-column .ev-stub-wrap{position:static; filter:none; animation:none}
+  body.ev-column .buy-panel.ev-stub{border-radius:12px; -webkit-mask:none; mask:none; border-top:4px solid #DC2626}
+  body.ev-column .ev-stub-top{height:auto; padding-bottom:20px}
+  body.ev-column .ev-stub-title{-webkit-line-clamp:3}
+  body.ev-column .ev-stub .qty button{border-radius:8px}
+  body.ev-column .ev-stub .btn-purple{border-radius:10px}
+  body.ev-column .ev-stub .poster-summary{border-radius:10px}
+
+  /* ticket bar pinned to the bottom (phones already get this bar and the ticket sheet) */
+  body.ev-column{padding-bottom:84px}
+  body.ev-column .mobile-buy-bar{display:flex; align-items:center; justify-content:space-between; gap:16px; position:fixed; left:0; right:0; bottom:0; z-index:60;
+    background:#fff; border-top:1px solid var(--line-strong); box-shadow:0 -12px 30px -18px rgba(23,19,29,.35);
+    padding:12px max(16px, calc((100vw - 760px) / 2))}
+  body.ev-column .mobile-buy-bar .lbl{display:block; font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  body.ev-column .mobile-buy-bar .amt{display:block; font:700 1.15rem 'Fraunces',Georgia,serif; color:var(--ink); margin-top:2px}
+  body.ev-column .mobile-buy-bar .btn{background:#DC2626; color:#fff; border-radius:10px; padding:13px 26px; font-weight:800}
+}
+@media (max-width:920px){
+  body.ev-column .mobile-buy-bar{background:#fff}
+  body.ev-column .mobile-buy-bar .btn{border-radius:10px}
+}
+
+/* ---------- phone ---------- */
+@media (max-width:640px){
+  body.ev-column .ev-hero-grid{grid-template-columns:1fr; gap:18px; padding:16px}
+  body.ev-column .ev-cover{margin:0; max-width:220px}
+  body.ev-column .ev-wrap{padding:0 16px}
+}

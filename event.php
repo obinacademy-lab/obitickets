@@ -231,7 +231,8 @@ if ($openMoment && $momentsReady) {
         }
     }
 }
-$bodyClass = 'event-page ev-marquee'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
+$showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
+$bodyClass = 'event-page ev-column'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
 $hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
@@ -334,7 +335,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
             <span class="ev-follow-label"><?= $followingEvent ? 'Following' : 'Follow event' ?></span>
           </button>
         <?php endif; ?>
-        <?php if ($communityReady && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+        <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
         <div class="ev-event-react">
           <div class="ev-react-wrap">
             <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
@@ -366,7 +367,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         </div>
       </div>
 
-      <?php if ($communityReady): ?>
+      <?php if ($communityReady && $showCommunityUi): ?>
       <div class="ev-pulse" aria-label="Event activity">
         <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
         <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
@@ -379,6 +380,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 </section>
 
 <!-- ===== tabs ===== -->
+<?php if ($showCommunityUi): ?>
 <nav class="ev-tabs" aria-label="Sections">
   <div class="ev-wrap ev-tabs-row">
     <a href="#about" class="is-active" data-tab="about">About</a>
@@ -388,6 +390,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php if ($eventHasEnded || $reviews): ?><a href="#reviews" data-tab="reviews">Reviews</a><?php endif; ?>
   </div>
 </nav>
+<?php endif; ?>
 
 <div class="ev-wrap ev-grid">
 
@@ -395,14 +398,17 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
     <!-- ===== about ===== -->
     <section id="about" class="ev-section">
-      <h2 class="ev-h2">About this event</h2>
+      <details class="ev-fold" open>
+      <summary class="ev-h2">About this event</summary>
       <div class="ev-about">
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
           <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
         <?php endforeach; ?>
       </div>
+      </details>
     </section>
 
+    <?php if ($showCommunityUi): ?>
       <?php if ($momentsReady && $moments): ?>
     <section id="moments" class="ev-section ev-moments">
       <?= moments_shelf_html($moments, $orgName, $evOrgInitials) ?>
@@ -464,9 +470,12 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
       <?php endif; ?>
 
 
+    <?php endif; /* showCommunityUi: moments + gallery */ ?>
+
     <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
     <section class="ev-section ev-hosting" aria-label="Organizer and attendance">
-      <h2 class="ev-h2">Hosted by</h2>
+      <details class="ev-fold" open>
+      <summary class="ev-h2">Hosted by</summary>
       <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
         <div class="ev-card ev-host-card">
           <div class="ev-card-head">
@@ -501,9 +510,10 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         </div>
         <?php endif; ?>
       </div>
+      </details>
     </section>
 
-    <?php if ($communityReady): ?>
+    <?php if ($communityReady && $showCommunityUi): ?>
     <!-- ===== community ===== -->
     <section id="community" class="ev-section">
       <h2 class="ev-h2"><?= $eventHasEnded ? 'Relive the experience' : 'Community' ?></h2>
