@@ -71,6 +71,8 @@ body.event-page{background:#F7F3F1;}
 .ev-meta svg{flex:none; color:#DC2626; margin-top:2px;}
 .ev-org-row{display:flex; align-items:center; gap:14px; margin-top:28px; padding:14px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
 .ev-org-info{flex:1; min-width:0;}
+.ev-org-lab{display:none}
+.ev-verified{display:inline-flex; flex:none; color:#1D9BF0}
 .ev-org-name{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-weight:800;}
 .ev-org-name a{text-decoration:none;}
 .ev-org-name a:hover{text-decoration:underline;}

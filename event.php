@@ -335,17 +335,34 @@ $wlIc = static function (string $n): string {
       <?php endif; ?>
       <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
 
+      <?php
+      $isWalletLook = str_contains($bodyClass, 'ev-wallet');
+      ob_start(); ?>
+        <div class="share-wrap">
+          <button class="ev-icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
+            <svg width="18" height="18"><use href="#ic-share"/></svg>
+          </button>
+          <div class="share-popover" id="sharePopover">
+            <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
+            <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
+            <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
+            <button class="share-option" type="button" data-copy-link>Copy link</button>
+          </div>
+        </div>
+      <?php $shareBlock = ob_get_clean(); ?>
+
       <div class="ev-org-row">
         <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
         <div class="ev-org-info">
+          <span class="ev-org-lab">Organized by</span>
           <div class="ev-org-name">
             <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><?= htmlspecialchars($orgName) ?><?php endif; ?>
-            <?php if ($evOrgVerified): ?><span class="ev-chip ev-chip-official ev-chip-solid-soft"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Verified organizer</span><?php endif; ?>
+            <?php if ($evOrgVerified): ?><span class="ev-verified" role="img" aria-label="Verified organizer" title="Verified organizer"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.87 9.33 2 10.57 2 12s.87 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91C21.37 14.67 22.25 13.43 22.25 12z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.6 12.3l2.5 2.5 4.4-4.8"/></svg></span><?php endif; ?>
           </div>
           <?php if ($communityReady): ?><div class="ev-org-sub"><span id="orgFollowers"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></div><?php endif; ?>
         </div>
+        <?php if ($isWalletLook): ?><div class="ev-org-share"><?= $shareBlock ?></div><?php endif; ?>
       </div>
-
       <div class="ev-actions">
         <?php if ($eventHasEnded): ?>
           <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
@@ -362,20 +379,10 @@ $wlIc = static function (string $n): string {
           <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
         </div>
         <?php endif; ?>
+        <?php if (!$isWalletLook): ?>
         <span class="ev-grow" aria-hidden="true"></span>
-        <div class="ev-icons">
-        <div class="share-wrap">
-          <button class="ev-icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
-            <svg width="18" height="18"><use href="#ic-share"/></svg>
-          </button>
-          <div class="share-popover" id="sharePopover">
-            <a class="share-option" href="https://wa.me/?text=<?= urlencode($shareText . ' ' . $eventUrl) ?>" target="_blank" rel="noopener">WhatsApp</a>
-            <a class="share-option" href="https://twitter.com/intent/tweet?text=<?= urlencode($shareText) ?>&url=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">X (Twitter)</a>
-            <a class="share-option" href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($eventUrl) ?>" target="_blank" rel="noopener">Facebook</a>
-            <button class="share-option" type="button" data-copy-link>Copy link</button>
-          </div>
-        </div>
-        </div>
+        <div class="ev-icons"><?= $shareBlock ?></div>
+        <?php endif; ?>
       </div>
 
       <?php if ($communityReady && $showCommunityUi): ?>

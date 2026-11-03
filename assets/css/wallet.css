@@ -27,8 +27,8 @@ body.ev-wallet .wl-ended .ev-eyebrow-state{display:inline-block !important}
 
 /* ---------- hero ---------- */
 body.ev-wallet .ev-hero{padding:0; background:none}
-body.ev-wallet .ev-hero-grid{max-width:1180px; margin:0 auto; padding:44px 32px 30px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,520px); gap:56px; align-items:center}
-body.ev-wallet .ev-hero-text{order:1; display:flex; flex-wrap:wrap; align-items:center; column-gap:8px; min-width:0}
+body.ev-wallet .ev-hero-grid{max-width:1180px; margin:0 auto; padding:44px 32px 30px; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px); gap:64px; align-items:center}
+body.ev-wallet .ev-hero-text{order:1; display:flex; flex-wrap:wrap; align-items:center; gap:24px 8px; min-width:0}
 body.ev-wallet .ev-hero-text > *{flex:0 0 100%; animation:none}
 body.ev-wallet .ev-hero-text > .ev-eyebrow,body.ev-wallet .ev-hero-text > .ev-badges{flex:0 0 auto}
 body.ev-wallet .ev-eyebrow{margin:0}
@@ -38,35 +38,41 @@ body.ev-wallet .ev-badges{display:flex; gap:8px; margin:0}
 body.ev-wallet .ev-badge{font:600 .68rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; padding:6px 11px; border-radius:99px; border:1px solid transparent}
 body.ev-wallet .ev-badge-online{background:#E5383B; color:#fff}
 body.ev-wallet .ev-badge-free{background:#E8F6EC; color:#1B7A3D; border-color:#BDE5C8}
-body.ev-wallet .ev-title{font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:clamp(2.1rem,4.8vw,4rem); font-weight:800; line-height:1.02; letter-spacing:-.04em; margin:18px 0 0; text-wrap:balance; color:#16111C}
-body.ev-wallet .ev-org-row{display:block; margin:14px 0 0; padding:0; border:0; color:#4A4455}
-body.ev-wallet .ev-org-row::before{content:"Organized by "}
-body.ev-wallet .ev-org-row .ev-avatar,body.ev-wallet .ev-org-sub,body.ev-wallet .ev-org-row [data-ev-follow]{display:none}
-body.ev-wallet .ev-org-info,body.ev-wallet .ev-org-name{display:inline}
+body.ev-wallet .ev-title{font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:clamp(2.1rem,4.8vw,4rem); font-weight:800; line-height:1.02; letter-spacing:-.04em; margin:0; text-wrap:balance; color:#16111C}
+/* organizer: initials, "Organized by" label, name with the verified seal, share button on the same line */
+body.ev-wallet .ev-org-row{display:flex; align-items:center; gap:12px; margin:0; padding:22px 0 0; border:0; border-top:1px solid #DAD5E2; width:100%; max-width:420px; color:#4A4455}
+body.ev-wallet .ev-org-row .ev-avatar{display:inline-flex; width:40px; height:40px; font-size:.8rem; font-weight:700}
+body.ev-wallet .ev-org-sub,body.ev-wallet .ev-org-row [data-ev-follow]{display:none}
+body.ev-wallet .ev-org-info{flex:1; min-width:0; display:block}
+body.ev-wallet .ev-org-lab{display:block; font:600 .64rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B6577; margin-bottom:2px}
+body.ev-wallet .ev-org-name{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px}
 body.ev-wallet .ev-org-name,body.ev-wallet .ev-org-name a{font-weight:800; color:#B91C1C; text-decoration:none}
 body.ev-wallet .ev-org-name a:hover{text-decoration:underline}
-body.ev-wallet .ev-chip-official{margin-left:8px; vertical-align:middle}
+body.ev-wallet .ev-verified{display:inline-flex; align-items:center; color:#1D9BF0}
+body.ev-wallet .ev-org-share{flex:none; margin-left:auto}
 
-/* flip clock (the tiles are built by event-motion.js) */
-body.ev-wallet .ev-cd{order:0; display:flex; gap:10px; margin-top:26px; animation:none}
-body.ev-wallet .ev-cd-u{display:grid; justify-items:center; gap:8px; min-width:0; padding:0; background:none; border:0; box-shadow:none; border-radius:0; color:inherit}
-body.ev-wallet .ev-cd-u b{position:relative; display:grid; place-items:center; width:76px; height:88px; margin:0; border-radius:12px; background:#16111C; color:#fff; font:600 2.3rem/1 'JetBrains Mono',ui-monospace,monospace; box-shadow:0 18px 30px -18px rgba(22,17,28,.8); overflow:hidden}
-body.ev-wallet .ev-cd-u b::after{content:""; position:absolute; left:0; right:0; top:50%; height:2px; background:rgba(0,0,0,.45)}
-body.ev-wallet .ev-cd-u b span{animation:wlFlip .5s var(--wl-ease)}
-body.ev-wallet .ev-cd-u small{font:600 .62rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; color:#6B6577}
-body.ev-wallet .ev-cd-u.is-sec{background:none; border:0; color:inherit}
-body.ev-wallet .ev-cd-u.is-sec b{background:#E5383B}
-body.ev-wallet .ev-cd-u.is-sec small{color:#6B6577}
+/* countdown: "Starts in" label, then one dark bar of four equal sections (the cells are built by event-motion.js) */
+body.ev-wallet .ev-cd{order:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; width:100%; max-width:420px; margin:0; animation:none}
+body.ev-wallet .ev-cd::before{content:"Starts in"; grid-column:1 / -1; margin-bottom:10px; font:600 .64rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:#6B6577}
+body.ev-wallet .ev-cd-u{display:grid; justify-items:center; gap:8px; min-width:0; padding:16px 4px 12px; background:#16111C; border:0; border-left:1px solid rgba(255,255,255,.12); border-radius:0; box-shadow:none; color:#fff}
+body.ev-wallet .ev-cd-u:first-child{border-left:0; border-radius:16px 0 0 16px}
+body.ev-wallet .ev-cd-u.is-sec{background:#E5383B; color:#fff; border-radius:0 16px 16px 0}
+body.ev-wallet .ev-cd-u b{position:static; display:block; width:auto; height:auto; margin:0; border-radius:0; background:none; box-shadow:none; overflow:visible; font:600 2rem/1 'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; color:#fff}
+body.ev-wallet .ev-cd-u b::after{display:none}
+body.ev-wallet .ev-cd-u b span{display:block; animation:wlFlip .5s var(--wl-ease)}
+body.ev-wallet .ev-cd-u small{font:600 .58rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.62)}
+body.ev-wallet .ev-cd-u.is-sec small{color:rgba(255,255,255,.88)}
 @keyframes wlFlip{from{transform:rotateX(-90deg); opacity:0}to{transform:none; opacity:1}}
 
-body.ev-wallet .ev-actions{margin-top:18px; justify-content:flex-start}
+body.ev-wallet .ev-actions{margin:0; justify-content:flex-start}
+body.ev-wallet .ev-actions:not(:has(.ev-btn, .ev-event-react, .ev-icons)){display:none}
 body.ev-wallet .ev-actions .ev-grow{display:none}
 body.ev-wallet .ev-icon-btn{width:42px; min-width:42px; height:42px; padding:0; border-radius:12px; background:#fff; border:1px solid #CFCAD8; color:#16111C}
 body.ev-wallet .ev-icon-btn:hover{border-color:#16111C; transform:none}
 
 /* poster: tilted, straightens on hover */
-body.ev-wallet .ev-cover{order:2; justify-self:end; width:100%; max-width:520px; border-radius:0; animation:none; cursor:zoom-in}
-body.ev-wallet .ev-cover img{display:block; width:100%; height:auto; max-height:none; aspect-ratio:auto; object-fit:contain; border-radius:0; box-shadow:none; transform:none; transition:none; animation:none}
+body.ev-wallet .ev-cover{order:2; justify-self:end; display:flex; justify-content:center; width:100%; max-width:340px; border-radius:0; animation:none; cursor:zoom-in}
+body.ev-wallet .ev-cover img{display:block; width:auto; max-width:100%; height:auto; max-height:480px; aspect-ratio:auto; object-fit:contain; border-radius:0; box-shadow:none; transform:none; transition:none; animation:none}
 body.ev-wallet .ev-cover:hover img{transform:none}
 body.ev-wallet .ev-cover-fallback{aspect-ratio:4/5; border-radius:0}
 body.ev-wallet .ev-shine{display:none}
@@ -151,16 +157,18 @@ body.ev-wallet .wl-extra .ev-section{margin:0 0 16px; padding:26px; background:#
 }
 @media (max-width:900px){
   body.ev-wallet .ev-hero-grid{grid-template-columns:minmax(0,1fr); gap:34px; padding:34px 16px 20px}
-  body.ev-wallet .ev-cover{max-width:none; justify-self:stretch}
+  body.ev-wallet .ev-cover{max-width:300px; justify-self:center}
+  body.ev-wallet .ev-cover img{max-height:420px}
   body.ev-wallet .wl-bento{padding:16px 16px 30px}
   body.ev-wallet .wl-extra-wrap{padding:0 16px 40px}
   body.ev-wallet .wl-s5,body.ev-wallet .wl-s7,body.ev-wallet .wl-s8{grid-column:span 12}
-  body.ev-wallet .ev-cd-u b{width:62px; height:74px; font-size:1.9rem}
+  body.ev-wallet .ev-cd-u b{font-size:1.7rem}
 }
 @media (max-width:560px){
   body.ev-wallet .wl-fk{grid-template-columns:1fr}
-  body.ev-wallet .ev-cd{gap:8px}
-  body.ev-wallet .ev-cd-u b{width:calc((100vw - 64px) / 4); max-width:62px; height:68px; font-size:1.6rem}
+  body.ev-wallet .ev-cd-u{padding:14px 2px 10px}
+  body.ev-wallet .ev-cd-u b{font-size:1.5rem}
+  body.ev-wallet .ev-cd-u small{font-size:.5rem}
 }
 @media (prefers-reduced-motion:reduce){
   .wl-rib div{animation:none}
