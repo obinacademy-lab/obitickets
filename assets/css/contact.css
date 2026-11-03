@@ -65,14 +65,43 @@
 .ct-send svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 .ct-note{margin-top:12px !important; text-align:center; font-size:.82rem; color:#8A7F83 !important}
 
-/* commitment and closing line */
-.ct-commit{padding-top:64px; padding-bottom:80px; text-align:center}
+/* Our Commitment */
+.ct-commit{padding-top:64px; padding-bottom:72px; text-align:center}
 .ct-commit h2{margin-bottom:14px}
-.ct-commit>p:not(.ct-closing):not(.ct-closing-sub){max-width:60ch; margin:0 auto; color:#5B5054; font-size:1.06rem; line-height:1.75}
-.ct-rule{width:56px; height:3px; margin:28px auto 22px; background:#B91C1C; border-radius:3px}
-.ct-closing{font:800 clamp(1.2rem,3vw,2rem)/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; text-transform:uppercase; color:#1B1417}
-.ct-closing-sub{margin-top:6px !important; font-weight:600; color:#4A3F43}
+.ct-commit>p{max-width:60ch; margin:0 auto; color:#5B5054; font-size:1.06rem; line-height:1.75}
 
+/* closing line: one wide photograph with thin type over it, no box around anything */
+.ct-plate{position:relative; isolation:isolate; display:grid; align-content:end; min-height:520px; overflow:hidden; color:#fff; background:#17110F}
+.ct-plate-img{position:absolute; inset:0; z-index:-2; width:100%; height:100%; object-fit:cover; object-position:center 38%; transform-origin:30% 60%}
+.ct-plate::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg,rgba(18,10,8,.15) 0%,rgba(18,10,8,.38) 40%,rgba(18,10,8,.84) 100%)}
+.ct-plate-in{padding-top:56px; padding-bottom:52px}
+.ct-plate-br{display:block; margin-bottom:20px; font:500 .66rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.38em; text-transform:uppercase; color:rgba(255,255,255,.8)}
+.ct-hair{display:block; height:1px; margin-bottom:26px; background:#fff; opacity:.8; transform-origin:left}
+.ct-plate-row{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,.6fr); gap:32px; align-items:end}
+.ct .ct-plate h2{margin:0; color:#fff; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:200; font-size:clamp(2.4rem,7.4vw,6.4rem); line-height:.98; letter-spacing:-.035em; text-transform:uppercase}
+.ct-w{display:inline-block}
+.ct-w{margin-right:.28em}
+.ct-w:last-child{margin-right:0}
+.ct-sub{padding-bottom:6px; font:italic 500 clamp(1.2rem,2.2vw,1.8rem)/1.25 'Cormorant Garamond',Georgia,'Times New Roman',serif; color:#F6EDEA}
+
+/* slow entrance, played once when the plate scrolls into view (contact.js adds .play) */
+.ct-plate.play .ct-plate-img{animation:ctSettle 5s var(--slow,cubic-bezier(.16,.7,.2,1)) both}
+.ct-plate.play .ct-plate-br{animation:ctFade 1.2s .4s var(--slow,cubic-bezier(.16,.7,.2,1)) both}
+.ct-plate.play .ct-hair{animation:ctGrow 1.8s .5s var(--slow,cubic-bezier(.16,.7,.2,1)) both}
+.ct-plate.play .ct-w{animation:ctRise 1.4s var(--slow,cubic-bezier(.16,.7,.2,1)) both}
+.ct-plate.play .ct-w:nth-child(1){animation-delay:.9s}
+.ct-plate.play .ct-w:nth-child(2){animation-delay:1.1s}
+.ct-plate.play .ct-w:nth-child(3){animation-delay:1.3s}
+.ct-plate.play .ct-sub{animation:ctFade 1.4s 1.8s var(--slow,cubic-bezier(.16,.7,.2,1)) both}
+.ct-plate.armed .ct-plate-br,.ct-plate.armed .ct-w,.ct-plate.armed .ct-sub{opacity:0}
+.ct-plate.armed .ct-hair{transform:scaleX(0)}
+@keyframes ctFade{from{opacity:0}to{opacity:1}}
+@keyframes ctRise{from{opacity:0; transform:translateY(40%)}to{opacity:1; transform:none}}
+@keyframes ctGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes ctSettle{from{transform:scale(1.12)}to{transform:scale(1)}}
+@media (max-width:820px){
+  .ct-plate-row{grid-template-columns:minmax(0,1fr); gap:20px}
+}
 @media (max-width:980px){
   .ct-hero{grid-template-columns:minmax(0,1fr); gap:32px; padding-top:36px}
   .ct-hgrid{grid-template-columns:minmax(0,1fr)}
@@ -84,9 +113,15 @@
 @media (max-width:560px){
   .ct-touch{padding:22px 20px}
   .ct-fgrid{grid-template-columns:minmax(0,1fr)}
-  .ct-commit{padding-top:48px; padding-bottom:56px}
+  .ct-commit{padding-top:48px; padding-bottom:48px}
+  .ct-plate{min-height:440px}
+  .ct-plate-in{padding-top:36px; padding-bottom:34px}
+  .ct-plate-row{grid-template-columns:minmax(0,1fr); gap:20px}
+  .ct-w{display:block}
+  .ct-w{margin-right:0}
 }
 @media (prefers-reduced-motion:reduce){
   .ct a,.ct-send,.ct-im img,.ct-hc{transition:none}
   .ct-hc:hover,.ct-send:hover{transform:none}
+  .ct-plate *,.ct-plate-img{animation:none !important}
 }

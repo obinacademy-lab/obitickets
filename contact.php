@@ -158,12 +158,21 @@ $ctArrow = '<svg class="ct-arr" width="18" height="18" viewBox="0 0 24 24" fill=
   <section class="wrap ct-commit reveal">
     <h2>Our Commitment</h2>
     <p>At Obitickets, we value every organizer, attendee and partner. We're committed to providing helpful support and making your event ticketing experience as simple and convenient as possible.</p>
-    <div class="ct-rule"></div>
-    <p class="ct-closing">OBITICKETS &mdash; DISCOVER. BOOK. ATTEND.</p>
-    <p class="ct-closing-sub">Uganda's Events. One Destination.</p>
   </section>
 
+  <section class="ct-plate" aria-labelledby="plateH">
+    <img class="ct-plate-img" src="/assets/images/contact/contact-plate.jpg" width="736" height="981" alt="" loading="lazy">
+    <div class="wrap ct-plate-in">
+      <span class="ct-plate-br">OBITICKETS &mdash;</span>
+      <span class="ct-hair" aria-hidden="true"></span>
+      <div class="ct-plate-row">
+        <h2 id="plateH"><span class="ct-w">DISCOVER.</span> <span class="ct-w">BOOK.</span> <span class="ct-w">ATTEND.</span></h2>
+        <p class="ct-sub">Uganda's Events. One Destination.</p>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script src="/assets/js/cinematic.js"></script>
+<script src="/assets/js/contact.js?v=<?= @filemtime(__DIR__ . '/assets/js/contact.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
