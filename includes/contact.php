@@ -1,7 +1,19 @@
 <?php
 declare(strict_types=1);
 
-const CONTACT_TOPICS = ['General', 'Organizer support', 'Report an issue', 'Press'];
+// The "Subject / Inquiry Type" choices on the contact form (the first is the default).
+const CONTACT_TOPICS = ['For Event Organizers', 'For Ticket Buyers', 'Partnerships & Business Inquiries', 'General'];
+
+// The team's public contact details, as printed on the Contact page.
+const CONTACT_EMAIL = 'info@obitickets.site';
+const CONTACT_PHONE_DIGITS = '256775361998';
+const CONTACT_PHONE_DISPLAY = '+256 775 361 998';
+
+/** WhatsApp chat with the contact number shown on the Contact page, first message already typed. */
+function contact_phone_whatsapp_url(string $message = 'Hello obitickets, I have a question.'): string
+{
+    return 'https://wa.me/' . CONTACT_PHONE_DIGITS . '?text=' . rawurlencode($message);
+}
 
 // The platform's WhatsApp line for visitors with questions. Digits only, country code first (no + or spaces);
 // a server config.php may define it first to change the number without a code change.
