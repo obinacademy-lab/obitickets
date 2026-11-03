@@ -50,6 +50,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
 <?php if (str_contains($bodyClass ?? '', 'landing-home')): ?>
 <link rel="stylesheet" href="/assets/css/landing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/landing.css') ?: time() ?>">
