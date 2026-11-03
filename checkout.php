@@ -54,102 +54,98 @@ try {
 }
 
 $pageTitle = 'Checkout — obitickets';
-$bodyClass = 'classic-page ck-stepper';
+$bodyClass = 'classic-page ev-night ck-night'; // 'classic-page ck-stepper' is the light Stepper look
 $hideWhatsApp = true; // keep the pay button and totals uncluttered
 include __DIR__ . '/includes/header.php';
 ?>
 
 <?php
 $ckWhere = event_is_online_only($event) ? (event_online_label($event) ?: 'Online') : $event['venue_name'] . ((($event['attend_mode'] ?? 'IN_PERSON') === 'HYBRID') ? ' + online' : '');
-$ckTick = static function (string $cls = 'ck-ic'): string { return '<svg class="' . $cls . '" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
+$ckWhen = format_event_date_range($event['starts_at'], $event['ends_at']);
+$ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
 ?>
 <div class="wrap">
-  <ol class="ck-steps" aria-label="Checkout progress">
-    <li class="s done"><span class="dot"><?= $ckTick() ?></span>Tickets</li>
-    <li class="bar done" aria-hidden="true"></li>
-    <li class="s now pay" aria-current="step"><span class="dot"><b class="n">2</b><?= $ckTick() ?></span>Payment</li>
-    <li class="bar bar2" aria-hidden="true"></li>
-    <li class="s"><span class="dot">3</span>Your ticket</li>
-  </ol>
-</div>
+  <div class="cn-head">
+    <ol class="cn-crumbs" aria-label="Checkout progress">
+      <li class="done"><?= $ckTick() ?>Tickets</li>
+      <li class="sep" aria-hidden="true">&rsaquo;</li>
+      <li class="now pay" aria-current="step">Payment</li>
+      <li class="sep" aria-hidden="true">&rsaquo;</li>
+      <li class="last">Your ticket</li>
+    </ol>
+    <h1>Checkout</h1>
+    <p class="cn-sub"><?= htmlspecialchars($event['title']) ?> &middot; <?= htmlspecialchars($ckWhen) ?></p>
+  </div>
 
-<div class="ck-wrap">
-  <h1>Checkout</h1>
-  <p class="ck-sub"><?= $isFree ? 'One step left to get your free ticket.' : 'One step left to get your ticket.' ?></p>
-
-  <details class="ck-sum">
-    <summary>
-      <span class="l">Order summary<small><?= (int) $ticketCount ?> ticket<?= $ticketCount === 1 ? '' : 's' ?></small></span>
-      <b class="mono"><?= $isFree ? 'Free' : htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></b>
-    </summary>
-    <div class="in">
-      <div class="ck-k">Your order</div>
+  <div class="cn-grid">
+    <section class="cn-card cn-order" aria-label="Your order">
+      <h2>Your order</h2>
       <div class="ev">
         <?php if (!empty($event['banner_image'])): ?>
           <img class="thumb" src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
         <?php else: ?>
           <span class="thumb thumb-emoji" aria-hidden="true"><?= htmlspecialchars((string) $event['banner_emoji']) ?></span>
         <?php endif; ?>
-        <div><b><?= htmlspecialchars($event['title']) ?></b><span><?= htmlspecialchars(format_event_date_range($event['starts_at'], $event['ends_at'])) ?> &middot; <?= htmlspecialchars($ckWhere) ?></span></div>
+        <div><b><?= htmlspecialchars($event['title']) ?></b><span><?= htmlspecialchars($ckWhen) ?> &middot; <?= htmlspecialchars($ckWhere) ?></span></div>
       </div>
-      <?php foreach ($lineItems as $item): ?>
-        <div class="ln"><span><?= (int) $item['quantity'] ?> &times; <?= htmlspecialchars($item['name']) ?></span><span class="mono"><?= $item['line_total'] > 0 ? htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) : 'Free' ?></span></div>
-      <?php endforeach; ?>
-      <div class="ln"><span>Service fee<?= $paidTicketCount > 0 ? ' (UGX ' . number_format(SERVICE_FEE_PER_TICKET) . ' &times; ' . $paidTicketCount . ' paid)' : '' ?></span><span class="mono"><?= $fee > 0 ? htmlspecialchars($currency . ' ' . number_format($fee, 0)) : htmlspecialchars($currency) . ' 0' ?></span></div>
-      <div class="ln tt"><span><?= $isFree ? 'Total' : 'Pay now' ?></span><span class="mono"><?= $isFree ? 'Free' : htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></span></div>
-    </div>
-  </details>
-  <?php foreach ($cartNotices as $n): ?><div class="ck-alert"><?= htmlspecialchars($n) ?></div><?php endforeach; ?>
+      <div class="rows">
+        <?php foreach ($lineItems as $item): ?>
+          <div class="ln"><span><?= (int) $item['quantity'] ?> &times; <?= htmlspecialchars($item['name']) ?></span><span class="mono"><?= $item['line_total'] > 0 ? htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) : 'Free' ?></span></div>
+        <?php endforeach; ?>
+        <div class="ln"><span>Service fee<?= $paidTicketCount > 0 ? ' (UGX ' . number_format(SERVICE_FEE_PER_TICKET) . ' &times; ' . $paidTicketCount . ' paid)' : '' ?></span><span class="mono"><?= $fee > 0 ? htmlspecialchars($currency . ' ' . number_format($fee, 0)) : htmlspecialchars($currency) . ' 0' ?></span></div>
+      </div>
+      <div class="tot"><span><?= $isFree ? 'Total' : 'Pay now' ?></span><b class="mono"><?= $isFree ? 'Free' : htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></b></div>
+      <?php foreach ($cartNotices as $n): ?><div class="cn-alert"><?= htmlspecialchars($n) ?></div><?php endforeach; ?>
+    </section>
 
-  <div class="ck-pay" data-payment-widget data-initiate-url="/api/initiate-payment.php" data-order-url="/order.php?id=" data-free="<?= $isFree ? '1' : '0' ?>">
+    <section class="cn-card cn-pay" aria-label="Payment" data-payment-widget data-initiate-url="/api/initiate-payment.php" data-order-url="/order.php?id=" data-free="<?= $isFree ? '1' : '0' ?>">
+      <h2><?= $isFree ? 'Confirm' : 'Payment' ?></h2>
 
-    <?php if ($isFree): ?>
-    <div data-state="phone">
-      <h2>Confirm your free ticket</h2>
-      <p class="ck-lead">No payment is needed for this order.</p>
-      <div data-error class="ck-alert hidden"></div>
-      <button type="button" data-action="pay" class="ck-cta free-confirm">Confirm and get my ticket</button>
-      <div class="ck-sec"><svg width="13" height="13"><use href="#ic-shield"/></svg> No payment needed &middot; your ticket and QR code appear straight away</div>
-    </div>
-    <?php else: ?>
-    <div data-state="phone">
-      <h2>Pay with mobile money</h2>
-      <div class="ck-field">
-        <label for="phone">Mobile money phone number</label>
-        <div class="ck-box">
-          <input type="tel" id="phone" data-phone-input inputmode="tel" placeholder="07XX XXX XXX" autocomplete="tel">
-          <span class="ck-chip" data-chip><?= $ckTick() ?><span data-chip-text></span></span>
+      <?php if ($isFree): ?>
+      <div data-state="phone">
+        <p class="cn-lead">Your ticket is free. No payment is needed.</p>
+        <div data-error class="cn-alert hidden"></div>
+        <button type="button" data-action="pay" class="cn-cta free-confirm">Confirm and get my ticket</button>
+        <div class="cn-sec"><svg width="13" height="13"><use href="#ic-shield"/></svg> No payment needed &middot; your ticket and QR code appear straight away</div>
+      </div>
+      <?php else: ?>
+      <div data-state="phone">
+        <div class="cn-field">
+          <label for="phone">Mobile money phone number</label>
+          <div class="cn-box">
+            <input type="tel" id="phone" data-phone-input inputmode="tel" placeholder="07XX XXX XXX" autocomplete="tel">
+            <span class="cn-chip" data-chip><?= $ckTick() ?><span data-chip-text></span></span>
+          </div>
+          <div class="cn-hint">MTN or Airtel &mdash; you'll get a prompt on this number to approve the payment.</div>
         </div>
-        <div class="ck-hint">MTN or Airtel &mdash; you'll get a prompt on this number to approve the payment.</div>
+        <div data-error class="cn-alert hidden"></div>
+        <button type="button" data-action="pay" class="cn-cta" disabled>Pay <?= htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></button>
+        <div class="cn-sec"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
+        <div class="cn-logos"><span>Pay with</span><span class="b"><img src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span><span class="b"><img src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span></div>
       </div>
-      <div data-error class="ck-alert hidden"></div>
-      <button type="button" data-action="pay" class="ck-cta" disabled>Pay <?= htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></button>
-      <div class="ck-sec"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
-      <div class="ck-logos"><span>Pay with</span><span class="b"><img src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span><span class="b"><img src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span></div>
-    </div>
-    <?php endif; ?>
+      <?php endif; ?>
 
-    <div data-state="waiting" class="hidden ck-wait">
-      <div class="ck-spin" aria-hidden="true"></div>
-      <h3><?= $isFree ? 'Getting your ticket' : 'Check your phone' ?></h3>
-      <p data-status-text>Starting payment&hellip;</p>
-    </div>
+      <div data-state="waiting" class="hidden cn-wait">
+        <div class="cn-spin" aria-hidden="true"></div>
+        <h3><?= $isFree ? 'Getting your ticket' : 'Check your phone' ?></h3>
+        <p data-status-text>Starting payment&hellip;</p>
+      </div>
 
-    <div data-state="failed" class="hidden">
-      <div class="ck-alert" data-fail-text></div>
-      <button type="button" data-action="retry" class="ck-cta">Try again</button>
-    </div>
-
+      <div data-state="failed" class="hidden">
+        <div class="cn-alert" data-fail-text></div>
+        <button type="button" data-action="retry" class="cn-cta cn-ghost">Try again</button>
+      </div>
+    </section>
   </div>
 </div>
 
 <script>
 (function () {
-  /* the progress line: Payment counts as done once the prompt has gone to the phone */
-  var steps = document.querySelector('.ck-steps');
+  /* the progress: Payment counts as done once the prompt has gone to the phone */
+  var crumbs = document.querySelector('.cn-crumbs');
   var waiting = document.querySelector('[data-state="waiting"]');
-  if (steps && waiting) {
-    var sync = function () { steps.classList.toggle('is-paying', !waiting.classList.contains('hidden')); };
+  if (crumbs && waiting) {
+    var sync = function () { crumbs.classList.toggle('is-paying', !waiting.classList.contains('hidden')); };
     new MutationObserver(sync).observe(waiting, { attributes: true, attributeFilter: ['class'] });
     sync();
   }

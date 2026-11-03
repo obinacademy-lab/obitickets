@@ -1,0 +1,107 @@
+/* ==========================================================================
+   Checkout page, "Night" design. Dark glass, matching the ticket panel on the event page: a small progress
+   line, then two cards side by side (your order on the left, payment on the right) with one glowing red
+   button. Loaded when the page body has .ck-night. Hooks used by payment.js are untouched:
+   [data-payment-widget], [data-state], [data-error], [data-status-text], [data-fail-text],
+   [data-phone-input], [data-action="pay"], [data-action="retry"].
+   To go back to the light look: set the body class in public/checkout.php to 'classic-page ck-stepper'
+   (that needs the Stepper markup from the earlier commit).
+   ========================================================================== */
+
+body.ck-night{
+  background:radial-gradient(900px 420px at 85% -6%, rgba(229,56,59,.26), transparent 65%), radial-gradient(700px 360px at -5% 60%, rgba(120,40,160,.14), transparent 65%), #0E0A12;
+  color:#F6F2FA; --cn-ease:cubic-bezier(.22,.8,.24,1); --cn-red:#E5383B;
+}
+body.ck-night .hidden{display:none !important}
+body.ck-night .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- head ---------- */
+.cn-head{max-width:1080px; margin:0 auto; padding:30px 0 4px}
+.cn-crumbs{list-style:none; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0; padding:0; font-size:.8rem; font-weight:700; color:#9D93AB}
+.cn-crumbs li{display:inline-flex; align-items:center; gap:6px}
+.cn-crumbs .done{color:#FF9B9B}
+.cn-crumbs .now{color:#fff}
+.cn-crumbs .cn-ic{width:14px; height:14px}
+.cn-crumbs .sep{opacity:.5}
+.cn-crumbs.is-paying .now{color:#FF9B9B}
+.cn-crumbs.is-paying .now::before{content:""; width:14px; height:14px; background:currentColor; -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.cn-crumbs.is-paying .last{color:#fff}
+.cn-head h1{font:800 clamp(1.7rem,3.4vw,2.4rem)/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; margin:14px 0 4px; color:#fff}
+.cn-sub{color:#B9B2C6; margin:0}
+
+/* ---------- two cards ---------- */
+.cn-grid{max-width:1080px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; align-items:start; padding:22px 0 90px}
+.cn-card{border:1px solid rgba(255,255,255,.12); background:linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03)); border-radius:22px; padding:30px; -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); animation:cnUp .8s var(--cn-ease) backwards}
+.cn-pay{animation-delay:.1s}
+@keyframes cnUp{from{opacity:0; transform:translateY(14px)}}
+.cn-card h2{font:700 .8rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.18em; text-transform:uppercase; color:#FF9B9B; margin:0 0 20px}
+
+/* order */
+.cn-order .ev{display:flex; gap:16px; align-items:center; padding-bottom:22px; border-bottom:1px solid rgba(255,255,255,.12)}
+.cn-order .ev b{display:block; font:700 1.15rem/1.25 'Outfit','Plus Jakarta Sans',sans-serif; color:#fff}
+.cn-order .ev span{display:block; color:#B9B2C6; font-size:.86rem; margin-top:3px}
+.cn-order .thumb{width:76px; aspect-ratio:4/5; object-fit:cover; border-radius:10px; flex:none; background:rgba(255,255,255,.08)}
+.cn-order .thumb-emoji{display:grid; place-items:center; font-size:1.9rem}
+.cn-order .rows{display:grid; gap:14px; padding-block:22px; font-size:.95rem; color:#CFC8DA}
+.cn-order .ln{display:flex; justify-content:space-between; gap:16px; align-items:baseline}
+.cn-order .ln .mono{font-weight:600; white-space:nowrap; color:#fff}
+.cn-order .tot{display:flex; justify-content:space-between; align-items:baseline; padding-top:20px; border-top:1px solid rgba(255,255,255,.16)}
+.cn-order .tot span{font-weight:800}
+.cn-order .tot b{font:800 1.9rem 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.015em; color:#fff}
+
+/* payment */
+.cn-lead{color:#B9B2C6; margin:-8px 0 20px; font-size:.92rem}
+.cn-field label{display:block; font-weight:700; font-size:.86rem; margin-bottom:8px; color:#fff}
+.cn-box{position:relative; display:flex; align-items:center}
+.cn-box input{width:100%; height:56px; border-radius:14px; border:1.5px solid rgba(255,255,255,.22); background:rgba(255,255,255,.06); color:#fff; padding:0 140px 0 18px; font:600 1.1rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.02em; transition:border-color .25s, box-shadow .25s}
+.cn-box input::placeholder{color:rgba(255,255,255,.35)}
+.cn-box input:focus{border-color:#FF6B6B; box-shadow:0 0 0 4px rgba(255,107,107,.18); outline:none}
+.cn-chip{position:absolute; right:10px; display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 12px; border-radius:99px; background:rgba(255,255,255,.12); color:#fff; font-size:.78rem; font-weight:800; opacity:0; transform:translateX(6px); transition:opacity .25s, transform .3s var(--cn-ease); pointer-events:none}
+.cn-chip.on{opacity:1; transform:none}
+.cn-chip .cn-ic{width:14px; height:14px; color:#FF9B9B}
+.cn-hint{font-size:.82rem; color:#B9B2C6; margin-top:8px; line-height:1.45}
+.cn-alert{display:block; padding:14px 16px; border-radius:12px; font-size:.9rem; line-height:1.45; background:rgba(255,107,107,.14); border:1px solid rgba(255,107,107,.4); color:#FFD0D0; margin:16px 0 0}
+.cn-cta{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:58px; margin-top:22px; border:0; border-radius:14px; background:linear-gradient(180deg,#F26262,#D93434); color:#fff; font:800 1.04rem 'Plus Jakarta Sans',sans-serif; cursor:pointer; box-shadow:0 16px 30px -14px rgba(240,82,82,.8); transition:transform .3s var(--cn-ease), box-shadow .3s var(--cn-ease), background .25s}
+.cn-cta::after{content:"\2192"; transition:transform .35s var(--cn-ease)}
+.cn-cta:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 22px 34px -14px rgba(240,82,82,.9)}
+.cn-cta:hover:not(:disabled)::after{transform:translateX(5px)}
+.cn-cta:active:not(:disabled){transform:none}
+.cn-cta:disabled{background:rgba(255,255,255,.12); color:rgba(255,255,255,.45); box-shadow:none; cursor:not-allowed}
+.cn-cta:disabled::after{display:none}
+.cn-cta.cn-ghost{background:transparent; border:1.5px solid rgba(255,255,255,.4); box-shadow:none}
+.cn-cta.cn-ghost:hover:not(:disabled){background:#fff; color:#17111F; box-shadow:none}
+.cn-sec{display:flex; align-items:center; justify-content:center; gap:7px; font-size:.82rem; color:#B9B2C6; margin-top:14px; text-align:center}
+.cn-logos{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; font-size:.78rem; color:#B9B2C6}
+.cn-logos .b{display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border-radius:10px; background:#fff}
+.cn-logos img{height:20px; width:auto; display:block}
+.cn-wait{text-align:center; padding:10px 0 4px}
+.cn-spin{width:54px; height:54px; border-radius:50%; border:4px solid rgba(255,255,255,.18); border-top-color:#FF6B6B; margin:0 auto 18px; animation:cnSpin 1s linear infinite}
+@keyframes cnSpin{to{transform:rotate(360deg)}}
+.cn-wait h3{font:700 1.25rem 'Outfit','Plus Jakarta Sans',sans-serif; margin:0 0 6px; color:#fff}
+.cn-wait p{margin:0 auto; max-width:34ch; color:#B9B2C6; font-size:.92rem}
+
+body.ck-night :focus-visible{outline:3px solid #FF9B9B; outline-offset:2px}
+
+/* ---------- tablet and phone ---------- */
+@media (max-width:900px){
+  .cn-grid{grid-template-columns:minmax(0,1fr); gap:16px; padding-bottom:70px}
+  .cn-card{padding:24px 20px}
+  .cn-order .tot b{font-size:1.6rem}
+}
+@media (max-width:420px){
+  .cn-box input{padding-right:128px; font-size:1.02rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .cn-card,.cn-spin{animation:none !important}
+  .cn-spin{border-top-color:#FF6B6B}
+  body.ck-night *{transition-duration:.001ms !important}
+}
+
+/* the dark theme flips a shared colour: keep the top announcement strip the deep red it is everywhere else */
+body.ck-night .masthead-bar{background:#991B1B; color:#fff}
+.cn-order .tot b{white-space:nowrap}
+.cn-order .tot span{white-space:nowrap; margin-right:12px}
+@media (max-width:480px){
+  .cn-order .tot b{font-size:1.45rem}
+  .cn-order .rows{font-size:.9rem}
+}
