@@ -571,6 +571,10 @@ body.classic-page .btn-line:hover{background:var(--purple-tint); border-color:va
 .legal-doc strong{color:var(--ink);}
 .legal-doc a{color:var(--purple-deep); font-weight:600;}
 
+.pay-badge{display:inline-flex; align-items:center; justify-content:center; height:36px; border-radius:9px; overflow:hidden; line-height:0; transition:transform .25s var(--ease-back), box-shadow .25s var(--ease);}
+.pay-badge:hover{transform:translateY(-2px);}
+.pay-logo{height:36px; width:auto; display:block;}
+
 /* ============ EVENT PAGE — sticky poster + plain editorial column ============ */
 .crumb{font-size:0.85rem; color:var(--muted); padding:22px 0 0; display:flex; gap:8px; align-items:center;}
 .crumb a{color:var(--muted);} .crumb a:hover{color:var(--ink);}

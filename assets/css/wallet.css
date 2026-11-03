@@ -169,8 +169,7 @@ body.ev-wallet .wl-extra .ev-section{margin:0 0 16px; padding:26px; background:#
 
 /* Tickets card: payment logos */
 body.ev-wallet .mq-pay{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:14px; font-size:.82rem; color:#6B6577}
-body.ev-wallet .mq-pay .pay-badge{height:42px; padding:0 16px; background:#fff; border:1px solid #E3E0E9; border-radius:10px; box-shadow:none}
-body.ev-wallet .mq-pay .pay-logo{height:22px; width:auto; max-width:120px}
-body.ev-wallet .mq-pay .pay-logo-airtel{height:26px}
+body.ev-wallet .mq-pay .pay-badge{height:42px; padding:0; border-radius:10px; box-shadow:none}
+body.ev-wallet .mq-pay .pay-logo{height:42px; width:auto; max-width:none}
 body.ev-wallet .mq-pay .pay-badge:hover{transform:translateY(-2px); box-shadow:0 12px 20px -14px rgba(22,17,28,.5)}
 body.ev-wallet .mq-pay-or{font-weight:700; color:#6B6577}

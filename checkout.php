@@ -121,7 +121,7 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
         <div data-error class="cn-alert hidden"></div>
         <button type="button" data-action="pay" class="cn-cta" disabled>Pay <?= htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></button>
         <div class="cn-sec"><svg width="13" height="13"><use href="#ic-shield"/></svg> Secure checkout &middot; instant QR ticket</div>
-        <div class="cn-logos"><span>Pay with</span><span class="b"><img src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span><span class="b"><img src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span></div>
+        <div class="cn-logos"><span>Pay with</span><span class="b"><img src="/assets/images/brands/mtn-momo-logo.png" alt="MTN MoMo"></span><span class="b"><img src="/assets/images/brands/airtel-money-logo.png" alt="Airtel Money"></span></div>
       </div>
       <?php endif; ?>
 

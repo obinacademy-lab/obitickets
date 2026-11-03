@@ -9,8 +9,8 @@
         <p>Obitickets is a modern event discovery and ticketing platform designed to transform how people discover events, purchase tickets and manage event experiences.</p>
         <p>We bring event organizers, promoters and attendees together in one convenient digital marketplace, making it easier to publish events, sell tickets online and connect people with experiences worth attending.</p>
         <div class="pay-row">
-          <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span>
-          <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span>
+          <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-momo-logo.png" alt="MTN MoMo"></span>
+          <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-money-logo.png" alt="Airtel Money"></span>
         </div>
       </div>
 

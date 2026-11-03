@@ -72,8 +72,8 @@ body.ck-night .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-va
 .cn-cta.cn-ghost:hover:not(:disabled){background:#fff; color:#17111F; box-shadow:none}
 .cn-sec{display:flex; align-items:center; justify-content:center; gap:7px; font-size:.82rem; color:#B9B2C6; margin-top:14px; text-align:center}
 .cn-logos{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:14px; font-size:.78rem; color:#B9B2C6}
-.cn-logos .b{display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 14px; border-radius:10px; background:#fff}
-.cn-logos img{height:20px; width:auto; display:block}
+.cn-logos .b{display:inline-flex; align-items:center; justify-content:center; height:36px; border-radius:10px; overflow:hidden; line-height:0}
+.cn-logos img{height:36px; width:auto; display:block}
 .cn-wait{text-align:center; padding:10px 0 4px}
 .cn-spin{width:54px; height:54px; border-radius:50%; border:4px solid rgba(255,255,255,.18); border-top-color:#FF6B6B; margin:0 auto 18px; animation:cnSpin 1s linear infinite}
 @keyframes cnSpin{to{transform:rotate(360deg)}}

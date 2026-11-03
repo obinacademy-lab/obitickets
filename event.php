@@ -506,8 +506,8 @@ $wlIc = static function (string $n): string {
         <div class="poster-foot">
           <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> <?= $eventIsFree ? 'No payment needed &middot; instant QR ticket' : 'Secure checkout &middot; instant QR ticket' ?></div>
           <div class="pay-icons"<?= $eventIsFree ? ' hidden' : '' ?>>
-            <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span>
-            <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-logo.svg" alt="Airtel Money"></span>
+            <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-momo-logo.png" alt="MTN MoMo"></span>
+            <span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="/assets/images/brands/airtel-money-logo.png" alt="Airtel Money"></span>
           </div>
         </div>
       </form>
@@ -561,8 +561,8 @@ $wlIc = static function (string $n): string {
               foreach ($names as $n) { if (is_file(__DIR__ . '/assets/images/brands/' . $n)) { return '/assets/images/brands/' . $n; } }
               return '';
           };
-          $wlMtn = $wlLogo(['mtn-momo-logo.svg', 'mtn-momo-logo.png', 'mtn-logo.svg']);
-          $wlAir = $wlLogo(['airtel-money-logo.svg', 'airtel-money-logo.png', 'airtel-logo.svg']);
+          $wlMtn = $wlLogo(['mtn-momo-logo.png', 'mtn-momo-logo.svg', 'mtn-logo.svg']);
+          $wlAir = $wlLogo(['airtel-money-logo.png', 'airtel-money-logo.svg', 'airtel-logo.svg']);
       ?>
       <p class="mq-note mq-pay"><span>Pay with</span>
         <?php if ($wlMtn): ?><span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="<?= htmlspecialchars($wlMtn) ?>" alt="MTN MoMo" height="26"></span><?php endif; ?>
