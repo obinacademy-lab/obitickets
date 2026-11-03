@@ -215,8 +215,17 @@ $onlineAccess = $isOnline ? get_online_access($event, $currentUser) : null;
 
 $pageTitle = $event['title'] . ' — obitickets';
 $pageDescription = $event['title'] . ' — ' . format_event_date_range($event['starts_at'], $event['ends_at']) . ' ' . ($isOnlineOnly ? 'online' : 'at ' . $event['venue_name'] . ($isOnline ? ' and online' : '')) . '.';
+$ogImageAlt = $event['title'] . ' — event flyer';
 if (!empty($event['banner_image'])) {
-    $ogImage = rtrim(APP_URL, '/') . $event['banner_image'];
+    // a 1200x630 picture made from the flyer, so shared links show a big preview card everywhere
+    $shareImg = event_share_image($event);
+    if ($shareImg) {
+        [$ogImage, $ogImageW, $ogImageH] = $shareImg;
+        $ogImageType = 'image/jpeg';
+    } else {
+        $ogImage = rtrim(APP_URL, '/') . $event['banner_image'];
+        $ogImageW = $ogImageH = 0; // size unknown: say nothing rather than something wrong
+    }
 }
 if ($openMoment && $momentsReady) {
     foreach ($moments as $sharedMoment) {
@@ -224,6 +233,8 @@ if ($openMoment && $momentsReady) {
             $sharedThumb = $sharedMoment['media_type'] === 'VIDEO' ? $sharedMoment['poster_path'] : $sharedMoment['media_path'];
             if ($sharedThumb) {
                 $ogImage = rtrim(APP_URL, '/') . $sharedThumb;
+                $ogImageW = $ogImageH = 0;
+                $ogImageType = null;
             }
             $sharedCaption = trim((string) ($sharedMoment['caption'] ?? ''));
             $pageTitle = ($sharedCaption !== '' ? mb_substr($sharedCaption, 0, 70) : ($sharedMoment['media_type'] === 'VIDEO' ? 'Video' : 'Photo') . ' from ' . $event['title']) . ' — obitickets';

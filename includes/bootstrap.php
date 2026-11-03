@@ -65,6 +65,7 @@ require_once __DIR__ . '/contact.php';
 require_once __DIR__ . '/online.php';
 require_once __DIR__ . '/landing.php';
 require_once __DIR__ . '/features.php';
+require_once __DIR__ . '/share-image.php';
 require_once __DIR__ . '/organizer.php';
 require_once __DIR__ . '/organizer-layout.php';
 

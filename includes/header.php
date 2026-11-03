@@ -13,6 +13,8 @@ if (!isset($pageDescription)) {
 if (!isset($ogImage)) {
     $ogImage = rtrim(APP_URL, '/') . '/assets/images/og-image.png';
 }
+if (!isset($ogImageW)) { $ogImageW = 1200; $ogImageH = 630; } // the default picture is 1200x630
+$ogImageAlt = $ogImageAlt ?? 'obitickets';
 $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 ?><!DOCTYPE html>
 <html lang="en">
@@ -27,12 +29,16 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <meta property="og:description" content="<?= htmlspecialchars($pageDescription) ?>">
 <meta property="og:url" content="<?= htmlspecialchars($ogUrl) ?>">
 <meta property="og:image" content="<?= htmlspecialchars($ogImage) ?>">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+<meta property="og:image:secure_url" content="<?= htmlspecialchars(preg_replace('#^http:#', 'https:', $ogImage)) ?>">
+<?php if (!empty($ogImageType)): ?><meta property="og:image:type" content="<?= htmlspecialchars($ogImageType) ?>">
+<?php endif; ?><?php if ($ogImageW): ?><meta property="og:image:width" content="<?= (int) $ogImageW ?>">
+<meta property="og:image:height" content="<?= (int) $ogImageH ?>">
+<?php endif; ?><meta property="og:image:alt" content="<?= htmlspecialchars($ogImageAlt) ?>">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="<?= htmlspecialchars($pageTitle) ?>">
 <meta name="twitter:description" content="<?= htmlspecialchars($pageDescription) ?>">
 <meta name="twitter:image" content="<?= htmlspecialchars($ogImage) ?>">
+<meta name="twitter:image:alt" content="<?= htmlspecialchars($ogImageAlt) ?>">
 <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">
 <link rel="icon" type="image/png" href="/assets/images/favicon.png">
 <?php include __DIR__ . '/pwa-head.php'; ?>
