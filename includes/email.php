@@ -9,17 +9,58 @@ declare(strict_types=1);
  * send_*_email() wrapper here if a third one is ever needed, following the
  * same pattern.
  */
-function resend_send(string $to, string $subject, string $html): void
+/** Is the email_log table there? (Sending must keep working before the migration is applied.) */
+function email_log_ready(): bool
 {
-    // Reserved and demo domains can never receive mail (and tests and seed data use them), so do not spend a send on them.
-    if (preg_match('/@(example\.(com|org|net)|obitickets\.demo|[^@]+\.(test|invalid|localhost|example))$/i', trim($to))) {
-        error_log("[email] skipping send to reserved/demo address $to");
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW TABLES LIKE 'email_log'")->fetchColumn();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** Records one send attempt. Never throws: a logging problem must not break a sale. */
+function email_log_write(string $kind, string $to, string $subject, string $status, ?string $providerId, ?string $error, ?int $orderId): void
+{
+    if (!email_log_ready()) {
         return;
+    }
+    try {
+        db()->prepare('INSERT INTO email_log (kind, to_email, subject, status, provider_id, error, order_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute([mb_substr($kind, 0, 32), mb_substr($to, 0, 191), mb_substr($subject, 0, 255), $status, $providerId ? mb_substr($providerId, 0, 80) : null, $error !== null ? mb_substr($error, 0, 600) : null, $orderId]);
+    } catch (Throwable $e) {
+        error_log('[email] could not write email_log: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Sends one email through Resend and says honestly whether it was accepted. Every attempt, including the ones that
+ * fail or are skipped, is written to email_log so an admin can see what happened. Returns true only when Resend
+ * accepted the message.
+ */
+function resend_send(string $to, string $subject, string $html, string $kind = 'email', ?int $orderId = null): bool
+{
+    $to = trim($to);
+    // Reserved and demo domains can never receive mail (and tests and seed data use them), so do not spend a send on them.
+    if (preg_match('/@(example\.(com|org|net)|obitickets\.demo|[^@]+\.(test|invalid|localhost|example))$/i', $to)) {
+        error_log("[email] skipping send to reserved/demo address $to");
+        email_log_write($kind, $to, $subject, 'SKIPPED', null, 'Reserved or demo address', $orderId);
+        return false;
+    }
+    if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        error_log("[email] not sending: '$to' is not a valid email address. Subject: $subject");
+        email_log_write($kind, $to, $subject, 'FAILED', null, 'Not a valid email address', $orderId);
+        return false;
     }
 
     if (!RESEND_API_KEY) {
         error_log("[email] RESEND_API_KEY is not set — skipping send to $to. Subject: $subject");
-        return;
+        email_log_write($kind, $to, $subject, 'FAILED', null, 'RESEND_API_KEY is not set on the server', $orderId);
+        return false;
     }
 
     $ch = curl_init('https://api.resend.com/emails');
@@ -40,13 +81,19 @@ function resend_send(string $to, string $subject, string $html): void
     ]);
     $body = curl_exec($ch);
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
     curl_close($ch);
 
     if ($status < 200 || $status >= 300) {
-        error_log("[email] Resend rejected the email to $to ($status): $body");
+        $why = $body !== false && $body !== '' ? (string) $body : ($curlErr !== '' ? $curlErr : 'No answer from Resend');
+        error_log("[email] Resend rejected the email to $to ($status): $why");
+        email_log_write($kind, $to, $subject, 'FAILED', null, 'HTTP ' . $status . ': ' . $why, $orderId);
+        return false;
     }
+    $decoded = is_string($body) ? json_decode($body, true) : null;
+    email_log_write($kind, $to, $subject, 'SENT', is_array($decoded) ? ($decoded['id'] ?? null) : null, null, $orderId);
+    return true;
 }
-
 function send_password_reset_email(string $to, string $name, string $resetUrl): void
 {
     resend_send($to, 'Reset your obitickets password', <<<HTML
@@ -191,12 +238,12 @@ function render_ticket_email_html(array $order): string
  * just re-sends the same tickets), since finalize_order_success() itself
  * only ever reaches this once per order.
  */
-function send_order_tickets_email(int $orderId): void
+function send_order_tickets_email(int $orderId): bool
 {
     $order = get_order_ticket_details($orderId);
     if (!$order) {
         error_log("[email] send_order_tickets_email: order $orderId not found");
-        return;
+        return false;
     }
 
     $ticketCount = 0;
@@ -205,11 +252,113 @@ function send_order_tickets_email(int $orderId): void
     }
     if ($ticketCount === 0) {
         error_log("[email] send_order_tickets_email: order $orderId has no tickets yet");
-        return;
+        return false;
     }
 
     $subject = 'Your ' . ($ticketCount === 1 ? 'ticket' : 'tickets') . ' for ' . $order['event_title'];
-    resend_send($order['buyer_email'], $subject, render_ticket_email_html($order));
+    return resend_send($order['buyer_email'], $subject, render_ticket_email_html($order), 'TICKET', $orderId);
+}
+
+/**
+ * Tells the organizer and the platform admins that a ticket was just bought (or a free ticket claimed).
+ * Each person gets one email, even if they are both organizer and admin. Never throws.
+ *
+ * @param list<string>|null $adminEmails Used by tests to avoid touching real admin addresses; null = every active admin.
+ * @return int how many emails Resend accepted
+ */
+function send_sale_notification_emails(int $orderId, ?array $adminEmails = null): int
+{
+    $sent = 0;
+    try {
+        $o = get_order_ticket_details($orderId);
+        if (!$o) {
+            return 0;
+        }
+        $stmt = db()->prepare('SELECT u.id, u.name, u.email, op.org_name FROM events e JOIN users u ON u.id = e.organizer_id LEFT JOIN organizer_profiles op ON op.user_id = u.id WHERE e.id = ?');
+        $stmt->execute([(int) $o['event_id']]);
+        $org = $stmt->fetch() ?: null;
+
+        if ($adminEmails === null) {
+            $adminEmails = db()->query("SELECT email FROM users WHERE role = 'ADMIN' AND (account_status IS NULL OR account_status = 'ACTIVE')")->fetchAll(PDO::FETCH_COLUMN);
+        }
+        if (defined('SALES_NOTIFY_EMAIL') && SALES_NOTIFY_EMAIL) {
+            $adminEmails[] = SALES_NOTIFY_EMAIL;
+        }
+
+        $tickets = 0;
+        $lines = [];
+        foreach ($o['items'] as $item) {
+            $n = (int) $item['quantity'];
+            $tickets += $n;
+            $lines[] = $n . ' &times; ' . htmlspecialchars((string) $item['tier_name']);
+        }
+        $isFree = (float) $o['total_amount'] <= 0;
+        $money = static fn ($v): string => htmlspecialchars($o['currency'] . ' ' . number_format((float) $v, 0));
+        $event = htmlspecialchars((string) $o['event_title']);
+        $orgName = htmlspecialchars((string) ($org['org_name'] ?? $org['name'] ?? 'the organizer'));
+        $headline = $isFree ? 'New free registration' : 'New ticket sale';
+        $subject = ($isFree ? 'New free registration: ' : 'New ticket sale: ') . $o['event_title'] . ' (' . $tickets . ' ticket' . ($tickets === 1 ? '' : 's') . ($isFree ? '' : ', ' . $o['currency'] . ' ' . number_format((float) $o['total_amount'], 0)) . ')';
+        $buyer = htmlspecialchars((string) $o['buyer_name']) . ' &lt;' . htmlspecialchars((string) $o['buyer_email']) . '&gt;' . (!empty($o['phone']) ? ' &middot; ' . htmlspecialchars((string) $o['phone']) : '');
+        $net = (float) $o['subtotal_amount'] - (float) $o['commission_amount'];
+
+        $row = static fn (string $k, string $v): string => '<tr><td style="padding:6px 16px 6px 0;color:#6B6577;white-space:nowrap">' . $k . '</td><td style="padding:6px 0;font-weight:600">' . $v . '</td></tr>';
+        $table = static function (array $rows): string { return '<table style="border-collapse:collapse;font-size:15px">' . implode('', $rows) . '</table>'; };
+        $wrap = static function (string $title, string $intro, string $tableHtml, string $linkHref, string $linkText): string {
+            return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#16111C">'
+                . '<h2 style="margin:0 0 6px;font-size:20px">' . $title . '</h2><p style="margin:0 0 18px;color:#4A4455">' . $intro . '</p>' . $tableHtml
+                . '<p style="margin:22px 0 0"><a href="' . htmlspecialchars($linkHref) . '" style="display:inline-block;background:#E5383B;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:8px">' . $linkText . '</a></p>'
+                . '<p style="margin:22px 0 0;font-size:12px;color:#8A8494">obitickets &middot; this notice goes to the organizer and the platform admins when a ticket is bought.</p></div>';
+        };
+        $base = rtrim(APP_URL, '/');
+
+        $common = [
+            $row('Event', $event),
+            $row('Tickets', implode(', ', $lines)),
+            $row('Paid', $isFree ? 'Free' : $money($o['total_amount'])),
+            $row('Buyer', $buyer),
+            $row('Order', '#' . (int) $orderId . ' &middot; ' . htmlspecialchars(date('D j M Y, g:ia', strtotime((string) ($o['paid_at'] ?? $o['created_at']))))),
+        ];
+
+        $sentTo = [];
+        if ($org && !empty($org['email'])) {
+            $rows = $common;
+            if (!$isFree) {
+                $rows[] = $row('Your earnings from this order', $money($net));
+            }
+            $html = $wrap($headline . ' for your event', 'Someone just ' . ($isFree ? 'registered for' : 'bought a ticket to') . ' <b>' . $event . '</b>.', $table($rows), $base . '/org-order-detail.php?id=' . (int) $orderId, 'Open the order');
+            if (resend_send((string) $org['email'], $subject, $html, 'SALE_ORGANIZER', $orderId)) {
+                $sent++;
+            }
+            $sentTo[strtolower((string) $org['email'])] = true;
+        }
+        foreach (array_unique(array_map('strtolower', array_filter(array_map('trim', $adminEmails)))) as $adminEmail) {
+            if (isset($sentTo[$adminEmail])) {
+                continue; // the organizer who is also an admin already got one
+            }
+            $rows = $common;
+            $rows[] = $row('Organizer', $orgName);
+            if (!$isFree) {
+                $rows[] = $row('Service fee', $money($o['service_fee_amount']));
+                $rows[] = $row('Platform commission', $money($o['commission_amount']));
+            }
+            $html = $wrap('[Platform] ' . $headline, 'A ticket was just ' . ($isFree ? 'claimed' : 'bought') . ' on obitickets.', $table($rows), $base . '/admin-order-detail.php?id=' . (int) $orderId, 'Open the order');
+            if (resend_send($adminEmail, '[obitickets] ' . $subject, $html, 'SALE_ADMIN', $orderId)) {
+                $sent++;
+            }
+        }
+
+        // the same news inside the organizer's dashboard bell
+        if ($org) {
+            try {
+                create_notification((int) $org['id'], 'sale', $headline . ': ' . $o['event_title'], $tickets . ' ticket' . ($tickets === 1 ? '' : 's') . ' &middot; ' . strip_tags($o['buyer_name']) . ($isFree ? '' : ' &middot; ' . $o['currency'] . ' ' . number_format((float) $o['total_amount'], 0)), '/org-order-detail.php?id=' . (int) $orderId);
+            } catch (Throwable $e) {
+                error_log('[notify] could not add the dashboard notification for order ' . $orderId . ': ' . $e->getMessage());
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[email] send_sale_notification_emails failed for order ' . $orderId . ': ' . $e->getMessage());
+    }
+    return $sent;
 }
 
 function render_ticket_reminder_email_html(array $order): string

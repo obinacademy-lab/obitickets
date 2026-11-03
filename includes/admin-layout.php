@@ -49,6 +49,7 @@ function render_admin_head(string $active): void
         ]],
         ['label' => 'Security', 'items' => [
             ['key' => 'admins', 'label' => 'Admin Users', 'href' => '/admin-admins.php', 'icon' => 'ic-shield', 'perm' => 'admins.manage'],
+            ['key' => 'emails', 'label' => 'Email log', 'href' => '/admin-emails.php', 'icon' => 'ic-mail', 'perm' => 'orders.view'],
             ['key' => 'logins', 'label' => 'Login Activity', 'href' => '/admin-logins.php', 'icon' => 'ic-pin', 'perm' => 'audit.view'],
             ['key' => 'audit', 'label' => 'Audit Logs', 'href' => '/admin-audit.php', 'icon' => 'ic-clock', 'perm' => 'audit.view'],
             ['key' => '2fa', 'label' => 'Two-Factor Auth', 'href' => '/admin-security.php', 'icon' => 'ic-shield', 'perm' => 'dashboard.view'],

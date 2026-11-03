@@ -29,9 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Only a paid order has tickets to resend.';
         } else {
             try {
-                send_order_tickets_email($orderId);
-                header('Location: /admin-order-detail.php?id=' . $orderId . '&resent=1');
-                exit;
+                if (send_order_tickets_email($orderId)) {
+                    header('Location: /admin-order-detail.php?id=' . $orderId . '&resent=1');
+                    exit;
+                }
+                $error = "The ticket email was not accepted. Open Email log in the admin menu to see exactly why.";
             } catch (Throwable $e) {
                 error_log('[admin] resend_ticket_email failed for order ' . $orderId . ': ' . $e->getMessage());
                 $error = "Couldn't resend the ticket email. Check the error log for details.";

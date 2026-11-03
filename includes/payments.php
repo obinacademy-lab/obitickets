@@ -284,6 +284,13 @@ function finalize_order_success(int $orderId, ?string $statusMessage): void
         error_log('[email] send_order_tickets_email failed for order ' . $orderId . ': ' . $e->getMessage());
     }
 
+    // tell the organizer and the platform admins that a ticket was just bought (never lets a mail problem touch the sale)
+    try {
+        send_sale_notification_emails($orderId);
+    } catch (Throwable $e) {
+        error_log('[email] send_sale_notification_emails failed for order ' . $orderId . ': ' . $e->getMessage());
+    }
+
     try {
         send_order_tickets_sms($orderId);
     } catch (Throwable $e) {
