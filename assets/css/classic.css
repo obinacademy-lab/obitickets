@@ -1,0 +1,88 @@
+/* ==========================================================================
+   Event page, "Classic" look. Loaded after event-v3.css when the page body has .ev-classic.
+   The familiar order: breadcrumb, a header card with the poster and key facts, section tabs that stay put,
+   content in plain cards, and one ticket card that follows you down the right-hand side.
+   White and grey, one red accent, thin rules, 12px corners. All class and id hooks (#buyPanel, #cd-text,
+   .tier, .qty ...) are untouched, and on phones the existing ticket bottom-sheet still does the buying.
+   To go back to an earlier look, change the body class in public/event.php.
+   ========================================================================== */
+
+body.ev-classic{background:#F5F5F7}
+body.ev-classic .ev{
+  --ink:#17131D; --muted:#6A6575; --muted-2:#6A6575; --line:#E6E4EA; --line-strong:#D5D2DB;
+  --paper:#F5F5F7; --surface:#fff; background:#F5F5F7;
+}
+body.ev-classic .ev-wrap{max-width:1160px}
+body.ev-classic .ev-glow{display:none}
+
+/* ---------- breadcrumb ---------- */
+body.ev-classic .ev-crumb{padding-top:18px; padding-bottom:0; font-size:.82rem; color:var(--muted)}
+body.ev-classic .ev-crumb a{text-decoration:none}
+body.ev-classic .ev-crumb a:hover{color:#DC2626}
+body.ev-classic .ev-crumb span{color:var(--ink); font-weight:700}
+
+/* ---------- header card ---------- */
+body.ev-classic .ev-hero{padding:14px 0 0}
+body.ev-classic .ev-hero-grid{grid-template-columns:230px minmax(0,1fr); gap:28px; align-items:start; background:#fff; border:1px solid var(--line); border-radius:12px; padding:22px; width:calc(100% - 48px); max-width:1112px}
+body.ev-classic .ev-cover{max-width:230px; border-radius:10px; animation:none}
+body.ev-classic .ev-cover img{border-radius:10px; box-shadow:none; max-height:none; object-fit:cover; aspect-ratio:4/5}
+body.ev-classic .ev-cover-fallback{aspect-ratio:4/5; border-radius:10px; font-size:3.6rem}
+body.ev-classic .ev-shine{border-radius:10px}
+body.ev-classic .ev-title{font-size:clamp(1.6rem,3.2vw,2.5rem); line-height:1.1; letter-spacing:-.02em; margin-top:12px}
+body.ev-classic .ev-eyebrow-cat{font-size:11px; background:#fff; border:1px solid var(--line-strong); border-radius:99px; padding:5px 11px; color:#403A4B}
+body.ev-classic .ev-badge{border-radius:99px}
+body.ev-classic .ev-meta{margin-top:18px; gap:12px}
+body.ev-classic .ev-meta li{align-items:center}
+body.ev-classic .ev-meta svg{width:34px; height:34px; padding:8px; border-radius:10px; background:#FDEDED; box-sizing:border-box; margin-top:0}
+body.ev-classic .ev-org-row{margin-top:18px; padding:12px 0}
+body.ev-classic .ev-actions{margin-top:16px}
+body.ev-classic .ev-btn{border-radius:10px; padding:13px 20px}
+body.ev-classic .ev-btn-primary{background:#DC2626; box-shadow:none}
+body.ev-classic .ev-btn-primary:hover{background:#B91C1C; box-shadow:none}
+body.ev-classic .ev-icon-btn{border-radius:10px; height:44px}
+body.ev-classic .ev-cd{margin-top:16px; gap:6px}
+body.ev-classic .ev-cd-u{min-width:58px; padding:8px 8px 6px; border-radius:8px; box-shadow:none}
+body.ev-classic .ev-cd-u b{font-size:20px}
+body.ev-classic .ev-cd-u.is-sec{background:#17131D; border-color:#17131D}
+
+/* ---------- section tabs ---------- */
+body.ev-classic .ev-tabs{margin-top:18px; background:rgba(245,245,247,.95)}
+body.ev-classic .ev-tabs a.is-active{color:var(--ink)}
+body.ev-classic .ev-tab-ink{background:#DC2626}
+
+/* ---------- content in plain cards, ticket card on the right ---------- */
+body.ev-classic .ev-grid{grid-template-columns:minmax(0,1fr) 360px; gap:24px; padding-top:20px}
+body.ev-classic .ev-section{margin:0 0 16px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:24px}
+body.ev-classic .ev-h2{font-size:1.45rem; letter-spacing:-.01em; margin-bottom:14px}
+body.ev-classic .ev-about .about-text{font-size:16px; color:#3D3847}
+body.ev-classic .ev-hosting .ev-card{border:0; padding:0; box-shadow:none; background:none}
+body.ev-classic .ev-hosting-grid{grid-template-columns:1fr}
+body.ev-classic .ev-going-card{display:none}
+body.ev-classic .ev-card,body.ev-classic .ev-post,body.ev-classic .ev-composer,body.ev-classic .ev-note-card{border-radius:12px}
+body.ev-classic .ev-stub{--st-bg:#17131D}
+body.ev-classic .ev .ended-panel{border-radius:12px}
+@media (min-width:921px){
+  body.ev-classic .ev-stub-wrap{filter:none; top:calc(var(--ev-nav) + 56px)}
+  body.ev-classic .buy-panel.ev-stub{border-radius:12px; -webkit-mask:none; mask:none; border-top:4px solid #DC2626}
+  body.ev-classic .ev-stub-top{height:auto; padding-bottom:20px}
+  body.ev-classic .ev-stub-title{-webkit-line-clamp:3}
+  body.ev-classic .ev-stub .qty button{border-radius:8px}
+  body.ev-classic .ev-stub .btn-purple{border-radius:10px}
+  body.ev-classic .ev-stub .poster-summary{border-radius:10px}
+}
+@media (max-width:920px){
+  body.ev-classic .mobile-buy-bar .btn{border-radius:10px}
+}
+
+/* ---------- smaller screens ---------- */
+@media (max-width:980px){
+  body.ev-classic .ev-grid{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  body.ev-classic .ev-hero-grid{grid-template-columns:1fr; gap:18px; padding:16px; width:calc(100% - 32px)}
+  body.ev-classic .ev-cover{margin:0; max-width:240px}
+  body.ev-classic .ev-section{padding:20px}
+}
+@media (max-width:640px){
+  body.ev-classic .ev-wrap{padding:0 16px}
+}

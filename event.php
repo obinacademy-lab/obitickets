@@ -232,7 +232,7 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-column'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
+$bodyClass = 'event-page ev-classic'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
 $hideWhatsApp = true; // the phone buy bar lives in this corner
 include __DIR__ . '/includes/header.php';
 ?>
@@ -271,6 +271,8 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 <?php endif; ?>
 
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+<nav class="ev-crumb ev-wrap" aria-label="Breadcrumb"><a href="/">Events</a> / <a href="/search.php?category=<?= urlencode($event['category']) ?>"><?= htmlspecialchars($event['category']) ?></a> / <span><?= htmlspecialchars($event['title']) ?></span></nav>
 
 <!-- ===== hero ===== -->
 <section class="ev-hero"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
@@ -380,17 +382,15 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 </section>
 
 <!-- ===== tabs ===== -->
-<?php if ($showCommunityUi): ?>
 <nav class="ev-tabs" aria-label="Sections">
   <div class="ev-wrap ev-tabs-row">
     <a href="#about" class="is-active" data-tab="about">About</a>
-    <?php if (!$eventHasEnded): ?><a href="#buyPanel" data-tab="tickets">Tickets</a><?php endif; ?>
-    <?php if ($momentsReady ? $moments : $eventMedia): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
-    <?php if ($communityReady): ?><a href="#community" data-tab="community"><?= $eventHasEnded ? 'Relive' : 'Community' ?></a><?php endif; ?>
+    <?php if ($showCommunityUi && ($momentsReady ? $moments : $eventMedia)): ?><a href="#moments" data-tab="moments">Moments</a><?php endif; ?>
+    <a href="#host" data-tab="host">Host</a>
+    <?php if ($showCommunityUi && $communityReady): ?><a href="#community" data-tab="community"><?= $eventHasEnded ? 'Relive' : 'Community' ?></a><?php endif; ?>
     <?php if ($eventHasEnded || $reviews): ?><a href="#reviews" data-tab="reviews">Reviews</a><?php endif; ?>
   </div>
 </nav>
-<?php endif; ?>
 
 <div class="ev-wrap ev-grid">
 
@@ -398,14 +398,12 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 
     <!-- ===== about ===== -->
     <section id="about" class="ev-section">
-      <details class="ev-fold" open>
-      <summary class="ev-h2">About this event</summary>
+      <h2 class="ev-h2">About this event</h2>
       <div class="ev-about">
         <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
           <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
         <?php endforeach; ?>
       </div>
-      </details>
     </section>
 
     <?php if ($showCommunityUi): ?>
@@ -473,9 +471,8 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
     <?php endif; /* showCommunityUi: moments + gallery */ ?>
 
     <!-- ===== hosted by + attendance (kept out of the sticky ticket column so nothing slides over the card) ===== -->
-    <section class="ev-section ev-hosting" aria-label="Organizer and attendance">
-      <details class="ev-fold" open>
-      <summary class="ev-h2">Hosted by</summary>
+    <section id="host" class="ev-section ev-hosting" aria-label="Organizer and attendance">
+      <h2 class="ev-h2">Hosted by</h2>
       <div class="ev-hosting-grid<?= $communityReady ? '' : ' is-single' ?>">
         <div class="ev-card ev-host-card">
           <div class="ev-card-head">
@@ -510,7 +507,6 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
         </div>
         <?php endif; ?>
       </div>
-      </details>
     </section>
 
     <?php if ($communityReady && $showCommunityUi): ?>
