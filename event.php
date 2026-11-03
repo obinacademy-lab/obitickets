@@ -533,7 +533,23 @@ $wlIc = static function (string $n): string {
           <li><span class="mq-tn"><?= htmlspecialchars($tier['name']) ?><?php if ($mqAvail === 0): ?> <em>Sold out</em><?php endif; ?></span><span class="mq-tp"><?= ticket_is_free($tier) ? 'Free' : htmlspecialchars(format_money($tier['price'], $currency)) ?></span></li>
         <?php endforeach; ?>
       </ul>
-      <p class="mq-note"><?= $eventIsFree ? 'Free entry. Your ticket is confirmed straight away.' : 'Pay with MTN MoMo or Airtel Money.' ?></p>
+      <?php if ($eventIsFree): ?>
+      <p class="mq-note">Free entry. Your ticket is confirmed straight away.</p>
+      <?php else:
+          // Official logo files win when they are in assets/images/brands/ (mtn-momo-logo.svg|png, airtel-money-logo.svg|png)
+          $wlLogo = static function (array $names): string {
+              foreach ($names as $n) { if (is_file(__DIR__ . '/assets/images/brands/' . $n)) { return '/assets/images/brands/' . $n; } }
+              return '';
+          };
+          $wlMtn = $wlLogo(['mtn-momo-logo.svg', 'mtn-momo-logo.png', 'mtn-logo.svg']);
+          $wlAir = $wlLogo(['airtel-money-logo.svg', 'airtel-money-logo.png', 'airtel-logo.svg']);
+      ?>
+      <p class="mq-note mq-pay"><span>Pay with</span>
+        <?php if ($wlMtn): ?><span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="<?= htmlspecialchars($wlMtn) ?>" alt="MTN MoMo" height="26"></span><?php endif; ?>
+        <?php if ($wlMtn && $wlAir): ?><span class="mq-pay-or">or</span><?php endif; ?>
+        <?php if ($wlAir): ?><span class="pay-badge"><img class="pay-logo pay-logo-airtel" src="<?= htmlspecialchars($wlAir) ?>" alt="Airtel Money" height="26"></span><?php endif; ?>
+      </p>
+      <?php endif; ?>
     </section>
     <?php endif; ?>
 
