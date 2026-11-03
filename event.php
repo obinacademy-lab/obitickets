@@ -499,8 +499,11 @@ $wlIc = static function (string $n): string {
           <div class="r"><span id="fee-label">Service fee</span><span class="mono" id="fee-amount"><?= htmlspecialchars($currency) ?> 0</span></div>
           <div class="r total"><span>Total</span><span class="v mono" id="total-amount"><?= htmlspecialchars($currency) ?> 0</span></div>
         </div>
+        <div class="buy-bar">
+          <div class="buy-bar-tot"><small>Total</small><b id="barTotal"><?= htmlspecialchars($currency) ?> 0</b></div>
+          <button class="btn btn-purple btn-lg" type="submit" id="buySubmit"><?= $eventIsFree ? 'Get free ticket' : 'Get Tickets' ?></button>
+        </div>
         <div class="poster-foot">
-          <button class="btn btn-purple btn-block btn-lg" type="submit" id="buySubmit"><?= $eventIsFree ? 'Get free ticket' : 'Get Tickets' ?></button>
           <div class="secure-note"><svg width="13" height="13"><use href="#ic-shield"/></svg> <?= $eventIsFree ? 'No payment needed &middot; instant QR ticket' : 'Secure checkout &middot; instant QR ticket' ?></div>
           <div class="pay-icons"<?= $eventIsFree ? ' hidden' : '' ?>>
             <span class="pay-badge"><img class="pay-logo pay-logo-mtn" src="/assets/images/brands/mtn-logo.svg" alt="MTN MoMo"></span>
@@ -798,6 +801,12 @@ $wlIc = static function (string $n): string {
     if (n < 1) btn.textContent = 'Choose a ticket'; /* with a ticket picked, main.js sets the right label (paid or free) */
   }
   form.addEventListener('click', function (e) { if (e.target.closest('.qty button')) setTimeout(sync, 0); });
+  var sumEl = document.getElementById('total-amount'), barEl = document.getElementById('barTotal');
+  if (sumEl && barEl) {
+    var mirror = function () { barEl.textContent = sumEl.textContent; };
+    new MutationObserver(mirror).observe(sumEl, { childList: true, characterData: true, subtree: true });
+    mirror();
+  }
   sync();
   window.addEventListener('load', sync); /* main.js writes its own label on load; the empty state wins */
 })();

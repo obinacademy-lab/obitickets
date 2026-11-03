@@ -89,8 +89,32 @@ body.ev-wallet .buy-panel .pay-badge{height:38px; padding:0 14px; border-radius:
 
 /* ---------- phones: the same panel as a bottom sheet ---------- */
 @media (max-width:920px){
-  body.ev-wallet .buy-panel.ev-stub{border-radius:24px 24px 0 0; border-bottom:0; padding:28px 22px calc(26px + env(safe-area-inset-bottom,0px)); gap:22px; max-height:90vh}
-  body.ev-wallet .buy-panel .ev-stub-title{font-size:1.4rem; margin-right:40px}
-  body.ev-wallet .buy-panel .tier{padding:18px}
-  body.ev-wallet .buy-panel .tier .tp{font-size:1.45rem}
+  body.ev-wallet .buy-panel.ev-stub{border-radius:24px 24px 0 0; border-bottom:0; padding:24px 20px calc(18px + env(safe-area-inset-bottom,0px)); gap:18px; max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); overscroll-behavior:contain}
+  body.ev-wallet .buy-panel form{gap:18px}
+  body.ev-wallet .buy-panel .ev-stub-title{font-size:1.25rem; margin:8px 44px 0 0}
+  body.ev-wallet .buy-panel .ev-stub-meta{margin-top:12px; gap:8px}
+  body.ev-wallet .buy-panel .ev-stub-when,body.ev-wallet .buy-panel .ev-stub-where{font-size:.86rem}
+  body.ev-wallet .buy-panel .poster-tiers{gap:10px}
+  body.ev-wallet .buy-panel .tier{padding:16px}
+  body.ev-wallet .buy-panel .tier .td{-webkit-line-clamp:2; font-size:.82rem}
+  body.ev-wallet .buy-panel .tier .tp{font-size:1.35rem}
+  body.ev-wallet .buy-panel .tier-foot{margin-top:14px; padding-top:14px}
+  body.ev-wallet .buy-panel .poster-summary{gap:8px}
+  body.ev-wallet .buy-panel .poster-summary .r.total{padding-top:12px}
+  body.ev-wallet .buy-panel .buy-bar{margin:0 -20px; padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px))}
+}
+
+/* ---------- the pinned bar: the total and Get Tickets stay in view however long the panel is ---------- */
+body.ev-wallet .buy-panel .buy-bar{position:sticky; bottom:0; z-index:4; display:flex; align-items:center; gap:16px; margin:0 -30px; padding:14px 30px;
+  background:linear-gradient(180deg, rgba(23,17,31,0), #17111F 30%); }
+body.ev-wallet .buy-panel .buy-bar-tot{flex:none; display:grid; gap:2px}
+body.ev-wallet .buy-panel .buy-bar-tot small{font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#B9B2C6}
+body.ev-wallet .buy-panel .buy-bar-tot b{font:800 1.2rem/1.1 'Outfit','Plus Jakarta Sans',sans-serif; color:#fff; white-space:nowrap; font-variant-numeric:tabular-nums}
+body.ev-wallet .buy-panel .buy-bar #buySubmit{flex:1; min-width:0; width:auto}
+@media (max-width:380px){
+  body.ev-wallet .buy-panel .buy-bar{gap:12px}
+  body.ev-wallet .buy-panel .buy-bar-tot b{font-size:1.05rem}
+}
+@media (max-width:920px){
+  body.ev-wallet .buy-panel .buy-bar{margin:0 -20px; padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px))}
 }
