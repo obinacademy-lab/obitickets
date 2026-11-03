@@ -151,18 +151,35 @@ $colB = $fill($colB);
 <?php endif; ?>
 
 <section class="wrap">
+  <?php
+  // The four reasons, with a small icon each. They glide past as a ticker; the first copy is the real list for
+  // screen readers and the copies are hidden from them.
+  $orgPerks = [
+      ['<rect x="3" y="6.5" width="18" height="11" rx="2.2"/><circle cx="12" cy="12" r="2.6"/>', 'No upfront cost, only a small commission on paid tickets'],
+      ['<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2M14 20v-2"/>', 'QR check-in for your gate team'],
+      ['<path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/>', 'Live sales and attendee lists'],
+      ['<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.6 5.4 3.6 8.5s-1.1 5.9-3.6 8.5c-2.5-2.6-3.6-5.4-3.6-8.5S9.5 6.1 12 3.5z"/>', 'Free tickets and online events built in'],
+  ];
+  ?>
   <div class="ld-org reveal">
-    <div>
-      <h2>Selling tickets? Start in minutes.</h2>
-      <p>List a free or paid event, in person or online, and get paid straight to mobile money.</p>
-      <a class="btn btn-purple btn-lg" href="/my-events.php">Create an event</a>
+    <div class="ld-org-in">
+      <div>
+        <div class="ld-org-k">For organizers</div>
+        <h2>Selling tickets? Start in minutes.</h2>
+        <p class="ld-org-lead">List a free or paid event, in person or online, and get paid straight to mobile money.</p>
+      </div>
+      <div class="ld-org-act">
+        <a class="btn btn-lg ld-org-btn" href="/my-events.php">Create an event</a>
+        <div class="ld-org-note">No upfront cost, only a small commission on paid tickets.</div>
+      </div>
     </div>
-    <ul>
-      <li>No upfront cost, only a small commission on paid tickets</li>
-      <li>QR check-in for your gate team</li>
-      <li>Live sales and attendee lists</li>
-      <li>Free tickets and online events built in</li>
-    </ul>
+    <div class="ld-org-rail">
+      <ul class="ld-org-track">
+        <?php for ($copy = 0; $copy < 4; $copy++): foreach ($orgPerks as $perk): ?>
+          <li<?= $copy > 0 ? ' aria-hidden="true"' : '' ?>><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><?= $perk[0] ?></svg><?= htmlspecialchars($perk[1]) ?></li>
+        <?php endforeach; endfor; ?>
+      </ul>
+    </div>
   </div>
 </section>
 

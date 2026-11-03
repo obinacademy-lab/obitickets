@@ -71,13 +71,31 @@
 .ld-pill.b{background:#E6F1FF; color:#1456B8}
 
 /* ---------- organizer call to action ---------- */
-.ld-org{margin:70px 0 80px; border-radius:24px; padding:42px 40px; background:#1C1526; color:#fff; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:28px; align-items:center; position:relative; overflow:hidden}
-.ld-org::after{content:""; position:absolute; right:-80px; top:-80px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(220,38,38,.5),transparent 70%); pointer-events:none}
-.ld-org>*{position:relative; z-index:1}
-.ld-org h2{font-family:'Outfit',Georgia,serif; font-weight:700; font-size:clamp(1.6rem,3.2vw,2.2rem); letter-spacing:-.02em; color:#fff; max-width:18ch}
-.ld-org p{margin:10px 0 22px; color:#CFC7DB; max-width:42ch}
-.ld-org ul{list-style:none; margin:0; padding:0; display:grid; gap:10px; color:#E1D9EC; font-size:.94rem}
-.ld-org li::before{content:"\2713"; color:#F87171; margin-right:10px; font-weight:800}
+.ld-org{position:relative; overflow:hidden; isolation:isolate; margin:70px 0 80px; padding:60px 56px 0; border-radius:28px; color:#fff;
+  background:linear-gradient(135deg,#7F1D1D,#B91C1C 45%,#E5383B); box-shadow:0 40px 70px -46px rgba(127,29,29,.8)}
+.ld-org::before{content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(520px 300px at 100% 0, rgba(255,255,255,.22), transparent 65%), repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px)}
+.ld-org::after{content:""; position:absolute; z-index:-1; left:-120px; bottom:-160px; width:360px; height:360px; border-radius:50%; background:radial-gradient(circle, rgba(255,160,160,.28), transparent 68%); pointer-events:none; animation:ldOrgDrift 16s ease-in-out infinite alternate}
+@keyframes ldOrgDrift{to{transform:translate(60px,-30px) scale(1.12)}}
+.ld-org-in{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:40px; align-items:end; padding-bottom:44px}
+.ld-org-k{font:600 .7rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.2em; text-transform:uppercase; color:#FFD0D0}
+.ld-org h2{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:800; font-size:clamp(2rem,4vw,3.3rem); line-height:1.03; letter-spacing:-.03em; margin:14px 0 14px; color:#fff; max-width:16ch; text-wrap:balance}
+.ld-org-lead{margin:0; color:#FFE3E3; font-size:1.06rem; max-width:46ch}
+.ld-org-act{display:grid; gap:18px; justify-items:start}
+.ld-org .ld-org-btn{display:inline-flex; align-items:center; gap:10px; height:60px; padding:0 32px; border:0; border-radius:14px; background:#fff; color:#B91C1C; font-weight:800; font-size:1.02rem; box-shadow:0 24px 40px -22px rgba(0,0,0,.6); transition:transform .3s cubic-bezier(.22,.8,.24,1), box-shadow .3s cubic-bezier(.22,.8,.24,1), background .25s}
+.ld-org .ld-org-btn::after{content:"\2192"; transition:transform .35s cubic-bezier(.22,.8,.24,1)}
+.ld-org .ld-org-btn:hover{background:#FFF1F1; transform:translateY(-2px); box-shadow:0 30px 46px -22px rgba(0,0,0,.7)}
+.ld-org .ld-org-btn:hover::after{transform:translateX(6px)}
+.ld-org .ld-org-btn:active{transform:none}
+.ld-org .ld-org-btn:focus-visible{outline:3px solid #fff; outline-offset:3px}
+.ld-org-note{font-size:.88rem; color:#FFD0D0}
+.ld-org-rail{margin:0 -56px; border-top:1px solid rgba(255,255,255,.22); background:rgba(20,10,14,.22); overflow:hidden; white-space:nowrap}
+.ld-org-track{list-style:none; margin:0; padding:0; display:inline-flex; animation:ldOrgMq 34s linear infinite}
+.ld-org-rail:hover .ld-org-track{animation-play-state:paused}
+.ld-org-track li{display:inline-flex; align-items:center; gap:12px; padding:20px 30px; font-weight:700; font-size:.95rem; color:#fff}
+.ld-org-track svg{width:18px; height:18px; color:#FFB3B3; flex:none}
+.ld-org-track li::after{content:""; width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); margin-left:30px}
+@keyframes ldOrgMq{to{transform:translateX(-50%)}}
 
 @media (max-width:860px){
   .ld-hero{padding:30px 0 40px}
@@ -85,11 +103,18 @@
   .ld-copy h1{max-width:none}
   .ld-wall{height:320px}
   .ld-steps,.ld-feat{grid-template-columns:minmax(0,1fr)}
-  .ld-org{grid-template-columns:minmax(0,1fr); padding:32px 24px; margin:50px 0 60px}
+  .ld-org{padding:40px 24px 0; margin:50px 0 60px}
+  .ld-org-in{grid-template-columns:minmax(0,1fr); gap:28px; padding-bottom:34px}
+  .ld-org-rail{margin:0 -24px}
+  .ld-org .ld-org-btn{width:100%; justify-content:center}
   .ld-nx{margin-top:-14px}
 }
 @media (prefers-reduced-motion: reduce){
   .ld-col{animation:none !important}
+  .ld-org::after,.ld-org-track{animation:none !important}
+  .ld-org-rail{overflow-x:auto; white-space:normal}
+  .ld-org-track{flex-wrap:wrap}
+  .ld-org-track li[aria-hidden="true"]{display:none}
   .ld-wall{height:auto; max-height:440px; overflow:hidden}
   .ld-fc,.ld-art img{transition:none}
 }
