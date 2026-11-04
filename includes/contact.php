@@ -6,13 +6,12 @@ const CONTACT_TOPICS = ['For Event Organizers', 'For Ticket Buyers', 'Partnershi
 
 // The team's public contact details, as printed on the Contact page.
 const CONTACT_EMAIL = 'info@obitickets.site';
-const CONTACT_PHONE_DIGITS = '256775361998';
-const CONTACT_PHONE_DISPLAY = '+256 775 361 998';
 
-/** WhatsApp chat with the contact number shown on the Contact page, first message already typed. */
+/** WhatsApp chat from the Contact page, first message already typed. It is the same line as the footer button
+ *  (SUPPORT_WHATSAPP_NUMBER, below), so the site shows one WhatsApp number everywhere. */
 function contact_phone_whatsapp_url(string $message = 'Hello obitickets, I have a question.'): string
 {
-    return 'https://wa.me/' . CONTACT_PHONE_DIGITS . '?text=' . rawurlencode($message);
+    return support_whatsapp_url($message);
 }
 
 // The platform's WhatsApp line for visitors with questions. Digits only, country code first (no + or spaces);

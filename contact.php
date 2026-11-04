@@ -77,7 +77,7 @@ $ctArrow = '<svg class="ct-arr" width="18" height="18" viewBox="0 0 24 24" fill=
         <?= $ctIcon('mail') ?><span class="ct-tx"><span class="ct-lbl">Email</span><span class="ct-val"><?= htmlspecialchars(CONTACT_EMAIL) ?></span></span><?= $ctArrow ?>
       </a>
       <a class="ct-it" href="<?= htmlspecialchars(contact_phone_whatsapp_url()) ?>" target="_blank" rel="noopener" data-wa-chat>
-        <?= $ctIcon('wa') ?><span class="ct-tx"><span class="ct-lbl">WhatsApp / Phone</span><span class="ct-val"><?= htmlspecialchars(CONTACT_PHONE_DISPLAY) ?></span></span><?= $ctArrow ?>
+        <?= $ctIcon('wa') ?><span class="ct-tx"><span class="ct-lbl">WhatsApp / Phone</span><span class="ct-val"><?= htmlspecialchars(support_whatsapp_display()) ?></span></span><?= $ctArrow ?>
       </a>
       <a class="ct-it" href="https://obitickets.site" target="_blank" rel="noopener">
         <?= $ctIcon('globe') ?><span class="ct-tx"><span class="ct-lbl">Website</span><span class="ct-val">https://obitickets.site</span></span><?= $ctArrow ?>

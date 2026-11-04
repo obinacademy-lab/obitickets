@@ -55,6 +55,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php if (str_contains($bodyClass ?? '', 'pricing-page')): ?>
 <link rel="stylesheet" href="/assets/css/pricing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/pricing.css') ?: time() ?>">
 <?php endif; ?>
+<?php if (str_contains($bodyClass ?? '', 'team-page')): ?>
+<link rel="stylesheet" href="/assets/css/team-page.css?v=<?= @filemtime(__DIR__ . '/../assets/css/team-page.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'past-events-page')): ?>
 <link rel="stylesheet" href="/assets/css/past-events.css?v=<?= @filemtime(__DIR__ . '/../assets/css/past-events.css') ?: time() ?>">
 <?php endif; ?>
