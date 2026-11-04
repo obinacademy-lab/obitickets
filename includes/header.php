@@ -52,6 +52,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
+<?php if (str_contains($bodyClass ?? '', 'past-events-page')): ?>
+<link rel="stylesheet" href="/assets/css/past-events.css?v=<?= @filemtime(__DIR__ . '/../assets/css/past-events.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'contact-concierge')): ?>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Outfit:wght@200&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/contact.css?v=<?= @filemtime(__DIR__ . '/../assets/css/contact.css') ?: time() ?>">

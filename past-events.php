@@ -1,116 +1,151 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/past-events.php';
 
-// Past events: nothing is "moved" here — an event shows up on this page by
-// itself the moment its end time passes (see past_events() in
-// includes/events.php), and drops off the homepage/search at the same instant.
+// Past events: nothing is "moved" here. An event appears by itself once its end time has passed (or an admin
+// marks it completed), and an admin can hide it, feature it, and add its story and photos. See includes/past-events.php.
 
-const PAST_EVENTS_PER_PAGE = 24;
+const PAST_PER_PAGE = 12;
 
-$q = trim((string) ($_GET['q'] ?? ''));
-$category = (string) ($_GET['category'] ?? '');
-$category = in_array($category, EVENT_CATEGORIES, true) ? $category : '';
-$page = max(1, (int) ($_GET['page'] ?? 1));
+$q = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
+$group = is_string($_GET['group'] ?? null) && isset(PAST_GROUPS[$_GET['group']]) ? $_GET['group'] : '';
+$page = max(1, (int) (is_string($_GET['page'] ?? null) ? $_GET['page'] : 1));
 
-$result = past_events($q !== '' ? $q : null, $category ?: null, PAST_EVENTS_PER_PAGE, ($page - 1) * PAST_EVENTS_PER_PAGE);
+$counts = past_group_counts();
+$unfiltered = $q === '' && $group === '';
+$featured = $unfiltered ? past_featured_events(3) : [];
+$featuredIds = array_map(static fn ($e) => (int) $e['id'], $featured);
+
+$result = past_events_list($q, $group, PAST_PER_PAGE, ($page - 1) * PAST_PER_PAGE, $unfiltered ? $featuredIds : []);
 $events = $result['events'];
 $total = $result['total'];
-$pageCount = max(1, (int) ceil($total / PAST_EVENTS_PER_PAGE));
+$pageCount = max(1, (int) ceil($total / PAST_PER_PAGE));
+$nothingYet = $counts['all'] === 0;
 
-/** Builds a past-events.php URL that keeps the current filters. */
-function past_events_url(string $q = '', string $category = '', int $page = 1): string
+/** A past-events.php address that keeps the current filter and search. */
+function past_list_url(string $q = '', string $group = '', int $page = 1): string
 {
     $params = array_filter([
         'q' => $q !== '' ? $q : null,
-        'category' => $category !== '' ? $category : null,
+        'group' => $group !== '' ? $group : null,
         'page' => $page > 1 ? $page : null,
     ], static fn ($v) => $v !== null);
     return '/past-events.php' . ($params ? '?' . http_build_query($params) : '');
 }
 
-$catStripIcons = category_icon_map();
-$hasFilter = $q !== '' || $category !== '';
-
-$pageTitle = 'Past events — obitickets';
-$pageDescription = 'Look back at events that have happened on obitickets — photos, ratings and reviews from the people who were there.';
-$bodyClass = 'classic-page';
+$pageTitle = 'Past Events | Discover Event Highlights on Obitickets';
+$pageDescription = "Explore past concerts, conferences, workshops and memorable experiences on Obitickets, Uganda's event discovery and ticketing platform.";
+$bodyClass = 'classic-page past-events-page';
 include __DIR__ . '/includes/header.php';
+
+$ld = [
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => 'Past Events',
+    'description' => $pageDescription,
+    'url' => APP_URL . '/past-events.php',
+    'mainEntity' => ['@type' => 'ItemList', 'itemListElement' => []],
+];
+foreach (array_merge($featured, $events) as $i => $e) {
+    $ld['mainEntity']['itemListElement'][] = ['@type' => 'ListItem', 'position' => $i + 1, 'url' => APP_URL . past_event_url($e['slug']), 'name' => $e['title']];
+}
 ?>
 
-<section class="page-hero">
-  <img class="page-hero-bg" src="/assets/images/about/crowd.jpg" alt="">
-  <div class="page-hero-glow"></div>
-  <div class="wrap page-hero-content">
-    <h1 class="hero-in" style="animation-delay:.05s">Past events</h1>
-    <div class="page-hero-crumb hero-in" style="animation-delay:.15s">
-      <a href="/">obitickets</a>
-      <span>&rsaquo;</span>
-      <span>Past events</span>
-    </div>
+<section class="pe-hero">
+  <img class="pe-hero-bg" src="/assets/images/about/about-club.jpg" alt="" fetchpriority="high">
+  <div class="wrap pe-hero-in">
+    <nav class="pe-crumb" aria-label="Breadcrumb"><a href="/">obitickets</a><span aria-hidden="true">&rsaquo;</span><span>Past events</span></nav>
+    <h1 class="hero-in d1">PAST EVENTS</h1>
+    <p class="pe-headline hero-in d2">Celebrating Experiences. Creating Memories.</p>
+    <p class="pe-lead hero-in d3">Explore memorable events that have taken place through Obitickets. From concerts and entertainment to business conferences, workshops, masterclasses and special gatherings, discover the experiences that bring people together.</p>
   </div>
 </section>
 
-<div class="wrap">
-  <section class="sec">
+<div class="wrap pe-main">
 
-    <form class="search-bar" action="/past-events.php" method="get" style="max-width:560px; margin:0 auto">
-      <svg width="17" height="17"><use href="#ic-search"/></svg>
-      <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search past events or venues">
-      <?php if ($category !== ''): ?><input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>"><?php endif; ?>
+  <?php if (!$nothingYet): ?>
+  <div class="pe-toolbar">
+    <nav class="pe-filters" aria-label="Filter past events">
+      <a class="pe-chip<?= $group === '' ? ' is-on' : '' ?>" href="<?= htmlspecialchars(past_list_url($q)) ?>"<?= $group === '' ? ' aria-current="true"' : '' ?>>All Past Events <span><?= (int) $counts['all'] ?></span></a>
+      <?php foreach (PAST_GROUPS as $key => $label): ?>
+        <a class="pe-chip<?= $group === $key ? ' is-on' : '' ?>" href="<?= htmlspecialchars(past_list_url($q, $key)) ?>"<?= $group === $key ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($label) ?> <span><?= (int) $counts[$key] ?></span></a>
+      <?php endforeach; ?>
+    </nav>
+    <form class="pe-search" action="/past-events.php" method="get" role="search">
+      <?php if ($group !== ''): ?><input type="hidden" name="group" value="<?= htmlspecialchars($group) ?>"><?php endif; ?>
+      <label class="pe-sr" for="peq">Search past events</label>
+      <svg width="16" height="16" aria-hidden="true"><use href="#ic-search"/></svg>
+      <input id="peq" type="search" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search by event, venue or organizer">
       <button type="submit">Search</button>
     </form>
+  </div>
+  <?php endif; ?>
 
-    <div class="search-cats">
-      <a class="cat-chip <?= $category === '' ? 'active' : '' ?>" href="<?= htmlspecialchars(past_events_url($q)) ?>">
-        <span class="cat-chip-ic"><svg width="16" height="16"><use href="#ic-grid"/></svg></span>
-        <span class="cat-chip-label">All</span>
-      </a>
-      <?php foreach (EVENT_CATEGORIES as $cat): ?>
-        <a class="cat-chip <?= $category === $cat ? 'active' : '' ?>" href="<?= htmlspecialchars(past_events_url($q, $cat)) ?>">
-          <span class="cat-chip-ic"><svg width="16" height="16"><use href="#<?= $catStripIcons[$cat] ?>"/></svg></span>
-          <span class="cat-chip-label"><?= htmlspecialchars($cat) ?></span>
-        </a>
-      <?php endforeach; ?>
-    </div>
+  <?php if ($nothingYet): ?>
+    <section class="pe-empty" aria-labelledby="peEmptyH">
+      <svg class="pe-empty-art" viewBox="0 0 220 180" role="img" aria-label="A calendar waiting for its first event">
+        <rect x="26" y="34" width="168" height="126" rx="16" fill="#fff" stroke="#E7DFDA" stroke-width="2"/>
+        <path d="M26 66h168V50a16 16 0 0 0-16-16H42a16 16 0 0 0-16 16z" fill="#B91C1C"/>
+        <rect x="64" y="20" width="10" height="28" rx="5" fill="#1B1417"/><rect x="146" y="20" width="10" height="28" rx="5" fill="#1B1417"/>
+        <g fill="#EADFDA"><rect x="48" y="82" width="22" height="18" rx="4"/><rect x="78" y="82" width="22" height="18" rx="4"/><rect x="108" y="82" width="22" height="18" rx="4"/><rect x="138" y="82" width="22" height="18" rx="4"/><rect x="48" y="108" width="22" height="18" rx="4"/><rect x="78" y="108" width="22" height="18" rx="4"/><rect x="48" y="134" width="22" height="14" rx="4"/></g>
+        <rect x="108" y="108" width="22" height="18" rx="4" fill="#FDEDED" stroke="#B91C1C" stroke-width="2" stroke-dasharray="4 3"/>
+        <path d="M168 128l5 11 12 2-9 8 3 12-11-6-11 6 3-12-9-8 12-2z" fill="#DC2626"/>
+      </svg>
+      <h2 id="peEmptyH">Our Event Journey Is Just Beginning!</h2>
+      <p>Exciting experiences are ahead. Check back as we continue bringing more events and unforgettable moments to Obitickets.</p>
+      <a class="pe-btn pe-btn-solid" href="/search.php">Browse upcoming events <svg width="15" height="15" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
+    </section>
+  <?php else: ?>
 
-    <div class="sec-head" style="margin-top:32px">
-      <h2><?= $total ?> past event<?= $total === 1 ? '' : 's' ?><?= $q !== '' ? ' for &ldquo;' . htmlspecialchars($q) . '&rdquo;' : '' ?></h2>
-      <a class="more" href="/search.php">Upcoming events &rarr;</a>
-    </div>
-
-    <?php if (!$events): ?>
-      <div class="empty-state hero-in" style="margin-top:8px">
-        <div class="empty-badge"><svg width="32" height="32"><use href="#ic-cal"/></svg></div>
-        <h3><?= $hasFilter ? 'No past events match that' : 'No past events yet' ?></h3>
-        <p><?= $hasFilter ? 'Try another category or a different search.' : 'Events appear here automatically once they finish.' ?></p>
-        <div class="empty-actions">
-          <?php if ($hasFilter): ?>
-            <a class="btn btn-purple" href="/past-events.php">Show all past events</a>
-          <?php else: ?>
-            <a class="btn btn-purple" href="/search.php">Browse upcoming events <svg width="15" height="15" class="btn-arrow"><use href="#ic-arrow"/></svg></a>
-          <?php endif; ?>
-        </div>
+    <?php if ($featured && $page === 1): ?>
+    <section class="pe-section" aria-labelledby="peFeatH">
+      <div class="pe-head"><h2 id="peFeatH">Featured past events</h2></div>
+      <div class="pe-featured">
+        <?php foreach ($featured as $e): render_past_card($e, true); endforeach; ?>
       </div>
-    <?php else: ?>
-      <div class="past-grid" style="margin-top:8px">
-        <?php foreach ($events as $event): render_past_event_card($event); endforeach; ?>
-      </div>
-
-      <?php if ($pageCount > 1): ?>
-        <nav class="past-pager" aria-label="Pages">
-          <?php if ($page > 1): ?>
-            <a class="past-pager-btn" href="<?= htmlspecialchars(past_events_url($q, $category, $page - 1)) ?>">&larr; Newer</a>
-          <?php endif; ?>
-          <span class="past-pager-count">Page <?= $page ?> of <?= $pageCount ?></span>
-          <?php if ($page < $pageCount): ?>
-            <a class="past-pager-btn" href="<?= htmlspecialchars(past_events_url($q, $category, $page + 1)) ?>">Older &rarr;</a>
-          <?php endif; ?>
-        </nav>
-      <?php endif; ?>
+    </section>
     <?php endif; ?>
 
-  </section>
+    <section class="pe-section" aria-labelledby="peAllH">
+      <div class="pe-head">
+        <h2 id="peAllH"><?= $group !== '' ? htmlspecialchars(PAST_GROUPS[$group]) : ($featured ? 'More past events' : 'All past events') ?></h2>
+        <p class="pe-count"><?= (int) $total ?> event<?= $total === 1 ? '' : 's' ?><?= $q !== '' ? ' for &ldquo;' . htmlspecialchars($q) . '&rdquo;' : '' ?></p>
+      </div>
+
+      <?php if (!$events && !$featured): ?>
+        <div class="pe-nomatch">
+          <h3>No past events match that</h3>
+          <p><?= $group !== '' && $q === '' ? 'There are no finished events in this category yet.' : 'Try another category or a different search.' ?></p>
+          <a class="pe-btn pe-btn-solid" href="/past-events.php">Show all past events</a>
+        </div>
+      <?php elseif ($events): ?>
+        <div class="pe-grid">
+          <?php foreach ($events as $e): render_past_card($e); endforeach; ?>
+        </div>
+        <?php if ($pageCount > 1): ?>
+          <nav class="pe-pager" aria-label="Pages">
+            <?php if ($page > 1): ?><a href="<?= htmlspecialchars(past_list_url($q, $group, $page - 1)) ?>">&larr; Newer</a><?php else: ?><span></span><?php endif; ?>
+            <span class="pe-pager-count">Page <?= $page ?> of <?= $pageCount ?></span>
+            <?php if ($page < $pageCount): ?><a href="<?= htmlspecialchars(past_list_url($q, $group, $page + 1)) ?>">Older &rarr;</a><?php else: ?><span></span><?php endif; ?>
+          </nav>
+        <?php endif; ?>
+      <?php endif; ?>
+    </section>
+  <?php endif; ?>
+
 </div>
 
+<section class="pe-cta" aria-labelledby="peCtaH">
+  <div class="wrap pe-cta-in">
+    <div>
+      <p class="pe-cta-kicker">OBITICKETS &mdash; DISCOVER. BOOK. ATTEND.</p>
+      <h2 id="peCtaH">YOUR NEXT EVENT COULD BE HERE!</h2>
+      <p>Give your event the visibility it deserves. Publish your event on Obitickets, reach potential attendees and simplify your ticketing experience.</p>
+    </div>
+    <a class="pe-cta-btn" href="/event-create.php">PUBLISH YOUR EVENT <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
+  </div>
+</section>
+
+<script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
 <script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

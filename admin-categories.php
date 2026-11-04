@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/past-events.php';
 
 $admin = require_admin_permission('categories.manage');
 $error = null;
@@ -24,6 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'toggle') {
         set_category_active((int) $_POST['id'], !empty($_POST['active']));
         log_admin_action((int) $admin['id'], 'category.toggle', 'category', (int) $_POST['id'], ['active' => !empty($_POST['active'])]);
+        header('Location: /admin-categories.php?updated=1');
+        exit;
+    } elseif ($action === 'past_group') {
+        admin_set_category_past_group((int) $admin['id'], (int) ($_POST['id'] ?? 0), (string) ($_POST['past_group'] ?? ''));
         header('Location: /admin-categories.php?updated=1');
         exit;
     } elseif ($action === 'reorder') {
@@ -90,7 +95,7 @@ render_admin_head('categories');
   <?php else: ?>
   <div class="admin-table-wrap">
     <table class="admin-table">
-      <thead><tr><th>Order</th><th>Icon</th><th>Name</th><th>Events</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Order</th><th>Icon</th><th>Name</th><th>Past Events filter</th><th>Events</th><th>Status</th><th></th></tr></thead>
       <tbody>
         <?php foreach ($categories as $i => $c): ?>
           <tr>
@@ -102,6 +107,16 @@ render_admin_head('categories');
             </td>
             <td><svg width="18" height="18"><use href="#<?= htmlspecialchars($c['icon_key']) ?>"/></svg></td>
             <td style="font-weight:700"><?= htmlspecialchars($c['name']) ?></td>
+            <td>
+              <?php if (past_events_ready()): $cur = $c['past_group'] ?? ''; ?>
+                <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="past_group"><input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+                  <select name="past_group" aria-label="Past Events filter for <?= htmlspecialchars($c['name'], ENT_QUOTES) ?>" onchange="this.form.submit()" style="padding:6px 10px; border-radius:8px; border:1.5px solid var(--line-strong); background:var(--paper); font-size:0.82rem">
+                    <option value="">Not shown in a filter<?= isset(PAST_DEFAULT_GROUPS[$c['name']]) ? ' (default: ' . htmlspecialchars(PAST_GROUPS[PAST_DEFAULT_GROUPS[$c['name']]]) . ')' : '' ?></option>
+                    <?php foreach (PAST_GROUPS as $gk => $gl): ?><option value="<?= $gk ?>" <?= $cur === $gk ? 'selected' : '' ?>><?= htmlspecialchars($gl) ?></option><?php endforeach; ?>
+                  </select>
+                </form>
+              <?php else: ?><span class="muted" style="font-size:0.8rem">Run migration 024</span><?php endif; ?>
+            </td>
             <td class="mono"><?= (int) $c['event_count'] ?></td>
             <td>
               <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int) $c['id'] ?>"><input type="hidden" name="active" value="<?= $c['active'] ? '' : '1' ?>">
