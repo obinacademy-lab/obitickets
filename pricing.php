@@ -11,7 +11,7 @@ $buyerFee = SERVICE_FEE_PER_TICKET;
 
 $pageTitle = 'Pricing — Simple, Transparent Ticketing | obitickets';
 $pageDescription = "Simple, transparent ticketing on obitickets: free organizer registration, no monthly subscriptions, a {$rate}% commission only on paid tickets you sell, and 0% commission on free events.";
-$bodyClass = 'classic-page pricing-page';
+$bodyClass = 'classic-page pricing-page motion-page';
 include __DIR__ . '/includes/header.php';
 
 $features = [
@@ -31,6 +31,19 @@ $steps = [
     "Obitickets deducts its {$rate}% commission from successful paid ticket sales.",
     'Your remaining payable balance is calculated after applicable deductions.',
 ];
+$zeros = [
+    ['Registration fees', 'Create your organizer account for free.'],
+    ['Monthly subscriptions', 'Nothing to pay while you are not selling.'],
+    ['Complicated plans', 'One standard rate on every paid ticket.'],
+];
+$h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
+$ic = static fn (string $id, string $cls = 'pr-i'): string => '<svg class="' . $cls . '" width="20" height="20" aria-hidden="true"><use href="#' . $id . '"/></svg>';
+$ticks = [
+    'No hidden organizer registration fees',
+    'No monthly subscriptions',
+    "One standard commission, {$rate}% on paid tickets",
+    'Attendees pay a flat UGX ' . number_format($buyerFee) . ' service fee per paid ticket, separate from your commission',
+];
 ?>
 
 <main class="pr">
@@ -38,135 +51,121 @@ $steps = [
   <section class="pr-hero">
     <div class="pr-wrap pr-hero-in">
       <div>
-        <p class="pr-kick pr-gold pr-rise" style="--d:100">Obitickets pricing</p>
-        <h1><span class="split-heading" data-split>Simple, Transparent Ticketing. No Complicated Pricing.</span></h1>
-        <p class="pr-lede pr-rise" style="--d:500">At Obitickets, we believe event organizers should focus on creating great experiences while we make ticket selling simpler. Our pricing is straightforward: <b>pay only when you sell a ticket.</b></p>
-        <div class="pr-acts pr-rise" style="--d:700">
-          <a class="pr-btn pr-btn-gold" href="/signup.php?role=ORGANIZER">Register as an organizer <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
-          <a class="pr-btn pr-btn-ghost" href="#standard">See how it works</a>
+        <p class="pr-kick lt" data-in="up">Obitickets pricing</p>
+        <h1 data-split data-in="split">Simple, Transparent Ticketing. No Complicated Pricing.</h1>
+        <p class="pr-lede" data-in="up" style="--d:500">At Obitickets, we believe event organizers should focus on creating great experiences while we make ticket selling simpler. Our pricing is straightforward: <b>pay only when you sell a ticket.</b></p>
+        <div class="pr-acts" data-in="up" style="--d:700">
+          <a class="pr-btn gold" data-mag href="/signup.php?role=ORGANIZER">Register as an organizer <?= $ic('ic-arrow', 'pr-i') ?></a>
+          <a class="pr-btn ghost" data-mag data-jump="standard" href="#standard">See how it works</a>
         </div>
       </div>
-      <ul class="pr-zeros pr-rise" style="--d:450">
-        <li><b>0</b><span><strong>Registration fees</strong>Create your organizer account for free.</span></li>
-        <li><b>0</b><span><strong>Monthly subscriptions</strong>Nothing to pay while you are not selling.</span></li>
-        <li><b>0</b><span><strong>Complicated plans</strong>One standard rate on every paid ticket.</span></li>
-      </ul>
+      <div class="pr-stamp" data-in="zoom" style="--d:250">
+        <svg class="pr-ring" viewBox="0 0 200 200" aria-hidden="true"><defs><path id="prCirc" d="M100,100 m-82,0 a82,82 0 1,1 164,0 a82,82 0 1,1 -164,0"/></defs><text><textPath href="#prCirc" textLength="506" lengthAdjust="spacing">STANDARD COMMISSION &#8226; PAID TICKETS ONLY &#8226; PAY ONLY WHEN YOU SELL &#8226;</textPath></text></svg>
+        <div class="pr-num"><span data-count="<?= $h($rate) ?>" data-dur="1800"><?= $h($rate) ?></span><sup>%</sup><small>per paid ticket</small></div>
+      </div>
     </div>
   </section>
 
-  <section class="pr-sec" id="standard">
-    <div class="pr-wrap pr-std">
-      <div class="reveal">
-        <p class="pr-kick">Our standard pricing</p>
-        <div class="pr-big"><span><?= htmlspecialchars($rate) ?></span><sup>%</sup></div>
-        <p class="pr-big-l">Commission per paid ticket</p>
-        <div class="pr-rule"></div>
-        <div class="pr-prose">
-          <p>Obitickets charges a standard <b><?= htmlspecialchars($rate) ?>% platform commission</b> on every successfully sold paid ticket, regardless of the event category or ticket price.</p>
-          <p>The commission is automatically calculated and deducted from the ticket proceeds.</p>
-        </div>
-        <div class="pr-receipt">
-          <h2>Example: if you sell a ticket for UGX <?= number_format($exampleTicket) ?></h2>
-          <div class="ln"><span>Ticket price</span><b>UGX <?= number_format($exampleTicket) ?></b></div>
-          <div class="ln minus"><span>Obitickets commission (<?= htmlspecialchars($rate) ?>%)</span><b>UGX <?= number_format($exampleCommission) ?></b></div>
-          <div class="ln tot"><span>Organizer balance</span><b>UGX <?= number_format($exampleBalance) ?></b></div>
-          <p class="note">The organizer balance is before any applicable payment gateway charges, taxes or other agreed deductions.</p>
-        </div>
-      </div>
+  <section class="pr-zeros">
+    <div class="pr-wrap"><ul>
+      <?php foreach ($zeros as $i => [$t, $d]): ?>
+      <li data-in="up"<?= $i ? ' style="--d:' . ($i * 120) . '"' : '' ?>><b data-count="0" data-from="100" data-dur="1500">0</b><div><strong><?= $h($t) ?></strong><span><?= $h($d) ?></span></div></li>
+      <?php endforeach; ?>
+    </ul></div>
+  </section>
 
-      <aside class="pr-calc reveal reveal-delay-1" id="prCalc" data-rate="<?= htmlspecialchars((string) PLATFORM_COMMISSION_RATE) ?>" data-rate-label="<?= htmlspecialchars($rate) ?>" aria-labelledby="prCalcH">
+  <div class="pr-wrap pr-body" id="standard">
+
+    <aside class="pr-side" data-in="left">
+      <div class="pr-calc" id="prCalc" data-rate="<?= $h((string) PLATFORM_COMMISSION_RATE) ?>" data-rate-label="<?= $h($rate) ?>" aria-labelledby="prCalcH">
         <h2 id="prCalcH">Try your own ticket</h2>
         <p class="pr-sub2">See exactly what stays with you.</p>
-        <label for="prPrice">Ticket price</label>
+        <label class="pr-cl" for="prPrice">Ticket price</label>
         <div class="pr-money"><span>UGX</span><input id="prPrice" inputmode="numeric" value="<?= number_format($exampleTicket) ?>" autocomplete="off"></div>
-        <div class="pr-chips" role="group" aria-label="Quick prices">
-          <?php foreach ([20000, 50000, 100000, 250000] as $p): ?><button type="button" data-p="<?= $p ?>" aria-pressed="<?= $p === $exampleTicket ? 'true' : 'false' ?>"><?= number_format($p) ?></button><?php endforeach; ?>
-        </div>
-        <div class="pr-row2">
-          <div><span class="pr-lb">Tickets sold</span><div class="pr-step"><button type="button" data-q="-1" aria-label="One fewer ticket">&minus;</button><output id="prQty" aria-live="polite">1</output><button type="button" data-q="1" aria-label="One more ticket">+</button></div></div>
-          <label class="pr-free"><input type="checkbox" id="prFree"><i></i>Free ticket</label>
-        </div>
+        <input id="prPriceR" type="range" min="5000" max="1000000" step="5000" value="<?= $exampleTicket ?>" aria-label="Ticket price slider">
+        <label class="pr-cl" for="prQtyR">Tickets sold <output id="prQty" for="prQtyR" aria-live="polite">1</output></label>
+        <input id="prQtyR" type="range" min="1" max="200" step="1" value="1">
+        <label class="pr-free"><input type="checkbox" id="prFree"> Free ticket</label>
         <div class="pr-out" aria-live="polite">
           <div class="ln"><span id="prGl">Ticket sales</span><b id="prGross">UGX <?= number_format($exampleTicket) ?></b></div>
-          <div class="ln minus"><span id="prCl">Commission (<?= htmlspecialchars($rate) ?>%)</span><b id="prCom">&minus; UGX <?= number_format($exampleCommission) ?></b></div>
+          <div class="ln minus"><span id="prCl">Commission (<?= $h($rate) ?>%)</span><b id="prCom">&minus; UGX <?= number_format($exampleCommission) ?></b></div>
           <div class="bal"><span>You keep</span><b id="prBal">UGX <?= number_format($exampleBalance) ?></b></div>
         </div>
         <div class="pr-split" aria-hidden="true"><i class="keep" id="prKeep" style="width:<?= 100 - (float) $rate ?>%"></i><i class="take" id="prTake" style="width:<?= (float) $rate ?>%"></i></div>
-        <div class="pr-splitl"><span id="prKeepL"><?= 100 - (float) $rate ?>% to you</span><span id="prTakeL"><?= htmlspecialchars($rate) ?>% commission</span></div>
+        <div class="pr-splitl"><span id="prKeepL"><?= 100 - (float) $rate ?>% to you</span><span id="prTakeL"><?= $h($rate) ?>% commission</span></div>
         <p class="pr-fine">Before any applicable payment gateway charges, taxes or other agreed deductions. Amounts are rounded to the nearest shilling.</p>
         <p class="pr-fine">Attendees also pay a flat UGX <?= number_format($buyerFee) ?> service fee per paid ticket at checkout, on top of the ticket price. It does not come out of your balance.</p>
-      </aside>
-    </div>
-  </section>
-
-  <section class="pr-free-band">
-    <div class="pr-wrap pr-free-in">
-      <div class="pr-zr reveal">0<small>%</small></div>
-      <div class="reveal reveal-delay-1">
-        <p class="pr-kick pr-gold">Hosting a free event?</p>
-        <h2>Free events? Zero commission!</h2>
-        <p>You can publish free events on Obitickets without paying ticket-sales commission.</p>
-        <div class="pr-eq">Free tickets = 0% commission</div>
       </div>
-    </div>
-  </section>
+    </aside>
 
-  <section class="pr-sec pr-get">
-    <div class="pr-wrap">
-      <div class="pr-head2 reveal">
-        <div><p class="pr-kick">What you get with Obitickets</p><h2>Everything you need to sell tickets, included.</h2></div>
-        <p class="pr-sub">Your <?= htmlspecialchars($rate) ?>% platform commission gives you access to our event ticketing tools and features.</p>
-      </div>
-      <div class="pr-feats">
-        <?php foreach ($features as $i => $f): ?>
-          <article class="pr-feat reveal<?= $i === count($features) - 1 ? ' pr-last' : '' ?>">
-            <span class="ic"><svg width="22" height="22" aria-hidden="true"><use href="#<?= $f[0] ?>"/></svg></span>
-            <h3><?= htmlspecialchars($f[1]) ?></h3>
-            <p><?= htmlspecialchars($f[2]) ?></p>
-          </article>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </section>
+    <div class="pr-main">
 
-  <section class="pr-sec pr-how">
-    <div class="pr-wrap">
-      <div class="reveal pr-head1"><p class="pr-kick">How our pricing works</p><h2>Six steps, from sign-up to your balance.</h2></div>
-      <ol class="pr-steps">
-        <?php foreach ($steps as $i => $t): $key = $i === 4; ?>
-          <li class="pr-st reveal<?= $key ? ' pr-key' : '' ?>"><span class="n"><?= $i + 1 ?></span><?php if ($key): ?><small>The only charge</small><?php endif; ?><p><?= htmlspecialchars($t) ?></p></li>
-        <?php endforeach; ?>
-      </ol>
-    </div>
-  </section>
+      <section>
+        <p class="pr-kick" data-in="up">Our standard pricing</p>
+        <p class="pr-scrub" data-scrub>Obitickets charges a standard <?= $h($rate) ?>% platform commission on every successfully sold paid ticket, regardless of the event category or ticket price.</p>
+        <p class="pr-mut" data-in="up">The commission is automatically calculated and deducted from the ticket proceeds.</p>
+        <div class="pr-rcpt" data-in="flip">
+          <h3>Example: if you sell a ticket for UGX <?= number_format($exampleTicket) ?></h3>
+          <div class="ln"><span>Ticket price</span><b>UGX <?= number_format($exampleTicket) ?></b></div>
+          <div class="ln minus"><span>Obitickets commission (<?= $h($rate) ?>%)</span><b>UGX <?= number_format($exampleCommission) ?></b></div>
+          <div class="ln tot"><span>Organizer balance</span><b data-count="<?= (int) $exampleBalance ?>" data-pre="UGX ">UGX <?= number_format($exampleBalance) ?></b></div>
+          <p class="note">The organizer balance is before any applicable payment gateway charges, taxes or other agreed deductions.</p>
+        </div>
+      </section>
 
-  <section class="pr-sec pr-clear">
-    <div class="pr-wrap pr-clear-in">
-      <div class="reveal"><p class="pr-kick">Transparent pricing</p><h2>No surprises.</h2><div class="pr-rule"></div><p class="pr-sub" style="margin-top:0">We believe organizers deserve to understand exactly what they pay.</p></div>
-      <div class="reveal reveal-delay-1">
-        <div class="pr-prose"><p>Our standard platform commission is <b><?= htmlspecialchars($rate) ?>%</b>. Any applicable payment gateway charges, taxes or other agreed deductions are accounted for separately and disclosed appropriately.</p></div>
-        <ul class="pr-ticks">
-          <li><span><svg width="16" height="16" aria-hidden="true"><use href="#ic-check"/></svg></span>No hidden organizer registration fees</li>
-          <li><span><svg width="16" height="16" aria-hidden="true"><use href="#ic-check"/></svg></span>No monthly subscriptions</li>
-          <li><span><svg width="16" height="16" aria-hidden="true"><use href="#ic-check"/></svg></span>One standard commission, <?= htmlspecialchars($rate) ?>% on paid tickets</li>
-          <li><span><svg width="16" height="16" aria-hidden="true"><use href="#ic-check"/></svg></span>Attendees pay a flat UGX <?= number_format($buyerFee) ?> service fee per paid ticket, separate from your commission</li>
+      <section class="pr-freeb" data-in="zoom">
+        <div class="pr-zr"><span data-count="0" data-from="100" data-dur="1600">0</span><small>%</small></div>
+        <div><p class="pr-kick">Hosting a free event?</p><h2>Free events? Zero commission!</h2><p>You can publish free events on Obitickets without paying ticket-sales commission.</p><span class="pr-eq">Free tickets = 0% commission</span></div>
+      </section>
+
+      <section>
+        <p class="pr-kick" data-in="up">What you get with Obitickets</p>
+        <h2 data-split data-in="split">Everything you need to sell tickets, included.</h2>
+        <p class="sub" data-in="up">Your <?= $h($rate) ?>% platform commission gives you access to our event ticketing tools and features.</p>
+        <ul class="pr-rows">
+          <?php foreach ($features as $i => $f): ?>
+          <li data-in="clip"<?= $i ? ' style="--d:' . ($i * 60) . '"' : '' ?>><div class="pr-row"><span class="ic"><?= $ic($f[0], '') ?></span><div><h3><?= $h($f[1]) ?></h3><p><?= $h($f[2]) ?></p></div><?= $ic('ic-arrow', 'go') ?></div></li>
+          <?php endforeach; ?>
         </ul>
-      </div>
+      </section>
+
+      <section>
+        <p class="pr-kick" data-in="up">How our pricing works</p>
+        <h2 data-split data-in="split">Six steps, from sign-up to your balance.</h2>
+        <ol class="pr-steps">
+          <?php foreach ($steps as $i => $t): $key = $i === 4; ?>
+          <li data-in="flip"<?= $i ? ' style="--d:' . ($i * 80) . '"' : '' ?>><div class="pr-st<?= $key ? ' key' : '' ?>"><span class="n"><?= $i + 1 ?></span><p><?= $h($t) ?></p><?php if ($key): ?><small>The only charge</small><?php endif; ?></div></li>
+          <?php endforeach; ?>
+        </ol>
+      </section>
+
+      <section class="pr-clear" data-in="up">
+        <p class="pr-kick">Transparent pricing</p>
+        <h2>No surprises.</h2>
+        <p class="sub">We believe organizers deserve to understand exactly what they pay.</p>
+        <p class="pr-mut">Our standard platform commission is <b><?= $h($rate) ?>%</b>. Any applicable payment gateway charges, taxes or other agreed deductions are accounted for separately and disclosed appropriately.</p>
+        <ul class="pr-ticks">
+          <?php foreach ($ticks as $i => $t): ?>
+          <li data-in="up"<?= $i ? ' style="--d:' . ($i * 80) . '"' : '' ?>><span><?= $ic('ic-check', '') ?></span><?= $h($t) ?></li>
+          <?php endforeach; ?>
+        </ul>
+      </section>
+
     </div>
-  </section>
+  </div>
 
   <section class="pr-cta">
-    <div class="pr-wrap reveal">
-      <p class="pr-kick pr-gold">Create your event today</p>
-      <h2>Ready to sell tickets?</h2>
-      <p class="l">Take your event online with Obitickets. Register as an organizer, publish your event and start reaching potential attendees.</p>
-      <a class="pr-btn pr-btn-gold" href="/signup.php?role=ORGANIZER">Register as an organizer <svg width="16" height="16" aria-hidden="true"><use href="#ic-arrow"/></svg></a>
-      <div class="pr-sign"><b>OBITICKETS</b><span>Discover. Book. Attend.</span><em>Uganda's Events. One Destination.</em></div>
+    <div class="pr-wrap">
+      <p class="pr-kick lt" data-in="up">Create your event today</p>
+      <h2 data-split data-in="split">Ready to sell tickets?</h2>
+      <p class="l" data-in="up" style="--d:300">Take your event online with Obitickets. Register as an organizer, publish your event and start reaching potential attendees.</p>
+      <div data-in="up" style="--d:450"><a class="pr-btn gold" data-mag href="/signup.php?role=ORGANIZER">Register as an organizer <?= $ic('ic-arrow', 'pr-i') ?></a></div>
+      <div class="pr-sign" data-in="up" style="--d:600"><b>OBITICKETS</b><span>Discover. Book. Attend.</span><em>Uganda's Events. One Destination.</em></div>
     </div>
   </section>
 
 </main>
 
+<script src="/assets/js/page-motion.js?v=<?= @filemtime(__DIR__ . '/assets/js/page-motion.js') ?: time() ?>"></script>
 <script src="/assets/js/pricing.js?v=<?= @filemtime(__DIR__ . '/assets/js/pricing.js') ?: time() ?>"></script>
-<script src="/assets/js/cinematic.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

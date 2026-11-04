@@ -55,6 +55,10 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php if (str_contains($bodyClass ?? '', 'pricing-page')): ?>
 <link rel="stylesheet" href="/assets/css/pricing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/pricing.css') ?: time() ?>">
 <?php endif; ?>
+<?php if (str_contains($bodyClass ?? '', 'motion-page')): ?>
+<link rel="stylesheet" href="/assets/css/page-motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/page-motion.css') ?: time() ?>">
+<script>document.documentElement.classList.add('pm');setTimeout(function(){if(!window.__pmReady)document.documentElement.classList.remove('pm');},3500);</script>
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'team-page')): ?>
 <link rel="stylesheet" href="/assets/css/team-page.css?v=<?= @filemtime(__DIR__ . '/../assets/css/team-page.css') ?: time() ?>">
 <?php endif; ?>
