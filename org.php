@@ -131,7 +131,7 @@ render_organizer_head('dashboard', $ctx);
   <div class="ov-hero-tx">
     <p class="ov-eyebrow" id="ovHeroH">Net earnings, last <?= $days ?> days</p>
     <div class="ov-big"><small><?= htmlspecialchars($currency) ?></small><span data-count-to="<?= (int) round($cur['net']) ?>">0</span></div>
-    <p class="ov-hero-sub"><?= ov_trend($cur['gross'], $prev['gross'], $days) ?>, after the <?= (int) round(PLATFORM_COMMISSION_RATE * 100) ?>% obitickets commission</p>
+    <p class="ov-hero-sub"><?php if ($cur['gross'] > 0): ?><?= ov_trend($cur['gross'], $prev['gross'], $days) ?> &middot; after the <?= (int) round(PLATFORM_COMMISSION_RATE * 100) ?>% obitickets commission<?php else: ?>No sales in this period yet<?php endif; ?></p>
     <div class="ov-hero-act">
       <?php if ((float) $stats['available_balance'] > 0 && organizer_can($ctx, 'payouts.request')): ?><a class="ov-btn ov-gold" href="/org-payouts.php">Request payout</a><?php endif; ?>
       <a class="ov-btn ov-ghost" href="/org-earnings.php">View statement</a>

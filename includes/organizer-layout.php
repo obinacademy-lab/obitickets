@@ -23,7 +23,7 @@ function render_organizer_head(string $active, array $orgContext): void
     $pageTitleRaw = $GLOBALS['pageTitle'] ?? 'Dashboard';
     $pageTitle = $pageTitleRaw . ' — obitickets';
 
-    // The menu: ten destinations. A destination with several tabs is one place in the menu, while each tab
+    // The menu: eight destinations. A destination with several tabs is one place in the menu, while each tab
     // keeps its own page and address, so old links and bookmarks still open the right thing.
     // A tab is [active key, label, address, permission]. Each role only sees the tabs it may open.
     $hubs = [
@@ -55,14 +55,6 @@ function render_organizer_head(string $active, array $orgContext): void
         ['key' => 'analytics', 'label' => 'Analytics', 'icon' => 'ic-chart', 'group' => 'Money', 'tabs' => [
             ['analytics', 'Performance', '/org-analytics.php', 'analytics.view'],
             ['sales', 'Sales', '/org-sales.php', 'sales.view'],
-        ]],
-        ['key' => 'promote', 'label' => 'Promote', 'icon' => 'ic-mega', 'group' => 'Grow', 'tabs' => [
-            ['promo', 'Promo codes', '/org-promo.php', 'promo.view'],
-            ['marketing', 'Event sharing', '/org-marketing.php', 'marketing.view'],
-            ['promo-video', 'Promo studio', '/org-promo-video.php', 'social.view'],
-        ]],
-        ['key' => 'community', 'label' => 'Community', 'icon' => 'ic-chat', 'group' => 'Grow', 'tabs' => [
-            ['social', 'Community', '/org-social.php', 'social.view'],
         ]],
         ['key' => 'team', 'label' => 'Team', 'icon' => 'ic-team', 'group' => 'Workspace', 'tabs' => [
             ['team', 'Team', '/org-team.php', 'team.manage'],
