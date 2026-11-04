@@ -72,6 +72,8 @@
 .tm-card:hover{transform:translateY(-6px); box-shadow:0 34px 44px -32px rgba(20,17,15,.5); border-color:#D2CBC4}
 .tm-em{display:grid; place-items:center; width:64px; height:64px; border-radius:20px; background:var(--tint); color:var(--red); font-size:1.7rem; transition:background .3s,color .3s}
 .tm-card:hover .tm-em{background:var(--red); color:#fff}
+.tm-face{display:block; width:84px; height:84px; border-radius:24px; object-fit:cover; object-position:50% 18%; background:var(--tint); box-shadow:0 14px 24px -14px rgba(20,17,15,.55); transition:transform .5s var(--ease)}
+.tm-card:hover .tm-face{transform:scale(1.05) rotate(-2deg)}
 .tm-card h3{font:700 1.18rem/1.2 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em}
 .tm-card p{margin-top:8px; font-size:.94rem; line-height:1.65; color:var(--soft)}
 .tm-who{display:block; margin-top:12px; font:600 .66rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--red)}
@@ -132,6 +134,7 @@
   .tm-feat{grid-row:auto; min-height:680px; padding:28px}
   .tm-card:not(.tm-feat){padding:22px; grid-template-columns:52px minmax(0,1fr); gap:16px}
   .tm-em{width:52px; height:52px; border-radius:16px; font-size:1.4rem}
+  .tm-face{width:64px; height:64px; border-radius:18px}
   .tm-vals{grid-template-columns:minmax(0,1fr)}
   .tm-future{padding:64px 0} .tm-future h2{font-size:2.1rem}
   .tm-cta{padding:60px 0 50px} .tm-cta h2{font-size:2rem} .tm-btn{padding:14px 20px}

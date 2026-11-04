@@ -17,9 +17,9 @@ $values = [
     ['grow', 'Growth & Collaboration', "We work to empower event organizers and contribute to the growth of Africa's events industry."],
 ];
 $teams = [
-    ['chip', 'Technology & Development Team', 'Responsible for building, maintaining and improving the technology that powers event publishing, digital ticketing, payments and QR ticket validation.', 'Heis Mercy, Co-Founder & CTO'],
-    ['support', 'Operations & Event Support Team', 'Works with event organizers and attendees to support event publishing, ticketing operations and customer assistance.', ''],
-    ['mega', 'Marketing & Partnerships Team', 'Focuses on building relationships, promoting the Obitickets brand and creating opportunities for organizers, partners and event communities.', ''],
+    ['chip', 'Technology & Development Team', 'Responsible for building, maintaining and improving the technology that powers event publishing, digital ticketing, payments and QR ticket validation.', '', ''],
+    ['support', 'Operations & Event Support Team', 'Works with event organizers and attendees to support event publishing, ticketing operations and customer assistance.', 'Mujjuzi Jeremiah, Events Manager', '/assets/images/team/mujjuzi-jeremiah.jpg'],
+    ['mega', 'Marketing & Partnerships Team', 'Focuses on building relationships, promoting the Obitickets brand and creating opportunities for organizers, partners and event communities.', '', ''],
 ];
 $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
 ?>
@@ -95,9 +95,9 @@ $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
           <h3>Founder &amp; Chief Executive Officer (CEO)</h3>
           <p>Provides the strategic vision, business direction and leadership behind Obitickets, guiding the platform's growth and development.</p>
         </article>
-        <?php foreach ($teams as $i => [$ic, $title, $text, $who]): ?>
+        <?php foreach ($teams as $i => [$ic, $title, $text, $who, $photo]): ?>
         <article class="tm-card reveal reveal-delay-<?= $i + 1 ?>">
-          <span class="tm-em"><?= $icon($ic) ?></span>
+          <?php if ($photo !== ''): ?><img class="tm-face" src="<?= $h($photo) ?>" width="480" height="480" alt="<?= $h($who) ?>" loading="lazy" decoding="async"><?php else: ?><span class="tm-em"><?= $icon($ic) ?></span><?php endif; ?>
           <div>
             <h3><?= $h($title) ?></h3>
             <p><?= $h($text) ?></p>
