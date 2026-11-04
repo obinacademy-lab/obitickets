@@ -201,25 +201,26 @@ function get_public_events_for_organizer(int $organizerUserId): array
 // Team management
 // =====================================================================
 
-/** @return array{0: bool, 1: ?string} [success, errorMessage] */
+/** @return array{0: bool, 1: ?string, 2: ?string} [success, errorMessage, the status the person ended up with: ACTIVE or INVITED] */
 function invite_team_member(int $organizerId, int $invitedBy, string $email, string $role, ?string $name = null): array
 {
     $email = strtolower(trim($email));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        return [false, 'Enter a valid email address.'];
+        return [false, 'Enter a valid email address.', null];
     }
     if (!array_key_exists($role, ORGANIZER_ROLES)) {
-        return [false, 'Choose a valid role.'];
+        return [false, 'Choose a valid role.', null];
     }
     $stmt = db()->prepare('SELECT id FROM users WHERE id = ? AND email = ?');
     $stmt->execute([$organizerId, $email]);
     if ($stmt->fetch()) {
-        return [false, "That's your own account."];
+        return [false, "That's your own account.", null];
     }
-    $stmt = db()->prepare('SELECT id FROM organizer_team_members WHERE organizer_id = ? AND email = ?');
+    $stmt = db()->prepare('SELECT id, status FROM organizer_team_members WHERE organizer_id = ? AND email = ?');
     $stmt->execute([$organizerId, $email]);
-    if ($stmt->fetch()) {
-        return [false, 'This person is already on your team.'];
+    $already = $stmt->fetch();
+    if ($already && $already['status'] !== 'REVOKED') {
+        return [false, 'This person is already on your team.', null];
     }
 
     // If an obitickets account already exists for this email, activate immediately —
@@ -227,6 +228,15 @@ function invite_team_member(int $organizerId, int $invitedBy, string $email, str
     $stmt = db()->prepare('SELECT id, name FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $existingUser = $stmt->fetch();
+    $becomes = $existingUser ? 'ACTIVE' : 'INVITED';
+
+    // Someone who was removed can be invited again: their old row is reused, so there is one row per person.
+    if ($already) {
+        db()->prepare('UPDATE organizer_team_members SET user_id = ?, name = COALESCE(?, name), role = ?, status = ?, invited_by = ?, invited_at = NOW(), joined_at = ?, invite_token = NULL WHERE id = ? AND organizer_id = ?')
+            ->execute([$existingUser['id'] ?? null, $name ?: ($existingUser['name'] ?? null), $role, $becomes, $invitedBy, $existingUser ? date('Y-m-d H:i:s') : null, $already['id'], $organizerId]);
+        log_organizer_action($organizerId, $invitedBy, 'team.invite', 'team_member', (int) $already['id'], ['email' => $email, 'role' => $role, 'again' => true]);
+        return [true, null, $becomes];
+    }
 
     $stmt = db()->prepare('
         INSERT INTO organizer_team_members (organizer_id, user_id, email, name, role, status, invited_by, joined_at)
@@ -238,14 +248,14 @@ function invite_team_member(int $organizerId, int $invitedBy, string $email, str
         $email,
         $name ?: ($existingUser['name'] ?? null),
         $role,
-        $existingUser ? 'ACTIVE' : 'INVITED',
+        $becomes,
         $invitedBy,
         $existingUser ? date('Y-m-d H:i:s') : null,
     ]);
     $id = (int) db()->lastInsertId();
     log_organizer_action($organizerId, $invitedBy, 'team.invite', 'team_member', $id, ['email' => $email, 'role' => $role]);
 
-    return [true, null];
+    return [true, null, $becomes];
 }
 
 function get_team_members(int $organizerId): array
@@ -287,7 +297,7 @@ function update_team_member_role(int $organizerId, int $actorId, int $memberId, 
     if (!array_key_exists($role, ORGANIZER_ROLES)) {
         return;
     }
-    db()->prepare('UPDATE organizer_team_members SET role = ? WHERE id = ? AND organizer_id = ?')->execute([$role, $memberId, $organizerId]);
+    db()->prepare("UPDATE organizer_team_members SET role = ? WHERE id = ? AND organizer_id = ? AND status != 'REVOKED'")->execute([$role, $memberId, $organizerId]);
     log_organizer_action($organizerId, $actorId, 'team.role_change', 'team_member', $memberId, ['role' => $role]);
 }
 
