@@ -116,10 +116,21 @@
 .tm-fc p+p{color:var(--ink); font-weight:700}
 
 /* call to action */
-.tm-cta{position:relative; isolation:isolate; overflow:hidden; background:var(--ink); color:#fff; padding:110px 0 84px; text-align:center}
+.tm-cta{position:relative; isolation:isolate; overflow:hidden; background:var(--ink); color:#fff; padding:100px 0}
 .tm-cta::before{content:""; position:absolute; z-index:-1; left:50%; top:-280px; width:780px; height:780px; margin-left:-390px; border-radius:50%; background:radial-gradient(closest-side,rgba(220,38,38,.4),transparent)}
-.tm-cta h2{margin:16px auto; max-width:14ch; font-size:clamp(2.4rem,6vw,5rem); line-height:.96; letter-spacing:-.055em; color:#fff}
-.tm-l{max-width:56ch; margin:0 auto 30px; color:#D9CFD2; font-size:1.08rem; line-height:1.7}
+/* the closing is a large admit-one ticket: headline, paragraph and button on the main part, barcode and sign-off on the stub */
+.tm-ticket{position:relative; display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,.85fr); background:#F5F1EA; color:var(--ink); border-radius:28px; box-shadow:0 60px 80px -50px rgba(0,0,0,.9)}
+.tm-ticket::before,.tm-ticket::after{content:""; position:absolute; left:66%; width:38px; height:38px; margin-left:-19px; border-radius:50%; background:var(--ink)}
+.tm-ticket::before{top:-19px}
+.tm-ticket::after{bottom:-19px}
+.tm-tmain{padding:60px 64px}
+.tm-cta h2{max-width:12ch; font-size:clamp(2.2rem,4.6vw,4rem); line-height:.98; letter-spacing:-.05em; color:var(--ink)}
+.tm-tmain .tm-rule{width:56px}
+.tm-l{max-width:46ch; color:#5E5558; font-size:1.05rem; line-height:1.75}
+.tm-tstub{padding:44px 38px; border-left:2.5px dashed var(--ink); display:flex; flex-direction:column; justify-content:space-between; gap:26px}
+.tm-barc{height:54px; background:repeating-linear-gradient(90deg,#14110F 0 3px,transparent 3px 7px,#14110F 7px 8px,transparent 8px 13px,#14110F 13px 17px,transparent 17px 19px)}
+.tm-tstub .tm-sign{margin:0; justify-items:start}
+.tm-tstub .tm-sign span{color:var(--red)}
 
 @media (max-width:900px){
   .tm-wrap{width:calc(100% - 36px)}
@@ -129,7 +140,9 @@
   .tm-passes{grid-template-columns:minmax(0,1fr); gap:34px} .tm-pw{max-width:300px; margin-inline:auto; width:100%}
   .tm-vals{grid-template-columns:minmax(0,1fr); gap:28px} .tm-vl,.tm-vl:first-child{border-left:0; padding:0}
   .tm-fph{height:260px} .tm-fc{margin-top:-80px; padding:32px 26px} .tm-fc::before,.tm-fc::after{display:none} .tm-future{padding-bottom:64px}
-  .tm-cta{padding:70px 0 56px} .tm-btn{padding:14px 20px}
+  .tm-cta{padding:64px 0} .tm-btn{padding:14px 20px}
+  .tm-ticket{grid-template-columns:minmax(0,1fr)} .tm-ticket::before,.tm-ticket::after{display:none}
+  .tm-tmain{padding:36px 26px} .tm-tstub{border-left:0; border-top:2.5px dashed var(--ink); padding:28px 26px}
 }
 @media (prefers-reduced-motion:reduce){
   .tm-pw{animation:none}

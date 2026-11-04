@@ -139,10 +139,18 @@ $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
 
   <section class="tm-cta">
     <div class="tm-wrap">
-      <h2 data-split data-in="split">Let's Build Something Great Together</h2>
-      <p class="tm-l" data-in="up" style="--d:300">Whether you are an event organizer, a business partner or someone passionate about unforgettable experiences, there is a place for you in the Obitickets journey.</p>
-      <div data-in="up" style="--d:450"><a class="tm-btn gold" data-mag href="/contact.php">Get in touch <?= $icon('arrow') ?></a></div>
-      <div class="tm-sign" data-in="up" style="--d:600"><span>Discover. Book. Attend.</span><b>OBITICKETS</b><em>Uganda's Events. One Destination.</em></div>
+      <div class="tm-ticket" data-in="flip" data-tilt>
+        <div class="tm-tmain">
+          <h2 data-split data-in="split" style="--d:200">Let's Build Something Great Together</h2>
+          <div class="tm-rule"></div>
+          <p class="tm-l" data-in="up" style="--d:500">Whether you are an event organizer, a business partner or someone passionate about unforgettable experiences, there is a place for you in the Obitickets journey.</p>
+          <div data-in="up" style="--d:700; margin-top:30px"><a class="tm-btn red" data-mag href="/contact.php">Get in touch <?= $icon('arrow') ?></a></div>
+        </div>
+        <div class="tm-tstub">
+          <div class="tm-barc" data-in="clip" style="--d:600" aria-hidden="true"></div>
+          <div class="tm-sign" data-in="up" style="--d:800"><span>Discover. Book. Attend.</span><b>OBITICKETS</b><em>Uganda's Events. One Destination.</em></div>
+        </div>
+      </div>
     </div>
   </section>
 
