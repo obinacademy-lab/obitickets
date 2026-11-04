@@ -86,7 +86,11 @@ $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
         <div data-in="flip"<?= $i ? ' style="--d:' . ($i * 110) . '"' : '' ?>><article class="tm-stub"><span class="ic"><?= $drawIcon($ic) ?></span><h3><?= $h($label) ?></h3></article></div>
         <?php endforeach; ?>
       </div>
-      <div class="tm-quote" data-in="zoom"><p data-scrub>From developing innovative ticketing solutions to supporting organizers and improving the customer experience, every part of our work is guided by one goal: making ticketing simple and accessible.</p></div>
+      <div class="tm-rtk" data-in="flip" data-tilt>
+        <i class="tm-notch t" aria-hidden="true"></i><i class="tm-notch b" aria-hidden="true"></i>
+        <div class="tm-rmain"><p data-in="up" style="--d:300">From developing innovative ticketing solutions to supporting organizers and improving the customer experience, every part of our work is guided by one goal:</p></div>
+        <div class="tm-rstub"><p class="tm-goal" data-split data-in="split" style="--d:500">making ticketing simple and accessible.</p></div>
+      </div>
     </div>
   </section>
 
