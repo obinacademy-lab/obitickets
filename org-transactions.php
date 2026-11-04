@@ -13,12 +13,12 @@ $totalPages = max(1, (int) ceil($total / $perPage));
 
 $statusMeta = ['PENDING' => 'admin-badge-warn', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-muted', 'REFUNDED' => 'admin-badge-purple'];
 
-$pageTitle = 'Transactions';
+$pageTitle = 'Payments';
 render_organizer_head('transactions', $ctx);
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Transactions</h1><p><?= $total ?> payment attempts across your events</p></div>
+  <div><h1>Payments</h1><p><?= $total ?> payment attempts across your events</p></div>
 </div>
 
 <form class="admin-filter-bar" method="get">

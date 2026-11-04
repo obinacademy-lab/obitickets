@@ -140,12 +140,12 @@ if ($event) {
 $links = get_organizer_social_links($organizerId, false);
 $linksByPlatform = array_column($links, null, 'platform');
 
-$pageTitle = 'Event Social';
+$pageTitle = 'Community';
 render_organizer_head('social', $ctx);
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Event Social</h1><p>Talk to the people coming to your events and keep the conversation healthy.</p></div>
+  <div><h1>Community</h1><p>Talk to the people coming to your events and keep the conversation healthy.</p></div>
   <?php if ($event): ?>
     <a class="btn btn-line" href="/event.php?slug=<?= urlencode($event['slug']) ?>#community" target="_blank" rel="noopener">View community &rarr;</a>
   <?php endif; ?>

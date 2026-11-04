@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $members = get_team_members($organizerId);
 $statusMeta = ['ACTIVE' => 'admin-badge-success', 'INVITED' => 'admin-badge-warn', 'REVOKED' => 'admin-badge-muted'];
 
-$pageTitle = 'Team Members';
+$pageTitle = 'Team';
 render_organizer_head('team', $ctx);
 ?>
 

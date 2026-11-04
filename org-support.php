@@ -22,12 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $tickets = get_support_tickets_for_organizer($organizerId);
 $statusMeta = ['NEW' => 'admin-badge-warn', 'READ' => 'admin-badge-muted', 'IN_PROGRESS' => 'admin-badge-purple', 'RESOLVED' => 'admin-badge-success'];
 
-$pageTitle = 'Support Tickets';
+$pageTitle = 'Help';
 render_organizer_head('support', $ctx);
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Support</h1><p>Get help from the obitickets team</p></div>
+  <div><h1>Help</h1><p>Get help from the obitickets team</p></div>
 </div>
 
 <?php if (isset($_GET['created'])): ?><span data-flash="Your support ticket was submitted." hidden></span><?php endif; ?>

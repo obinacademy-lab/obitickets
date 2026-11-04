@@ -23,57 +23,105 @@ function render_organizer_head(string $active, array $orgContext): void
     $pageTitleRaw = $GLOBALS['pageTitle'] ?? 'Dashboard';
     $pageTitle = $pageTitleRaw . ' — obitickets';
 
-    $sections = [
-        ['label' => null, 'items' => [
-            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => '/org.php', 'icon' => 'ic-grid', 'perm' => 'dashboard.view'],
+    // The menu: ten destinations. A destination with several tabs is one place in the menu, while each tab
+    // keeps its own page and address, so old links and bookmarks still open the right thing.
+    // A tab is [active key, label, address, permission]. Each role only sees the tabs it may open.
+    $hubs = [
+        ['key' => 'overview', 'label' => 'Overview', 'icon' => 'ic-grid', 'group' => 'Main', 'tabs' => [
+            ['dashboard', 'Overview', '/org.php', 'dashboard.view'],
         ]],
-        ['label' => 'Events', 'items' => [
-            ['key' => 'my-events', 'label' => 'My Events', 'href' => '/my-events.php', 'icon' => 'ic-cal', 'perm' => 'events.view'],
-            ['key' => 'create-event', 'label' => 'Create Event', 'href' => '/event-create.php', 'icon' => 'ic-bolt', 'perm' => 'events.manage'],
-            ['key' => 'drafts', 'label' => 'Drafts', 'href' => '/my-events.php?status=DRAFT', 'icon' => 'ic-tag', 'perm' => 'events.view'],
+        ['key' => 'events', 'label' => 'Events', 'icon' => 'ic-cal', 'group' => 'Main', 'tabs' => [
+            ['my-events', 'All events', '/my-events.php', 'events.view'],
+            ['events-live', 'Live', '/my-events.php?when=live', 'events.view'],
+            ['drafts', 'Drafts', '/my-events.php?status=DRAFT', 'events.view'],
+            ['events-past', 'Past', '/my-events.php?when=past', 'events.view'],
+            ['tickets', 'Ticket types', '/org-tickets.php', 'tickets.view'],
         ]],
-        ['label' => 'Ticketing', 'items' => [
-            ['key' => 'tickets', 'label' => 'Tickets', 'href' => '/org-tickets.php', 'icon' => 'ic-ticket', 'perm' => 'tickets.view'],
-            ['key' => 'orders', 'label' => 'Orders', 'href' => '/org-orders.php', 'icon' => 'ic-bolt', 'perm' => 'tickets.view'],
-            ['key' => 'attendees', 'label' => 'Attendees', 'href' => '/org-attendees.php', 'icon' => 'ic-people', 'perm' => 'attendees.view'],
-            ['key' => 'checkin', 'label' => 'Check-In', 'href' => '/checkin.php', 'icon' => 'ic-check', 'perm' => 'checkin.use'],
+        ['key' => 'orders', 'label' => 'Orders', 'icon' => 'ic-receipt', 'group' => 'Main', 'tabs' => [
+            ['orders', 'Orders', '/org-orders.php', 'tickets.view'],
+            ['transactions', 'Payments', '/org-transactions.php', 'transactions.view'],
+            ['refunds', 'Refunds', '/org-refunds.php', 'refunds.view'],
         ]],
-        ['label' => 'Sales & Finance', 'items' => [
-            ['key' => 'sales', 'label' => 'Sales', 'href' => '/org-sales.php', 'icon' => 'ic-bolt', 'perm' => 'sales.view'],
-            ['key' => 'transactions', 'label' => 'Transactions', 'href' => '/org-transactions.php', 'icon' => 'ic-cash', 'perm' => 'transactions.view'],
-            ['key' => 'earnings', 'label' => 'Earnings', 'href' => '/org-earnings.php', 'icon' => 'ic-shield', 'perm' => 'earnings.view'],
-            ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/org-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $pendingPayouts ? count($pendingPayouts) : null],
-            ['key' => 'refunds', 'label' => 'Refunds', 'href' => '/org-refunds.php', 'icon' => 'ic-x', 'perm' => 'refunds.view'],
+        ['key' => 'attendees', 'label' => 'Attendees', 'icon' => 'ic-people', 'group' => 'Main', 'tabs' => [
+            ['attendees', 'Attendees', '/org-attendees.php', 'attendees.view'],
         ]],
-        ['label' => 'Marketing', 'items' => [
-            ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/org-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],
-            ['key' => 'marketing', 'label' => 'Event Sharing', 'href' => '/org-marketing.php', 'icon' => 'ic-share', 'perm' => 'marketing.view'],
-            ['key' => 'social', 'label' => 'Event Social', 'href' => '/org-social.php', 'icon' => 'ic-heart', 'perm' => 'social.view'],
+        ['key' => 'checkin', 'label' => 'Check-in', 'icon' => 'ic-scan', 'group' => 'Main', 'tabs' => [
+            ['checkin', 'Check-in', '/checkin.php', 'checkin.use'],
         ]],
-        ['label' => 'Analytics', 'items' => [
-            ['key' => 'analytics', 'label' => 'Analytics', 'href' => '/org-analytics.php', 'icon' => 'ic-briefcase', 'perm' => 'analytics.view'],
+        ['key' => 'money', 'label' => 'Earnings & payouts', 'icon' => 'ic-wallet', 'group' => 'Money', 'tabs' => [
+            ['payouts', 'Payouts', '/org-payouts.php', 'payouts.view'],
+            ['earnings', 'How it is calculated', '/org-earnings.php', 'earnings.view'],
         ]],
-        ['label' => 'Team', 'items' => [
-            ['key' => 'team', 'label' => 'Team Members', 'href' => '/org-team.php', 'icon' => 'ic-people', 'perm' => 'team.manage'],
+        ['key' => 'analytics', 'label' => 'Analytics', 'icon' => 'ic-chart', 'group' => 'Money', 'tabs' => [
+            ['analytics', 'Performance', '/org-analytics.php', 'analytics.view'],
+            ['sales', 'Sales', '/org-sales.php', 'sales.view'],
         ]],
-        ['label' => 'Support', 'items' => [
-            ['key' => 'support', 'label' => 'Support Tickets', 'href' => '/org-support.php', 'icon' => 'ic-mail', 'perm' => 'dashboard.view'],
+        ['key' => 'promote', 'label' => 'Promote', 'icon' => 'ic-mega', 'group' => 'Grow', 'tabs' => [
+            ['promo', 'Promo codes', '/org-promo.php', 'promo.view'],
+            ['marketing', 'Event sharing', '/org-marketing.php', 'marketing.view'],
+            ['promo-video', 'Promo studio', '/org-promo-video.php', 'social.view'],
         ]],
-        ['label' => 'Settings', 'items' => [
-            ['key' => 'settings', 'label' => 'Settings', 'href' => '/org-settings.php', 'icon' => 'ic-settings', 'perm' => 'dashboard.view'],
+        ['key' => 'community', 'label' => 'Community', 'icon' => 'ic-chat', 'group' => 'Grow', 'tabs' => [
+            ['social', 'Community', '/org-social.php', 'social.view'],
+        ]],
+        ['key' => 'team', 'label' => 'Team', 'icon' => 'ic-team', 'group' => 'Workspace', 'tabs' => [
+            ['team', 'Team', '/org-team.php', 'team.manage'],
         ]],
     ];
+    $footLinks = [
+        ['settings', 'Settings', '/org-settings.php', 'ic-settings'],
+        ['support', 'Help', '/org-support.php', 'ic-help'],
+    ];
 
-    $sectionLabel = null;
-    foreach ($sections as $section) {
-        foreach ($section['items'] as $item) {
-            if ($item['key'] === $active) {
-                $sectionLabel = $item['label'];
-                break 2;
-            }
+    if ($active === 'my-events') {
+        $when = $_GET['when'] ?? '';
+        if (($_GET['status'] ?? '') === 'DRAFT') {
+            $active = 'drafts';
+        } elseif ($when === 'live') {
+            $active = 'events-live';
+        } elseif ($when === 'past') {
+            $active = 'events-past';
         }
     }
-    $crumb = $sectionLabel && $sectionLabel !== $pageTitleRaw ? [$sectionLabel, $pageTitleRaw] : [$pageTitleRaw];
+
+    $visibleHubs = [];
+    $activeHub = null;
+    foreach ($hubs as $hub) {
+        $hub['tabs'] = array_values(array_filter($hub['tabs'], static fn ($t) => organizer_can($orgContext, $t[3])));
+        if (!$hub['tabs']) {
+            continue;
+        }
+        $hub['href'] = $hub['tabs'][0][2];
+        $hub['badge'] = $hub['key'] === 'money' && $pendingPayouts && organizer_can($orgContext, 'payouts.view') ? count($pendingPayouts) : null;
+        if (in_array($active, array_column($hub['tabs'], 0), true) || ($active === 'create-event' && $hub['key'] === 'events')) {
+            $activeHub = $hub;
+        }
+        $visibleHubs[] = $hub;
+    }
+
+    $crumb = [$pageTitleRaw];
+    $activeTabLabel = null;
+    if ($activeHub) {
+        foreach ($activeHub['tabs'] as $t) {
+            if ($t[0] === $active) {
+                $activeTabLabel = $t[1];
+            }
+        }
+        if (count($activeHub['tabs']) > 1 && $activeTabLabel !== null) {
+            $crumb = [$activeHub['label'], $activeTabLabel];
+        }
+    }
+    $showTabs = $activeHub && count($activeHub['tabs']) > 1 && empty($GLOBALS['orgNoTabs']) && empty($GLOBALS['orgFocusMode']);
+
+    // the phone's bottom bar: four main places, and everything else under More
+    $tabbarKeys = ['overview', 'events', 'orders', 'checkin'];
+    $GLOBALS['orgMobileNav'] = [
+        'active' => $activeHub['key'] ?? ($active === 'settings' || $active === 'support' ? 'more' : ''),
+        'bar' => array_values(array_filter($visibleHubs, static fn ($h) => in_array($h['key'], $tabbarKeys, true))),
+        'more' => array_values(array_filter($visibleHubs, static fn ($h) => !in_array($h['key'], $tabbarKeys, true))),
+        'foot' => $footLinks,
+    ];
+    $orgDisplayName = $profile['org_name'] ?: $actor['name'];
     ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -86,15 +134,16 @@ function render_organizer_head(string $active, array $orgContext): void
 <?php include __DIR__ . '/pwa-head.php'; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/org-dashboard.css?v=<?= @filemtime(__DIR__ . '/../assets/css/org-dashboard.css') ?: time() ?>">
 <?php foreach ($GLOBALS['orgExtraCss'] ?? [] as $extraCss): ?>
 <link rel="stylesheet" href="/assets/css/<?= htmlspecialchars($extraCss) ?>?v=<?= @filemtime(__DIR__ . '/../assets/css/' . $extraCss) ?: time() ?>">
 <?php endforeach; ?>
 <script>(function(){try{if(localStorage.getItem('adminSidebarCollapsed')==='1'){document.documentElement.classList.add('admin-collapsed-pref');}}catch(e){}})();</script>
 </head>
-<body class="admin-body<?= !empty($GLOBALS['orgFocusMode']) ? ' org-focus' : '' ?>">
+<body class="admin-body org-shell<?= !empty($GLOBALS['orgFocusMode']) ? ' org-focus' : '' ?>">
 <?php include __DIR__ . '/icons.php'; ?>
 <div class="admin-progress" id="adminProgress"></div>
 
@@ -110,56 +159,31 @@ function render_organizer_head(string $active, array $orgContext): void
         <svg width="15" height="15"><use href="#ic-chev" transform="rotate(180 12 12)"/></svg>
       </button>
     </div>
-    <nav class="admin-nav">
-      <?php foreach ($sections as $section): ?>
-        <?php
-        $visibleItems = array_filter($section['items'], static fn ($item) => organizer_can($orgContext, $item['perm']));
-        if (!$visibleItems) {
-            continue;
-        }
-        ?>
-        <?php if ($section['label']): ?><div class="admin-nav-label"><span><?= htmlspecialchars($section['label']) ?></span></div><?php endif; ?>
-        <?php foreach ($visibleItems as $item): ?>
-          <a class="admin-nav-item<?= $active === $item['key'] ? ' active' : '' ?>" href="<?= htmlspecialchars($item['href']) ?>" title="<?= htmlspecialchars($item['label']) ?>">
-            <svg width="17" height="17"><use href="#<?= $item['icon'] ?>"/></svg>
-            <span class="admin-nav-item-label"><?= htmlspecialchars($item['label']) ?></span>
-            <?php if (!empty($item['badge'])): ?><span class="admin-nav-badge"><?= (int) $item['badge'] ?></span><?php endif; ?>
-          </a>
-        <?php endforeach; ?>
+    <nav class="admin-nav" aria-label="Organizer dashboard">
+      <?php $lastGroup = null; foreach ($visibleHubs as $hub): ?>
+        <?php if ($hub['group'] !== $lastGroup): $lastGroup = $hub['group']; ?><div class="admin-nav-label"><span><?= htmlspecialchars($hub['group']) ?></span></div><?php endif; ?>
+        <?php $isOn = $activeHub && $activeHub['key'] === $hub['key']; ?>
+        <a class="admin-nav-item<?= $isOn ? ' active' : '' ?>" href="<?= htmlspecialchars($hub['href']) ?>" title="<?= htmlspecialchars($hub['label']) ?>"<?= $isOn ? ' aria-current="page"' : '' ?>>
+          <svg width="17" height="17"><use href="#<?= $hub['icon'] ?>"/></svg>
+          <span class="admin-nav-item-label"><?= htmlspecialchars($hub['label']) ?></span>
+          <?php if (!empty($hub['badge'])): ?><span class="admin-nav-badge"><?= (int) $hub['badge'] ?></span><?php endif; ?>
+        </a>
       <?php endforeach; ?>
     </nav>
-    <a class="admin-nav-item admin-nav-exit" href="/" title="Back to site">
-      <svg width="17" height="17"><use href="#ic-arrow" transform="rotate(180 12 12)"/></svg>
-      <span class="admin-nav-item-label">Back to site</span>
-    </a>
-  </aside>
-
-  <div class="admin-main">
-    <header class="admin-topbar">
-      <button type="button" class="admin-sidebar-toggle" id="adminSidebarToggle" aria-label="Toggle menu">
-        <svg width="20" height="20"><use href="#ic-menu"/></svg>
-      </button>
-      <div class="admin-breadcrumb">
-        <?php foreach ($crumb as $i => $part): ?>
-          <?php if ($i > 0): ?><svg width="12" height="12" class="admin-breadcrumb-sep"><use href="#ic-chev"/></svg><?php endif; ?>
-          <span class="<?= $i === count($crumb) - 1 ? 'current' : '' ?>"><?= htmlspecialchars($part) ?></span>
-        <?php endforeach; ?>
-      </div>
-      <?php if ($profile['verification_status'] === 'VERIFIED'): ?>
-        <span class="admin-badge admin-badge-success" style="margin-right:10px"><svg width="11" height="11"><use href="#ic-check"/></svg> Verified</span>
-      <?php endif; ?>
-      <a class="admin-profile-btn" href="/org-notifications.php" style="position:relative; padding:8px; margin-right:4px" title="Notifications">
-        <svg width="19" height="19"><use href="#ic-bell"/></svg>
-        <?php if ($unread > 0): ?><span class="admin-nav-badge" style="position:absolute; top:2px; right:2px"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
-      </a>
-      <div class="admin-profile" id="adminProfile">
-        <button type="button" class="admin-profile-btn" id="adminProfileBtn">
-          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($actor['name'])) ?></span>
+    <div class="org-side-foot">
+      <?php foreach ($footLinks as $link): ?>
+        <a class="admin-nav-item<?= $active === $link[0] ? ' active' : '' ?>" href="<?= $link[2] ?>" title="<?= $link[1] ?>"<?= $active === $link[0] ? ' aria-current="page"' : '' ?>>
+          <svg width="17" height="17"><use href="#<?= $link[3] ?>"/></svg>
+          <span class="admin-nav-item-label"><?= $link[1] ?></span>
+        </a>
+      <?php endforeach; ?>
+      <div class="admin-profile org-card" id="adminProfile">
+        <button type="button" class="admin-profile-btn" id="adminProfileBtn" aria-label="Account menu">
+          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($orgDisplayName)) ?></span>
           <span class="admin-profile-text">
-            <span class="admin-topbar-name"><?= htmlspecialchars($profile['org_name'] ?: $actor['name']) ?></span>
+            <span class="admin-topbar-name"><?= htmlspecialchars($orgDisplayName) ?></span>
             <span class="admin-topbar-role"><?= $orgContext['is_owner'] ? 'Owner' : htmlspecialchars(ORGANIZER_ROLES[$orgContext['role']] ?? 'Team member') ?></span>
           </span>
-          <svg width="14" height="14" class="admin-profile-chev"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg>
         </button>
         <div class="admin-profile-menu" id="adminProfileMenu">
           <a href="/org-settings.php">Settings</a>
@@ -167,7 +191,38 @@ function render_organizer_head(string $active, array $orgContext): void
           <a href="/logout.php">Log out</a>
         </div>
       </div>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <a class="org-mlogo" href="/org.php" aria-label="obitickets organizer home"><svg viewBox="0 0 34 34" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/></svg></a>
+      <div class="admin-breadcrumb">
+        <?php foreach ($crumb as $i => $part): ?>
+          <?php if ($i > 0): ?><svg width="12" height="12" class="admin-breadcrumb-sep"><use href="#ic-chev"/></svg><?php endif; ?>
+          <span class="<?= $i === count($crumb) - 1 ? 'current' : '' ?>"><?= htmlspecialchars($part) ?></span>
+        <?php endforeach; ?>
+      </div>
+      <div class="org-top-right">
+        <?php if ($profile['verification_status'] === 'VERIFIED'): ?>
+          <span class="admin-badge admin-badge-success org-verified"><svg width="11" height="11"><use href="#ic-check"/></svg> Verified</span>
+        <?php endif; ?>
+        <a class="org-bell" href="/org-notifications.php" title="Notifications" aria-label="Notifications<?= $unread > 0 ? ' (' . (int) $unread . ' unread)' : '' ?>">
+          <svg width="19" height="19"><use href="#ic-bell"/></svg>
+          <?php if ($unread > 0): ?><span class="admin-nav-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
+        </a>
+        <?php if (organizer_can($orgContext, 'events.manage')): ?>
+          <a class="org-create" href="/event-create.php"><svg width="15" height="15" aria-hidden="true"><use href="#ic-plus"/></svg><span>Create event</span></a>
+        <?php endif; ?>
+      </div>
     </header>
+    <?php if ($showTabs): ?>
+      <nav class="org-tabs" aria-label="<?= htmlspecialchars($activeHub['label']) ?>">
+        <?php foreach ($activeHub['tabs'] as $t): ?>
+          <a href="<?= htmlspecialchars($t[2]) ?>" class="<?= $t[0] === $active ? 'is-on' : '' ?>"<?= $t[0] === $active ? ' aria-current="page"' : '' ?>><?= htmlspecialchars($t[1]) ?></a>
+        <?php endforeach; ?>
+      </nav>
+    <?php endif; ?>
     <main class="admin-content" id="adminContent">
     <?php
 }
@@ -178,6 +233,28 @@ function render_organizer_foot(): void
     </main>
   </div>
 </div>
+
+<?php $mobileNav = $GLOBALS['orgMobileNav'] ?? null; if ($mobileNav): ?>
+<nav class="org-tabbar" aria-label="Main">
+  <?php foreach ($mobileNav['bar'] as $hub): $isOn = $mobileNav['active'] === $hub['key']; ?>
+    <a href="<?= htmlspecialchars($hub['href']) ?>" class="<?= $isOn ? 'is-on' : '' ?>"<?= $isOn ? ' aria-current="page"' : '' ?>><svg width="21" height="21" aria-hidden="true"><use href="#<?= $hub['icon'] ?>"/></svg><span><?= $hub['key'] === 'overview' ? 'Home' : htmlspecialchars($hub['label']) ?></span></a>
+  <?php endforeach; ?>
+  <button type="button" id="orgMoreBtn" class="<?= !in_array($mobileNav['active'], array_column($mobileNav['bar'], 'key'), true) && $mobileNav['active'] !== '' ? 'is-on' : '' ?>" aria-haspopup="dialog" aria-expanded="false"><svg width="21" height="21" aria-hidden="true"><use href="#ic-more"/></svg><span>More</span></button>
+</nav>
+<div class="org-sheet" id="orgSheet" role="dialog" aria-modal="true" aria-label="More" hidden>
+  <div class="org-sheet-in">
+    <p class="org-sheet-h">More</p>
+    <?php foreach ($mobileNav['more'] as $hub): ?>
+      <a href="<?= htmlspecialchars($hub['href']) ?>"><svg width="19" height="19" aria-hidden="true"><use href="#<?= $hub['icon'] ?>"/></svg><?= htmlspecialchars($hub['label']) ?><?php if (!empty($hub['badge'])): ?><span class="admin-nav-badge"><?= (int) $hub['badge'] ?></span><?php endif; ?></a>
+    <?php endforeach; ?>
+    <?php foreach ($mobileNav['foot'] as $link): ?>
+      <a href="<?= $link[2] ?>"><svg width="19" height="19" aria-hidden="true"><use href="#<?= $link[3] ?>"/></svg><?= $link[1] ?></a>
+    <?php endforeach; ?>
+    <a href="/"><svg width="19" height="19" aria-hidden="true"><use href="#ic-arrow" transform="rotate(180 12 12)"/></svg>Back to site</a>
+    <a href="/logout.php"><svg width="19" height="19" aria-hidden="true"><use href="#ic-x"/></svg>Log out</a>
+  </div>
+</div>
+<?php endif; ?>
 
 <div class="admin-toast-stack" id="adminToastStack" aria-live="polite"></div>
 <div class="admin-modal-backdrop" id="adminModalBackdrop">
@@ -193,6 +270,7 @@ function render_organizer_foot(): void
 
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 <script src="/assets/js/admin.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin.js') ?: time() ?>"></script>
+<script src="/assets/js/org-shell.js?v=<?= @filemtime(__DIR__ . '/../assets/js/org-shell.js') ?: time() ?>"></script>
 </body>
 </html>
 <?php

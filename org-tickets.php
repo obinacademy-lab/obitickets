@@ -22,12 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
 
 $tiers = get_ticket_types_for_organizer($organizerId);
 
-$pageTitle = 'Tickets';
+$pageTitle = 'Ticket types';
 render_organizer_head('tickets', $ctx);
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Tickets</h1><p><?= count($tiers) ?> ticket types across all your events</p></div>
+  <div><h1>Ticket types</h1><p><?= count($tiers) ?> ticket types across all your events</p></div>
 </div>
 
 <?php if (isset($_GET['updated'])): ?><span data-flash="Saved." hidden></span><?php endif; ?>

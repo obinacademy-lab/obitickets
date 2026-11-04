@@ -4,251 +4,244 @@ require_once __DIR__ . '/includes/bootstrap.php';
 $ctx = require_organizer_access('dashboard.view');
 $organizerId = $ctx['organizer_id'];
 
+// Each role only sees the figures it is allowed to see: every block below checks its own permission.
+$canNet = organizer_can($ctx, 'earnings.view');
+$canGross = organizer_can($ctx, 'sales.view') || organizer_can($ctx, 'analytics.view');
+$canTickets = $canGross || organizer_can($ctx, 'tickets.view');
+$canCheckin = organizer_can($ctx, 'checkin.use') || organizer_can($ctx, 'attendees.view') || organizer_can($ctx, 'analytics.view');
+$canPayouts = organizer_can($ctx, 'payouts.view');
+$canEvents = organizer_can($ctx, 'events.view');
+$canOrders = organizer_can($ctx, 'tickets.view');
+
+$days = (int) ($_GET['days'] ?? 30);
+$days = in_array($days, [7, 30, 90], true) ? $days : 30;
+
 $stats = get_organizer_dashboard_stats($organizerId);
-$comparison = get_organizer_period_comparison($organizerId, 30);
-$dailyRevenue = get_organizer_daily_revenue($organizerId, 14);
-$maxDaily = max(1, ...array_column($dailyRevenue, 'total'));
-$upcoming = get_upcoming_events_for_organizer($organizerId, 5);
-$recentOrders = get_orders_for_organizer($organizerId, [], 6, 0);
-$activity = get_organizer_activity($organizerId, 8);
+$overview = get_organizer_overview($organizerId, $days);
+$cur = $overview['cur'];
+$prev = $overview['prev'];
 $currency = $stats['currency'];
+$attention = get_organizer_attention($ctx, $stats);
+$upcoming = $canEvents ? get_upcoming_events_for_organizer($organizerId, 1) : [];
+$events = $canEvents ? get_organizer_overview_events($organizerId, 5) : [];
+$hasSales = $cur['gross'] > 0 || $prev['gross'] > 0;
 
-$actionLabels = [
-    'event.status_change' => 'changed the status of event', 'ticket.pause_sales' => 'paused sales on', 'ticket.resume_sales' => 'resumed sales on',
-    'payout.request' => 'requested a withdrawal', 'refund.request' => 'requested a refund for order', 'promo.create' => 'created promo code',
-    'promo.activate' => 'activated promo code', 'promo.deactivate' => 'deactivated promo code', 'promo.delete' => 'deleted promo code',
-    'team.invite' => 'invited', 'team.role_change' => 'changed role for', 'team.revoke' => 'removed', 'support.create' => 'submitted a support ticket',
-];
-
-/** Renders a trend pill, or nothing if there's no prior period to compare against. */
-function render_org_trend(?float $percent): string
+/** The change against the previous period, or a plain sentence when there is nothing to compare with. */
+function ov_trend(float $cur, float $prev, int $days): string
 {
-    if ($percent === null) {
-        return '';
+    if ($prev <= 0) {
+        return $cur > 0 ? 'No sales in the ' . $days . ' days before' : 'Nothing in this period yet';
     }
-    $dir = $percent >= 0 ? 'up' : 'down';
-    $arrow = '<svg width="10" height="10"><use href="#ic-arrow" transform="rotate(-90 12 12)"/></svg>';
-    return '<span class="admin-kpi-trend ' . $dir . '">' . $arrow . ' ' . htmlspecialchars(number_format(abs($percent), 1)) . '%</span>';
+    $pct = ($cur - $prev) / $prev * 100;
+    return '<span class="' . ($pct >= 0 ? 'ov-up' : 'ov-down') . '">' . ($pct >= 0 ? '&#9650;' : '&#9660;') . ' ' . number_format(abs($pct), 1) . '%</span> vs previous ' . $days . ' days';
 }
 
-// Build an SVG line-chart path for the daily revenue trend (same technique as admin.php's Dashboard).
-$chartDays = count($dailyRevenue);
-$chartW = 680; $chartH = 180; $padTop = 22; $padBottom = 24; $padX = 6;
-$plotW = $chartW - $padX * 2; $plotH = $chartH - $padTop - $padBottom;
-$chartPoints = [];
-foreach ($dailyRevenue as $i => $d) {
-    $x = $chartDays > 1 ? $padX + ($i * ($plotW / ($chartDays - 1))) : $padX + $plotW / 2;
-    $y = $padTop + (1 - ($d['total'] / $maxDaily)) * $plotH;
-    $chartPoints[] = ['x' => round($x, 1), 'y' => round($y, 1), 'total' => $d['total'], 'day' => $d['day'], 'peak' => $d['total'] > 0 && $d['total'] == $maxDaily];
+function ov_ago(string $when): string
+{
+    $s = time() - strtotime($when);
+    if ($s < 60) {
+        return 'Just now';
+    }
+    if ($s < 3600) {
+        return floor($s / 60) . ' min';
+    }
+    if ($s < 86400) {
+        return floor($s / 3600) . ' h';
+    }
+    return $s < 172800 ? 'Yesterday' : date('j M', strtotime($when));
 }
-$chartLine = '';
-foreach ($chartPoints as $i => $p) {
-    $chartLine .= ($i === 0 ? 'M' : ' L') . $p['x'] . ',' . $p['y'];
-}
-$chartArea = $chartPoints ? $chartLine . ' L' . end($chartPoints)['x'] . ',' . ($padTop + $plotH) . ' L' . $chartPoints[0]['x'] . ',' . ($padTop + $plotH) . ' Z' : '';
 
-$orderStatusMeta = ['PENDING' => 'admin-badge-warn', 'PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-muted', 'REFUNDED' => 'admin-badge-purple'];
+function ov_event_chip(array $e): array
+{
+    if ($e['status'] === 'PUBLISHED') {
+        return strtotime($e['ends_at']) >= time() ? ['live', 'On sale'] : ['end', 'Ended'];
+    }
+    return [
+        'DRAFT' => ['draft', 'Draft'],
+        'PENDING_REVIEW' => ['draft', 'In review'],
+        'REJECTED' => ['bad', 'Not approved'],
+        'SUSPENDED' => ['bad', 'Suspended'],
+    ][$e['status']] ?? ['end', ucwords(strtolower($e['status']))];
+}
+
+// Recent activity, in sentences: paid orders plus what the team did. Check-in scans are left out, they would drown everything else.
+$activityLabels = [
+    'event.create' => ['ic-cal', 'Event created'], 'event.update' => ['ic-cal', 'Event updated'], 'event.duplicate' => ['ic-cal', 'Event duplicated'],
+    'event.delete' => ['ic-x', 'Event deleted'], 'event.status_change' => ['ic-cal', 'Event status changed'],
+    'ticket.pause_sales' => ['ic-ticket', 'Ticket sales paused'], 'ticket.resume_sales' => ['ic-ticket', 'Ticket sales resumed'],
+    'promo.create' => ['ic-tag', 'Promo code created'], 'promo.activate' => ['ic-tag', 'Promo code switched on'], 'promo.deactivate' => ['ic-tag', 'Promo code switched off'], 'promo.delete' => ['ic-tag', 'Promo code deleted'],
+    'payout.request' => ['ic-wallet', 'Withdrawal requested'], 'refund.request' => ['ic-receipt', 'Refund requested'],
+    'team.invite' => ['ic-team', 'Team member invited'], 'team.role_change' => ['ic-team', 'Team member role changed'], 'team.revoke' => ['ic-team', 'Team member removed'],
+    'support.create' => ['ic-help', 'Support ticket opened'],
+];
+$feed = [];
+foreach (get_organizer_activity($organizerId, 10) as $a) {
+    if (str_starts_with($a['action'], 'ticket.checkin')
+        || (str_starts_with($a['action'], 'payout.') && !$canPayouts)
+        || (str_starts_with($a['action'], 'refund.') && !organizer_can($ctx, 'refunds.view'))) {
+        continue;
+    }
+    $label = $activityLabels[$a['action']] ?? ['ic-clock', ucfirst(str_replace(['.', '_'], ' ', $a['action']))];
+    $details = $a['details'] ? (json_decode((string) $a['details'], true) ?: []) : [];
+    $what = isset($details['title']) && is_scalar($details['title']) ? (string) $details['title'] : '';
+    $feed[] = ['icon' => $label[0], 'tone' => '', 'title' => $label[1], 'sub' => $what !== '' ? $what . ' · ' . $a['actor_name'] : $a['actor_name'], 'when' => $a['created_at']];
+}
+if ($canOrders) {
+    foreach (get_orders_for_organizer($organizerId, ['status' => 'PAID'], 6, 0) as $o) {
+        $amount = (float) $o['subtotal_amount'];
+        $feed[] = ['icon' => 'ic-receipt', 'tone' => 'green', 'title' => $amount > 0 ? 'Order paid, ' . $o['currency'] . ' ' . number_format($amount, 0) : 'Free ticket taken', 'sub' => $o['buyer_name'] . ' · ' . $o['event_title'], 'when' => $o['paid_at'] ?: $o['created_at']];
+    }
+}
+usort($feed, static fn ($a, $b) => strtotime($b['when']) <=> strtotime($a['when']));
+$feed = array_slice($feed, 0, 6);
+
 $hour = (int) date('G');
 $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
 $firstName = explode(' ', current_user()['name'])[0];
+$lede = "Here's how your events are doing.";
+if ($upcoming) {
+    $next = $upcoming[0];
+    $total = (int) $next['tickets_total'];
+    $lede = $next['title'] . ' ' . organizer_starts_in($next['starts_at']) . ($total > 0 ? ' and is ' . (int) round((int) $next['tickets_sold'] / $total * 100) . '% sold.' : '.');
+} elseif ($canEvents && (int) $stats['total_events'] === 0) {
+    $lede = 'Create your first event and your figures will start here.';
+}
 
 $pageTitle = 'Dashboard';
 render_organizer_head('dashboard', $ctx);
 ?>
 
-<div class="admin-page-head">
+<header class="ov-top">
   <div>
+    <p class="ov-eyebrow"><?= htmlspecialchars(date('D j M')) ?></p>
     <h1><?= htmlspecialchars($greeting) ?>, <?= htmlspecialchars($firstName) ?></h1>
-    <p>Here's how your events are doing.</p>
+    <p class="ov-lede"><?= htmlspecialchars($lede) ?></p>
   </div>
-  <?php if (organizer_can($ctx, 'events.manage')): ?><a class="btn btn-purple" href="/event-create.php">+ Create event</a><?php endif; ?>
-</div>
+  <?php if ($canNet || $canGross || $canTickets): ?>
+    <div class="ov-seg" role="group" aria-label="Period">
+      <?php foreach ([7, 30, 90] as $d): ?>
+        <a href="/org.php?days=<?= $d ?>" class="<?= $d === $days ? 'is-on' : '' ?>"<?= $d === $days ? ' aria-current="true"' : '' ?>><?= $d ?> days</a>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</header>
 
-<div class="admin-kpi-grid">
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Total events</span>
-      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-cal"/></svg></span>
+<?php if ($canNet): ?>
+<section class="ov-hero" aria-labelledby="ovHeroH">
+  <div class="ov-hero-tx">
+    <p class="ov-eyebrow" id="ovHeroH">Net earnings, last <?= $days ?> days</p>
+    <div class="ov-big"><small><?= htmlspecialchars($currency) ?></small><span data-count-to="<?= (int) round($cur['net']) ?>">0</span></div>
+    <p class="ov-hero-sub"><?= ov_trend($cur['gross'], $prev['gross'], $days) ?>, after the <?= (int) round(PLATFORM_COMMISSION_RATE * 100) ?>% obitickets commission</p>
+    <div class="ov-hero-act">
+      <?php if ((float) $stats['available_balance'] > 0 && organizer_can($ctx, 'payouts.request')): ?><a class="ov-btn ov-gold" href="/org-payouts.php">Request payout</a><?php endif; ?>
+      <a class="ov-btn ov-ghost" href="/org-earnings.php">View statement</a>
     </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['total_events'] ?>">0</span></span>
-    <span class="sub"><?= (int) $stats['upcoming_events'] ?> upcoming</span>
+    <p class="ov-hero-sub ov-hero-bal">Available to withdraw <b><?= htmlspecialchars($currency) ?> <?= number_format((float) $stats['available_balance'], 0) ?></b><?php if ((int) $stats['pending_payouts_count'] > 0): ?> &middot; <?= (int) $stats['pending_payouts_count'] ?> payout<?= (int) $stats['pending_payouts_count'] === 1 ? '' : 's' ?> pending<?php endif; ?></p>
   </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Tickets sold</span>
-      <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-ticket"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['tickets_sold'] ?>">0</span></span>
-    <span class="sub"><?= render_org_trend($comparison['orders']['percent'] ?? null) ?> <span><?= (int) $stats['checked_in'] ?> checked in</span></span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Total revenue</span>
-      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) array_sum(array_column($stats['gross_by_currency'], 'gross')) ?>" data-count-prefix="<?= htmlspecialchars($currency) ?> ">0</span></span>
-    <span class="sub"><?= render_org_trend($comparison['revenue']['percent'] ?? null) ?> <span>vs prior 30 days</span></span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Net earnings</span>
-      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-shield"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['net_earnings'] ?>" data-count-prefix="<?= htmlspecialchars($currency) ?> ">0</span></span>
-    <span class="sub">After platform commission</span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Available balance</span>
-      <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['available_balance'] ?>" data-count-prefix="<?= htmlspecialchars($currency) ?> ">0</span></span>
-    <span class="sub"><a class="link" href="/org-payouts.php">Withdraw &rarr;</a></span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Pending payouts</span>
-      <span class="admin-kpi-ic" style="background:<?= $stats['pending_payouts_count'] ? 'var(--warn-bg); color:var(--warn)' : 'var(--purple-tint); color:var(--purple)' ?>"><svg width="17" height="17"><use href="#ic-clock"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['pending_payouts_count'] ?>">0</span></span>
-    <span class="sub"><?= htmlspecialchars($currency) ?> <?= number_format((float) $stats['pending_payouts_amount'], 0) ?> requested</span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Total attendees</span>
-      <span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-people"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['total_attendees'] ?>">0</span></span>
-    <span class="sub">Unique buyers</span>
-  </div>
-  <div class="admin-kpi-card">
-    <div class="admin-kpi-card-top">
-      <span class="lbl">Checked in</span>
-      <span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-check"/></svg></span>
-    </div>
-    <span class="num"><span data-count-to="<?= (int) $stats['checked_in'] ?>">0</span> <span style="color:var(--muted-2); font-size:1rem">/ <?= (int) $stats['tickets_sold'] ?></span></span>
-    <span class="sub">Of tickets sold</span>
-  </div>
-</div>
-
-<div class="admin-grid-2" style="margin-top:20px">
-  <div class="admin-card">
-    <h3 style="margin-bottom:2px">Revenue — last 14 days</h3>
-    <p style="color:var(--muted-2); font-size:0.82rem; margin-bottom:20px">Gross paid-order value per day</p>
-    <?php if ($maxDaily <= 1): ?>
-      <div class="admin-empty" style="padding:28px 24px">
-        <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-cash"/></svg></div>
-        <p style="margin-top:0">No paid orders in the last 14 days yet.</p>
-      </div>
-    <?php else: ?>
-      <svg viewBox="0 0 <?= $chartW ?> <?= $chartH ?>" width="100%" height="170" preserveAspectRatio="none" class="admin-line-chart">
-        <defs>
-          <linearGradient id="orgRevChartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="var(--purple)" stop-opacity="0.30"/>
-            <stop offset="100%" stop-color="var(--purple)" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="<?= htmlspecialchars($chartArea) ?>" fill="url(#orgRevChartGrad)" stroke="none"></path>
-        <path d="<?= htmlspecialchars($chartLine) ?>" fill="none" stroke="var(--purple)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="admin-line-path"></path>
-        <?php foreach ($chartPoints as $p): ?>
-          <?php if ($p['peak']): ?>
-            <text x="<?= $p['x'] ?>" y="<?= max(11, $p['y'] - 9) ?>" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--success); font-family:'JetBrains Mono',monospace;"><?= htmlspecialchars($currency) ?> <?= number_format($p['total'], 0) ?></text>
-          <?php endif; ?>
-          <circle cx="<?= $p['x'] ?>" cy="<?= $p['y'] ?>" r="<?= $p['peak'] ? 4.5 : 3 ?>" style="fill:<?= $p['peak'] ? 'var(--success)' : 'var(--purple)' ?>; stroke:var(--surface); stroke-width:1.5;">
-            <title><?= htmlspecialchars(date('d M Y', strtotime($p['day']))) ?>: <?= htmlspecialchars($currency) ?> <?= number_format($p['total'], 0) ?></title>
-          </circle>
-          <text x="<?= $p['x'] ?>" y="<?= $chartH - 6 ?>" text-anchor="middle" font-size="9" style="fill:var(--muted-2); font-family:'JetBrains Mono',monospace;"><?= htmlspecialchars(date('d', strtotime($p['day']))) ?></text>
-        <?php endforeach; ?>
-      </svg>
-    <?php endif; ?>
-  </div>
-
-  <div class="admin-card">
-    <h3 style="margin-bottom:16px">Recent activity</h3>
-    <?php if (!$activity): ?>
-      <div class="admin-empty" style="padding:28px 24px">
-        <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-clock"/></svg></div>
-        <p style="margin-top:0">Nothing logged yet — your actions will show up here.</p>
-      </div>
-    <?php else: ?>
-      <div class="admin-activity">
-        <?php foreach ($activity as $a): ?>
-          <div class="admin-activity-row">
-            <span class="admin-activity-ic"><svg width="15" height="15"><use href="#ic-clock"/></svg></span>
-            <div class="admin-activity-body">
-              <span class="who"><?= htmlspecialchars($a['actor_name']) ?></span>
-              <?= htmlspecialchars($actionLabels[$a['action']] ?? $a['action']) ?>
-              <?php if ($a['entity_id']): ?><span class="muted">#<?= (int) $a['entity_id'] ?></span><?php endif; ?>
-            </div>
-            <span class="admin-activity-time"><?= htmlspecialchars(date('d M, H:i', strtotime($a['created_at']))) ?></span>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </div>
-</div>
-
-<div class="admin-card" style="margin-top:20px">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-    <h3 style="margin:0">Upcoming events</h3>
-    <a class="link" style="font-size:0.84rem; font-weight:700; color:var(--purple)" href="/my-events.php">View all &rarr;</a>
-  </div>
-  <?php if (!$upcoming): ?>
-    <div class="admin-empty">
-      <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
-      <h3>No upcoming events</h3>
-      <p>Once you publish an event, it'll show up here.</p>
-      <?php if (organizer_can($ctx, 'events.manage')): ?><a class="btn btn-line" href="/event-create.php">Create your first event</a><?php endif; ?>
-    </div>
+  <?php if ($hasSales): ?>
+    <div class="ov-chart" data-chart data-tone="gold" data-h="170" aria-label="Revenue per day for the last <?= $days ?> days" role="img"></div>
   <?php else: ?>
-    <div class="admin-table-wrap" style="border:none; box-shadow:none;">
-      <table class="admin-table">
-        <thead><tr><th>Event</th><th>Starts</th><th>Sold</th><th>Revenue</th><th></th></tr></thead>
-        <tbody>
-          <?php foreach ($upcoming as $e): ?>
-            <tr>
-              <td><?= htmlspecialchars($e['banner_emoji']) ?> <?= htmlspecialchars($e['title']) ?></td>
-              <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($e['starts_at']))) ?></td>
-              <td class="mono"><?= (int) $e['tickets_sold'] ?> / <?= (int) $e['tickets_total'] ?></td>
-              <td class="mono"><?= htmlspecialchars($currency) ?> <?= number_format((float) $e['revenue'], 0) ?></td>
-              <td><a class="link" href="/event-edit.php?id=<?= (int) $e['id'] ?>">Manage &rarr;</a></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
+    <p class="ov-hero-empty">Your first sale will draw a line here.</p>
+  <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<div class="ov-kpis">
+  <?php if ($canGross): ?>
+    <div class="ov-kpi"><span class="kl">Gross revenue</span><b class="kv"><?= htmlspecialchars($currency) ?> <span data-count-to="<?= (int) round($cur['gross']) ?>">0</span></b><span class="kd"><?= ov_trend($cur['gross'], $prev['gross'], $days) ?></span></div>
+  <?php endif; ?>
+  <?php if ($canTickets): ?>
+    <div class="ov-kpi"><span class="kl">Tickets sold</span><b class="kv"><span data-count-to="<?= (int) $cur['tickets'] ?>">0</span></b><span class="kd"><?= ov_trend((float) $cur['tickets'], (float) $prev['tickets'], $days) ?></span></div>
+  <?php endif; ?>
+  <?php if ($canGross): ?>
+    <div class="ov-kpi"><span class="kl">Average order</span><b class="kv"><?= htmlspecialchars($currency) ?> <span data-count-to="<?= (int) round($cur['average']) ?>">0</span></b><span class="kd"><?= $cur['paid_orders'] ?> paid order<?= $cur['paid_orders'] === 1 ? '' : 's' ?></span></div>
+  <?php endif; ?>
+  <?php if ($canCheckin): ?>
+    <div class="ov-kpi"><span class="kl">Check-in rate</span><b class="kv"><?= (int) $stats['tickets_sold'] > 0 ? (int) round($stats['checked_in'] / $stats['tickets_sold'] * 100) . '%' : '&mdash;' ?></b><span class="kd"><?= number_format((int) $stats['checked_in']) ?> of <?= number_format((int) $stats['tickets_sold']) ?> tickets scanned</span></div>
+  <?php endif; ?>
+  <?php if ($canPayouts): ?>
+    <div class="ov-kpi"><span class="kl">Pending payouts</span><b class="kv"><?= (int) $stats['pending_payouts_count'] ?></b><span class="kd"><?= htmlspecialchars($currency) ?> <?= number_format((float) $stats['pending_payouts_amount'], 0) ?> requested</span></div>
   <?php endif; ?>
 </div>
 
-<div class="admin-card" style="margin-top:20px">
-  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-    <h3 style="margin:0">Recent orders</h3>
-    <a class="link" style="font-size:0.84rem; font-weight:700; color:var(--purple)" href="/org-orders.php">View all &rarr;</a>
-  </div>
-  <?php if (!$recentOrders): ?>
-    <div class="admin-empty" style="padding:28px 24px">
-      <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-bolt"/></svg></div>
-      <p style="margin-top:0">No ticket sales yet.</p>
-    </div>
-  <?php else: ?>
-    <div class="admin-table-wrap" style="border:none; box-shadow:none;">
-      <table class="admin-table">
-        <thead><tr><th>Order</th><th>Buyer</th><th>Event</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>
-          <?php foreach ($recentOrders as $o): ?>
-            <tr>
-              <td class="mono">#<?= (int) $o['id'] ?></td>
-              <td><?= htmlspecialchars($o['buyer_name']) ?></td>
-              <td class="muted"><?= htmlspecialchars($o['event_title']) ?></td>
-              <td class="mono"><?= htmlspecialchars($o['currency']) ?> <?= number_format((float) $o['total_amount'], 0) ?></td>
-              <td><span class="admin-badge <?= $orderStatusMeta[$o['status']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($o['status']) ?></span></td>
-              <td class="muted mono"><?= htmlspecialchars(date('d M Y', strtotime($o['created_at']))) ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
+<div class="ov-cols">
+  <?php if ($canGross): ?>
+    <section class="ov-card">
+      <div class="ov-ch">
+        <div><h2>Revenue</h2><p>Ticket sales per day, against the period before</p></div>
+        <?php if ($hasSales): ?><div class="ov-legend"><span><i></i>This period</span><span><i class="p"></i>Previous</span></div><?php endif; ?>
+      </div>
+      <?php if ($hasSales): ?>
+        <div class="ov-chart" data-chart data-compare="1" data-h="230" aria-label="Revenue per day for the last <?= $days ?> days, against the <?= $days ?> days before" role="img"></div>
+      <?php else: ?>
+        <div class="ov-none"><svg width="22" height="22" aria-hidden="true"><use href="#ic-chart"/></svg><p>No ticket sales in the last <?= $days * 2 ?> days yet.</p></div>
+      <?php endif; ?>
+    </section>
   <?php endif; ?>
+  <section class="ov-card">
+    <div class="ov-ch"><div><h2>Needs your attention</h2><p><?= $attention ? count($attention) . ' thing' . (count($attention) === 1 ? '' : 's') : 'You are all caught up' ?></p></div></div>
+    <?php if ($attention): ?>
+      <ul class="ov-list">
+        <?php foreach ($attention as $t): ?>
+          <li>
+            <span class="ov-fi ov-<?= $t['tone'] ?>"><svg width="16" height="16" aria-hidden="true"><use href="#<?= $t['icon'] ?>"/></svg></span>
+            <div><b><?= htmlspecialchars($t['title']) ?></b><span><?= htmlspecialchars($t['sub']) ?></span></div>
+            <a href="<?= htmlspecialchars($t['href']) ?>"><?= htmlspecialchars($t['action']) ?></a>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php else: ?>
+      <div class="ov-none"><svg width="22" height="22" aria-hidden="true"><use href="#ic-check"/></svg><p>Nothing is waiting for you right now.</p></div>
+    <?php endif; ?>
+  </section>
 </div>
+
+<div class="ov-cols">
+  <?php if ($canEvents): ?>
+    <section class="ov-card">
+      <div class="ov-ch"><div><h2>Your events</h2></div><a class="ov-all" href="/my-events.php">View all</a></div>
+      <?php if ($events): ?>
+        <div class="ov-events">
+          <?php foreach ($events as $e): [$chipClass, $chipText] = ov_event_chip($e); $total = (int) $e['tickets_total']; $sold = (int) $e['tickets_sold']; ?>
+            <a class="ov-ev" href="/event-edit.php?id=<?= (int) $e['id'] ?>">
+              <span class="ov-poster"<?= $e['banner_image'] ? ' style="background-image:url(' . htmlspecialchars(str_replace(["'", '"', '\\', '(', ')', ' ', "\n", "\r"], '', (string) $e['banner_image']), ENT_QUOTES) . ')"' : '' ?>><?= $e['banner_image'] ? '' : htmlspecialchars($e['banner_emoji']) ?></span>
+              <span class="ov-ev-tx"><b><?= htmlspecialchars($e['title']) ?></b><small><?= htmlspecialchars(date('D j M Y', strtotime($e['starts_at']))) ?> &middot; <?= htmlspecialchars($e['venue_name']) ?></small><i class="ov-chip ov-chip-<?= $chipClass ?>"><?= htmlspecialchars($chipText) ?></i></span>
+              <span class="ov-sold"><span><b><?= number_format($sold) ?></b> / <?= number_format($total) ?> sold</span><span class="ov-bar"><i style="width:<?= $total > 0 ? min(100, (int) round($sold / $total * 100)) : 0 ?>%"></i></span></span>
+              <?php if ($canGross): ?><span class="ov-rev"><?= htmlspecialchars($currency) ?> <?= number_format((float) $e['revenue'], 0) ?></span><?php endif; ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <div class="ov-none"><svg width="22" height="22" aria-hidden="true"><use href="#ic-cal"/></svg><p>You have not created an event yet.</p><?php if (organizer_can($ctx, 'events.manage')): ?><a class="ov-btn ov-red" href="/event-create.php">Create your first event</a><?php endif; ?></div>
+      <?php endif; ?>
+    </section>
+  <?php elseif (organizer_can($ctx, 'checkin.use')): ?>
+    <section class="ov-card">
+      <div class="ov-ch"><div><h2>Check-in</h2><p>Scan tickets at the door</p></div></div>
+      <a class="ov-btn ov-red" href="/checkin.php">Open check-in</a>
+    </section>
+  <?php endif; ?>
+  <section class="ov-card">
+    <div class="ov-ch"><div><h2>Recent activity</h2></div></div>
+    <?php if ($feed): ?>
+      <ul class="ov-list ov-feed">
+        <?php foreach ($feed as $f): ?>
+          <li>
+            <span class="ov-fi<?= $f['tone'] ? ' ov-' . $f['tone'] : '' ?>"><svg width="16" height="16" aria-hidden="true"><use href="#<?= $f['icon'] ?>"/></svg></span>
+            <div><b><?= htmlspecialchars($f['title']) ?></b><span><?= htmlspecialchars($f['sub']) ?></span></div>
+            <time datetime="<?= htmlspecialchars(date('c', strtotime($f['when']))) ?>"><?= htmlspecialchars(ov_ago($f['when'])) ?></time>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php else: ?>
+      <div class="ov-none"><svg width="22" height="22" aria-hidden="true"><use href="#ic-clock"/></svg><p>Nothing yet. Sales and your team's actions will show up here.</p></div>
+    <?php endif; ?>
+  </section>
+</div>
+
+<?php if (($canNet || $canGross) && $hasSales): ?>
+  <script type="application/json" id="ovData"><?= json_encode(['currency' => $currency, 'cur' => $cur['days'], 'prev' => $prev['days']], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+  <script src="/assets/js/org-overview.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-overview.js') ?: time() ?>"></script>
+<?php endif; ?>
 
 <?php render_organizer_foot(); ?>

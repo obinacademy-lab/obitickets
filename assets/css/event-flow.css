@@ -11,6 +11,9 @@
   .org-focus .admin-nav-label span{opacity:0}
   .org-focus .admin-nav-item{justify-content:center; padding:9px; box-shadow:none}
   .org-focus .admin-nav-item-label,.org-focus .admin-nav-badge{display:none}
+  .org-focus .admin-sidebar{overflow:visible}
+  .org-focus .org-card .admin-profile-text{display:none}
+  .org-focus .org-card .admin-profile-btn{justify-content:center; padding:8px 4px; background:none}
 }
 
 .ef{--ef-bg:#120E0E; --ef-panel:#1C1517; --ef-line:#322729; --ef-ink:#F4EEEB; --ef-soft:#B9ADB1; --ef-mut:#8A7F83; --ef-red:#DC2626; --ef-deep:#B91C1C; --ef-ease:cubic-bezier(.16,1,.3,1);

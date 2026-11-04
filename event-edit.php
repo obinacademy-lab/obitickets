@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
+$GLOBALS['orgNoTabs'] = true; // an event's own form: the Events tabs would only be in the way
 
 $ctx = require_organizer_access('events.manage');
 $organizerId = $ctx['organizer_id'];

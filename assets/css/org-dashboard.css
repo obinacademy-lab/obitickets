@@ -1,0 +1,216 @@
+/* Organizer dashboard: "Ivory Executive". A deep ink sidebar with a gold marker and a warm ivory workspace.
+   Scoped to .org-shell because the admin dashboard shares the .admin-* classes and must not change. */
+
+.org-shell{--admin-bg:#F5F4F1; --admin-sidebar-bg:#14110F; --admin-sidebar-line:rgba(255,255,255,.08); --admin-radius:18px;
+  --ink:#14110F; --muted:#5E5558; --muted-2:#8C8285; --line:#E4E1DC; --paper:#F5F4F1; --surface:#fff;
+  --ov-gold:#F5A81C; --ov-red:#B91C1C; --ov-ease:cubic-bezier(.22,.8,.24,1); --ov-expo:cubic-bezier(.16,1,.3,1);
+  background:#F5F4F1}
+.org-shell h1,.org-shell h2{font-family:'Outfit','Plus Jakarta Sans',sans-serif}
+
+/* ---------------- sidebar ---------------- */
+.org-shell .admin-sidebar{width:248px; padding:20px 14px}
+.org-shell .admin-sidebar.collapsed{width:76px; overflow:visible}
+.org-shell .admin-logo-row{padding:2px 0 14px 4px}
+.org-shell .admin-logo{gap:8px; font:700 .94rem 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em}
+.org-shell .admin-nav{flex:1}
+.org-shell .admin-nav-label{margin:14px 0 4px; padding:0 12px; font:600 .56rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.22em; text-transform:uppercase; color:#7D7276}
+.org-shell .admin-nav-item{position:relative; gap:11px; padding:10px 12px; border-radius:12px; font-weight:600; font-size:.83rem; color:#CFC5C8; box-shadow:none; transition:background .25s,color .25s}
+.org-shell .admin-nav-item svg{color:#8E8387; transition:color .25s}
+.org-shell .admin-nav-item:hover{background:rgba(255,255,255,.06); color:#fff}
+.org-shell .admin-nav-item.active{background:linear-gradient(90deg,rgba(220,38,38,.22),rgba(220,38,38,.06)); color:#fff; box-shadow:none}
+.org-shell .admin-nav-item.active::before{content:""; position:absolute; left:-14px; top:9px; bottom:9px; width:3px; border-radius:3px; background:var(--ov-gold)}
+.org-shell .admin-nav-item.active svg{color:#F87171}
+.org-shell .admin-sidebar.collapsed .admin-nav-item{padding:10px}
+.org-side-foot{display:grid; gap:2px; padding-top:12px}
+.org-card{margin:8px 0 0}
+.org-shell .org-card .admin-profile-btn{width:100%; gap:11px; padding:10px 12px; border-radius:14px; background:rgba(255,255,255,.06); border:0; text-align:left; color:#fff; cursor:pointer; transition:background .25s}
+.org-shell .org-card .admin-profile-btn:hover,.org-shell .org-card.open .admin-profile-btn{background:rgba(255,255,255,.11)}
+.org-shell .org-card .admin-avatar{flex:none; background:var(--ov-gold); color:#14110F}
+.org-shell .org-card .admin-topbar-name{display:block; color:#fff; font-size:.78rem; font-weight:700; line-height:1.2; white-space:normal}
+.org-shell .org-card .admin-topbar-role{color:#9A8F93; font-size:.66rem}
+.org-shell .org-card .admin-profile-menu{top:auto; bottom:calc(100% + 8px); left:0; right:auto; min-width:190px; z-index:70}
+.org-shell .admin-sidebar.collapsed .org-card .admin-profile-text{display:none}
+.org-shell .admin-sidebar.collapsed .org-card .admin-profile-btn{justify-content:center; padding:8px 4px; background:none}
+
+/* ---------------- top bar and tabs ---------------- */
+.org-shell .admin-topbar{padding:12px 36px; gap:14px; background:rgba(245,244,241,.9); border-bottom:1px solid var(--line)}
+.org-mlogo{display:none; flex:none}
+.org-top-right{margin-left:auto; display:flex; align-items:center; gap:12px}
+.org-verified{margin:0}
+.org-bell{position:relative; display:grid; place-items:center; width:38px; height:38px; border-radius:11px; border:1px solid var(--line); background:#fff; color:var(--ink); transition:border-color .25s,transform .3s var(--ov-ease)}
+.org-bell:hover{border-color:var(--ink); transform:translateY(-1px)}
+.org-bell .admin-nav-badge{position:absolute; top:-5px; right:-5px; margin:0}
+.org-create{display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:12px; background:var(--ov-red); color:#fff; font-weight:800; font-size:.82rem; text-decoration:none; white-space:nowrap; transition:background .25s,transform .35s var(--ov-ease),box-shadow .4s var(--ov-ease)}
+.org-create:hover{background:#991B1B; color:#fff; transform:translateY(-2px); box-shadow:0 14px 24px -14px rgba(185,28,28,.75)}
+.org-tabs{display:flex; gap:4px; padding:0 36px; background:#F5F4F1; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none}
+.org-tabs::-webkit-scrollbar{display:none}
+.org-tabs a{position:relative; padding:13px 12px; font-weight:700; font-size:.82rem; color:var(--muted); text-decoration:none; white-space:nowrap; transition:color .2s}
+.org-tabs a:hover{color:var(--ink)}
+.org-tabs a.is-on{color:var(--ink)}
+.org-tabs a.is-on::after{content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:2.5px; border-radius:2px; background:var(--ov-red)}
+.org-shell a:focus-visible,.org-shell button:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
+.org-shell .admin-sidebar a:focus-visible,.org-shell .admin-sidebar button:focus-visible{outline-color:var(--ov-gold)}
+
+/* ---------------- the existing pages, in the same voice ---------------- */
+.org-shell .admin-content{padding:30px 36px 56px}
+.org-shell .admin-page-head h1{font-size:1.8rem; font-weight:600; letter-spacing:-.03em}
+.org-shell .admin-card,.org-shell .admin-table-wrap,.org-shell .admin-kpi-card{border:1px solid var(--line); border-radius:18px; box-shadow:none}
+.org-shell .admin-kpi-card .num{font-family:'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.03em}
+.org-shell .admin-table th{font:600 .62rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2)}
+.org-shell .admin-mini-stat{border-radius:14px}
+
+/* ---------------- the home ---------------- */
+.ov-top{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin-bottom:22px}
+.ov-eyebrow{margin:0; font:600 .62rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.2em; text-transform:uppercase; color:var(--muted-2)}
+.ov-top h1{margin:6px 0 0; font-size:2.05rem; font-weight:600; letter-spacing:-.035em; color:var(--ink); text-wrap:balance}
+.ov-lede{margin:4px 0 0; color:var(--muted); font-size:.92rem}
+.ov-seg{display:inline-flex; gap:2px; padding:3px; border-radius:11px; background:rgba(20,17,15,.07)}
+.ov-seg a{padding:7px 13px; border-radius:8px; font-weight:700; font-size:.74rem; color:var(--muted); text-decoration:none; transition:background .25s,color .25s}
+.ov-seg a:hover{color:var(--ink)}
+.ov-seg a.is-on{background:#fff; color:var(--ink); box-shadow:0 5px 10px -6px rgba(0,0,0,.4)}
+
+.ov-hero{position:relative; isolation:isolate; overflow:hidden; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:28px; align-items:center; margin-bottom:18px; padding:30px 34px; border-radius:22px; background:#14110F; color:#fff; animation:ovRise .8s var(--ov-expo) both}
+.ov-hero::before{content:""; position:absolute; z-index:-1; right:-120px; top:-140px; width:440px; height:440px; border-radius:50%; background:radial-gradient(closest-side,rgba(245,168,28,.3),transparent)}
+.ov-hero .ov-eyebrow{color:#A99DA1}
+.ov-big{margin:12px 0 8px; font:300 3.1rem/1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.04em; font-variant-numeric:tabular-nums}
+.ov-big small{margin-right:8px; font-size:1.1rem; font-weight:500; letter-spacing:0; color:#B9ADB1}
+.ov-hero-sub{margin:0; color:#C9BFC2; font-size:.84rem}
+.ov-hero-sub .ov-up{color:#4ADE80}
+.ov-hero-sub .ov-down{color:#FCA5A5}
+.ov-hero-bal{margin-top:14px}
+.ov-hero-bal b{color:#fff}
+.ov-hero-act{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px}
+.ov-hero-empty{margin:0; text-align:center; color:#A99DA1; font-size:.86rem}
+.ov-btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:12px; border:1.5px solid transparent; font-weight:800; font-size:.82rem; text-decoration:none; white-space:nowrap; transition:background .25s,color .25s,transform .35s var(--ov-ease),box-shadow .4s var(--ov-ease),border-color .25s}
+.ov-gold{background:var(--ov-gold); color:#14110F}
+.ov-gold:hover{background:#FBBF24; color:#14110F; transform:translateY(-2px)}
+.ov-ghost{border-color:rgba(255,255,255,.5); color:#fff}
+.ov-ghost:hover{background:#fff; color:#14110F; transform:translateY(-2px)}
+.ov-red{background:var(--ov-red); color:#fff}
+.ov-red:hover{background:#991B1B; color:#fff; transform:translateY(-2px)}
+
+.ov-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:18px; animation:ovRise .8s var(--ov-expo) both .08s}
+.ov-kpi{display:grid; gap:6px; align-content:start; min-width:0; padding:18px; border-radius:16px; background:#fff; border:1px solid var(--line); transition:transform .4s var(--ov-ease),box-shadow .4s var(--ov-ease)}
+.ov-kpi:hover{transform:translateY(-3px); box-shadow:0 20px 30px -26px rgba(20,17,15,.5)}
+.ov-kpi .kl{font:600 .62rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--muted-2)}
+.ov-kpi .kv{font:700 1.45rem/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.03em; color:var(--ink); font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.ov-kpi .kd{font-size:.74rem; color:var(--muted)}
+.ov-up{color:#15803D; font-weight:700}
+.ov-down{color:var(--ov-red); font-weight:700}
+
+.ov-cols{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:18px; align-items:start; margin-bottom:18px; animation:ovRise .8s var(--ov-expo) both .14s}
+.ov-cols>:only-child{grid-column:1/-1}
+.ov-card{min-width:0; padding:22px; border-radius:18px; background:#fff; border:1px solid var(--line)}
+.ov-ch{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+.ov-ch h2{margin:0; font-size:1.05rem; font-weight:700; letter-spacing:-.01em; color:var(--ink)}
+.ov-ch p{margin:2px 0 0; font-size:.76rem; color:var(--muted-2)}
+.ov-all{font-weight:800; font-size:.76rem; color:var(--ov-red); text-decoration:none}
+.ov-all:hover{text-decoration:underline}
+.ov-legend{display:flex; gap:16px; font-size:.72rem; color:var(--muted)}
+.ov-legend i{display:inline-block; width:16px; margin-right:6px; vertical-align:middle; border-top:2.4px solid #DC2626}
+.ov-legend i.p{border-top:1.4px dashed var(--muted-2)}
+.ov-none{display:grid; justify-items:center; gap:8px; padding:30px 16px; text-align:center; color:var(--muted-2)}
+.ov-none p{margin:0; font-size:.84rem; color:var(--muted)}
+
+.ov-chart{position:relative; min-width:0}
+.ov-chart svg{display:block; width:100%; height:auto; overflow:visible}
+.ov-chart .ax text{font:500 10px 'Plus Jakarta Sans',system-ui,sans-serif; fill:var(--muted-2)}
+.ov-chart .gl{stroke:var(--line); stroke-width:1}
+.ov-chart .lg stop{stop-color:#DC2626}
+.ov-chart .cur{fill:none; stroke:#DC2626; stroke-width:2.4; stroke-linejoin:round; stroke-linecap:round}
+.ov-chart .prv{fill:none; stroke:var(--muted-2); stroke-width:1.4; stroke-dasharray:4 5; opacity:.7}
+.ov-chart .hv{stroke:var(--ink); stroke-width:1; opacity:0}
+.ov-chart .dot{fill:#fff; stroke:#DC2626; stroke-width:2.4; opacity:0}
+.ov-hero .ov-chart .ax text{fill:#A99DA1}
+.ov-hero .ov-chart .gl{stroke:rgba(255,255,255,.12)}
+.ov-hero .ov-chart .lg stop{stop-color:var(--ov-gold)}
+.ov-hero .ov-chart .cur{stroke:var(--ov-gold)}
+.ov-hero .ov-chart .hv{stroke:#fff}
+.ov-hero .ov-chart .dot{fill:#14110F; stroke:var(--ov-gold)}
+.ov-tip{position:absolute; z-index:4; pointer-events:none; width:max-content; max-width:240px; padding:10px 12px; border-radius:10px; background:#14110F; color:#fff; font-size:.74rem; box-shadow:0 18px 30px -16px rgba(0,0,0,.6); opacity:0; transition:opacity .15s}
+.ov-tip.on{opacity:1}
+.ov-tip b{display:block; font:700 .86rem 'Outfit','Plus Jakarta Sans',sans-serif}
+.ov-tip span{color:#C9BFC2}
+.ov-hero .ov-tip{background:#fff; color:#14110F}
+.ov-hero .ov-tip span{color:#5E5558}
+
+.ov-list{list-style:none; margin:0; padding:0}
+.ov-list li{display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line)}
+.ov-list li:last-child{border-bottom:0}
+.ov-list b{display:block; font-size:.82rem; line-height:1.3; color:var(--ink); overflow-wrap:anywhere}
+.ov-list div>span{display:block; font-size:.72rem; color:var(--muted-2); overflow-wrap:anywhere}
+.ov-list a{font-weight:800; font-size:.74rem; color:var(--ov-red); text-decoration:none; white-space:nowrap}
+.ov-list a:hover{text-decoration:underline}
+.ov-list time{font:600 .62rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-2); white-space:nowrap}
+.ov-fi{display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:#F1EEEA; color:var(--muted)}
+.ov-fi.ov-blue{background:#E0ECFF; color:#1D4ED8}
+.ov-fi.ov-amber{background:#FEF3C7; color:#B45309}
+.ov-fi.ov-red{background:#FBE9E9; color:var(--ov-red)}
+.ov-fi.ov-green{background:#DCFCE7; color:#15803D}
+
+.ov-ev{display:grid; grid-template-columns:52px minmax(0,1fr) 120px 112px; gap:14px; align-items:center; padding:12px 8px; margin-inline:-8px; border-bottom:1px solid var(--line); border-radius:12px; color:var(--ink); text-decoration:none; transition:background .2s}
+.ov-ev:last-child{border-bottom:0}
+.ov-ev:hover{background:#FAF8F6}
+.ov-poster{display:grid; place-items:center; width:52px; height:52px; border-radius:10px; background:#E9E4DF center/cover no-repeat; font-size:1.3rem}
+.ov-ev-tx{min-width:0}
+.ov-ev-tx b{display:block; font-size:.86rem; line-height:1.25}
+.ov-ev-tx small{display:block; font-size:.72rem; color:var(--muted-2)}
+.ov-chip{display:inline-flex; align-items:center; gap:6px; margin-top:6px; padding:3px 9px; border-radius:99px; font:700 .64rem 'Plus Jakarta Sans',system-ui,sans-serif; font-style:normal; background:#ECE9E6; color:var(--muted-2)}
+.ov-chip::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+.ov-chip-live{background:#DCFCE7; color:#15803D}
+.ov-chip-draft{background:#FEF3C7; color:#B45309}
+.ov-chip-bad{background:#FBE9E9; color:var(--ov-red)}
+.ov-sold{display:grid; gap:6px; font-size:.72rem; color:var(--muted)}
+.ov-sold b{color:var(--ink); font-size:.78rem}
+.ov-bar{display:block; height:6px; border-radius:6px; background:rgba(20,17,15,.08); overflow:hidden}
+.ov-bar i{display:block; height:100%; border-radius:6px; background:#DC2626}
+.ov-rev{font:700 .84rem 'Outfit','Plus Jakarta Sans',sans-serif; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+
+@keyframes ovRise{from{opacity:0; transform:translateY(18px)}to{opacity:1; transform:none}}
+
+/* ---------------- the phone's bottom bar ---------------- */
+.org-tabbar{display:none}
+.org-sheet[hidden]{display:none}
+.org-sheet{position:fixed; inset:0; z-index:90; display:grid; align-items:end; background:rgba(10,8,8,.5); opacity:0; transition:opacity .25s}
+.org-sheet.on{opacity:1}
+.org-sheet-in{max-height:82vh; overflow-y:auto; padding:18px 18px calc(20px + env(safe-area-inset-bottom,0px)); border-radius:22px 22px 0 0; background:#fff; color:#14110F; transform:translateY(40px); transition:transform .4s var(--ov-expo)}
+.org-sheet.on .org-sheet-in{transform:none}
+.org-sheet-h{margin:0 4px 8px; font:600 .6rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.2em; text-transform:uppercase; color:#8C8285}
+.org-sheet a{display:flex; align-items:center; gap:12px; padding:13px 8px; border-radius:12px; font-weight:700; font-size:.92rem; color:#14110F; text-decoration:none}
+.org-sheet a:hover{background:#F5F4F1}
+.org-sheet a svg{color:var(--ov-red)}
+.org-sheet .admin-nav-badge{margin-left:auto}
+
+@media (max-width:1024px){
+  .org-shell .admin-sidebar,.org-shell .admin-sidebar-backdrop{display:none}
+  .org-shell .admin-topbar{padding:10px 16px}
+  .org-mlogo{display:block}
+  .org-shell .admin-breadcrumb{display:none}
+  .org-tabs{padding:0 16px}
+  .org-shell .admin-content{padding:20px 16px calc(92px + env(safe-area-inset-bottom,0px))}
+  .org-tabbar{position:fixed; left:0; right:0; bottom:0; z-index:60; display:flex; padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px)); background:rgba(255,255,255,.97); border-top:1px solid var(--line); backdrop-filter:blur(14px)}
+  .org-tabbar a,.org-tabbar button{flex:1; min-width:0; display:grid; justify-items:center; gap:3px; padding:6px 2px; border:0; border-radius:10px; background:none; font:700 .62rem 'Plus Jakarta Sans',system-ui,sans-serif; color:var(--muted-2); text-decoration:none; cursor:pointer}
+  .org-tabbar .is-on{color:var(--ov-red)}
+  .org-focus .org-tabbar{display:none}
+  .org-focus .admin-content{padding:0}
+  .ov-cols{grid-template-columns:minmax(0,1fr)}
+  .ov-hero{grid-template-columns:minmax(0,1fr); padding:24px 22px}
+}
+@media (max-width:640px){
+  .org-create{padding:10px 12px}
+  .org-create span{display:none}
+  .ov-top h1{font-size:1.6rem}
+  .ov-big{font-size:2.4rem}
+  .ov-kpis{grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+  .ov-kpi{padding:14px}
+  .ov-kpi .kv{font-size:1.15rem}
+  .ov-card{padding:18px 16px}
+  .ov-ev{grid-template-columns:48px minmax(0,1fr) auto}
+  .ov-poster{width:48px; height:48px}
+  .ov-sold{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .ov-hero,.ov-kpis,.ov-cols{animation:none}
+  .ov-kpi,.ov-btn,.org-create,.org-bell{transition:none}
+  .ov-kpi:hover,.ov-btn:hover,.org-create:hover,.org-bell:hover{transform:none}
+}

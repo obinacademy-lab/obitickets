@@ -464,6 +464,142 @@ function get_organizer_period_comparison(int $organizerId, int $days = 30): arra
     ];
 }
 
+/**
+ * The dashboard home's figures for the last $days days and the $days before them, day by day. Money is what the
+ * Earnings page uses: the ticket subtotal, less the commission, on paid orders that were not refunded, so that
+ * net is always gross minus commission and matches the balance.
+ */
+function get_organizer_overview(int $organizerId, int $days = 30): array
+{
+    $days = in_array($days, [7, 30, 90], true) ? $days : 30;
+    $from = date('Y-m-d', strtotime('-' . ($days * 2 - 1) . ' days'));
+
+    $stmt = db()->prepare("
+        SELECT DATE(o.paid_at) AS day, SUM(o.subtotal_amount) AS gross, SUM(o.subtotal_amount - o.commission_amount) AS net, SUM(o.subtotal_amount > 0) AS paid_orders
+        FROM orders o JOIN events e ON e.id = o.event_id
+        WHERE e.organizer_id = ? AND o.status = 'PAID' AND o.refunded_at IS NULL AND o.paid_at >= ?
+        GROUP BY DATE(o.paid_at)
+    ");
+    $stmt->execute([$organizerId, $from]);
+    $money = array_column($stmt->fetchAll(), null, 'day');
+
+    $stmt = db()->prepare("
+        SELECT DATE(o.paid_at) AS day, COUNT(*) AS tickets
+        FROM tickets t
+        JOIN order_items oi ON oi.id = t.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        JOIN events e ON e.id = o.event_id
+        WHERE e.organizer_id = ? AND o.status = 'PAID' AND t.status != 'CANCELLED' AND o.paid_at >= ?
+        GROUP BY DATE(o.paid_at)
+    ");
+    $stmt->execute([$organizerId, $from]);
+    $tickets = array_column($stmt->fetchAll(), 'tickets', 'day');
+
+    $period = static function (int $startAgo, int $len) use ($money, $tickets): array {
+        $out = ['days' => [], 'gross' => 0.0, 'net' => 0.0, 'tickets' => 0, 'paid_orders' => 0];
+        for ($i = $startAgo; $i > $startAgo - $len; $i--) {
+            $day = date('Y-m-d', strtotime("-$i days"));
+            $g = (float) ($money[$day]['gross'] ?? 0);
+            $t = (int) ($tickets[$day] ?? 0);
+            $out['days'][] = ['d' => $day, 'g' => $g, 't' => $t];
+            $out['gross'] += $g;
+            $out['net'] += (float) ($money[$day]['net'] ?? 0);
+            $out['tickets'] += $t;
+            $out['paid_orders'] += (int) ($money[$day]['paid_orders'] ?? 0);
+        }
+        $out['average'] = $out['paid_orders'] > 0 ? $out['gross'] / $out['paid_orders'] : 0.0;
+        return $out;
+    };
+
+    return ['days' => $days, 'cur' => $period($days - 1, $days), 'prev' => $period($days * 2 - 1, $days)];
+}
+
+/** Up to $limit events for the home: what is on sale first, then what still needs work, then the most recent finished ones. */
+function get_organizer_overview_events(int $organizerId, int $limit = 5): array
+{
+    $stmt = db()->prepare("
+        SELECT e.id, e.title, e.status, e.starts_at, e.ends_at, e.venue_name, e.banner_image, e.banner_emoji,
+            (SELECT COALESCE(SUM(t.quantity_sold), 0) FROM ticket_types t WHERE t.event_id = e.id) AS tickets_sold,
+            (SELECT COALESCE(SUM(t.quantity_total), 0) FROM ticket_types t WHERE t.event_id = e.id) AS tickets_total,
+            (SELECT COALESCE(SUM(o.subtotal_amount), 0) FROM orders o WHERE o.event_id = e.id AND o.status = 'PAID' AND o.refunded_at IS NULL) AS revenue
+        FROM events e
+        WHERE e.organizer_id = ? AND e.status != 'CANCELLED'
+        ORDER BY
+            CASE WHEN e.status = 'PUBLISHED' AND e.ends_at >= NOW() THEN 0 WHEN e.status != 'PUBLISHED' THEN 1 ELSE 2 END,
+            CASE WHEN e.status = 'PUBLISHED' AND e.ends_at >= NOW() THEN e.starts_at END ASC,
+            e.starts_at DESC
+        LIMIT ?
+    ");
+    $stmt->bindValue(1, $organizerId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+/**
+ * What this person should look at next, only from what their role may see.
+ * @return list<array{tone:string, icon:string, title:string, sub:string, href:string, action:string}>
+ */
+function get_organizer_attention(array $ctx, array $stats): array
+{
+    $organizerId = (int) $ctx['organizer_id'];
+    $currency = $stats['currency'];
+    $out = [];
+
+    if (organizer_can($ctx, 'payouts.view')) {
+        if ((int) $stats['pending_payouts_count'] > 0) {
+            $out[] = ['tone' => 'blue', 'icon' => 'ic-clock', 'title' => 'A payout of ' . $currency . ' ' . number_format((float) $stats['pending_payouts_amount'], 0) . ' is being processed', 'sub' => 'You can follow it on the Payouts page', 'href' => '/org-payouts.php', 'action' => 'Track'];
+        } elseif ((float) $stats['available_balance'] > 0 && organizer_can($ctx, 'payouts.request')) {
+            $out[] = ['tone' => 'green', 'icon' => 'ic-wallet', 'title' => $currency . ' ' . number_format((float) $stats['available_balance'], 0) . ' is ready to withdraw', 'sub' => 'Request a payout whenever you like', 'href' => '/org-payouts.php', 'action' => 'Withdraw'];
+        }
+    }
+
+    if (organizer_can($ctx, 'refunds.view')) {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM refund_requests WHERE organizer_id = ? AND status = 'REQUESTED'");
+        $stmt->execute([$organizerId]);
+        $n = (int) $stmt->fetchColumn();
+        if ($n > 0) {
+            $out[] = ['tone' => 'red', 'icon' => 'ic-receipt', 'title' => $n . ' refund request' . ($n === 1 ? ' is' : 's are') . ' waiting', 'sub' => 'obitickets reviews these with you', 'href' => '/org-refunds.php', 'action' => 'Review'];
+        }
+    }
+
+    if (organizer_can($ctx, 'events.view')) {
+        $stmt = db()->prepare("SELECT id, title, status FROM events WHERE organizer_id = ? AND status IN ('REJECTED','SUSPENDED') ORDER BY starts_at DESC LIMIT 1");
+        $stmt->execute([$organizerId]);
+        if ($e = $stmt->fetch()) {
+            $out[] = ['tone' => 'red', 'icon' => 'ic-info', 'title' => $e['title'] . ($e['status'] === 'REJECTED' ? ' was not approved' : ' is suspended'), 'sub' => 'Open it to see what to change', 'href' => '/event-edit.php?id=' . (int) $e['id'], 'action' => 'Open'];
+        }
+        $stmt = db()->prepare("SELECT id, title FROM events WHERE organizer_id = ? AND status = 'DRAFT' ORDER BY id DESC");
+        $stmt->execute([$organizerId]);
+        $drafts = $stmt->fetchAll();
+        if ($drafts) {
+            $out[] = count($drafts) === 1
+                ? ['tone' => 'amber', 'icon' => 'ic-tag', 'title' => $drafts[0]['title'] . ' is still a draft', 'sub' => 'Only you can see it until it is published', 'href' => '/event-edit.php?id=' . (int) $drafts[0]['id'], 'action' => 'Finish']
+                : ['tone' => 'amber', 'icon' => 'ic-tag', 'title' => count($drafts) . ' events are still drafts', 'sub' => 'Only you can see them until they are published', 'href' => '/my-events.php?status=DRAFT', 'action' => 'Finish'];
+        }
+    }
+
+    if (organizer_can($ctx, 'checkin.use')) {
+        $stmt = db()->prepare("SELECT id, title, starts_at FROM events WHERE organizer_id = ? AND status = 'PUBLISHED' AND starts_at > NOW() AND starts_at <= NOW() + INTERVAL 7 DAY ORDER BY starts_at ASC LIMIT 1");
+        $stmt->execute([$organizerId]);
+        if ($e = $stmt->fetch()) {
+            $out[] = ['tone' => 'blue', 'icon' => 'ic-scan', 'title' => $e['title'] . ' ' . organizer_starts_in($e['starts_at']), 'sub' => 'Get your check-in team ready', 'href' => '/checkin.php', 'action' => 'Prepare'];
+        }
+    }
+
+    return $out;
+}
+
+/** "starts today", "starts tomorrow" or "starts in 3 days", counted in calendar days. */
+function organizer_starts_in(string $startsAt): string
+{
+    $days = (int) floor((strtotime(date('Y-m-d', strtotime($startsAt))) - strtotime(date('Y-m-d'))) / 86400);
+    if ($days <= 0) {
+        return 'starts today';
+    }
+    return $days === 1 ? 'starts tomorrow' : "starts in $days days";
+}
+
 function get_upcoming_events_for_organizer(int $organizerId, int $limit = 5): array
 {
     $stmt = db()->prepare("

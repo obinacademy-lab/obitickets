@@ -51,7 +51,14 @@ foreach ($allEvents as $e) {
 
 $statusFilter = $_GET['status'] ?? '';
 $q = trim((string) ($_GET['q'] ?? ''));
-$events = array_values(array_filter($allEvents, static function ($e) use ($statusFilter, $q) {
+$whenFilter = in_array($_GET['when'] ?? '', ['live', 'past'], true) ? $_GET['when'] : '';
+$events = array_values(array_filter($allEvents, static function ($e) use ($statusFilter, $q, $whenFilter) {
+    if ($whenFilter !== '') {
+        $ended = strtotime($e['ends_at']) < time();
+        if ($e['status'] !== 'PUBLISHED' || ($whenFilter === 'live' ? $ended : !$ended)) {
+            return false;
+        }
+    }
     if ($statusFilter !== '' && $e['status'] !== $statusFilter) {
         return false;
     }
@@ -80,7 +87,7 @@ render_organizer_head('my-events', $ctx);
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-mini-stat-row">
-  <a class="admin-mini-stat<?= $statusFilter === '' ? ' active' : '' ?>" href="/my-events.php">
+  <a class="admin-mini-stat<?= $statusFilter === '' && $whenFilter === '' ? ' active' : '' ?>" href="/my-events.php">
     <span class="n"><?= array_sum($statusCounts) ?></span><span class="l">All</span>
   </a>
   <?php foreach ($statusMeta as $val => $badgeClass): ?>
@@ -92,6 +99,7 @@ render_organizer_head('my-events', $ctx);
 
 <form class="admin-filter-bar" method="get">
   <?php if ($statusFilter !== ''): ?><input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>"><?php endif; ?>
+  <?php if ($whenFilter !== ''): ?><input type="hidden" name="when" value="<?= $whenFilter ?>"><?php endif; ?>
   <input type="text" name="q" placeholder="Search your events…" value="<?= htmlspecialchars($q) ?>" style="min-width:260px">
   <button class="btn btn-line" type="submit" style="padding:9px 18px">Search</button>
 </form>
@@ -99,9 +107,9 @@ render_organizer_head('my-events', $ctx);
 <?php if (!$events): ?>
   <div class="admin-empty">
     <div class="admin-empty-ic"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
-    <h3>No events<?= $statusFilter !== '' || $q !== '' ? ' in this view' : ' yet' ?></h3>
-    <p><?= $statusFilter !== '' || $q !== '' ? 'Try a different filter, or clear it to see everything.' : "You haven't created any events yet." ?></p>
-    <?php if ($statusFilter !== '' || $q !== ''): ?>
+    <h3>No events<?= $statusFilter !== '' || $whenFilter !== '' || $q !== '' ? ' in this view' : ' yet' ?></h3>
+    <p><?= $statusFilter !== '' || $whenFilter !== '' || $q !== '' ? 'Try a different filter, or clear it to see everything.' : "You haven't created any events yet." ?></p>
+    <?php if ($statusFilter !== '' || $whenFilter !== '' || $q !== ''): ?>
       <a class="btn btn-line" href="/my-events.php">Clear filters</a>
     <?php elseif (organizer_can($ctx, 'events.manage')): ?>
       <a class="btn btn-purple" href="/event-create.php">Create your first event</a>

@@ -83,7 +83,7 @@ if ($event && $ready) {
 }
 
 $pageTitle = 'Promo studio';
-render_organizer_head('social', $ctx);
+render_organizer_head('promo-video', $ctx);
 ?>
 
 <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
