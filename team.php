@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// Public team page, "Backstage Pass": the owner's copy, with the leadership hanging as four event passes.
-// Two people are named (Obin Ivan, Founder & CEO; Mujjuzi Jeremiah, Events Manager). There are no other team members.
+// Public team page, "Backstage Pass": the owner's copy, with the team hanging as event passes.
+// Three people are named (Obin Ivan, Founder & CEO; Mujjuzi Jeremiah, Events Manager; Mungutye Ethel, Accountant). There are no other team members.
 $pageTitle = 'Our Team — The People Behind obitickets';
 $pageDescription = 'Meet the team behind Obitickets: the people powering better event experiences, and what drives us to make ticketing simple and accessible across Uganda.';
 $bodyClass = 'classic-page team-page motion-page';
@@ -19,12 +19,13 @@ $values = [
     ['shield', 'Trust & Transparency', 'We believe in clear processes, dependable service and responsible business practices.'],
     ['grow', 'Growth & Collaboration', "We work to empower event organizers and contribute to the growth of Africa's events industry."],
 ];
-// kind: person (photo + name) or team (icon only). Order is the owner's: CEO, Technology, Operations, Marketing.
+// kind: person (photo + name) or team (icon only). Order is the owner's: CEO, Technology, Operations, Marketing; then the accountant.
 $passes = [
     ['person', '/assets/images/team/obin-ivan.jpg', 'Founder & CEO', 'Obin Ivan', 'Founder & Chief Executive Officer (CEO)', "Provides the strategic vision, business direction and leadership behind Obitickets, guiding the platform's growth and development.", 'Obin Ivan, Founder and CEO of Obitickets'],
     ['team', 'chip', 'Our leadership team', '', 'Technology & Development Team', 'Responsible for building, maintaining and improving the technology that powers event publishing, digital ticketing, payments and QR ticket validation.', ''],
     ['person', '/assets/images/team/mujjuzi-jeremiah.jpg', 'Events Manager', 'Mujjuzi Jeremiah', 'Operations & Event Support Team', 'Works with event organizers and attendees to support event publishing, ticketing operations and customer assistance.', 'Mujjuzi Jeremiah, Events Manager at Obitickets'],
     ['team', 'mega', 'Our leadership team', '', 'Marketing & Partnerships Team', 'Focuses on building relationships, promoting the Obitickets brand and creating opportunities for organizers, partners and event communities.', ''],
+    ['person', '/assets/images/team/mungutye-ethel.jpg', 'Accountant', 'Mungutye Ethel', '', '', 'Mungutye Ethel, Accountant at Obitickets'],
 ];
 $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
 ?>
@@ -109,8 +110,8 @@ $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
             <div class="tm-role"><?= $h($role) ?></div>
             <div class="tm-body">
               <?php if ($name !== ''): ?><span class="nm"><?= $h($name) ?></span><?php endif; ?>
-              <h3<?= $name === '' ? ' class="t"' : '' ?>><?= $h($title) ?></h3>
-              <p><?= $h($text) ?></p>
+              <?php if ($title !== ''): ?><h3<?= $name === '' ? ' class="t"' : '' ?>><?= $h($title) ?></h3><?php endif; ?>
+              <?php if ($text !== ''): ?><p><?= $h($text) ?></p><?php endif; ?>
               <div class="tm-bar"></div>
               <p class="tm-foot">Discover. Book. Attend.</p>
             </div>
