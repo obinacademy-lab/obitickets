@@ -10,7 +10,19 @@ if (!$order) {
 }
 $error = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Follow up with a buyer whose payment failed (email, or open a WhatsApp chat).
+$followupError = null;
+$followupDraft = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with((string) ($_POST['action'] ?? ''), 'followup_')) {
+    verify_csrf();
+    $fu = followup_post($orderId, followup_sender((int) $admin['id'], 'ADMIN'), '/admin-order-detail.php?id=' . $orderId);
+    if ($fu && $fu['ok']) {
+        header('Location: ' . $fu['done']);
+        exit;
+    }
+    $followupError = $fu['error'] ?? 'Something went wrong.';
+    $followupDraft = (string) ($_POST['message'] ?? '');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     if (($_POST['action'] ?? '') === 'refund') {
         if (!admin_can('orders.refund')) {
@@ -61,6 +73,7 @@ render_admin_head('orders');
   <span class="admin-badge <?= $statusMeta[$order['status']] ?? 'admin-badge-muted' ?>" style="font-size:0.82rem"><?= htmlspecialchars($order['status']) ?></span>
 </div>
 
+<?php if (isset($_GET['followup'])): ?><span data-flash="Your message was sent." hidden></span><?php endif; ?>
 <?php if (isset($_GET['updated'])): ?><span data-flash="Refund recorded." hidden></span><?php endif; ?>
 <?php if (isset($_GET['resent'])): ?><span data-flash="Ticket email resent to <?= htmlspecialchars($order['buyer_email'], ENT_QUOTES) ?>." hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
@@ -131,6 +144,8 @@ render_admin_head('orders');
         <?php endif; ?>
       </div>
     </div>
+
+    <?= render_followup_panel($orderId, followup_sender((int) $admin['id'], 'ADMIN'), $followupError, $followupDraft, true) ?>
 
     <?php if (admin_can('orders.refund') && $order['status'] === 'PAID' && !$order['refunded_at']): ?>
       <div class="admin-card">

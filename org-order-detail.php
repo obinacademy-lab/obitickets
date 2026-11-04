@@ -11,6 +11,21 @@ if (!$order) {
 }
 $error = null;
 
+// Follow up with a buyer whose payment failed (email, or open a WhatsApp chat). Same rule as viewing the order.
+$followupError = null;
+$followupDraft = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with((string) ($_POST['action'] ?? ''), 'followup_')) {
+    verify_csrf();
+    $fuSender = followup_sender((int) $ctx['actor_id'], $ctx['is_owner'] ? 'ORGANIZER' : 'TEAM');
+    $fu = followup_post($orderId, $fuSender, '/org-order-detail.php?id=' . $orderId);
+    if ($fu && $fu['ok']) {
+        header('Location: ' . $fu['done']);
+        exit;
+    }
+    $followupError = $fu['error'] ?? 'Something went wrong.';
+    $followupDraft = (string) ($_POST['message'] ?? '');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'request_refund') {
     verify_csrf();
     if (!organizer_can($ctx, 'refunds.request')) {
@@ -50,6 +65,7 @@ render_organizer_head('orders', $ctx);
   <span class="admin-badge <?= $statusMeta[$order['status']] ?? 'admin-badge-muted' ?>" style="font-size:0.82rem"><?= htmlspecialchars($order['status']) ?></span>
 </div>
 
+<?php if (isset($_GET['followup'])): ?><span data-flash="Your message was sent." hidden></span><?php endif; ?>
 <?php if (isset($_GET['requested'])): ?><span data-flash="Refund request sent to obitickets for approval." hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
@@ -107,6 +123,8 @@ render_organizer_head('orders', $ctx);
       <div class="admin-detail-row"><span class="k">Email</span><span class="v"><?= htmlspecialchars($order['buyer_email']) ?></span></div>
       <?php if ($order['buyer_phone']): ?><div class="admin-detail-row"><span class="k">Phone</span><span class="v"><?= htmlspecialchars($order['buyer_phone']) ?></span></div><?php endif; ?>
     </div>
+
+    <?= render_followup_panel($orderId, followup_sender((int) $ctx['actor_id'], $ctx['is_owner'] ? 'ORGANIZER' : 'TEAM'), $followupError, $followupDraft) ?>
 
     <?php if ($existingRequest): ?>
       <div class="admin-card">
