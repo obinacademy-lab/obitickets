@@ -1,0 +1,197 @@
+/* Create event: "Focus Flow". One question per screen on a deep dark stage. Only loaded by event-create.php. */
+
+/* the organizer shell steps back: no top bar, a slim icon rail, the stage fills the page */
+.org-focus .admin-topbar{display:none}
+.org-focus .admin-content{padding:0; animation:none}
+@media (min-width:1025px){
+  .org-focus .admin-sidebar{width:76px}
+  .org-focus .admin-collapse-toggle{display:none}
+  .org-focus .admin-logo-text{opacity:0; width:0}
+  .org-focus .admin-nav-label{padding-left:0; text-align:center}
+  .org-focus .admin-nav-label span{opacity:0}
+  .org-focus .admin-nav-item{justify-content:center; padding:9px; box-shadow:none}
+  .org-focus .admin-nav-item-label,.org-focus .admin-nav-badge{display:none}
+}
+
+.ef{--ef-bg:#120E0E; --ef-panel:#1C1517; --ef-line:#322729; --ef-ink:#F4EEEB; --ef-soft:#B9ADB1; --ef-mut:#8A7F83; --ef-red:#DC2626; --ef-deep:#B91C1C; --ef-ease:cubic-bezier(.16,1,.3,1);
+  position:relative; isolation:isolate; overflow:hidden; overflow:clip; display:flex; flex-direction:column; min-height:100vh; background:var(--ef-bg); color:var(--ef-ink); font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+.ef::before{content:""; position:absolute; z-index:-1; right:-160px; top:-160px; width:560px; height:560px; border-radius:50%; background:radial-gradient(closest-side,rgba(220,38,38,.26),transparent); pointer-events:none}
+.ef *{box-sizing:border-box}
+.ef button{cursor:pointer; font:inherit; color:inherit}
+.ef [hidden]{display:none!important}
+.ef a:focus-visible,.ef button:focus-visible,.ef input:focus-visible,.ef textarea:focus-visible{outline:3px solid #F87171; outline-offset:2px}
+.ef-i{flex:none; width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.ef-sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+.ef-top{display:flex; align-items:center; gap:18px; padding:20px 36px}
+.ef-back{display:inline-flex; gap:8px; align-items:center; font-weight:700; font-size:.8rem; color:var(--ef-soft); text-decoration:none; transition:color .2s}
+.ef-back:hover{color:#fff}
+.ef-dots{display:none; gap:6px; flex:1; max-width:380px; margin-inline:auto}
+.ef-dots i{flex:1; height:4px; border-radius:4px; background:#2C2326; transition:background .4s}
+.ef-dots i.on{background:var(--ef-red)}
+.ef-count{display:none; font:600 .64rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; color:var(--ef-mut)}
+.ef.is-flow .ef-dots{display:flex}
+.ef.is-flow .ef-count{display:block}
+
+.ef-errs{margin:0 36px; max-width:860px; padding:14px 18px; border-radius:14px; background:rgba(220,38,38,.14); border:1px solid rgba(248,113,113,.45); color:#FECACA; font-size:.88rem}
+.ef-errs ul{margin:8px 0 0; padding-left:18px}
+.ef-errs li{margin:2px 0}
+
+.ef-stage{flex:1; display:grid; align-content:center; padding:10px 36px 20px; max-width:860px; width:100%; margin-left:clamp(0px,calc((100% - 1120px)/2),160px); margin-right:auto}
+.ef-step{padding:26px 0; border-bottom:1px solid var(--ef-line)}
+.ef.is-flow .ef-step{display:none; padding:0; border:0}
+.ef.is-flow .ef-step.is-active{display:block; animation:efIn .6s var(--ef-ease) both}
+.ef.is-flow .ef-step.is-active.back{animation-name:efBack}
+@keyframes efIn{from{opacity:0; transform:translateY(40px)}to{opacity:1; transform:none}}
+@keyframes efBack{from{opacity:0; transform:translateY(-40px)}to{opacity:1; transform:none}}
+.ef-q{margin:0 0 14px; font:600 .66rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.22em; text-transform:uppercase; color:#F87171}
+.ef-h{margin:0 0 12px; font:800 clamp(1.9rem,4.4vw,3.4rem)/1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.045em; color:#fff; text-wrap:balance}
+.ef-h:focus{outline:0}
+.ef-lede{margin:0 0 28px; color:var(--ef-soft); font-size:1rem; max-width:60ch}
+.ef-stack{display:grid; gap:22px}
+.ef-g2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+.ef-key{margin:14px 0 0; font-size:.78rem; color:var(--ef-mut)}
+.ef-key kbd{padding:2px 7px; border-radius:6px; border:1px solid #3A2F32; background:var(--ef-panel); font:600 .68rem 'JetBrains Mono',ui-monospace,monospace; color:#CDBFC3}
+.ef-msg{margin:12px 0 0; min-height:1.3em; font-size:.84rem; font-weight:700; color:#FCA5A5}
+.ef-step.is-bad .ef-big,.ef-step.is-bad .ef-inp.is-bad{border-color:#F87171}
+.ef-step.shake{animation:efShake .4s}
+@keyframes efShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+.ef-big{width:100%; border:0; border-bottom:2px solid #3A2F32; border-radius:0; background:transparent; padding:8px 0 14px; font:700 clamp(1.5rem,3.6vw,2.6rem)/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.03em; color:#fff; transition:border-color .3s}
+.ef-big::placeholder{color:#4D4245}
+.ef-big:focus{outline:0; border-color:var(--ef-red)}
+
+.ef-fld{display:grid; gap:7px; min-width:0}
+.ef-lbl{font-weight:700; font-size:.8rem; color:#E9E1DE}
+.ef-lbl small,.ef-fld small{font-weight:500; color:var(--ef-mut)}
+.ef-inp{width:100%; min-width:0; height:48px; padding:0 14px; border:1.5px solid var(--ef-line); border-radius:12px; background:var(--ef-panel); font:500 .94rem 'Plus Jakarta Sans',system-ui,sans-serif; color:#fff; color-scheme:dark; transition:border-color .2s, box-shadow .2s}
+textarea.ef-inp{height:auto; padding:13px 14px; resize:vertical; line-height:1.6}
+.ef-inp::placeholder{color:#5D5256}
+.ef-inp:focus{outline:0; border-color:var(--ef-red); box-shadow:0 0 0 4px rgba(220,38,38,.16)}
+.ef-inp[readonly]{background:#171113; color:#7B7074}
+
+.ef-chips{display:flex; flex-wrap:wrap; gap:8px}
+.ef-chips label,.ef-emo label,.ef-seg label{position:relative; cursor:pointer}
+.ef-chips input,.ef-emo input,.ef-seg input{position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer}
+.ef-chips span{display:inline-flex; align-items:center; padding:10px 16px; border:1.5px solid var(--ef-line); border-radius:99px; background:var(--ef-panel); color:#E9E1DE; font-weight:700; font-size:.82rem; transition:background .25s,color .25s,border-color .25s,transform .3s var(--ef-ease)}
+.ef-chips label:hover span{border-color:#fff; transform:translateY(-1px)}
+.ef-chips input:checked+span{background:var(--ef-red); border-color:var(--ef-red); color:#fff}
+.ef-chips input:focus-visible+span{outline:3px solid #F87171; outline-offset:2px}
+.ef-chips-sm span{padding:8px 13px; font-size:.78rem}
+.ef-emo{display:grid; grid-template-columns:repeat(auto-fill,minmax(48px,52px)); gap:8px}
+.ef-emo span{display:grid; place-items:center; aspect-ratio:1; border:1.5px solid var(--ef-line); border-radius:13px; background:var(--ef-panel); font-size:1.4rem; transition:transform .3s var(--ef-ease),border-color .25s,background .25s}
+.ef-emo label:hover span{transform:translateY(-2px); border-color:#fff}
+.ef-emo input:checked+span{border-color:var(--ef-red); background:rgba(220,38,38,.2)}
+.ef-emo input:focus-visible+span{outline:3px solid #F87171; outline-offset:2px}
+.ef-seg{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding:4px; border-radius:14px; background:var(--ef-panel)}
+.ef-seg span{display:grid; gap:1px; justify-items:center; text-align:center; padding:12px 8px; border-radius:11px; color:#E9E1DE; font-weight:800; font-size:.86rem; transition:background .25s,color .25s}
+.ef-seg small{font-weight:500; font-size:.68rem; color:var(--ef-mut)}
+.ef-seg label:hover span{background:rgba(255,255,255,.04)}
+.ef-seg input:checked+span{background:#2C2326; color:#fff; box-shadow:inset 0 0 0 1.5px var(--ef-red)}
+.ef-seg input:focus-visible+span{outline:3px solid #F87171; outline-offset:1px}
+.ef-mf{display:grid; gap:16px; margin-top:18px}
+.ef-lock{display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:12px; background:var(--ef-panel); color:var(--ef-soft); font-size:.8rem}
+.ef-lock .ef-i{margin-top:2px; color:#F87171}
+.ef[data-mode="ONLINE"] .ef-only-venue{display:none}
+.ef[data-mode="IN_PERSON"] .ef-only-online{display:none}
+
+.ef-drop{position:relative; display:grid; place-items:center; gap:4px; text-align:center; min-height:190px; padding:22px; border:1.5px dashed #3A2F32; border-radius:18px; background:var(--ef-panel); cursor:pointer; overflow:hidden; transition:border-color .25s,background .25s}
+.ef-drop:hover{background:#241A1D; border-color:var(--ef-red)}
+.ef-drop:focus-within{border-color:var(--ef-red)}
+.ef-drop input{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer}
+.ef-dic{display:grid; place-items:center; width:44px; height:44px; border-radius:13px; background:rgba(220,38,38,.18); color:#F87171; font-size:1.15rem}
+.ef-drop b{font-size:.9rem; color:#fff}
+.ef-drop small{font-size:.76rem; color:var(--ef-mut); max-width:46ch}
+.ef-drop-sm{min-height:110px}
+.ef-pv{position:absolute; inset:0; background:center/cover no-repeat; opacity:0; transition:opacity .5s}
+.ef-rp{position:absolute; left:12px; bottom:12px; padding:6px 12px; border-radius:99px; background:rgba(23,17,15,.88); color:#fff; font:600 .6rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; opacity:0; transition:opacity .3s}
+.ef-drop.has{border-style:solid; border-color:transparent}
+.ef-drop.has .ef-pv,.ef-drop.has .ef-rp{opacity:1}
+.ef-drop.has .ef-dic,.ef-drop.has b,.ef-drop.has small{opacity:0}
+
+.ef-tiers{display:grid; gap:14px}
+.ef-tier{display:grid; gap:14px; padding:18px; border:1.5px solid var(--ef-line); border-radius:18px; background:var(--ef-panel); animation:efIn .5s var(--ef-ease) both}
+.ef-tier-top{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:12px}
+.ef-tier-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px}
+.ef-tier-foot{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:12px; border-top:1px dashed var(--ef-line)}
+.ef-sw{display:inline-flex; align-items:center; gap:9px; position:relative; cursor:pointer; font-weight:700; font-size:.8rem}
+.ef-sw input{position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer}
+.ef-sw i{position:relative; width:38px; height:22px; border-radius:99px; background:#3A2F32; transition:background .25s; flex:none}
+.ef-sw i::after{content:""; position:absolute; left:3px; top:3px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.35); transition:transform .3s var(--ef-ease)}
+.ef-sw input:checked+i{background:#16A34A}
+.ef-sw input:checked+i::after{transform:translateX(16px)}
+.ef-sw input:focus-visible+i{outline:3px solid #F87171; outline-offset:2px}
+.ef-pay{font-size:.8rem; color:var(--ef-soft)}
+.ef-pay b{color:#fff}
+.ef-rm{margin-left:auto; display:grid; place-items:center; width:36px; height:36px; border-radius:10px; border:1.5px solid var(--ef-line); background:var(--ef-panel); color:var(--ef-soft); transition:background .2s,color .2s,border-color .2s}
+.ef-rm:hover{background:#fff; color:#120E0E; border-color:#fff}
+.ef-add{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:15px; border:1.5px dashed #3A2F32; border-radius:16px; background:transparent; color:var(--ef-soft); font-weight:800; font-size:.86rem; transition:border-color .25s,color .25s,background .25s}
+.ef-add:hover{background:#241A1D; color:#fff; border-color:var(--ef-red)}
+.ef-comm{display:flex; gap:10px; align-items:flex-start; padding:13px 15px; border-radius:14px; background:var(--ef-panel); color:var(--ef-soft); font-size:.82rem; line-height:1.55}
+.ef-comm .ef-i{margin-top:3px; color:#F87171}
+.ef-comm b{color:#fff}
+.ef-pot{display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; padding:16px 18px; border-radius:16px; background:var(--ef-panel); border:1px solid #2C2326}
+.ef-pot small{display:block; font:600 .58rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.18em; text-transform:uppercase; color:#B9ADB1}
+.ef-pot b{font:800 1.5rem 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; color:#fff}
+.ef-pot span{font-size:.78rem; color:#CDBFC3; max-width:32ch}
+
+.ef-chk{list-style:none; margin:0; padding:0; display:grid}
+.ef-chk li{display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid #2C2326; font-size:.9rem; font-weight:600}
+.ef-chk i{display:grid; place-items:center; width:24px; height:24px; border-radius:50%; border:1.5px solid #4D4245; color:transparent; flex:none; transition:background .3s,border-color .3s,color .3s}
+.ef-chk li.done i{background:#16A34A; border-color:#16A34A; color:#fff}
+.ef-chk em{font:600 .6rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; font-style:normal; color:var(--ef-mut); margin-left:6px}
+.ef-chk button{margin-left:auto; border:0; background:none; color:#F87171; font-weight:800; font-size:.78rem; padding:4px 6px}
+.ef-chk button:hover{text-decoration:underline}
+.ef-fin{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px}
+.ef-miss{margin:14px 0 0; min-height:1.3em; font-size:.84rem; color:#CDBFC3}
+.ef-miss b{color:#fff}
+
+.ef-btn{display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:13px 22px; border-radius:13px; border:1.5px solid transparent; background:transparent; font-weight:800; font-size:.88rem; text-decoration:none; transition:background .25s,color .25s,transform .35s var(--ef-ease),box-shadow .4s var(--ef-ease),opacity .25s,border-color .25s}
+.ef-red{background:var(--ef-deep); color:#fff}
+.ef-red:hover:not(:disabled){background:#DC2626; transform:translateY(-2px); box-shadow:0 16px 26px -16px rgba(220,38,38,.75)}
+.ef-out{border-color:#fff; color:#fff}
+.ef-out:hover:not(:disabled){background:#fff; color:#120E0E; transform:translateY(-2px)}
+.ef-ghost{color:var(--ef-soft); padding-inline:14px}
+.ef-ghost:hover:not(:disabled){color:#fff}
+.ef-btn:disabled{opacity:.4; cursor:not-allowed}
+.ef-btn .ef-i{transition:transform .35s var(--ef-ease)}
+.ef-red:hover:not(:disabled) .ef-i{transform:translateX(4px)}
+
+.ef-nav{display:none; align-items:center; gap:10px; padding:18px 36px 28px; max-width:860px; width:100%; margin-left:clamp(0px,calc((100% - 1120px)/2),160px); margin-right:auto}
+.ef.is-flow .ef-nav{display:flex}
+.ef-skip{margin-left:auto}
+.ef:not(.is-flow) .ef-fin{margin-bottom:30px}
+
+.ef-mini{position:absolute; right:28px; bottom:100px; width:220px}
+.ef:not(.is-flow) .ef-mini{display:none}
+.ef-eyebrow{margin:0 0 8px; font:600 .6rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.2em; text-transform:uppercase; color:var(--ef-mut)}
+.ef-card{border-radius:18px; overflow:hidden; background:var(--ef-panel); border:1px solid #2C2326; box-shadow:0 30px 44px -34px rgba(0,0,0,.8)}
+.ef-card-im{position:relative; aspect-ratio:16/10; display:grid; place-items:center; font-size:2.6rem; background:linear-gradient(135deg,#2A1517,#1F1214) center/cover no-repeat}
+.ef-pills{position:absolute; left:10px; top:10px; display:flex; gap:6px}
+.ef-pills span{padding:5px 10px; border-radius:99px; background:rgba(23,17,15,.88); color:#fff; font:600 .54rem 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase}
+.ef-pills .ef-pill-g{background:#16A34A}
+.ef-card-tx{padding:13px 15px 15px; display:grid; gap:3px}
+.ef-card-tx b{font:700 .95rem/1.25 'Outfit','Plus Jakarta Sans',sans-serif; color:#fff; overflow-wrap:anywhere}
+.ef-card-tx span{font-size:.76rem; color:#B9ADB1}
+.ef-card-pr{margin-top:5px; font-weight:800; font-size:.84rem; color:#FCA5A5}
+
+@media (max-width:1220px){
+  .ef-mini{display:none}
+  .ef-stage,.ef-nav{margin-inline:auto}
+}
+@media (max-width:900px){
+  .ef-top{padding:16px 18px}
+  .ef-errs{margin-inline:18px}
+  .ef-stage{padding:6px 18px 16px}
+  .ef-nav{padding:14px 18px 22px; flex-wrap:wrap}
+  .ef.is-flow .ef-nav{position:sticky; bottom:0; z-index:5; padding-top:26px; background:linear-gradient(180deg,rgba(18,14,14,0),#120E0E 38%)}
+  .ef-count{display:none!important}
+  .ef-g2{grid-template-columns:minmax(0,1fr)}
+  .ef-tier-top{grid-template-columns:minmax(0,1fr)}
+  .ef-tier-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ef-drop{min-height:150px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ef.is-flow .ef-step.is-active,.ef-tier,.ef-step.shake{animation:none}
+  .ef *{transition-duration:.01ms!important}
+}

@@ -92,23 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Create Event';
+// the Focus Flow takes over the whole workspace: slim sidebar rail, no top bar (see event-flow.css)
+$GLOBALS['orgFocusMode'] = true;
+$GLOBALS['orgExtraCss'] = ['event-flow.css'];
 render_organizer_head('create-event', $ctx);
-?>
 
-<div class="admin-page-head">
-  <div><h1>Create your event</h1><p>Fill in the details below — you can save it as a draft and publish later.</p></div>
-</div>
+$formAction = '/event-create.php';
+include __DIR__ . '/includes/organizer-event-flow.php';
 
-<div class="admin-card" style="max-width:760px">
-  <?php foreach ($errors as $e): ?>
-    <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
-  <?php endforeach; ?>
-
-  <?php
-  $formAction = '/event-create.php';
-  $submitLabel = 'Save event';
-  include __DIR__ . '/includes/organizer-event-form.php';
-  ?>
-</div>
-
-<?php render_organizer_foot(); ?>
+render_organizer_foot();
