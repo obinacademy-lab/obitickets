@@ -179,7 +179,7 @@ function ef_tier_row(array $tier, bool $onlineReady): void
           <?php foreach ($tiers as $tier): ef_tier_row($tier, $onlineReady); endforeach; ?>
         </div>
         <button type="button" class="ef-add" id="add-tier"><svg class="ef-i" aria-hidden="true"><use href="#ef-plus"/></svg>Add another ticket type</button>
-        <div class="ef-comm"><svg class="ef-i" aria-hidden="true"><use href="#ef-info"/></svg><span>obitickets keeps a <b>10% commission</b> on each paid ticket sold. The prices above are what your attendees pay, and your payout per ticket is 90% of that.<?php if ($onlineReady): ?> Switch a ticket to <b>Free</b> and there is no price, no fee and no payment step. Free tickets are limited per person (<?= FREE_TICKET_DEFAULT_LIMIT ?> unless you choose another number).<?php endif; ?></span></div>
+        <div class="ef-comm"><svg class="ef-i" aria-hidden="true"><use href="#ef-info"/></svg><span>obitickets keeps a <b><?= commission_percent_label() ?>% commission</b> on each paid ticket sold. The prices above are what your attendees pay, and your payout per ticket is <?= 100 - (float) commission_percent_label() ?>% of that.<?php if ($onlineReady): ?> Switch a ticket to <b>Free</b> and there is no price, no fee and no payment step. Free tickets are limited per person (<?= FREE_TICKET_DEFAULT_LIMIT ?> unless you choose another number).<?php endif; ?></span></div>
         <div class="ef-pot"><div><small>If every ticket sells</small><b id="efPot">UGX 0</b></div><span>Your payout across all ticket types, after the commission.</span></div>
       </div>
       <p class="ef-msg" data-msg role="alert"></p>

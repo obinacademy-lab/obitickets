@@ -17,7 +17,7 @@ if (!empty($_SESSION['google_error'])) {
 }
 unset($_SESSION['google_error']);
 $name = $email = $phone = '';
-$role = 'ATTENDEE';
+$role = ($_GET['role'] ?? '') === 'ORGANIZER' ? 'ORGANIZER' : 'ATTENDEE';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();

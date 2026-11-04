@@ -54,7 +54,7 @@ include __DIR__ . '/includes/header.php';
       </div>
       <div class="faq-item">
         <div class="faq-q">How much does it cost to sell tickets?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
-        <div class="faq-a">Listing is free. We take a 10% commission, only on tickets that actually sell — see our <a href="/pricing.php" style="color:var(--purple-deep); font-weight:700;">pricing page</a> for the full breakdown.</div>
+        <div class="faq-a">Listing is free. We take a <?= commission_percent_label() ?>% commission, only on paid tickets that actually sell (free tickets carry none) — see our <a href="/pricing.php" style="color:var(--purple-deep); font-weight:700;">pricing page</a> for the full breakdown.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">How do I check attendees in at the door?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>

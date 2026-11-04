@@ -11,9 +11,17 @@ class InsufficientTicketsException extends RuntimeException
  * obitickets' cut of every ticket sold, owed by the organizer (not the
  * buyer — see the buyer-facing SERVICE_FEE_PER_TICKET below for that
  * separate fee). Applied to subtotal_amount at the moment of purchase and
- * stored on the order, so a future rate change never rewrites past orders.
+ * stored on the order, so a rate change never rewrites past orders: orders
+ * paid before 4 Nov 2026 keep the 10% they were charged, new ones pay 5%.
+ * Free tickets carry no commission at all.
  */
-const PLATFORM_COMMISSION_RATE = 0.10;
+const PLATFORM_COMMISSION_RATE = 0.05;
+
+/** The rate as people read it: "5", or "7.5" if it ever has a decimal. Every page that quotes the rate uses this. */
+function commission_percent_label(): string
+{
+    return rtrim(rtrim(number_format(PLATFORM_COMMISSION_RATE * 100, 2, '.', ''), '0'), '.');
+}
 
 /**
  * Flat fee charged to the BUYER on top of every ticket, in UGX (obitickets

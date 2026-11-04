@@ -30,7 +30,7 @@ $aboutWhy = [
       </div>
     </div>
     <div class="am-mos hero-in d5">
-      <figure class="am-ph am-m1"><img src="/assets/images/about/about-friends.jpg" width="640" height="1146" alt="Two friends sharing drinks and smiling" fetchpriority="high"><span class="am-tag"><b>10%</b><small>Commission, only when you sell</small></span></figure>
+      <figure class="am-ph am-m1"><img src="/assets/images/about/about-friends.jpg" width="640" height="1146" alt="Two friends sharing drinks and smiling" fetchpriority="high"><span class="am-tag"><b><?= commission_percent_label() ?>%</b><small>Commission, only when you sell</small></span></figure>
       <figure class="am-ph"><img src="/assets/images/about/about-rugby.jpg" width="640" height="954" alt="Players competing for the ball in a rugby match"></figure>
       <figure class="am-ph"><img src="/assets/images/about/about-party.jpg" width="560" height="560" alt="Guests laughing at a party"></figure>
     </div>

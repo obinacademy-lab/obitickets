@@ -175,7 +175,7 @@ function render_tier_form_row(array $tier, bool $withId): void
   <div class="poster-divider" style="margin:28px 0"></div>
 
   <h3 style="font-size:1.1rem">Ticket types</h3>
-  <p class="field-hint" style="margin-bottom:14px">obitickets keeps a 10% commission on each paid ticket sold — the prices below are what your attendees pay; your payout per ticket is 90% of that. Switch a ticket to <b>Free</b> and there is no price, no fee and no payment step. Free tickets are limited per person (<?= FREE_TICKET_DEFAULT_LIMIT ?> unless you choose another number).</p>
+  <p class="field-hint" style="margin-bottom:14px">obitickets keeps a <?= commission_percent_label() ?>% commission on each paid ticket sold — the prices below are what your attendees pay; your payout per ticket is <?= 100 - (float) commission_percent_label() ?>% of that. Switch a ticket to <b>Free</b> and there is no price, no fee and no payment step. Free tickets are limited per person (<?= FREE_TICKET_DEFAULT_LIMIT ?> unless you choose another number).</p>
   <div id="tier-rows">
     <?php foreach ($tiers as $tier): render_tier_form_row($tier, true); endforeach; ?>
   </div>
