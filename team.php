@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// Public team page, "Backstage Pass": the owner's copy, with the team hanging as event passes.
+// Public team page, "Backstage Pass": the owner's copy, with the team as portraits and department cards.
 // Three people are named (Obin Ivan, Founder & CEO; Mujjuzi Jeremiah, Events Manager; Mungutye Ethel, Accountant). There are no other team members.
 $pageTitle = 'Our Team — The People Behind obitickets';
 $pageDescription = 'Meet the team behind Obitickets: the people powering better event experiences, and what drives us to make ticketing simple and accessible across Uganda.';
@@ -25,7 +25,7 @@ $passes = [
     ['team', 'chip', 'Our leadership team', '', 'Technology & Development Team', 'Responsible for building, maintaining and improving the technology that powers event publishing, digital ticketing, payments and QR ticket validation.', ''],
     ['person', '/assets/images/team/mujjuzi-jeremiah.jpg', 'Events Manager', 'Mujjuzi Jeremiah', 'Operations & Event Support Team', 'Works with event organizers and attendees to support event publishing, ticketing operations and customer assistance.', 'Mujjuzi Jeremiah, Events Manager at Obitickets'],
     ['team', 'mega', 'Our leadership team', '', 'Marketing & Partnerships Team', 'Focuses on building relationships, promoting the Obitickets brand and creating opportunities for organizers, partners and event communities.', ''],
-    ['person', '/assets/images/team/mungutye-ethel.jpg', 'Accountant', 'Mungutye Ethel', '', '', 'Mungutye Ethel, Accountant at Obitickets'],
+    ['person', '/assets/images/team/mungutye-ethel.jpg', 'Accountant', 'Mungutye Ethel', 'Accountant', "Looks after the financial records of Obitickets, from ticket sales and organizer balances to payouts and reporting, keeping the platform's accounts accurate, organised and transparent.", 'Mungutye Ethel, Accountant at Obitickets'],
 ];
 $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
 ?>
@@ -101,23 +101,26 @@ $ticker = ['Discover. Book. Attend.', "Uganda's Events. One Destination."];
         <div><h2>Meet Our Leadership</h2><div class="tm-rule"></div></div>
         <p class="tm-p">Our leadership team provides the vision, direction and commitment that drive Obitickets forward.</p>
       </div>
-      <div class="tm-lan">
-        <i class="tm-strap" data-in="clip" style="--d:100"></i>
-        <div class="tm-passes">
-          <?php foreach ($passes as $i => [$kind, $media, $role, $name, $title, $text, $alt]): ?>
-          <div data-in="down" style="--d:<?= 200 + $i * 150 ?>"><div class="tm-pw"><div class="tm-clip"></div><div class="tm-pass" data-tilt>
-            <div class="tm-ph<?= $kind === 'team' && $i === 3 ? ' g' : '' ?>"><?php if ($kind === 'person'): ?><img src="<?= $h($media) ?>" width="<?= $i === 0 ? 650 : 480 ?>" height="<?= $i === 0 ? 1080 : 480 ?>" alt="<?= $h($alt) ?>" loading="lazy" decoding="async"><?php else: ?><?= $icon($media) ?><?php endif; ?></div>
-            <div class="tm-role"><?= $h($role) ?></div>
-            <div class="tm-body">
-              <?php if ($name !== ''): ?><span class="nm"><?= $h($name) ?></span><?php endif; ?>
-              <?php if ($title !== ''): ?><h3<?= $name === '' ? ' class="t"' : '' ?>><?= $h($title) ?></h3><?php endif; ?>
-              <?php if ($text !== ''): ?><p><?= $h($text) ?></p><?php endif; ?>
-              <div class="tm-bar"></div>
-              <p class="tm-foot">Discover. Book. Attend.</p>
-            </div>
-          </div></div></div>
-          <?php endforeach; ?>
-        </div>
+      <div class="tm-people">
+        <?php foreach ([0, 2, 4] as $n => $i): [$kind, $media, $role, $name, $title, $text, $alt] = $passes[$i]; ?>
+        <article class="tm-pcard" data-in="up" style="--d:<?= $n * 120 ?>">
+          <div class="tm-pph"><img src="<?= $h($media) ?>" width="<?= $i === 0 ? 650 : 480 ?>" height="<?= $i === 0 ? 1080 : 480 ?>" alt="<?= $h($alt) ?>" loading="lazy" decoding="async"><span class="r"><?= $h($role) ?></span></div>
+          <div class="tm-pbd">
+            <h3 class="nm"><?= $h($name) ?></h3>
+            <?php if ($title !== $role): ?><span class="t"><?= $h($title) ?></span><?php endif; ?>
+            <p><?= $h($text) ?></p>
+            <p class="tm-foot">Discover. Book. Attend.</p>
+          </div>
+        </article>
+        <?php endforeach; ?>
+      </div>
+      <div class="tm-depts">
+        <?php foreach ([1, 3] as $n => $i): [$kind, $media, $role, $name, $title, $text, $alt] = $passes[$i]; ?>
+        <article class="tm-dept" data-in="up" style="--d:<?= $n * 120 ?>">
+          <span class="ico"><?= $icon($media) ?></span>
+          <div><small><?= $h($role) ?></small><h3><?= $h($title) ?></h3><p><?= $h($text) ?></p><p class="tm-foot">Discover. Book. Attend.</p></div>
+        </article>
+        <?php endforeach; ?>
       </div>
     </div>
   </section>
