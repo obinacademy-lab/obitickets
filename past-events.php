@@ -63,22 +63,39 @@ foreach (array_merge($featured, $events) as $i => $e) {
 
 <div class="wrap pe-main">
 
-  <?php if (!$nothingYet): ?>
-  <div class="pe-toolbar">
-    <nav class="pe-filters" aria-label="Filter past events">
-      <a class="pe-chip<?= $group === '' ? ' is-on' : '' ?>" href="<?= htmlspecialchars(past_list_url($q)) ?>"<?= $group === '' ? ' aria-current="true"' : '' ?>>All Past Events <span><?= (int) $counts['all'] ?></span></a>
-      <?php foreach (PAST_GROUPS as $key => $label): ?>
-        <a class="pe-chip<?= $group === $key ? ' is-on' : '' ?>" href="<?= htmlspecialchars(past_list_url($q, $key)) ?>"<?= $group === $key ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($label) ?> <span><?= (int) $counts[$key] ?></span></a>
-      <?php endforeach; ?>
-    </nav>
-    <form class="pe-search" action="/past-events.php" method="get" role="search">
+  <?php if (!$nothingYet):
+      $tileIcons = [
+          '' => 'M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z',
+          'concerts' => 'M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3',
+          'business' => 'M3 8h18v12H3zM9 8V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M3 13h18',
+          'workshops' => 'M3 9l9-5 9 5-9 5zM7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5',
+          'festivals' => 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z',
+          'lifestyle' => 'M9 8a3 3 0 1 0 0 .01M3 20c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5M17 9a2.5 2.5 0 1 0 0 .01M16.5 14.7c2.6 0 4.5 1.7 4.5 4.3',
+      ];
+      $tiles = ['' => 'All Past Events'] + PAST_GROUPS;
+  ?>
+  <section class="pe-find" aria-label="Find past events">
+    <form class="pe-field<?= $q !== '' ? ' has-text' : '' ?>" action="/past-events.php" method="get" role="search">
       <?php if ($group !== ''): ?><input type="hidden" name="group" value="<?= htmlspecialchars($group) ?>"><?php endif; ?>
       <label class="pe-sr" for="peq">Search past events</label>
-      <svg width="16" height="16" aria-hidden="true"><use href="#ic-search"/></svg>
+      <svg width="17" height="17" aria-hidden="true"><use href="#ic-search"/></svg>
       <input id="peq" type="search" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search by event, venue or organizer">
+      <?php if ($q !== ''): ?><a class="pe-clr" href="<?= htmlspecialchars(past_list_url('', $group)) ?>" aria-label="Clear search">&times;</a><?php endif; ?>
       <button type="submit">Search</button>
     </form>
-  </div>
+    <nav class="pe-tiles" aria-label="Filter past events">
+      <?php foreach ($tiles as $key => $label):
+          $n = (int) $counts[$key === '' ? 'all' : $key];
+          $on = $group === $key;
+      ?>
+        <a class="pe-tile<?= $on ? ' is-on' : '' ?><?= $n === 0 ? ' is-zero' : '' ?>" href="<?= htmlspecialchars(past_list_url($q, $key)) ?>"<?= $on ? ' aria-current="true"' : '' ?>>
+          <span class="pe-tile-ic"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="<?= $tileIcons[$key] ?>"/></svg></span>
+          <b><?= htmlspecialchars($label) ?></b>
+          <small><?= $n === 0 ? 'None yet' : $n . ($n === 1 ? ' event' : ' events') ?></small>
+        </a>
+      <?php endforeach; ?>
+    </nav>
+  </section>
   <?php endif; ?>
 
   <?php if ($nothingYet): ?>
