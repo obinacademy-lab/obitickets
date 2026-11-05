@@ -3,6 +3,31 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $admin = require_admin_permission('audit.view');
 $ready = ipguard_ready();
+$installError = null;
+
+// "Switch on": runs migration/027_ip_guard.sql (two CREATE TABLE IF NOT EXISTS statements) so nobody has to open phpMyAdmin.
+if (!$ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'install' && admin_can('admins.manage')) {
+    verify_csrf();
+    $sqlFile = rtrim((string) (env_status()['root'] ?? dirname(__DIR__)), '/\\') . '/migration/027_ip_guard.sql';
+    $sql = is_file($sqlFile) ? (string) file_get_contents($sqlFile) : '';
+    $sql = preg_replace('/--[^\n]*/', '', $sql);                       // drop comments
+    $statements = array_filter(array_map('trim', explode(';', (string) $sql)));
+    if (!$statements || count($statements) > 4 || array_filter($statements, static fn ($s) => stripos($s, 'CREATE TABLE IF NOT EXISTS ip_') !== 0)) {
+        $installError = 'The migration file is missing or not what was expected, so nothing was run.';
+    } else {
+        try {
+            foreach ($statements as $s) {
+                db()->exec($s);
+            }
+            log_admin_action((int) $admin['id'], 'ipguard.install', 'settings', null, null);
+            header('Location: /admin-ip-blocks.php?installed=1');
+            exit;
+        } catch (Throwable $e) {
+            error_log('[ipguard] install failed: ' . $e->getMessage());
+            $installError = 'The database refused to create the tables. Run migration/027_ip_guard.sql in phpMyAdmin instead.';
+        }
+    }
+}
 
 if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -34,9 +59,15 @@ render_admin_head('ipblocks');
 </div>
 
 <?php if (!$ready): ?>
-  <div class="admin-card"><h3>Not switched on yet</h3><p class="muted" style="margin-top:8px">The blocker needs one database step first: run <span class="mono">migration/027_ip_guard.sql</span> in phpMyAdmin. Until then nothing is recorded or blocked, and the site works as normal.</p></div>
+  <?php if ($installError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($installError) ?></div><?php endif; ?>
+  <div class="admin-card"><h3>Not switched on yet</h3>
+    <p class="muted" style="margin:8px 0 14px">The blocker needs two small database tables first. Until then nothing is recorded or blocked, and the site works as normal. The button creates them (it only adds tables, it never changes or removes existing data).</p>
+    <?php if (admin_can('admins.manage')): ?><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="install"><button class="btn btn-purple" type="submit">Switch on the IP blocker</button></form>
+    <?php else: ?><p class="muted">Ask a full admin to switch it on.</p><?php endif; ?>
+  </div>
 <?php else: ?>
   <?php if (isset($_GET['done'])): ?><div class="alert alert-success" style="margin-bottom:16px">Block lifted.</div><?php endif; ?>
+  <?php if (isset($_GET['installed'])): ?><div class="alert alert-success" style="margin-bottom:16px">The IP blocker is switched on.</div><?php endif; ?>
 
   <h3 style="margin:6px 0 12px">Blocked now <span class="muted" style="font-weight:400;font-size:.85rem">&middot; <?= count($blocked) ?></span></h3>
   <?php if (!$blocked): ?>
