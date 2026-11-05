@@ -243,7 +243,8 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-wallet'; // "Marquee" look. Use 'event-page ev-night' for the dark Night look, or just 'event-page' for the plain light one.
+$bodyClass = 'event-page ev-wallet ev-bento'; // Bento tiles. Drop ev-bento for the Wallet look (and ev-wallet too for the plain light one).
+$isBento = str_contains($bodyClass, 'ev-bento');
 include __DIR__ . '/includes/header.php';
 ?>
 
@@ -303,41 +304,8 @@ $wlIc = static function (string $n): string {
     return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $p . '</svg>';
 };
 ?>
-<div class="wl-rib" aria-hidden="true"><div><?php for ($wlR = 0; $wlR < 4; $wlR++) { foreach ($wlRib as $wlItem) { echo '<span>' . htmlspecialchars($wlItem) . '</span>'; } } ?></div></div>
-
-<!-- ===== hero ===== -->
-<section class="ev-hero<?= $eventHasEnded ? ' wl-ended' : '' ?>"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
-  <div class="ev-wrap ev-hero-grid">
-
-    <?php if (!empty($event['banner_image'])): ?>
-      <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
-        <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
-      </div>
-    <?php else: ?>
-      <div class="ev-cover ev-cover-fallback" aria-hidden="true"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-    <?php endif; ?>
-
-    <div class="ev-hero-text">
-    <div class="ev-eyebrow">
-      <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
-      <span class="ev-dot" aria-hidden="true"></span>
-      <?php if ($eventHasEnded): ?>
-        <span class="ev-eyebrow-state">Event ended</span>
-      <?php else: ?>
-        <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
-      <?php endif; ?>
-    </div>
-      <?php if ($isOnline || $hasFreeTier): ?>
-        <div class="ev-badges">
-          <?php if ($isOnline): ?><span class="ev-badge ev-badge-online"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
-          <?php if ($hasFreeTier): ?><span class="ev-badge ev-badge-free"><?= $eventIsFree ? 'Free' : 'Free tickets available' ?></span><?php endif; ?>
-        </div>
-      <?php endif; ?>
-      <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
-
-      <?php
-      $isWalletLook = str_contains($bodyClass, 'ev-wallet');
-      ob_start(); ?>
+<?php
+ob_start(); ?>
         <div class="share-wrap">
           <button class="ev-icon-btn" id="shareBtn" type="button" aria-label="Share" data-share-title="<?= htmlspecialchars($event['title']) ?>" data-share-text="<?= htmlspecialchars($shareText) ?>" data-share-url="<?= htmlspecialchars($eventUrl) ?>">
             <svg width="18" height="18"><use href="#ic-share"/></svg>
@@ -350,65 +318,8 @@ $wlIc = static function (string $n): string {
           </div>
         </div>
       <?php $shareBlock = ob_get_clean(); ?>
-
-      <div class="ev-org-row">
-        <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
-        <div class="ev-org-info">
-          <span class="ev-org-lab">Organized by</span>
-          <div class="ev-org-name">
-            <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><?= htmlspecialchars($orgName) ?><?php endif; ?>
-            <?php if ($evOrgVerified): ?><span class="ev-verified" role="img" aria-label="Verified organizer" title="Verified organizer"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.87 9.33 2 10.57 2 12s.87 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91C21.37 14.67 22.25 13.43 22.25 12z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.6 12.3l2.5 2.5 4.4-4.8"/></svg></span><?php endif; ?>
-          </div>
-          <?php if ($communityReady): ?><div class="ev-org-sub"><span id="orgFollowers"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></div><?php endif; ?>
-        </div>
-        <?php if ($isWalletLook): ?><div class="ev-org-share"><?= $shareBlock ?></div><?php endif; ?>
-      </div>
-      <div class="ev-actions">
-        <?php if ($eventHasEnded): ?>
-          <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
-        <?php endif; ?>
-        <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
-        <div class="ev-event-react">
-          <div class="ev-react-wrap">
-            <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
-              <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
-              <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
-            </button>
-            <?= community_reaction_picker_html() ?>
-          </div>
-          <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
-        </div>
-        <?php endif; ?>
-        <?php if (!$isWalletLook): ?>
-        <span class="ev-grow" aria-hidden="true"></span>
-        <div class="ev-icons"><?= $shareBlock ?></div>
-        <?php endif; ?>
-      </div>
-
-      <?php if ($communityReady && $showCommunityUi): ?>
-      <div class="ev-pulse" aria-label="Event activity">
-        <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
-        <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
-        <div class="ev-pulse-item"><b id="pulseReactions"><?= number_format($social['reactions'] + ($eventReactions['total'] ?? 0)) ?></b><span>reactions</span></div>
-        <div class="ev-pulse-item"><b><?= number_format($social['comments']) ?></b><span>comments</span></div>
-      </div>
-      <?php endif; ?>
-    </div>
-  </div>
-</section>
-
-
-<div class="ev-wrap wl-bento">
-
-  <aside class="ev-side wl-s4" style="--d:0">
-    <?php if (!$eventHasEnded && $minPrice !== null): ?>
-    <div class="mq-from">
-      <span class="mq-from-l"><?= $eventIsFree ? 'ENTRY' : 'FROM' ?></span>
-      <span class="mq-from-p"><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span>
-      <a class="mq-buy" href="#buyPanel" data-open-tickets><?= $eventIsFree ? 'Get free ticket' : 'Buy now' ?></a>
-    </div>
-    <?php endif; ?>
-    <div class="ev-stub-wrap">
+<?php
+ob_start(); ?>
     <?php if ($eventHasEnded): ?>
     <aside class="ended-panel" id="endedPanel">
       <div class="ended-panel-badge"><svg width="26" height="26"><use href="#ic-cal"/></svg></div>
@@ -520,6 +431,264 @@ $wlIc = static function (string $n): string {
       </form>
     </aside>
     <?php endif; ?>
+<?php $buyHtml = ob_get_clean(); ?>
+
+<?php if ($isBento): ?>
+<?php
+$bnCap = 0;
+foreach ($tiers as $bnT) { $bnCap += max(0, (int) $bnT['quantity_total']); }
+$bnRing = !$eventHasEnded && $tiers && $bnCap > 0;
+$bnPct = $bnRing ? max(0, min(1, $wlLeft / $bnCap)) : 0;
+$bnCd = !$eventHasEnded;
+$bnLive = $bnCd && $wlStart <= time();
+$bnSameDay = date('Y-m-d', $wlStart) === date('Y-m-d', $wlEnd);
+$bnEndT = ($bnSameDay ? date('g:i A', $wlEnd) : date('D j M, g:i A', $wlEnd)) . ' EAT';
+$bnDateSub = $bnSameDay ? 'East Africa Time' : 'to ' . date('D j M Y', $wlEnd);
+$bnWhereSub = $isOnlineOnly ? ((string) ($event['online_platform'] ?? '') !== '' ? (string) $event['online_platform'] : 'The link arrives with your ticket') : (string) ($event['venue_address'] ?? '');
+$bnHasActions = $eventHasEnded || ($communityReady && $showCommunityUi && $eventReactions !== null);
+$bnSteps = $eventIsFree ? ['Tickets', 'Your ticket'] : ['Tickets', 'Pay', 'Your ticket'];
+?>
+<div class="bn-wrap"><div class="bn-grid<?= ($bnCd || $bnRing) ? '' : ' bn-short' ?>">
+
+  <section class="bn-t bn-title" data-spot>
+    <div class="bn-tags">
+      <span class="bn-pill"><?= htmlspecialchars($event['category']) ?></span>
+      <?php if ($isOnline): ?><span class="bn-pill bn-pill-on"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
+      <?php if ($hasFreeTier): ?><span class="bn-pill bn-pill-free"><?= $eventIsFree ? 'Free' : 'Free tickets available' ?></span><?php endif; ?>
+      <?php if ($eventHasEnded): ?><span class="bn-pill bn-pill-end">Event ended</span><?php endif; ?>
+    </div>
+    <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
+    <div class="bn-row">
+      <div class="bn-org">
+        <span class="bn-av" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
+        <div>
+          <small>Organized by</small>
+          <b>
+            <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><?= htmlspecialchars($orgName) ?><?php endif; ?>
+            <?php if ($evOrgVerified): ?><span class="ev-verified" role="img" aria-label="Verified organizer" title="Verified organizer"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.87 9.33 2 10.57 2 12s.87 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91C21.37 14.67 22.25 13.43 22.25 12z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.6 12.3l2.5 2.5 4.4-4.8"/></svg></span><?php endif; ?>
+          </b>
+        </div>
+      </div>
+      <div class="bn-acts">
+        <?php if (!$eventHasEnded && $minPrice !== null): ?>
+          <?php if ($wlLeft > 0 || !$tiers): ?>
+          <a class="bn-cta" href="#buyPanel"><span><?= $eventIsFree ? 'Entry' : 'From' ?> <b><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></b></span><i><?= $eventIsFree ? 'Get free ticket' : 'Get tickets' ?></i></a>
+          <?php else: ?>
+          <a class="bn-cta" href="#buyPanel"><span><b>Sold out</b></span><i>Join waitlist</i></a>
+          <?php endif; ?>
+        <?php endif; ?>
+        <?= $shareBlock ?>
+      </div>
+    </div>
+    <?php if ($bnHasActions): ?>
+    <div class="ev-actions">
+      <?php if ($eventHasEnded): ?>
+        <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
+      <?php endif; ?>
+      <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+      <div class="ev-event-react">
+        <div class="ev-react-wrap">
+          <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
+            <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
+            <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
+          </button>
+          <?= community_reaction_picker_html() ?>
+        </div>
+        <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
+      </div>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
+    <?php if ($communityReady && $showCommunityUi): ?>
+    <div class="ev-pulse" aria-label="Event activity">
+      <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
+      <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
+      <div class="ev-pulse-item"><b id="pulseReactions"><?= number_format($social['reactions'] + ($eventReactions['total'] ?? 0)) ?></b><span>reactions</span></div>
+      <div class="ev-pulse-item"><b><?= number_format($social['comments']) ?></b><span>comments</span></div>
+    </div>
+    <?php endif; ?>
+  </section>
+
+  <section class="bn-t bn-poster" data-tilt>
+    <div class="bn-pw">
+      <?php if (!empty($event['banner_image'])): ?>
+        <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+          <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+        </div>
+      <?php else: ?>
+        <div class="ev-cover ev-cover-fallback" aria-hidden="true"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+      <?php endif; ?>
+    </div>
+  </section>
+
+  <div class="bn-facts">
+    <section class="bn-t" data-spot><div class="bn-k">Date</div><div class="bn-big"><?= htmlspecialchars($wlDate) ?></div><div class="bn-sub"><?= htmlspecialchars($bnDateSub) ?></div></section>
+    <section class="bn-t" data-spot><div class="bn-k">Time</div><div class="bn-big"><?= htmlspecialchars(date('g:i A', $wlStart)) ?></div><div class="bn-sub">until <?= htmlspecialchars($bnEndT) ?></div></section>
+    <section class="bn-t" data-spot><div class="bn-k">Where</div><div class="bn-big"><?= htmlspecialchars($wlPlace) ?></div><?php if ($bnWhereSub !== ''): ?><div class="bn-sub"><?= htmlspecialchars($bnWhereSub) ?></div><?php endif; ?></section>
+  </div>
+
+  <?php if ($bnCd): ?>
+  <section class="bn-t bn-cd<?= $bnRing ? '' : ' bn-full' ?>"<?= $bnLive ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
+    <?php if ($bnLive): ?>
+      <div class="bn-k">Live</div>
+      <div class="bn-live"><i aria-hidden="true"></i>Happening now</div>
+    <?php else: ?>
+      <div class="bn-k">Starts in <span id="cd-text" class="bn-cdt">--</span></div>
+      <div class="bn-cd-slot" data-cd-slot></div>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
+
+  <?php if ($bnRing): ?>
+  <section class="bn-t bn-ring<?= $bnCd ? '' : ' bn-full' ?>" data-spot style="--p:<?= round($bnPct, 4) ?>" role="img" aria-label="<?= number_format($wlLeft) ?> of <?= number_format($bnCap) ?> tickets left">
+    <div class="bn-rg">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" pathLength="1" cx="60" cy="60" r="52"/></svg>
+      <div class="bn-rn"><b data-bn-count="<?= (int) $wlLeft ?>"><?= number_format($wlLeft) ?></b><span><?= $wlLeft > 0 ? 'tickets left' : 'sold out' ?></span><small>of <?= number_format($bnCap) ?></small></div>
+    </div>
+  </section>
+  <?php endif; ?>
+
+  <div class="bn-lower">
+    <section class="bn-t bn-pay<?= $eventHasEnded ? ' bn-ended' : '' ?>" id="tickets">
+      <?php if (!$eventHasEnded): ?>
+      <header class="bn-payh">
+        <h2>Get your ticket</h2>
+        <ol class="bn-steps" aria-label="How it works"><?php foreach ($bnSteps as $bnI => $bnS): ?><li<?= $bnI === 0 ? ' class="on"' : '' ?>><?= htmlspecialchars($bnS) ?></li><?php endforeach; ?></ol>
+      </header>
+      <?php endif; ?>
+      <?= $buyHtml ?>
+    </section>
+
+    <div class="bn-side">
+      <section id="about" class="bn-t bn-about" data-spot>
+        <h2 class="bn-h">About this event</h2>
+        <div class="ev-about">
+          <?php foreach (explode("\n\n", $event['description'] ?? '') as $paragraph): ?>
+            <p class="about-text"><?= nl2br(htmlspecialchars($paragraph)) ?></p>
+          <?php endforeach; ?>
+        </div>
+      </section>
+
+      <section id="your-ticket" class="bn-t bn-yt" data-spot>
+        <h2 class="bn-h">Your ticket</h2>
+        <ul class="bn-how">
+          <li><span class="bn-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></span><p><b>Sent instantly</b>By email, and in your account.</p></li>
+          <li><span class="bn-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2M14 20v-2"/></svg></span><p><b>QR code grants entry</b>Show it on your phone at the gate.</p></li>
+          <li><span class="bn-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/><path d="M6 6l3.8 3.8M18 6l-3.8 3.8M6 18l3.8-3.8M18 18l-3.8-3.8"/></svg></span><p><b>Lost it?</b>Sign in to get it again. <a href="/my-tickets.php">Find my tickets</a></p></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+
+  <section id="venue" class="bn-t bn-ven" data-spot>
+    <div>
+      <h2 class="bn-h">Venue</h2>
+      <p class="bn-vn"><?= htmlspecialchars($isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name']) ?></p>
+      <?php if ($isOnlineOnly): ?><p class="bn-vs">The link arrives with your ticket.</p>
+      <?php elseif ($event['venue_address']): ?><p class="bn-vs"><?= htmlspecialchars($event['venue_address']) ?></p><?php endif; ?>
+    </div>
+    <?php if (!$isOnlineOnly): ?>
+      <a class="bn-dir" href="https://www.google.com/maps/search/?api=1&amp;query=<?= urlencode($event['venue_name'] . ' ' . (string) $event['venue_address']) ?>" target="_blank" rel="noopener">Directions</a>
+    <?php endif; ?>
+  </section>
+
+</div></div>
+<?php else: ?>
+<div class="wl-rib" aria-hidden="true"><div><?php for ($wlR = 0; $wlR < 4; $wlR++) { foreach ($wlRib as $wlItem) { echo '<span>' . htmlspecialchars($wlItem) . '</span>'; } } ?></div></div>
+
+<!-- ===== hero ===== -->
+<section class="ev-hero<?= $eventHasEnded ? ' wl-ended' : '' ?>"<?= $eventHasEnded ? '' : ' data-countdown-target="' . htmlspecialchars($event['starts_at']) . '"' ?>>
+  <div class="ev-wrap ev-hero-grid">
+
+    <?php if (!empty($event['banner_image'])): ?>
+      <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">
+        <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
+      </div>
+    <?php else: ?>
+      <div class="ev-cover ev-cover-fallback" aria-hidden="true"><?= htmlspecialchars($event['banner_emoji']) ?></div>
+    <?php endif; ?>
+
+    <div class="ev-hero-text">
+    <div class="ev-eyebrow">
+      <span class="ev-eyebrow-cat"><?= htmlspecialchars($event['category']) ?></span>
+      <span class="ev-dot" aria-hidden="true"></span>
+      <?php if ($eventHasEnded): ?>
+        <span class="ev-eyebrow-state">Event ended</span>
+      <?php else: ?>
+        <span class="ev-eyebrow-state">Starts in <span id="cd-text">--</span></span>
+      <?php endif; ?>
+    </div>
+      <?php if ($isOnline || $hasFreeTier): ?>
+        <div class="ev-badges">
+          <?php if ($isOnline): ?><span class="ev-badge ev-badge-online"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg><?= htmlspecialchars($onlineLabel) ?></span><?php endif; ?>
+          <?php if ($hasFreeTier): ?><span class="ev-badge ev-badge-free"><?= $eventIsFree ? 'Free' : 'Free tickets available' ?></span><?php endif; ?>
+        </div>
+      <?php endif; ?>
+      <h1 class="ev-title"><?= htmlspecialchars($event['title']) ?></h1>
+
+      <?php
+      $isWalletLook = str_contains($bodyClass, 'ev-wallet');
+?>
+
+      <div class="ev-org-row">
+        <span class="ev-avatar ev-avatar-lg" style="background:#DC2626; color:#fff" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
+        <div class="ev-org-info">
+          <span class="ev-org-lab">Organized by</span>
+          <div class="ev-org-name">
+            <?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><?= htmlspecialchars($orgName) ?><?php endif; ?>
+            <?php if ($evOrgVerified): ?><span class="ev-verified" role="img" aria-label="Verified organizer" title="Verified organizer"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.87 9.33 2 10.57 2 12s.87 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91C21.37 14.67 22.25 13.43 22.25 12z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M8.6 12.3l2.5 2.5 4.4-4.8"/></svg></span><?php endif; ?>
+          </div>
+          <?php if ($communityReady): ?><div class="ev-org-sub"><span id="orgFollowers"><?= number_format($organizerFollowers) ?></span> follower<?= $organizerFollowers === 1 ? '' : 's' ?></div><?php endif; ?>
+        </div>
+        <?php if ($isWalletLook): ?><div class="ev-org-share"><?= $shareBlock ?></div><?php endif; ?>
+      </div>
+      <div class="ev-actions">
+        <?php if ($eventHasEnded): ?>
+          <a class="ev-btn ev-btn-primary" href="#community">Relive the experience</a>
+        <?php endif; ?>
+        <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+        <div class="ev-event-react">
+          <div class="ev-react-wrap">
+            <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
+              <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4z"/></svg>' ?></span>
+              <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
+            </button>
+            <?= community_reaction_picker_html() ?>
+          </div>
+          <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
+        </div>
+        <?php endif; ?>
+        <?php if (!$isWalletLook): ?>
+        <span class="ev-grow" aria-hidden="true"></span>
+        <div class="ev-icons"><?= $shareBlock ?></div>
+        <?php endif; ?>
+      </div>
+
+      <?php if ($communityReady && $showCommunityUi): ?>
+      <div class="ev-pulse" aria-label="Event activity">
+        <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
+        <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
+        <div class="ev-pulse-item"><b id="pulseReactions"><?= number_format($social['reactions'] + ($eventReactions['total'] ?? 0)) ?></b><span>reactions</span></div>
+        <div class="ev-pulse-item"><b><?= number_format($social['comments']) ?></b><span>comments</span></div>
+      </div>
+      <?php endif; ?>
+    </div>
+  </div>
+</section>
+
+
+<div class="ev-wrap wl-bento">
+
+  <aside class="ev-side wl-s4" style="--d:0">
+    <?php if (!$eventHasEnded && $minPrice !== null): ?>
+    <div class="mq-from">
+      <span class="mq-from-l"><?= $eventIsFree ? 'ENTRY' : 'FROM' ?></span>
+      <span class="mq-from-p"><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></span>
+      <a class="mq-buy" href="#buyPanel" data-open-tickets><?= $eventIsFree ? 'Get free ticket' : 'Buy now' ?></a>
+    </div>
+    <?php endif; ?>
+    <div class="ev-stub-wrap">
+    <?= $buyHtml ?>
     </div>
   </aside>
 
@@ -596,6 +765,7 @@ $wlIc = static function (string $n): string {
     </section>
 
 </div>
+<?php endif; /* bento / wallet layout */ ?>
 
 <div class="ev-wrap wl-extra-wrap">
   <main class="ev-main wl-extra">
@@ -853,7 +1023,7 @@ $wlIc = static function (string $n): string {
     if (cl) cl.addEventListener('click', close);
   }
   /* the cards ease in, a little apart from each other, as they come into view */
-  var items = [].slice.call(document.querySelectorAll('.wl-card, .mq-from, .ended-panel, .wl-extra .ev-section'));
+  var items = [].slice.call(document.querySelectorAll('.wl-card, .bn-t, .mq-from, .ended-panel, .wl-extra .ev-section'));
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (items.length && 'IntersectionObserver' in window && !calm) {
     body.classList.add('wl-js');

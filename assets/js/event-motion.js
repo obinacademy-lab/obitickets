@@ -35,12 +35,15 @@
   }
 
   /* ---------- glow behind the hero, tinted from the poster ---------- */
-  if (hero) {
-    var glow = document.createElement('div');
-    glow.className = 'ev-glow';
-    glow.setAttribute('aria-hidden', 'true');
-    glow.innerHTML = '<i></i><i></i><i></i>';
-    hero.insertBefore(glow, hero.firstChild);
+  var tintHost = hero || $('.bn-grid'); /* the Bento layout has no hero: the tint goes on its grid */
+  if (tintHost) {
+    if (hero) {
+      var glow = document.createElement('div');
+      glow.className = 'ev-glow';
+      glow.setAttribute('aria-hidden', 'true');
+      glow.innerHTML = '<i></i><i></i><i></i>';
+      hero.insertBefore(glow, hero.firstChild);
+    }
 
     var img = $('.ev-cover img');
     var sample = function () {
@@ -66,7 +69,7 @@
         r /= wsum; g /= wsum; b /= wsum;
         var top = Math.max(r, g, b) || 1;
         var k = 235 / top; // lift dark posters so the glow stays visible
-        hero.style.setProperty('--glow', Math.round(Math.min(255, r * k)) + ',' + Math.round(Math.min(255, g * k)) + ',' + Math.round(Math.min(255, b * k)));
+        tintHost.style.setProperty('--glow', Math.round(Math.min(255, r * k)) + ',' + Math.round(Math.min(255, g * k)) + ',' + Math.round(Math.min(255, b * k)));
       } catch (e) { /* keep the default red glow */ }
     };
     if (img) {
@@ -123,8 +126,11 @@
         wrap.appendChild(cell);
         cells[u[0]] = cell.firstChild;
       });
-      title.parentNode.insertBefore(wrap, title.nextSibling);
-      $('.ev-hero-text').classList.add('ev-has-cd');
+      var cdSlot = $('[data-cd-slot]', cdHost);
+      if (cdSlot) { cdSlot.appendChild(wrap); } else { title.parentNode.insertBefore(wrap, title.nextSibling); }
+      var cdText = $('.ev-hero-text');
+      if (cdText) cdText.classList.add('ev-has-cd');
+      cdHost.classList.add('has-tiles');
       var last = {};
       var stop;
       var paint = function () {
@@ -132,7 +138,8 @@
         if (s === 0) {
           clearInterval(stop);
           wrap.remove();
-          $('.ev-hero-text').classList.remove('ev-has-cd');
+          if (cdText) cdText.classList.remove('ev-has-cd');
+          cdHost.classList.remove('has-tiles');
           var textEl = document.getElementById('cd-text');
           if (textEl && textEl.parentNode) textEl.parentNode.innerHTML = '<span class="tk">&#127917;</span> Happening now';
           return;
@@ -270,6 +277,48 @@
           if (p < 1) raf = requestAnimationFrame(step);
         });
       }).observe(total, { childList: true, characterData: true, subtree: true });
+    }
+  }
+
+  /* ---------- Bento tiles: a soft red glow that follows the pointer, a poster that tilts, the ticket ring counts up ---------- */
+  if (document.body.classList.contains('ev-bento')) {
+    if (canHover && !reduce) {
+      $$('.bn-t[data-spot]').forEach(function (t) {
+        t.addEventListener('pointermove', function (e) {
+          if (e.pointerType && e.pointerType !== 'mouse') return;
+          var r = t.getBoundingClientRect();
+          t.style.setProperty('--mx', (e.clientX - r.left).toFixed(0) + 'px');
+          t.style.setProperty('--my', (e.clientY - r.top).toFixed(0) + 'px');
+        });
+      });
+      var bp = $('.bn-poster');
+      var bw = bp && $('.bn-pw', bp);
+      if (bw) {
+        bp.addEventListener('pointermove', function (e) {
+          if (e.pointerType && e.pointerType !== 'mouse') return;
+          var r = bp.getBoundingClientRect();
+          var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+          bw.style.transform = 'perspective(900px) rotateY(' + ((x - 0.5) * 9).toFixed(2) + 'deg) rotateX(' + ((0.5 - y) * 7).toFixed(2) + 'deg)';
+        });
+        bp.addEventListener('pointerleave', function () { bw.style.transform = ''; });
+      }
+    }
+    var cnt = $('[data-bn-count]');
+    if (cnt && !reduce && 'IntersectionObserver' in window) {
+      var goal = parseInt(cnt.getAttribute('data-bn-count'), 10) || 0;
+      var cio = new IntersectionObserver(function (es) {
+        if (!es[0].isIntersecting) return;
+        cio.disconnect();
+        var t0 = null;
+        requestAnimationFrame(function step(t) {
+          if (t0 === null) t0 = t;
+          var p = Math.min(1, (t - t0) / 1700);
+          cnt.textContent = Math.round(goal * (1 - Math.pow(1 - p, 3))).toLocaleString('en-US');
+          if (p < 1) requestAnimationFrame(step);
+        });
+      }, { threshold: 0.4 });
+      cnt.textContent = '0';
+      cio.observe(cnt);
     }
   }
 

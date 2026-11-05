@@ -1,0 +1,258 @@
+/* ==========================================================================
+   Event page, "Bento" look. Loaded after wallet.css / wallet-fx.css / wallet-panel.css when the body has .ev-bento.
+   Light modular tiles on a warm ground: title, poster, date / time / where, a countdown, a tickets-left ring, the
+   ticket panel (always open, in the page, with a red edge), About, Your ticket and Venue. Tiles ease in as they
+   scroll into view and a soft red glow follows the pointer. The poster colours tint the poster and countdown tiles.
+   Every hook (#buyPanel, .tier, .qty, #total-amount, #cd-text, #heroImgWrap, #shareBtn ...) is the same as before.
+   To go back to the Wallet look: remove "ev-bento" from $bodyClass in public/event.php.
+   ========================================================================== */
+
+body.ev-bento{background:#F2EFEA}
+body.ev-bento .ev{
+  --ink:#14110F; --muted:#6A6466; --muted-2:#6A6466; --line:#E5E0D8; --line-strong:#D6CFC5; --paper:#F2EFEA; --surface:#fff;
+  --bn-ink:#14110F; --bn-mute:#6A6466; --bn-line:#E5E0D8; --bn-soft:#F7F4EF; --bn-red:#DC2626; --bn-red-d:#B91C1C; --bn-rd:28px;
+  --bn-ease:cubic-bezier(.22,.8,.24,1); --bn-expo:cubic-bezier(.16,1,.3,1);
+  --bn-disp:'Outfit','Plus Jakarta Sans',system-ui,sans-serif; --bn-mono:'JetBrains Mono',ui-monospace,monospace;
+  background:#F2EFEA; color:var(--bn-ink);
+}
+
+/* ---------- grid ---------- */
+body.ev-bento .bn-wrap{max-width:1180px; margin:0 auto; padding:28px 32px 36px}
+body.ev-bento .bn-grid{--glow:70,52,120; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:16px; align-items:stretch}
+
+/* ---------- tile ---------- */
+body.ev-bento .bn-t{position:relative; min-width:0; padding:28px; border-radius:var(--bn-rd); background:#fff; border:1px solid var(--bn-line);
+  box-shadow:0 30px 50px -40px rgba(20,17,15,.35);
+  transition:transform .5s var(--bn-ease), box-shadow .5s var(--bn-ease), opacity .9s var(--bn-ease), border-color .3s}
+body.ev-bento .bn-t::before{content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0; transition:opacity .4s;
+  background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%), rgba(220,38,38,.1), transparent 60%)}
+body.ev-bento .bn-t:hover::before{opacity:1}
+body.ev-bento .bn-t > *{position:relative}
+body.ev-bento.wl-js .bn-t{opacity:0; transform:translateY(26px) scale(.97)}
+body.ev-bento.wl-js .bn-t.in{opacity:1; transform:none}
+body.ev-bento.wl-js .bn-t.in:hover,body.ev-bento:not(.wl-js) .bn-t:hover{transform:translateY(-5px); box-shadow:0 44px 60px -36px rgba(20,17,15,.5)}
+
+body.ev-bento .bn-k{font:600 .6rem var(--bn-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bn-mute); margin:0 0 12px}
+body.ev-bento .bn-big{font:800 1.4rem/1.15 var(--bn-disp); letter-spacing:-.03em; overflow-wrap:anywhere}
+body.ev-bento .bn-sub{margin-top:4px; color:var(--bn-mute); font-size:.86rem; overflow-wrap:anywhere}
+body.ev-bento .bn-h{font:700 1.3rem var(--bn-disp); letter-spacing:-.025em; margin:0 0 14px; color:var(--bn-ink)}
+
+/* ---------- title ---------- */
+body.ev-bento .bn-title{grid-column:1 / 9; z-index:4; display:flex; flex-direction:column; justify-content:space-between; gap:20px; min-height:300px}
+body.ev-bento .bn-tags{display:flex; flex-wrap:wrap; gap:8px}
+body.ev-bento .bn-pill{display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:99px; border:1px solid var(--bn-line); background:var(--bn-soft);
+  font:600 .64rem var(--bn-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--bn-mute)}
+body.ev-bento .bn-pill-on{background:var(--bn-red); border-color:var(--bn-red); color:#fff}
+body.ev-bento .bn-pill-free{background:#E8F6EC; border-color:#BDE5C8; color:#1B7A3D}
+body.ev-bento .bn-pill-end{background:var(--bn-ink); border-color:var(--bn-ink); color:#fff}
+body.ev-bento .bn-title .ev-title{margin:0; font:800 clamp(1.9rem,3.7vw,3.2rem)/1.03 var(--bn-disp); letter-spacing:-.045em; color:var(--bn-ink); text-wrap:balance}
+body.ev-bento .bn-row{display:flex; align-items:center; justify-content:space-between; gap:18px 24px; flex-wrap:wrap}
+body.ev-bento .bn-org{display:flex; align-items:center; gap:12px; min-width:0}
+body.ev-bento .bn-av{display:grid; place-items:center; flex:none; width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--bn-red),#7F1D1D); color:#fff;
+  font:800 .82rem var(--bn-disp); box-shadow:0 0 0 3px var(--bn-line)}
+body.ev-bento .bn-org small{display:block; font:600 .6rem var(--bn-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bn-mute)}
+body.ev-bento .bn-org b{display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; font-weight:800; color:var(--bn-ink)}
+body.ev-bento .bn-org a{color:inherit; text-decoration:none; background:linear-gradient(currentColor,currentColor) 0 100%/0 1.5px no-repeat; transition:background-size .45s var(--bn-ease)}
+body.ev-bento .bn-org a:hover{background-size:100% 1.5px}
+body.ev-bento .bn-acts{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+body.ev-bento .bn-cta{display:inline-flex; align-items:center; gap:14px; padding:5px 5px 5px 18px; border-radius:99px; border:1px solid var(--bn-line); background:var(--bn-soft);
+  color:var(--bn-mute); font-size:.8rem; font-weight:600; text-decoration:none; transition:border-color .3s, box-shadow .35s var(--bn-ease)}
+body.ev-bento .bn-cta b{color:var(--bn-ink); font-weight:800}
+body.ev-bento .bn-cta i{font-style:normal; padding:11px 18px; border-radius:99px; background:var(--bn-red); color:#fff; font-weight:800; transition:background .3s, transform .35s var(--bn-ease)}
+body.ev-bento .bn-cta:hover{border-color:var(--bn-red); box-shadow:0 14px 26px -18px rgba(220,38,38,.7)}
+body.ev-bento .bn-cta:hover i{background:var(--bn-red-d)}
+body.ev-bento .bn-title .ev-actions{margin:0; justify-content:flex-start}
+body.ev-bento .bn-title .ev-actions:not(:has(.ev-btn, .ev-event-react)){display:none}
+/* with the extras switched on (config/community-ui.on) the reaction button and the activity numbers show in the title tile */
+body.ev-bento .bn-title .ev-event-react{display:flex !important; align-items:center; flex-wrap:wrap; gap:10px 14px}
+body.ev-bento .bn-title .ev-pulse{display:flex !important; flex-wrap:wrap; gap:10px 28px; margin:0; padding:16px 0 0; border-top:1px solid var(--bn-line)}
+body.ev-bento .bn-title .ev-pulse-item{display:grid; gap:2px; min-width:0}
+body.ev-bento .bn-title .ev-pulse-item b{font:800 1.25rem/1 var(--bn-disp); letter-spacing:-.02em; color:var(--bn-ink); font-variant-numeric:tabular-nums}
+body.ev-bento .bn-title .ev-pulse-item span{font:600 .58rem var(--bn-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bn-mute)}
+
+/* ---------- poster ---------- */
+body.ev-bento .bn-poster{grid-column:9 / 13; grid-row:1 / 4; display:flex; align-items:center; overflow:hidden; padding:18px; border:0;
+  background:linear-gradient(160deg,#16111C,#2B1F3D)}
+body.ev-bento .bn-short .bn-poster{grid-row:1 / 3}
+@supports (background:color-mix(in srgb,red,blue)){
+  body.ev-bento .bn-poster,body.ev-bento .bn-cd{background:linear-gradient(160deg, color-mix(in srgb, rgb(var(--glow)) 26%, #0A0812), color-mix(in srgb, rgb(var(--glow)) 52%, #0A0812))}
+}
+body.ev-bento .bn-poster::after{content:""; position:absolute; top:0; left:0; width:35%; height:100%; pointer-events:none; transform:translateX(-120%) skewX(-20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent); animation:bnShine 6.5s ease-in-out infinite}
+@keyframes bnShine{from{transform:translateX(-120%) skewX(-20deg)}55%,to{transform:translateX(330%) skewX(-20deg)}}
+body.ev-bento .bn-pw{width:100%; transition:transform .25s ease-out; will-change:transform}
+body.ev-bento .bn-poster .ev-cover{display:block; width:100%; max-width:none; justify-self:auto; border-radius:0; cursor:zoom-in}
+body.ev-bento .bn-poster .ev-cover img{display:block; width:100%; height:auto; max-height:560px; object-fit:contain; margin:0 auto; border-radius:14px; box-shadow:0 30px 50px -20px rgba(0,0,0,.7)}
+body.ev-bento .bn-poster .ev-cover-fallback{display:grid; place-items:center; aspect-ratio:4/5; font-size:5rem; border-radius:14px; background:rgba(255,255,255,.1)}
+
+/* ---------- date / time / where ---------- */
+body.ev-bento .bn-facts{grid-column:1 / 9; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr); gap:16px}
+body.ev-bento .bn-facts .bn-t{padding:24px}
+
+/* ---------- countdown ---------- */
+body.ev-bento .bn-cd{grid-column:1 / 6; color:#fff; border:0; background:linear-gradient(150deg,#16111C,#2B1F3D)}
+body.ev-bento .bn-cd.bn-full{grid-column:1 / 9}
+@supports (background:color-mix(in srgb,red,blue)){
+  body.ev-bento .bn-cd{background:linear-gradient(150deg, color-mix(in srgb, rgb(var(--glow)) 26%, #0A0812), color-mix(in srgb, rgb(var(--glow)) 52%, #0A0812))}
+}
+body.ev-bento .bn-cd .bn-k{color:rgba(255,255,255,.68)}
+body.ev-bento .bn-cdt{margin-left:6px; color:#fff; letter-spacing:.06em}
+body.ev-bento .bn-cd.has-tiles .bn-cdt{display:none}
+body.ev-bento .bn-cd .ev-cd{order:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; width:100%; max-width:none; margin:0; animation:none}
+body.ev-bento .bn-cd .ev-cd::before{display:none}
+body.ev-bento .bn-cd .ev-cd-u,body.ev-bento .bn-cd .ev-cd-u:first-child,body.ev-bento .bn-cd .ev-cd-u.is-sec{display:grid; justify-items:center; gap:6px; min-width:0; padding:14px 6px 12px;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); border-radius:16px; box-shadow:none; color:#fff; overflow:hidden}
+body.ev-bento .bn-cd .ev-cd-u b{font:700 clamp(1.5rem,2.5vw,2.1rem)/1 var(--bn-disp); letter-spacing:-.02em; color:#fff}
+body.ev-bento .bn-cd .ev-cd-u small,body.ev-bento .bn-cd .ev-cd-u.is-sec small{font:600 .56rem var(--bn-mono); letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.7)}
+body.ev-bento .bn-live{display:flex; align-items:center; gap:12px; font:800 1.7rem/1.1 var(--bn-disp); letter-spacing:-.03em}
+body.ev-bento .bn-live i{width:12px; height:12px; flex:none; border-radius:50%; background:#4ADE80; box-shadow:0 0 0 0 rgba(74,222,128,.7); animation:bnPulse 1.8s infinite}
+@keyframes bnPulse{70%{box-shadow:0 0 0 14px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+
+/* ---------- tickets-left ring ---------- */
+body.ev-bento .bn-ring{grid-column:6 / 9; display:flex; align-items:center; justify-content:center}
+body.ev-bento .bn-ring.bn-full{grid-column:1 / 9}
+body.ev-bento .bn-rg{position:relative; width:150px; height:150px}
+body.ev-bento .bn-rg svg{position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg)}
+body.ev-bento .bn-rg circle{fill:none; stroke-width:7}
+body.ev-bento .bn-rg .bg{stroke:var(--bn-line)}
+body.ev-bento .bn-rg .fg{stroke:var(--bn-red); stroke-linecap:round; stroke-dasharray:1; stroke-dashoffset:calc(1 - var(--p,1)); transition:stroke-dashoffset 2.2s var(--bn-expo) .3s}
+body.ev-bento.wl-js .bn-ring:not(.in) .fg{stroke-dashoffset:1}
+body.ev-bento .bn-rn{position:absolute; inset:0; display:grid; place-content:center; text-align:center}
+body.ev-bento .bn-rn b{font:800 2.2rem/1 var(--bn-disp); letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+body.ev-bento .bn-rn span{margin-top:4px; font:600 .54rem var(--bn-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--bn-mute)}
+body.ev-bento .bn-rn small{margin-top:2px; font-size:.7rem; color:var(--bn-mute)}
+
+/* ---------- lower block: ticket panel + about / your ticket ---------- */
+body.ev-bento .bn-lower{grid-column:1 / 13; display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:16px; align-items:start}
+body.ev-bento .bn-side{display:grid; gap:16px; min-width:0}
+body.ev-bento .bn-about .ev-about .about-text{margin:0 0 12px; font-size:15px; line-height:1.7; font-weight:500; color:#4B4549; max-width:64ch}
+body.ev-bento .bn-about .ev-about .about-text:last-child{margin-bottom:0}
+body.ev-bento .bn-how{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+body.ev-bento .bn-how li{display:flex; gap:14px; align-items:flex-start; padding:14px 16px; border-radius:16px; border:1px solid var(--bn-line); background:var(--bn-soft);
+  transition:transform .45s var(--bn-ease), border-color .3s, background .3s}
+body.ev-bento .bn-how li:hover{transform:translateX(4px); border-color:var(--bn-red); background:#fff}
+body.ev-bento .bn-ic{display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:50%; background:#FEF2F2; color:var(--bn-red)}
+body.ev-bento .bn-how p{margin:0; font-size:.88rem; color:var(--bn-mute)}
+body.ev-bento .bn-how b{display:block; font-size:.95rem; color:var(--bn-ink)}
+body.ev-bento .bn-how a{color:var(--bn-red-d); font-weight:800; text-decoration:none}
+body.ev-bento .bn-how a:hover{text-decoration:underline}
+
+/* ---------- venue ---------- */
+body.ev-bento .bn-ven{grid-column:1 / 13; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap}
+body.ev-bento .bn-ven .bn-h{margin-bottom:6px}
+body.ev-bento .bn-vn{margin:0; font-weight:800; font-size:1.05rem}
+body.ev-bento .bn-vs{margin:2px 0 0; color:var(--bn-mute)}
+body.ev-bento .bn-dir{display:inline-flex; align-items:center; gap:10px; padding:13px 22px; border-radius:99px; background:var(--bn-ink); color:#fff; text-decoration:none;
+  font:800 .74rem var(--bn-mono); letter-spacing:.12em; text-transform:uppercase; transition:background .3s, transform .35s var(--bn-ease)}
+body.ev-bento .bn-dir::after{content:"\2192"; transition:transform .35s var(--bn-ease)}
+body.ev-bento .bn-dir:hover{background:var(--bn-red); transform:translateY(-2px)}
+body.ev-bento .bn-dir:hover::after{transform:translateX(4px)}
+
+/* ---------- the ticket panel, in the page ---------- */
+body.ev-bento .bn-pay{border:2px solid var(--bn-red); box-shadow:0 50px 70px -44px rgba(220,38,38,.55)}
+@media (min-width:921px){ body.ev-bento .bn-pay{position:sticky; top:16px} }
+body.ev-bento .bn-payh{display:flex; align-items:center; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; margin-bottom:20px}
+body.ev-bento .bn-payh h2{margin:0; font:700 1.4rem var(--bn-disp); letter-spacing:-.025em}
+body.ev-bento .bn-steps{display:flex; flex-wrap:wrap; gap:6px; list-style:none; margin:0; padding:0; counter-reset:bnst}
+body.ev-bento .bn-steps li{counter-increment:bnst; display:flex; align-items:center; gap:7px; padding:6px 12px; border-radius:99px; border:1px solid var(--bn-line);
+  font:600 .6rem var(--bn-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--bn-mute)}
+body.ev-bento .bn-steps li::before{content:counter(bnst)}
+body.ev-bento .bn-steps li.on{background:var(--bn-ink); border-color:var(--bn-ink); color:#fff}
+
+body.ev-bento .bn-pay #buyPanel.buy-panel.ev-stub{
+  --st-bg:#fff; --st-ink:#14110F; --st-muted:#6A6466; --st-line:#E5E0D8; --st-ctl:#B9B0A6; --st-field:#F7F4EF;
+  position:static !important; transform:none !important; opacity:1 !important; visibility:visible !important; transition:none !important; animation:none !important;
+  inset:auto; width:auto; max-height:none; overflow:visible; z-index:auto; -webkit-mask:none; mask:none; filter:none; box-shadow:none;
+  display:flex; flex-direction:column; gap:20px; margin:0; padding:0; border:0; border-radius:0; background:none; color:var(--bn-ink); scroll-margin-top:84px}
+body.ev-bento .bn-pay .buy-panel .sheet-handle,body.ev-bento .bn-pay .buy-panel .sheet-close,body.ev-bento .sheet-backdrop{display:none !important}
+body.ev-bento .bn-pay .buy-panel .ev-stub-top{display:none}
+body.ev-bento .bn-pay .buy-panel form{gap:20px}
+
+body.ev-bento .bn-pay .buy-panel .ev-online-note{background:var(--bn-soft); border:1px solid var(--bn-line); color:#4B4549}
+body.ev-bento .bn-pay .buy-panel .ev-online-note svg{color:var(--bn-red)}
+
+body.ev-bento .bn-pay .buy-panel .tier{background:var(--bn-soft); border:1px solid var(--bn-line); border-radius:18px; padding:20px}
+body.ev-bento .bn-pay .buy-panel .tier.has{background:#FEF2F2; border-color:var(--bn-red); box-shadow:0 0 0 1px var(--bn-red), 0 20px 36px -26px rgba(220,38,38,.7)}
+body.ev-bento .bn-pay .buy-panel .tier .tn{color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .tier .td{max-width:none; color:var(--bn-mute); -webkit-line-clamp:4}
+body.ev-bento .bn-pay .buy-panel .tier .tlim{color:var(--bn-red-d)}
+body.ev-bento .bn-pay .buy-panel .tier .tp{color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .tier-foot{border-top-color:var(--bn-line)}
+body.ev-bento .bn-pay .buy-panel .tier-foot small{color:var(--bn-mute)}
+body.ev-bento .bn-pay .buy-panel .qty button{border-color:var(--bn-ctl,#B9B0A6); background:#fff; color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .qty button:hover{background:var(--bn-red); border-color:var(--bn-red); color:#fff}
+body.ev-bento .bn-pay .buy-panel .qty .n{color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .waitlist-btn{border-color:#B9B0A6; color:var(--bn-ink); background:#fff}
+body.ev-bento .bn-pay .buy-panel .waitlist-btn:hover{background:var(--bn-ink); color:#fff; border-color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .waitlist-btn.primary{background:var(--bn-red); border-color:var(--bn-red); color:#fff}
+body.ev-bento .bn-pay .buy-panel .waitlist-state{color:var(--bn-red-d)}
+
+body.ev-bento .bn-pay .buy-panel .poster-summary .r{color:var(--bn-mute)}
+body.ev-bento .bn-pay .buy-panel .poster-summary .mono{color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .poster-summary .r.total{border-top-color:var(--bn-line); color:var(--bn-ink)}
+body.ev-bento .bn-pay .buy-panel .poster-summary .r.total .v{font-size:1.25rem}
+
+body.ev-bento .bn-pay .buy-panel .buy-bar{position:static; margin:0; padding:0; background:none}
+body.ev-bento .bn-pay .buy-panel .buy-bar-tot{display:none}
+body.ev-bento .bn-pay .buy-panel .buy-bar #buySubmit{flex:1 1 100%}
+body.ev-bento .bn-pay .buy-panel #buySubmit:disabled{background:#ECE7E1; color:#9B9399; box-shadow:none}
+body.ev-bento .bn-pay .buy-panel .secure-note,body.ev-bento .bn-pay .buy-panel .pay-icons::before{color:var(--bn-mute)}
+body.ev-bento .bn-pay .buy-panel .poster-foot{gap:14px}
+
+/* ended event: the closing panel fills the tile */
+body.ev-bento .bn-pay.bn-ended{padding:0; border:1px solid var(--bn-line); box-shadow:0 30px 50px -40px rgba(20,17,15,.35); overflow:hidden}
+body.ev-bento .bn-pay.bn-ended .ended-panel{position:static; top:auto; margin:0; border-radius:0; height:auto}
+@media (min-width:921px){ body.ev-bento .bn-pay.bn-ended{position:relative; top:auto} }
+
+/* ---------- extras and reviews, below the tiles ---------- */
+body.ev-bento .wl-extra-wrap{max-width:1180px; margin:0 auto; padding:0 32px 60px}
+body.ev-bento .wl-extra .ev-section{border-radius:var(--bn-rd); border-color:var(--bn-line)}
+
+/* ---------- keyboard focus ---------- */
+body.ev-bento .ev a:focus-visible,body.ev-bento .ev button:focus-visible{outline:3px solid var(--bn-red); outline-offset:3px; border-radius:10px}
+
+/* ---------- small laptops: tighter tiles so nothing is squeezed ---------- */
+@media (min-width:921px) and (max-width:1100px){
+  body.ev-bento .bn-wrap{padding-inline:20px}
+  body.ev-bento .bn-t{padding:22px}
+  body.ev-bento .bn-facts{gap:12px}
+  body.ev-bento .bn-facts .bn-t{padding:18px}
+  body.ev-bento .bn-big{font-size:1.2rem}
+  body.ev-bento .bn-grid,body.ev-bento .bn-lower{gap:12px}
+}
+
+/* ---------- tablet and phone: one column, the ticket panel right after the poster ---------- */
+@media (max-width:920px){
+  body.ev-bento .bn-wrap{padding:16px 16px 28px}
+  body.ev-bento .bn-grid{display:flex; flex-direction:column; gap:12px}
+  body.ev-bento .bn-lower,body.ev-bento .bn-side{display:contents}
+  body.ev-bento .bn-t{padding:22px}
+  body.ev-bento .bn-title{order:1; min-height:0; padding:22px}
+  body.ev-bento .bn-poster{order:2; padding:14px}
+  body.ev-bento .bn-poster .ev-cover img{max-height:440px}
+  body.ev-bento .bn-pay{order:3; position:static}
+  body.ev-bento .bn-cd{order:4}
+  body.ev-bento .bn-facts{order:5; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  body.ev-bento .bn-facts .bn-t:last-child{grid-column:1 / -1}
+  body.ev-bento .bn-ring{order:6; justify-content:flex-start}
+  body.ev-bento .bn-about{order:7}
+  body.ev-bento .bn-yt{order:8}
+  body.ev-bento .bn-ven{order:9}
+  body.ev-bento .bn-cta{display:none}
+  body.ev-bento .bn-row{gap:14px}
+  body.ev-bento .wl-extra-wrap{padding:0 16px 40px}
+}
+@media (max-width:480px){
+  body.ev-bento .bn-facts{grid-template-columns:minmax(0,1fr)}
+  body.ev-bento .bn-cd .ev-cd{gap:8px}
+  body.ev-bento .bn-cd .ev-cd-u{padding:12px 2px 10px}
+  body.ev-bento .bn-cd .ev-cd-u small{font-size:.5rem; letter-spacing:.12em}
+  body.ev-bento .bn-live{font-size:1.4rem}
+}
+
+@media (prefers-reduced-motion:reduce){
+  body.ev-bento .bn-poster::after,body.ev-bento .bn-live i{animation:none}
+  body.ev-bento.wl-js .bn-t{opacity:1; transform:none}
+  body.ev-bento .bn-rg .fg{transition:none}
+  body.ev-bento.wl-js .bn-ring:not(.in) .fg{stroke-dashoffset:calc(1 - var(--p,1))}
+}
