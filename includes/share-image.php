@@ -6,7 +6,8 @@ declare(strict_types=1);
  *
  * Flyers are usually portrait and often several megabytes. Platforms only show the big preview card for a wide
  * (about 1.91:1) picture, and WhatsApp skips pictures over roughly 300 KB. So for each event we make one
- * 1200x630 JPEG under about 280 KB: the whole flyer, sharp and centred, on a soft blurred copy of itself.
+ * 1200x630 JPEG under about 280 KB: the whole flyer, sharp and as large as the frame allows (full height, nothing
+ * around it), on a smooth glow made from its own colours.
  * It is made the first time the event page is opened, kept in uploads/share/, and rebuilt on its own when the
  * flyer changes. If anything goes wrong the page falls back to the original flyer.
  *
@@ -24,7 +25,7 @@ function event_share_image(array $event): ?array
         return null;
     }
     $id = (int) ($event['id'] ?? 0);
-    $key = substr(md5($name . '|' . filemtime($src) . '|v3'), 0, 12);
+    $key = substr(md5($name . '|' . filemtime($src) . '|v4'), 0, 12);
     $dir = __DIR__ . '/../uploads/share';
     $base = 'ev-' . $id . '-' . $key . '.jpg';
     $url = rtrim(APP_URL, '/') . '/uploads/share/' . $base;
@@ -49,43 +50,60 @@ function event_share_image(array $event): ?array
         $H = 630;
         $canvas = imagecreatetruecolor($W, $H);
 
-        // soft background: the flyer, scaled to cover, shrunk, blurred, dimmed, then stretched back up
-        $tw = 160;
-        $th = 84;
+        // background: a smooth glow from the flyer's own colours (shrink to a handful of pixels, blur, dim, then
+        // enlarge with bicubic smoothing so there are no visible blocks)
+        $tw = 40;
+        $th = 21;
         $tiny = imagecreatetruecolor($tw, $th);
         imagefill($tiny, 0, 0, imagecolorallocate($tiny, 255, 255, 255));
         $cover = max($tw / $sw, $th / $sh);
         $dw = (int) ceil($sw * $cover);
         $dh = (int) ceil($sh * $cover);
         imagecopyresampled($tiny, $img, (int) (($tw - $dw) / 2), (int) (($th - $dh) / 2), 0, 0, $dw, $dh, $sw, $sh);
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 4; $i++) {
             imagefilter($tiny, IMG_FILTER_GAUSSIAN_BLUR);
         }
-        imagefilter($tiny, IMG_FILTER_BRIGHTNESS, -45);
-        // enlarge in two steps: one big jump looks blocky, two smaller ones stay smooth (and avoid GD's big-image blur bugs)
-        $mid = imagecreatetruecolor(480, 252);
-        imagecopyresampled($mid, $tiny, 0, 0, 0, 0, 480, 252, $tw, $th);
-        imagedestroy($tiny);
-        imagecopyresampled($canvas, $mid, 0, 0, 0, 0, $W, $H, 480, 252);
-        imagedestroy($mid);
+        imagefilter($tiny, IMG_FILTER_BRIGHTNESS, -38);
+        // enlarge in small steps with true bilinear smoothing (a single big jump, or the bicubic mode, leaves blocks or streaks),
+        // blurring on the way so the glow is soft
+        $cur = $tiny;
+        foreach ([[100, 53], [240, 126], [500, 262], [1200, 630]] as [$nw, $nh]) {
+            $next = function_exists('imagescale') ? @imagescale($cur, $nw, $nh, IMG_BILINEAR_FIXED) : false;
+            if (!$next) {
+                $next = imagecreatetruecolor($nw, $nh);
+                imagecopyresampled($next, $cur, 0, 0, 0, 0, $nw, $nh, imagesx($cur), imagesy($cur));
+            }
+            imagedestroy($cur);
+            $cur = $next;
+            if ($nw === 240 || $nw === 500) {
+                for ($b = 0; $b < 3; $b++) {
+                    imagefilter($cur, IMG_FILTER_GAUSSIAN_BLUR);
+                }
+            }
+        }
+        imagecopy($canvas, $cur, 0, 0, 0, 0, $W, $H);
+        imagedestroy($cur);
 
-        // the flyer itself, whole, with a soft shadow
-        $fit = min(1120 / $sw, 574 / $sh);
+        // the flyer itself: whole, full height (or full width for a wide flyer), no border, with a soft edge shadow either side
+        $fit = min($W / $sw, $H / $sh);
         $fw = max(1, (int) round($sw * $fit));
         $fh = max(1, (int) round($sh * $fit));
         $fx = (int) (($W - $fw) / 2);
         $fy = (int) (($H - $fh) / 2);
         imagealphablending($canvas, true);
-        for ($s = 14; $s >= 2; $s -= 4) {
-            $shade = imagecolorallocatealpha($canvas, 0, 0, 0, 118 + (int) (($s) / 2));
-            imagefilledrectangle($canvas, $fx - $s + 6, $fy - $s + 12, $fx + $fw + $s + 6, $fy + $fh + $s + 12, $shade);
+        if ($fw < $W - 8) {
+            for ($i = 1; $i <= 26; $i++) {
+                $alpha = 127 - (int) round(70 * (1 - $i / 27) ** 2); // darkest next to the flyer, fading out
+                $shade = imagecolorallocatealpha($canvas, 0, 0, 0, max(0, min(127, $alpha)));
+                imageline($canvas, $fx - $i, 0, $fx - $i, $H, $shade);
+                imageline($canvas, $fx + $fw - 1 + $i, 0, $fx + $fw - 1 + $i, $H, $shade);
+            }
         }
         imagecopyresampled($canvas, $img, $fx, $fy, 0, 0, $fw, $fh, $sw, $sh);
-        imagerectangle($canvas, $fx - 1, $fy - 1, $fx + $fw, $fy + $fh, imagecolorallocatealpha($canvas, 255, 255, 255, 96));
         imagedestroy($img);
 
         $bytes = '';
-        foreach ([84, 76, 68, 60, 52] as $q) {
+        foreach ([90, 84, 78, 72, 66, 60, 54, 48] as $q) {
             ob_start();
             imagejpeg($canvas, null, $q);
             $bytes = (string) ob_get_clean();
