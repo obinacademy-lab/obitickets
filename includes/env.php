@@ -203,6 +203,13 @@ function env_create_file(string $root, array $values): ?string
     if (@is_file($target)) {
         return 'A .env file already exists there, so nothing was created.';
     }
+    if (@is_dir($target)) {
+        // A FOLDER named .env (made by mistake in File Manager) is in the way. An empty one holds nothing, so it is removed; a folder with anything in it is never touched.
+        $inside = array_diff((array) @scandir($target), ['.', '..']);
+        if ($inside || !@rmdir($target)) {
+            return 'A folder named .env is in the way at ' . $target . ($inside ? ' and it is not empty, so it was left alone' : ' and could not be removed') . '. In File Manager, delete that folder, then try again.';
+        }
+    }
     if (!@is_writable(dirname($target))) {
         return 'The server does not let the website write to ' . dirname($target) . '. Create the .env by hand in File Manager instead (config/env.example is the template).';
     }
