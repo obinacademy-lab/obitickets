@@ -1,0 +1,86 @@
+/* ==========================================================================
+   Header navigation: the "Morphing Panel". Browse events and Sell tickets open one shared floating panel that
+   slides and resizes between them (public/assets/js/nav.js); the other links stay plain. A red-to-orange hairline
+   runs along the top. On phones and tablets (900px and below) the same drawer as before opens from the menu button,
+   with Browse events and Sell tickets as expanding groups. Loaded after style.css and motion.css.
+   ========================================================================== */
+
+.site-nav{--nv-grad:linear-gradient(90deg,#DC2626,#F97316)}
+.site-nav::before{content:""; position:absolute; left:0; right:0; top:0; height:3px; background:var(--nv-grad); pointer-events:none}
+.nav-row{gap:18px}
+
+/* ---------- links ---------- */
+.nv-links{display:flex; align-items:center; gap:2px; margin-left:14px}
+.nv-links a{display:inline-flex; align-items:center; gap:5px; padding:9px 13px; border-radius:99px; font-size:.93rem; font-weight:600; color:var(--ink); white-space:nowrap; transition:background .25s var(--ease), color .25s var(--ease)}
+.nv-links a:hover,.nv-links a.hot{background:var(--purple-tint); color:var(--purple-deep)}
+.nv-links a.current{color:var(--purple-deep); background:var(--purple-tint)}
+.nv-chev{flex:none; transition:transform .35s var(--ease)}
+.nv-links a.hot .nv-chev{transform:rotate(180deg)}
+.nv-auth{gap:8px}
+.nv-auth a.ghost{padding:9px 13px; border-radius:99px; opacity:1; transition:background .25s var(--ease)}
+.nv-auth a.ghost:hover{background:var(--purple-tint)}
+.nv-auth a.ghost::after{display:none}
+.nv-auth .btn-purple{background:linear-gradient(135deg,#DC2626,#F97316); box-shadow:0 10px 22px -12px rgba(220,38,38,.85)}
+.nv-auth .btn-purple:hover{filter:brightness(1.06)}
+.nav-me{display:inline-flex; align-items:center; border-radius:50%; transition:transform .25s var(--ease), box-shadow .25s}
+.nav-me:hover{transform:translateY(-1px); box-shadow:0 0 0 3px var(--purple-tint-2)}
+
+/* ---------- the shared panel ---------- */
+.nv-pop{position:absolute; top:100%; left:0; margin-top:12px; width:var(--w,520px); height:var(--h,300px); transform:translateX(var(--x,0));
+  background:var(--surface); border-radius:22px; box-shadow:0 50px 90px -34px rgba(28,21,38,.42), 0 0 0 1px var(--line); opacity:0; visibility:hidden; overflow:hidden; z-index:2;
+  transition:transform .55s var(--ease), width .55s var(--ease), height .55s var(--ease), opacity .3s, visibility 0s .3s}
+.nv-pop.open{opacity:1; visibility:visible; transition-delay:0s}
+.nv-pop.jump{transition:opacity .3s, visibility 0s}
+.nv-notch{position:absolute; top:6px; left:0; width:14px; height:14px; background:var(--surface); border-radius:3px 0 0 0; transform:translateX(var(--nx,0)) rotate(45deg); box-shadow:-1px -1px 0 var(--line); opacity:0; z-index:3; pointer-events:none;
+  transition:transform .55s var(--ease), opacity .3s}
+.nv-notch.open{opacity:1} .nv-notch.jump{transition:opacity .3s}
+.nv-sec{position:absolute; top:0; left:0; width:var(--sw); padding:20px; display:grid; gap:18px; opacity:0; transform:translateX(16px); pointer-events:none; transition:opacity .3s, transform .5s var(--ease)}
+.nv-sec.on{opacity:1; transform:none; pointer-events:auto; transition-delay:.06s}
+.nv-ev{grid-template-columns:1fr 220px}
+.nv-col{display:grid; align-content:start; gap:2px; min-width:0}
+.nv-it{display:flex; align-items:flex-start; gap:13px; padding:10px 11px; margin:0 -11px; border-radius:14px; transition:background .2s}
+.nv-it:hover,.nv-it:focus-visible{background:var(--purple-tint)}
+.nv-ic{display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:12px; background:var(--purple-tint-2); color:var(--purple-deep); transition:transform .35s var(--ease)}
+.nv-it:hover .nv-ic{transform:scale(1.08) rotate(-4deg)}
+.nv-it b{display:block; font-size:.92rem; color:var(--ink)} .nv-it small{display:block; color:var(--muted); font-size:.8rem; line-height:1.4}
+.nv-cats{margin-top:8px; padding-top:12px; border-top:1px solid var(--line)}
+.nv-cats h6{margin:0 0 8px; font:600 .62rem 'JetBrains Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--muted)}
+.nv-cats div{display:flex; flex-wrap:wrap; gap:6px}
+.nv-cats a{padding:5px 11px; border-radius:99px; border:1px solid var(--line); font-size:.78rem; font-weight:600; color:var(--ink); transition:background .2s, border-color .2s, color .2s}
+.nv-cats a:hover{background:var(--purple-tint); border-color:var(--purple); color:var(--purple-deep)}
+.nv-promo{position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; min-height:250px; padding:16px; border-radius:18px; color:#fff;
+  background:linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.78)), var(--bg, linear-gradient(155deg,#1A1033,#9B2335)); background-size:cover; background-position:center}
+.nv-promo::before{content:""; position:absolute; inset:-30% -30% auto auto; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,rgba(249,115,22,.55),transparent 65%); transition:transform .8s var(--ease)}
+.nv-promo:hover::before{transform:scale(1.25)}
+.nv-pk{position:absolute; top:14px; left:14px; padding:4px 10px; border-radius:99px; background:rgba(255,255,255,.18); backdrop-filter:blur(8px); font:600 .6rem 'JetBrains Mono',monospace; letter-spacing:.14em; text-transform:uppercase}
+.nv-promo b{position:relative; font-size:1.1rem; line-height:1.2; font-weight:800; letter-spacing:-.01em; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.nv-promo small{position:relative; margin:5px 0 12px; font-size:.8rem; opacity:.88}
+.nv-promo em{position:relative; align-self:flex-start; padding:8px 14px; border-radius:99px; background:#fff; color:var(--ink); font-style:normal; font-weight:700; font-size:.8rem; transition:transform .3s var(--ease)}
+.nv-promo:hover em{transform:translateX(3px)}
+
+/* ---------- phone and tablet: the drawer, with groups ---------- */
+.nav-acc-btn{width:100%; border:0; background:transparent; text-align:left; font:inherit; color:inherit; cursor:pointer}
+.nav-acc-btn .chev{transition:transform .35s var(--ease)}
+.nav-acc-btn[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.nav-sub{display:grid; grid-template-rows:0fr; transition:grid-template-rows .45s var(--ease)}
+.nav-sub>div{overflow:hidden; min-height:0; display:grid}
+.nav-sub.open{grid-template-rows:1fr}
+.nav-sub a{padding:10px 10px 10px 57px; font-weight:600; font-size:.9rem; color:var(--muted); border-radius:10px; transition:background .2s, color .2s}
+.nav-sub a:hover{background:var(--purple-tint); color:var(--purple-deep)}
+.nav-sub.open>div{padding-bottom:6px}
+
+@media (max-width:1100px){
+  .nav-row{gap:12px} .nv-links{margin-left:6px} .nv-links a{padding:9px 10px; font-size:.88rem}
+  .nv-auth{gap:4px} .nv-auth a.ghost{padding:9px 10px}
+}
+@media (max-width:900px){
+  .nv-links,.nv-pop,.nv-notch{display:none !important}
+}
+@media (prefers-reduced-motion:reduce){
+  .nv-pop,.nv-sec,.nv-notch,.nav-sub,.nv-chev{transition-duration:.01ms !important; transition-delay:0s !important}
+}
+
+/* dark pages (checkout, night looks) redefine the colour tokens; the icon tiles need their own tint there */
+body.ev-night .nv-ic{background:rgba(240,82,82,.2); color:#FCA5A5}
+body.ev-night .nav-me:hover{box-shadow:0 0 0 3px rgba(240,82,82,.3)}
+body.ev-night .nv-cats a{border-color:rgba(255,255,255,.16)}

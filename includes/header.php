@@ -52,6 +52,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/nav.css?v=<?= @filemtime(__DIR__ . '/../assets/css/nav.css') ?: time() ?>">
 <?php if (str_contains($bodyClass ?? '', 'pricing-page')): ?>
 <link rel="stylesheet" href="/assets/css/pricing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/pricing.css') ?: time() ?>">
 <?php endif; ?>
@@ -117,7 +118,25 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <?php if (str_contains($bodyClass ?? '', 'classic-page')): ?>
 <div class="masthead-bar">MTN MoMo &amp; Airtel Money accepted</div>
 <?php endif; ?>
-<nav class="site-nav">
+<?php
+// The menu panels: what is on next (one tiny query) and who the "organizers" panel should speak to.
+$navNext = null;
+try {
+    $navNextRows = search_events(null, null, false, 1);
+    $navNext = $navNextRows[0] ?? null;
+} catch (Throwable $e) {
+    $navNext = null;
+}
+$navIsOrganizer = false;
+try {
+    $navIsOrganizer = $authUser && ($authUser['role'] === 'ORGANIZER' || (function_exists('resolve_organizer_context') && resolve_organizer_context($authUser)));
+} catch (Throwable $e) {
+    $navIsOrganizer = false;
+}
+$navCur = static fn (string $p): string => $navPath === $p ? ' current' : '';
+$navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
+?>
+<nav class="site-nav" id="siteNav">
   <div class="wrap nav-row">
     <a class="logo" href="/">
       <svg class="logo-mark" viewBox="0 0 34 34">
@@ -127,16 +146,16 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
       </svg>
       obitickets
     </a>
-    <div class="nav-links">
-      <a class="ghost" href="/">Browse events</a>
-      <a class="ghost" href="/past-events.php">Past events</a>
-      <a class="ghost" href="/my-events.php">Sell tickets</a>
-      <a class="ghost" href="/about.php">About Us</a>
-      <a class="ghost" href="/contact.php">Contact Us</a>
+    <div class="nv-links" aria-label="Main">
+      <a class="nv-t<?= $navCur('/') ?>" href="/" data-pop="ev" aria-haspopup="true" aria-expanded="false">Browse events <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
+      <a class="nv-t<?= $navCur('/my-events.php') ?>" href="/my-events.php" data-pop="org" aria-haspopup="true" aria-expanded="false">Sell tickets <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
+      <a class="nv-a<?= $navCur('/past-events.php') ?>" href="/past-events.php">Past events</a>
+      <a class="nv-a<?= $navCur('/about.php') ?>" href="/about.php">About Us</a>
+      <a class="nv-a<?= $navCur('/contact.php') ?>" href="/contact.php">Contact Us</a>
+      <?php if ($authUser && $authUser['role'] === 'ADMIN'): ?><a class="nv-a<?= $navCur('/admin.php') ?>" href="/admin.php">Admin</a><?php endif; ?>
+    </div>
+    <div class="nav-links nv-auth">
       <?php if ($authUser): ?>
-        <?php if ($authUser['role'] === 'ADMIN'): ?>
-          <a class="ghost" href="/admin.php">Admin</a>
-        <?php endif; ?>
         <a class="nav-me" href="/profile.php" title="My profile" aria-label="My profile"><?= render_avatar_html(user_avatar_url((int) $authUser['id']), (string) $authUser['name'], 34) ?></a>
         <a class="ghost" href="/dashboard.php">Hi, <?= htmlspecialchars(explode(' ', $authUser['name'])[0]) ?></a>
         <a class="btn btn-purple" href="/logout.php">Log out</a>
@@ -148,6 +167,45 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
     <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
       <span class="nav-burger"><span></span><span></span><span></span></span>
     </button>
+  </div>
+
+  <i class="nv-notch" aria-hidden="true"></i>
+  <div class="nv-pop" id="nvPop" aria-label="Menu panel">
+    <div class="nv-sec nv-ev" data-sec="ev" data-w="700">
+      <div class="nv-col">
+        <a class="nv-it" href="/"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-grid"/></svg></i><div><b>Browse all events</b><small>Everything on sale across Uganda</small></div></a>
+        <a class="nv-it" href="/search.php?free=1"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-ticket"/></svg></i><div><b>Free events</b><small>Claim a free ticket in seconds</small></div></a>
+        <a class="nv-it" href="/search.php?online=1"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-monitor"/></svg></i><div><b>Online events</b><small>Join from anywhere with a link</small></div></a>
+        <a class="nv-it" href="/past-events.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-clock"/></svg></i><div><b>Past events</b><small>Photos and highlights</small></div></a>
+        <?php if ($navCatLinks): ?>
+        <div class="nv-cats"><h6>Categories</h6><div><?php foreach ($navCatLinks as $navCat): ?><a href="/search.php?category=<?= urlencode((string) $navCat) ?>"><?= htmlspecialchars((string) $navCat) ?></a><?php endforeach; ?></div></div>
+        <?php endif; ?>
+      </div>
+      <?php
+      $navImg = ($navNext && !empty($navNext['banner_image']) && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', (string) $navNext['banner_image'])) ? (string) $navNext['banner_image'] : '';
+      if ($navNext):
+          $navPrice = $navNext['min_price'] === null ? '' : ((float) $navNext['min_price'] === 0.0 ? 'Free' : 'From ' . format_money((string) $navNext['min_price'], (string) ($navNext['min_price_currency'] ?: 'UGX')));
+      ?>
+      <a class="nv-promo" href="/event.php?slug=<?= urlencode((string) $navNext['slug']) ?>"<?= $navImg !== '' ? ' style="--bg:url(\'' . htmlspecialchars($navImg, ENT_QUOTES) . '\')"' : '' ?>>
+        <span class="nv-pk">Next up</span>
+        <b><?= htmlspecialchars((string) $navNext['title']) ?></b>
+        <small><?= htmlspecialchars(date('D j M', strtotime((string) $navNext['starts_at']))) ?><?= $navPrice !== '' ? ' &middot; ' . htmlspecialchars($navPrice) : '' ?></small>
+        <em>Get tickets</em>
+      </a>
+      <?php else: ?>
+      <a class="nv-promo" href="/"><span class="nv-pk">Welcome</span><b>Find your next event</b><small>Concerts, conferences, faith and comedy</small><em>Browse events</em></a>
+      <?php endif; ?>
+    </div>
+    <div class="nv-sec" data-sec="org" data-w="410">
+      <?php if ($navIsOrganizer): ?>
+      <a class="nv-it" href="/org.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-chart"/></svg></i><div><b>Organizer dashboard</b><small>Sales, attendees and payouts</small></div></a>
+      <?php else: ?>
+      <a class="nv-it" href="/my-events.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-ticket"/></svg></i><div><b>Sell tickets with obitickets</b><small>How it works for organizers</small></div></a>
+      <?php endif; ?>
+      <a class="nv-it" href="/event-create.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-plus"/></svg></i><div><b>Create an event</b><small>Set up tickets and go live in minutes</small></div></a>
+      <a class="nv-it" href="/pricing.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-tag"/></svg></i><div><b>Pricing</b><small>What organizers and buyers pay, in plain numbers</small></div></a>
+      <a class="nv-it" href="/help.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-help"/></svg></i><div><b>Help centre</b><small>Answers for organizers and attendees</small></div></a>
+    </div>
   </div>
 </nav>
 
@@ -168,21 +226,33 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
     </button>
   </div>
   <div class="nav-drawer-links">
-    <a class="nav-drawer-row<?= $navPath === '/' ? ' current' : '' ?>" href="/">
+    <button type="button" class="nav-drawer-row nav-acc-btn<?= $navPath === '/' ? ' current' : '' ?>" aria-expanded="false" aria-controls="navSubEv">
       <span class="ic"><svg width="17" height="17"><use href="#ic-cal"/></svg></span>
       <span class="label">Browse events</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
-    </a>
+    </button>
+    <div class="nav-sub" id="navSubEv"><div>
+      <a href="/">Browse all events</a>
+      <a href="/search.php?free=1">Free events</a>
+      <a href="/search.php?online=1">Online events</a>
+      <?php foreach ($navCatLinks as $navCat): ?><a href="/search.php?category=<?= urlencode((string) $navCat) ?>"><?= htmlspecialchars((string) $navCat) ?></a><?php endforeach; ?>
+    </div></div>
     <a class="nav-drawer-row<?= $navPath === '/past-events.php' ? ' current' : '' ?>" href="/past-events.php">
       <span class="ic"><svg width="17" height="17"><use href="#ic-clock"/></svg></span>
       <span class="label">Past events</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </a>
-    <a class="nav-drawer-row<?= $navPath === '/my-events.php' ? ' current' : '' ?>" href="/my-events.php">
+    <button type="button" class="nav-drawer-row nav-acc-btn<?= $navPath === '/my-events.php' ? ' current' : '' ?>" aria-expanded="false" aria-controls="navSubOrg">
       <span class="ic"><svg width="17" height="17"><use href="#ic-bolt"/></svg></span>
       <span class="label">Sell tickets</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
-    </a>
+    </button>
+    <div class="nav-sub" id="navSubOrg"><div>
+      <a href="<?= $navIsOrganizer ? '/org.php' : '/my-events.php' ?>"><?= $navIsOrganizer ? 'Organizer dashboard' : 'How it works' ?></a>
+      <a href="/event-create.php">Create an event</a>
+      <a href="/pricing.php">Pricing</a>
+      <a href="/help.php">Help centre</a>
+    </div></div>
     <a class="nav-drawer-row<?= $navPath === '/about.php' ? ' current' : '' ?>" href="/about.php">
       <span class="ic"><svg width="17" height="17"><use href="#ic-info"/></svg></span>
       <span class="label">About Us</span>

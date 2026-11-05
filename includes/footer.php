@@ -63,5 +63,6 @@
 <?php endif; ?>
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 <script src="/assets/js/motion.js?v=<?= @filemtime(__DIR__ . '/../assets/js/motion.js') ?: time() ?>"></script>
+<script src="/assets/js/nav.js?v=<?= @filemtime(__DIR__ . '/../assets/js/nav.js') ?: time() ?>"></script>
 </body>
 </html>
