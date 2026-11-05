@@ -1424,3 +1424,9 @@ body.dark-page .auth-section::before{content:''; position:absolute; top:-180px; 
 .poster-card-art .poster-card-img{position:absolute; inset:0; width:100%; height:100%; aspect-ratio:auto; object-fit:contain; border-radius:0; background:none; box-shadow:none}
 .poster-card:hover .poster-card-art{transform:translateY(-4px); box-shadow:var(--shadow-lg)}
 .poster-card:hover .poster-card-art .poster-card-img{transform:none; box-shadow:none}
+
+/* Round profile picture (or initials) used by the header and the My profile page */
+.pf-av{display:inline-block; flex:none; border-radius:50%; object-fit:cover; vertical-align:middle; background:var(--purple-tint-2)}
+.pf-av-i{display:inline-grid; place-items:center; font-weight:800; color:var(--purple-deep); letter-spacing:.02em; line-height:1}
+.nav-links .nav-me{display:inline-flex; align-items:center; border-radius:50%; transition:transform .25s var(--ease), box-shadow .25s}
+.nav-links .nav-me:hover{transform:translateY(-1px); box-shadow:0 0 0 3px var(--purple-tint-2)}

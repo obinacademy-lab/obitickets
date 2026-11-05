@@ -59,6 +59,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/page-motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/page-motion.css') ?: time() ?>">
 <script>document.documentElement.classList.add('pm');setTimeout(function(){if(!window.__pmReady)document.documentElement.classList.remove('pm');},3500);</script>
 <?php endif; ?>
+<?php if (str_contains($bodyClass ?? '', 'profile-page')): ?>
+<link rel="stylesheet" href="/assets/css/profile.css?v=<?= @filemtime(__DIR__ . '/../assets/css/profile.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'team-page')): ?>
 <link rel="stylesheet" href="/assets/css/team-page.css?v=<?= @filemtime(__DIR__ . '/../assets/css/team-page.css') ?: time() ?>">
 <?php endif; ?>
@@ -134,6 +137,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
         <?php if ($authUser['role'] === 'ADMIN'): ?>
           <a class="ghost" href="/admin.php">Admin</a>
         <?php endif; ?>
+        <a class="nav-me" href="/profile.php" title="My profile" aria-label="My profile"><?= render_avatar_html(user_avatar_url((int) $authUser['id']), (string) $authUser['name'], 34) ?></a>
         <a class="ghost" href="/dashboard.php">Hi, <?= htmlspecialchars(explode(' ', $authUser['name'])[0]) ?></a>
         <a class="btn btn-purple" href="/logout.php">Log out</a>
       <?php else: ?>
@@ -206,6 +210,11 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
       <a class="nav-drawer-row<?= $navPath === '/dashboard.php' ? ' current' : '' ?>" href="/dashboard.php">
         <span class="ic"><svg width="17" height="17"><use href="#ic-user"/></svg></span>
         <span class="label">Hi, <?= htmlspecialchars(explode(' ', $authUser['name'])[0]) ?></span>
+        <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+      </a>
+      <a class="nav-drawer-row<?= $navPath === '/profile.php' ? ' current' : '' ?>" href="/profile.php">
+        <span class="ic"><?= render_avatar_html(user_avatar_url((int) $authUser['id']), (string) $authUser['name'], 26) ?></span>
+        <span class="label">My profile</span>
         <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
       </a>
       <a class="nav-drawer-cta" href="/logout.php">Log out</a>
