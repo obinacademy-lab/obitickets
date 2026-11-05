@@ -142,7 +142,7 @@ function render_admin_head(string $active): void
       </form>
       <div class="admin-profile" id="adminProfile">
         <button type="button" class="admin-profile-btn" id="adminProfileBtn">
-          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($admin['name'])) ?></span>
+          <span class="admin-avatar"><?= avatar_badge_inner((int) $admin['id'], (string) $admin['name']) ?></span>
           <span class="admin-profile-text">
             <span class="admin-topbar-name"><?= htmlspecialchars($admin['name']) ?></span>
             <span class="admin-topbar-role"><?= htmlspecialchars(ADMIN_ROLES[$admin['admin_role'] ?? ''] ?? 'Super Admin') ?></span>
@@ -150,6 +150,7 @@ function render_admin_head(string $active): void
           <svg width="14" height="14" class="admin-profile-chev"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg>
         </button>
         <div class="admin-profile-menu" id="adminProfileMenu">
+          <a href="/profile.php">My profile and picture</a>
           <a href="/admin-security.php">Two-factor authentication</a>
           <a href="/">Back to site</a>
           <a href="/logout.php">Log out</a>

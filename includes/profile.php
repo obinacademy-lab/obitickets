@@ -190,3 +190,13 @@ function update_own_profile(int $userId, string $name, ?string $phone): void
 {
     db()->prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?')->execute([$name, $phone, $userId]);
 }
+
+/** The inside of a small round avatar badge in the admin and organizer layouts: the picture, or initials. */
+function avatar_badge_inner(int $userId, string $name): string
+{
+    $url = user_avatar_url($userId);
+    if ($url !== null) {
+        return '<img src="' . htmlspecialchars($url) . '" alt="" width="32" height="32">';
+    }
+    return htmlspecialchars(initials_from_name($name));
+}

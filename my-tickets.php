@@ -12,7 +12,10 @@ include __DIR__ . '/includes/header.php';
   <section class="sec">
     <div class="sec-top">
       <h2>My tickets</h2>
-      <a class="btn btn-line" href="/">Browse events</a>
+      <span style="display:flex; gap:10px; flex-wrap:wrap">
+        <a class="btn btn-line" href="/profile.php">Edit profile</a>
+        <a class="btn btn-line" href="/">Browse events</a>
+      </span>
     </div>
 
     <?php if (!$orders): ?>

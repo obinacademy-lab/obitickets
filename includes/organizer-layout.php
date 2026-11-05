@@ -171,13 +171,14 @@ function render_organizer_head(string $active, array $orgContext): void
       <?php endforeach; ?>
       <div class="admin-profile org-card" id="adminProfile">
         <button type="button" class="admin-profile-btn" id="adminProfileBtn" aria-label="Account menu">
-          <span class="admin-avatar"><?= htmlspecialchars(initials_from_name($orgDisplayName)) ?></span>
+          <span class="admin-avatar"><?= avatar_badge_inner((int) $orgContext['actor_id'], (string) $orgDisplayName) ?></span>
           <span class="admin-profile-text">
             <span class="admin-topbar-name"><?= htmlspecialchars($orgDisplayName) ?></span>
             <span class="admin-topbar-role"><?= $orgContext['is_owner'] ? 'Owner' : htmlspecialchars(ORGANIZER_ROLES[$orgContext['role']] ?? 'Team member') ?></span>
           </span>
         </button>
         <div class="admin-profile-menu" id="adminProfileMenu">
+          <a href="/profile.php">My profile and picture</a>
           <a href="/org-settings.php">Settings</a>
           <a href="/">Back to site</a>
           <a href="/logout.php">Log out</a>
@@ -242,6 +243,7 @@ function render_organizer_foot(): void
     <?php foreach ($mobileNav['foot'] as $link): ?>
       <a href="<?= $link[2] ?>"><svg width="19" height="19" aria-hidden="true"><use href="#<?= $link[3] ?>"/></svg><?= $link[1] ?></a>
     <?php endforeach; ?>
+    <a href="/profile.php"><svg width="19" height="19" aria-hidden="true"><use href="#ic-user"/></svg>My profile and picture</a>
     <a href="/"><svg width="19" height="19" aria-hidden="true"><use href="#ic-arrow" transform="rotate(180 12 12)"/></svg>Back to site</a>
     <a href="/logout.php"><svg width="19" height="19" aria-hidden="true"><use href="#ic-x"/></svg>Log out</a>
   </div>
