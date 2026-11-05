@@ -14,6 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ok = resend_send($to, 'obitickets test email', '<div style="font-family:Arial,sans-serif;padding:20px"><h2>It works</h2><p>This is a test email from the obitickets admin. If you can read it, ticket emails can reach people too.</p></div>', 'TEST', null);
         $flashOk = $ok;
         $flash = $ok ? "Test email sent to $to. Check that inbox (and its spam folder)." : 'The test email was not sent. The reason is the top row in the table below.';
+    } elseif ($action === 'resend_missing') {
+        $r = tickets_resend_undelivered(50);
+        $flashOk = $r['failed'] === 0 && !$r['stopped'];
+        $flash = "Ticket emails sent: {$r['sent']}. Refused: {$r['failed']}."
+            . ($r['stopped'] ? ' Stopped early because three in a row were refused. Fix the cause in the Set-up check above (the reason is in the log table below), then press the button again.' : '')
+            . ($r['remaining'] > 0 && !$r['stopped'] ? " {$r['remaining']} still waiting." : '');
     } elseif ($action === 'resend') {
         $orderId = (int) ($_POST['order_id'] ?? 0);
         $ok = $orderId > 0 && send_order_tickets_email($orderId);
@@ -72,6 +78,41 @@ render_admin_head('emails');
     <?php endforeach; ?>
   </div>
 </div>
+
+<?php $undelivered = $ready ? tickets_undelivered_orders() : []; $undeliveredPast = $ready ? tickets_undelivered_past_count() : 0; ?>
+<?php if ($ready && ($undelivered || $undeliveredPast)): ?>
+<div class="admin-card" style="margin-bottom:20px">
+  <h3 style="margin-bottom:6px">Buyers who never got their tickets</h3>
+  <p class="muted" style="font-size:0.88rem; margin:0 0 14px">Paid orders for events that have not finished, where no ticket email was ever accepted by the email service. Online events include the meeting link in the email.</p>
+  <?php if ($undelivered): ?>
+    <div class="admin-table-wrap" style="margin-bottom:14px">
+      <table class="admin-table">
+        <thead><tr><th>Order</th><th>Buyer</th><th>Event</th><th>Paid</th><th>Last attempt</th></tr></thead>
+        <tbody>
+          <?php foreach ($undelivered as $u): ?>
+            <tr>
+              <td><a href="/admin-order-detail.php?id=<?= (int) $u['id'] ?>">#<?= (int) $u['id'] ?></a></td>
+              <td><?= htmlspecialchars($u['buyer_name']) ?><div class="muted" style="font-size:0.8rem"><?= htmlspecialchars($u['buyer_email']) ?></div></td>
+              <td><?= htmlspecialchars(mb_strimwidth($u['event_title'], 0, 48, '…')) ?><div class="muted" style="font-size:0.8rem"><?= $u['attend_mode'] === 'IN_PERSON' ? 'In person' : ($u['attend_mode'] === 'ONLINE' ? 'Online' : 'Hybrid') ?> &middot; <?= htmlspecialchars(date('j M Y, g:i A', strtotime($u['starts_at']))) ?></div></td>
+              <td class="muted mono" style="white-space:nowrap"><?= $u['paid_at'] ? htmlspecialchars(date('d M, g:i A', strtotime($u['paid_at']))) : '' ?></td>
+              <td class="muted" style="font-size:0.82rem"><?= $u['last_status'] ? htmlspecialchars(ucfirst(strtolower($u['last_status']))) : 'Never tried (before the log)' ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+    <form method="post" style="margin:0" onsubmit="return confirm('Email tickets to <?= count($undelivered) ?> buyer(s) now?');">
+      <?= csrf_field() ?><input type="hidden" name="action" value="resend_missing">
+      <button class="btn btn-purple" type="submit">Send tickets to all <?= count($undelivered) ?> buyer(s)</button>
+    </form>
+  <?php else: ?>
+    <p style="margin:0; color:#1B7A3D">Everyone with a ticket for an upcoming event has been emailed.</p>
+  <?php endif; ?>
+  <?php if ($undeliveredPast): ?>
+    <p class="muted" style="font-size:0.82rem; margin:12px 0 0"><?= $undeliveredPast ?> more paid order(s) are for events that already took place and were never emailed. They are not included; tickets are still on each buyer's My tickets page.</p>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="admin-mini-stat-row">
   <div class="admin-mini-stat"><span class="n"><?= $stats['sent'] ?></span><span class="l">Sent, last 24 hours</span></div>

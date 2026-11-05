@@ -304,3 +304,76 @@ function recovery_sweep(?callable $sender = null): array
     }
     return $counts;
 }
+
+/* ---------------------------------------------------------------------------------------------------------
+   Tickets that never reached the buyer
+   --------------------------------------------------------------------------------------------------------- */
+
+/**
+ * Paid orders for events that have not finished yet whose ticket email was never accepted by the email provider
+ * (no SENT row in email_log, which also covers orders from before the log existed). Oldest first.
+ * @return list<array<string,mixed>>
+ */
+function tickets_undelivered_orders(): array
+{
+    if (!email_log_ready()) {
+        return [];
+    }
+    return db()->query("
+        SELECT o.id, o.paid_at, u.name AS buyer_name, u.email AS buyer_email, e.title AS event_title, e.starts_at, e.attend_mode,
+               (SELECT l.status FROM email_log l WHERE l.order_id = o.id AND l.kind = 'TICKET' ORDER BY l.id DESC LIMIT 1) AS last_status,
+               (SELECT l.error FROM email_log l WHERE l.order_id = o.id AND l.kind = 'TICKET' ORDER BY l.id DESC LIMIT 1) AS last_error
+        FROM orders o
+        JOIN users u ON u.id = o.user_id
+        JOIN events e ON e.id = o.event_id
+        WHERE o.status = 'PAID'
+          AND e.ends_at >= NOW()
+          AND EXISTS (SELECT 1 FROM order_items oi JOIN tickets t ON t.order_item_id = oi.id WHERE oi.order_id = o.id)
+          AND NOT EXISTS (SELECT 1 FROM email_log l WHERE l.order_id = o.id AND l.kind = 'TICKET' AND l.status = 'SENT')
+        ORDER BY o.paid_at, o.id
+    ")->fetchAll();
+}
+
+/** Paid orders for events that already took place and never had a ticket email accepted (not worth emailing now). */
+function tickets_undelivered_past_count(): int
+{
+    if (!email_log_ready()) {
+        return 0;
+    }
+    return (int) db()->query("
+        SELECT COUNT(*) FROM orders o JOIN events e ON e.id = o.event_id
+        WHERE o.status = 'PAID' AND e.ends_at < NOW()
+          AND NOT EXISTS (SELECT 1 FROM email_log l WHERE l.order_id = o.id AND l.kind = 'TICKET' AND l.status = 'SENT')
+    ")->fetchColumn();
+}
+
+/**
+ * Sends the ticket email again to every order in tickets_undelivered_orders(), at most $limit per call, a little
+ * apart (the provider limits how fast it takes mail), and stops after three refusals in a row (a set-up problem
+ * such as an unverified sender domain, where carrying on would only fill the log with failures).
+ * @param callable|null $sender fn(int $orderId): bool, for tests
+ * @return array{sent:int,failed:int,stopped:bool,remaining:int}
+ */
+function tickets_resend_undelivered(int $limit = 50, ?callable $sender = null): array
+{
+    $orders = tickets_undelivered_orders();
+    $sent = $failed = $streak = 0;
+    $stopped = false;
+    foreach (array_slice($orders, 0, $limit) as $o) {
+        $ok = $sender ? (bool) $sender((int) $o['id']) : send_order_tickets_email((int) $o['id']);
+        if ($ok) {
+            $sent++;
+            $streak = 0;
+        } else {
+            $failed++;
+            if (++$streak >= 3) {
+                $stopped = true;
+                break;
+            }
+        }
+        if (!$sender) {
+            usleep(600000);
+        }
+    }
+    return ['sent' => $sent, 'failed' => $failed, 'stopped' => $stopped, 'remaining' => max(0, count($orders) - $sent)];
+}
