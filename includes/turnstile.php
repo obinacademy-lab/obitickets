@@ -83,16 +83,23 @@ function render_human_check(): void
         return;
     }
     ?>
-    <div class="cf-turnstile" data-sitekey="<?= htmlspecialchars((string) TURNSTILE_SITE_KEY, ENT_QUOTES) ?>" data-callback="obiHumanPassed" data-appearance="interaction-only" style="margin:0 0 14px"></div>
+    <div class="cf-turnstile" data-sitekey="<?= htmlspecialchars((string) TURNSTILE_SITE_KEY, ENT_QUOTES) ?>" data-callback="obiHumanPassed" data-error-callback="obiHumanFailed" data-appearance="interaction-only" style="margin:0 0 14px"></div>
+    <div class="alert alert-error" id="obiHumanMsg" style="display:none">The quick security check could not finish. Turn off any ad or tracking blocker for this page, or try another browser, then refresh.</div>
     <noscript><div class="alert alert-error">Please turn on JavaScript to sign up or log in with Google.</div></noscript>
     <script>
-      window.obiHumanPassed = function (token) {
-        var m = document.querySelector('meta[name="csrf-token"]');
-        fetch('/api/human-check.php', {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({token: token, csrf_token: m ? m.content : ''})
-        }).catch(function () {});
-      };
+      (function () {
+        var done = false, msg = function () { return document.getElementById('obiHumanMsg'); };
+        window.obiHumanPassed = function (token) {
+          done = true; if (msg()) { msg().style.display = 'none'; }
+          var m = document.querySelector('meta[name="csrf-token"]');
+          fetch('/api/human-check.php', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({token: token, csrf_token: m ? m.content : ''})
+          }).catch(function () {});
+        };
+        window.obiHumanFailed = function () { if (msg()) { msg().style.display = 'block'; } return true; };
+        setTimeout(function () { if (!done && msg()) { msg().style.display = 'block'; } }, 15000); /* never leave someone waiting with no explanation */
+      })();
     </script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <?php
