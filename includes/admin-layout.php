@@ -53,6 +53,8 @@ function render_admin_head(string $active): void
             ['key' => 'logins', 'label' => 'Login Activity', 'href' => '/admin-logins.php', 'icon' => 'ic-pin', 'perm' => 'audit.view'],
             ['key' => 'audit', 'label' => 'Audit Logs', 'href' => '/admin-audit.php', 'icon' => 'ic-clock', 'perm' => 'audit.view'],
             ['key' => '2fa', 'label' => 'Two-Factor Auth', 'href' => '/admin-security.php', 'icon' => 'ic-shield', 'perm' => 'dashboard.view'],
+            ['key' => 'ipblocks', 'label' => 'Blocked IPs', 'href' => '/admin-ip-blocks.php', 'icon' => 'ic-shield', 'perm' => 'audit.view'],
+            ['key' => 'configcheck', 'label' => 'Settings check', 'href' => '/admin-config-check.php', 'icon' => 'ic-settings', 'perm' => 'audit.view'],
         ]],
         ['label' => 'Settings', 'items' => [
             ['key' => 'settings', 'label' => 'General', 'href' => '/admin-settings.php', 'icon' => 'ic-settings', 'perm' => 'settings.view'],

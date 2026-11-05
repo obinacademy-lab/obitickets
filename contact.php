@@ -11,6 +11,8 @@ $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
+    ipguard_note('contact');
+    ipguard_enforce();
 
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');

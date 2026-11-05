@@ -39,6 +39,7 @@ if (empty($cart['isFree'])) {
     if ($blocked) {
         error_log('[payguard] blocked user ' . (int) $user['id'] . ' (' . $blocked['code'] . ')');
         payguard_alert_if_needed();
+        ipguard_note('pay_refused');
         json_response(['error' => $blocked['message']], 429);
     }
 }

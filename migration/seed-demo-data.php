@@ -20,7 +20,7 @@ if (PHP_SAPI !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
     exit('Forbidden');
 }
 
-require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../includes/db.php';
 
 // Never seed fake events into the live site, even from the command line.

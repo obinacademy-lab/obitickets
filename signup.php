@@ -55,6 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $errors[] = $err;
     }
+    if ($errors) {
+        ipguard_note('signup_fail');
+        ipguard_enforce();
+    }
 }
 
 $pageTitle = 'Sign up — obitickets';

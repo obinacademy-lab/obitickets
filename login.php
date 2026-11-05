@@ -43,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $errors[] = $err;
+        ipguard_note('login_fail');
+        ipguard_enforce();
     }
 }
 

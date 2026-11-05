@@ -8,6 +8,8 @@ $email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
+    ipguard_note('reset');
+    ipguard_enforce();
     $email = trim($_POST['email'] ?? '');
 
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {

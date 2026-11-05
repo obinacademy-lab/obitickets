@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// config.php must load before session_start() — it defines APP_ENV, which
-// the session cookie's "secure" flag below depends on.
-require_once __DIR__ . '/../config/config.php';
+// The settings must load before session_start() — they define APP_ENV, which
+// the session cookie's "secure" flag below depends on. Secrets come from the .env file (includes/env.php).
+require_once __DIR__ . '/../config/app.php';
 
 session_start([
     'cookie_httponly' => true,
@@ -73,5 +73,7 @@ require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/profile.php';
 require_once __DIR__ . '/payguard.php';
 require_once __DIR__ . '/turnstile.php';
+require_once __DIR__ . '/ipguard.php';
 
+ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();

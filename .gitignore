@@ -1,4 +1,7 @@
 /config/config.php
+# Secrets: the real .env never goes into git
+.env
+.env.*
 /uploads/**
 !/uploads/.gitkeep
 !/uploads/.htaccess

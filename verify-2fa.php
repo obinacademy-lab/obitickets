@@ -45,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     $error = 'Incorrect code. Please try again.';
+    ipguard_note('login_fail');
+    ipguard_enforce();
 }
 
 $pageTitle = 'Verify it\'s you — obitickets';

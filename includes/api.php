@@ -24,6 +24,7 @@ function json_response(array $data, int $status = 200): never
 function api_csrf_verify(array $body): void
 {
     if (!csrf_valid((string) ($body['csrf_token'] ?? ''))) {
+        ipguard_note('csrf_fail');
         json_response(['error' => 'Invalid or expired session. Please refresh the page and try again.'], 403);
     }
 }
