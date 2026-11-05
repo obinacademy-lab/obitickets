@@ -32,7 +32,7 @@ function join_page(string $title, string $message, ?string $detail = null, ?arra
         </div>
       </section>
     </div>
-    <script src="/assets/js/join-card.js"></script>
+    <script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
     <?php
     include __DIR__ . '/includes/footer.php';
     exit;

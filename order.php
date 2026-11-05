@@ -155,7 +155,7 @@ include __DIR__ . '/includes/header.php';
   </section>
 </div>
 
-<script src="/assets/js/join-card.js"></script>
+<script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   document.querySelectorAll('.ticket-issued-qr').forEach(function (el) {

@@ -174,5 +174,5 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
   }
 })();
 </script>
-<script src="/assets/js/payment.js"></script>
+<script src="/assets/js/payment.js?v=<?= @filemtime(__DIR__ . '/assets/js/payment.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>
