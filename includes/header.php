@@ -53,6 +53,9 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/motion.css?v=<?= @filemtime(__DIR__ . '/../assets/css/motion.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/nav.css?v=<?= @filemtime(__DIR__ . '/../assets/css/nav.css') ?: time() ?>">
+<?php if (str_contains($bodyClass ?? '', 'search-page')): ?>
+<link rel="stylesheet" href="/assets/css/search-polish.css?v=<?= @filemtime(__DIR__ . '/../assets/css/search-polish.css') ?: time() ?>">
+<?php endif; ?>
 <?php if (str_contains($bodyClass ?? '', 'pricing-page')): ?>
 <link rel="stylesheet" href="/assets/css/pricing.css?v=<?= @filemtime(__DIR__ . '/../assets/css/pricing.css') ?: time() ?>">
 <?php endif; ?>
