@@ -68,6 +68,7 @@ include __DIR__ . '/includes/header.php';
         <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
       <?php endforeach; ?>
 
+      <?php if (google_login_enabled()) { render_human_check(); } ?>
       <?php render_google_button('login', $next); ?>
 
       <form method="post" novalidate>

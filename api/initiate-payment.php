@@ -33,6 +33,16 @@ if (empty($cart['isFree']) && strlen(preg_replace('/\D/', '', $phone)) < 9) {
     json_response(['error' => 'Enter a valid phone number.'], 400);
 }
 
+// Abuse guard: a prompt goes to whatever number is typed, so cap how often a number or an account can start payments.
+if (empty($cart['isFree'])) {
+    $blocked = payguard_check((int) $user['id'], $phone);
+    if ($blocked) {
+        error_log('[payguard] blocked user ' . (int) $user['id'] . ' (' . $blocked['code'] . ')');
+        payguard_alert_if_needed();
+        json_response(['error' => $blocked['message']], 429);
+    }
+}
+
 try {
     $orderId = create_pending_order(
         (int) $user['id'],
@@ -49,6 +59,8 @@ try {
     unset($_SESSION['pending_checkout']);
     json_response(['error' => $e->getMessage()], 400);
 }
+
+payguard_alert_if_needed(); // many failures in a short time emails the admins (never blocks the payment)
 
 // If the buyer came from a moment's Get tickets bar, credit the sale to it (never blocks the payment).
 try {

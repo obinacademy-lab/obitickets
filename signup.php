@@ -43,6 +43,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Please enter a valid phone number, for example +256 7xx xxx xxx, or leave it blank.';
     }
 
+    if (!$errors && !human_ok()) {
+        $errors[] = 'Please wait a moment for the quick security check to finish, then press the button again.';
+    }
+
     if (!$errors) {
         [$ok, $err] = register_user($name, $email, $password, $role, $phone !== '' ? $phone : null);
         if ($ok) {
@@ -72,6 +76,7 @@ include __DIR__ . '/includes/header.php';
         <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
       <?php endforeach; ?>
 
+      <?php render_human_check(); ?>
       <?php render_google_button('signup', $next, $role); ?>
 
       <form method="post" novalidate>

@@ -71,5 +71,7 @@ require_once __DIR__ . '/organizer-layout.php';
 require_once __DIR__ . '/followup.php';
 require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/profile.php';
+require_once __DIR__ . '/payguard.php';
+require_once __DIR__ . '/turnstile.php';
 
 track_site_visit();
