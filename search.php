@@ -17,7 +17,7 @@ if ($category !== '') {
     $titleBits[] = $category;
 }
 $pageTitle = ($titleBits ? implode(' · ', $titleBits) . ' — ' : '') . 'Search — obitickets';
-$bodyClass = 'classic-page search-page';
+$bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 
 /** Builds a search.php URL that keeps the current q while changing category/free. */
@@ -145,18 +145,15 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
                 <span class="m"><?= strtoupper(date('M', strtotime($event['starts_at']))) ?></span>
               </span>
               <?php if ($hasImage): ?>
-                <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy" decoding="async">
+                <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="">
               <?php else: ?>
                 <div class="event-tile-art-fallback"><?= htmlspecialchars($event['banner_emoji']) ?></div>
-              <?php endif; ?>
-              <?php if ($tileOnline): ?>
-                <span class="event-tile-tag"><svg width="13" height="13"><use href="#ic-monitor"/></svg> Online</span>
               <?php endif; ?>
             </a>
             <div class="event-tile-body">
               <h3><a href="<?= htmlspecialchars($eventUrl) ?>"><?= htmlspecialchars($event['title']) ?></a></h3>
               <div class="event-tile-meta"><svg width="14" height="14"><use href="#<?= $tileOnline ? 'ic-monitor' : 'ic-pin' ?>"/></svg> <?= htmlspecialchars($event['venue_name'] . (($event['attend_mode'] ?? '') === 'HYBRID' ? ' + online' : '')) ?></div>
-              <div class="event-tile-price"><?php if (str_starts_with($priceLabel, 'From ')): ?><small>From</small> <?= htmlspecialchars(substr($priceLabel, 5)) ?><?php else: ?><?= htmlspecialchars($priceLabel) ?><?php endif; ?></div>
+              <div class="event-tile-price"><?= htmlspecialchars($priceLabel) ?></div>
             </div>
             <a class="btn btn-purple" href="<?= htmlspecialchars($eventUrl) ?>">Get tickets <svg width="14" height="14" class="btn-arrow"><use href="#ic-arrow"/></svg></a>
           </div>
