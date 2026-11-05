@@ -237,6 +237,66 @@ function env_create_file(string $root, array $values): ?string
     return null;
 }
 
+/** Settings that can be replaced from the admin page (a new key after a rotation). The database login is deliberately not on the list. */
+const ENV_REPLACEABLE = ['RESEND_API_KEY', 'IOTEC_CLIENT_ID', 'IOTEC_CLIENT_SECRET', 'IOTEC_WALLET_ID', 'IOTEC_MSG_CLIENT_ID', 'IOTEC_MSG_API_KEY', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY', 'EMAIL_FROM'];
+
+/**
+ * Replaces (or adds) ONE setting in the .env, leaving every other line exactly as it is. The file is rebuilt in a
+ * temporary file beside it and swapped in, and is checked afterwards. Returns null on success or a plain reason.
+ */
+function env_set_value(string $root, string $key, string $value): ?string
+{
+    if (!in_array($key, ENV_REPLACEABLE, true)) {
+        return 'That setting cannot be changed from here.';
+    }
+    $value = trim($value);
+    if ($value === '' || strlen($value) > 400 || preg_match('/[\r\n]/', $value) || (strpos($value, "'") !== false && strpos($value, '"') !== false)) {
+        return 'That value cannot be saved: it is empty, too long, or has a line break or both kinds of quote in it.';
+    }
+    $file = null;
+    foreach (env_candidates($root) as $c) {
+        if (@is_file($c) && @is_readable($c)) {
+            $file = $c;
+            break;
+        }
+    }
+    if ($file === null || !@is_writable($file)) {
+        return 'The .env file was not found or the website may not change it. Edit it by hand in File Manager instead.';
+    }
+    $old = (string) @file_get_contents($file);
+    $newLine = trim(explode("\n", env_compose([$key => $value])[0])[1] ?? '');   // line 1 of the composed text is the comment, line 2 is KEY='value'
+    $lines = preg_split('/\r\n|\n|\r/', rtrim($old, "\r\n"));
+    $done = false;
+    foreach ($lines as $i => $line) {
+        if (preg_match('/^\s*(export\s+)?' . preg_quote($key, '/') . '\s*=/', $line)) {
+            $lines[$i] = $newLine;
+            $done = true;
+        }
+    }
+    if (!$done) {
+        $lines[] = $newLine;
+    }
+    $text = implode("\n", $lines) . "\n";
+    $tmp = $file . '.tmp';
+    if (@file_put_contents($tmp, $text) === false) {
+        return 'The new file could not be written, so nothing changed.';
+    }
+    @chmod($tmp, 0600);
+    $before = env_parse($old);
+    $after = env_parse($text);
+    $same = ($after[$key] ?? null) === $value;
+    foreach ($before as $k => $v) {
+        if ($k !== $key && ($after[$k] ?? null) !== $v) {
+            $same = false;
+        }
+    }
+    if (!$same || !@rename($tmp, $file)) {
+        @unlink($tmp);
+        return 'The change could not be saved safely, so nothing changed.';
+    }
+    return null;
+}
+
 /**
  * Reads the define('NAME', 'value') lines of an old config.php WITHOUT running it (so nothing is executed and no
  * constant is redefined). Only plain string and number values are understood.

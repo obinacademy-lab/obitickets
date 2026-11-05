@@ -40,6 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         }
+    } elseif ($action === 'set') {
+        $key = (string) ($_POST['key'] ?? '');
+        $error = $fromEnv ? env_set_value($root, $key, (string) ($_POST['value'] ?? '')) : 'The site is not running from the .env yet.';
+        if ($error === null) {
+            log_admin_action((int) $admin['id'], 'env.set', 'settings', null, ['key' => $key]);   // the name only, never the value
+            header('Location: /admin-env-setup.php?set=' . urlencode($key));
+            exit;
+        }
     } elseif ($action === 'wipe') {
         if (!$fromEnv || !is_file($legacyFile) || !$allSame || empty($_POST['confirm'])) {
             $error = 'Not done: the site must be running from the .env, every value must match the old config.php, and the box must be ticked.';
@@ -64,6 +72,7 @@ render_admin_head('configcheck');
 
 <?php if (isset($_GET['created'])): ?><div class="alert alert-success" style="margin-bottom:16px">The .env file was created and checked. The site switches to it on the next page load.</div><?php endif; ?>
 <?php if (isset($_GET['wiped'])): ?><div class="alert alert-success" style="margin-bottom:16px">The old config.php no longer holds any secrets.</div><?php endif; ?>
+<?php if (isset($_GET['set']) && in_array($_GET['set'], ENV_REPLACEABLE, true)): ?><div class="alert alert-success" style="margin-bottom:16px"><?= htmlspecialchars($_GET['set']) ?> was updated in the .env and is in use from the next page load.</div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
 <div class="admin-card" style="margin-bottom:20px">
@@ -92,6 +101,18 @@ render_admin_head('configcheck');
         <span class="admin-badge <?= $badge[$s] ?? 'admin-badge-muted' ?>"><span class="mono"><?= htmlspecialchars($k) ?></span> &middot; <?= htmlspecialchars($s) ?></span>
       <?php endforeach; ?>
     </div>
+  </div>
+<?php endif; ?>
+
+<?php if ($fromEnv): ?>
+  <div class="admin-card" style="margin-bottom:20px">
+    <h3>Replace a key</h3>
+    <p class="muted" style="margin:8px 0 14px">After you make a new key at the provider (for example a new Resend key), choose it here and paste it in. The server saves it into the .env and checks the file. The value is never shown again and never stored anywhere else.</p>
+    <form method="post" autocomplete="off" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center"><?= csrf_field() ?><input type="hidden" name="action" value="set">
+      <select name="key" required><?php foreach (ENV_REPLACEABLE as $k): ?><option value="<?= htmlspecialchars($k) ?>"><?= htmlspecialchars($k) ?></option><?php endforeach; ?></select>
+      <input type="password" name="value" required autocomplete="new-password" placeholder="Paste the new value" style="min-width:260px; flex:1">
+      <button class="btn btn-purple" type="submit">Save to .env</button>
+    </form>
   </div>
 <?php endif; ?>
 
