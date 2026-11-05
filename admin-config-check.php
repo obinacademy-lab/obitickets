@@ -5,7 +5,8 @@ require_admin_permission('audit.view');
 
 $st = env_status();
 $fromEnv = $st['source'] === 'env';
-$legacyFile = is_file(__DIR__ . '/config/config.php');
+$legacyPath = rtrim((string) ($st['root'] ?? dirname(__DIR__)), '/\\') . '/config/config.php';   // the project folder is dev's root and the live public_html alike
+$legacyFile = is_file($legacyPath);
 $isSet = static fn (string $k): bool => defined($k) && (string) constant($k) !== '';
 $inEnv = array_flip($st['from_env'] ?? []);
 
@@ -22,9 +23,10 @@ $rows = [
     ['TURNSTILE_SITE_KEY', 'Bot check site key', 'optional'], ['TURNSTILE_SECRET_KEY', 'Bot check secret', 'optional'],
 ];
 $secretLen = defined('APP_SECRET') ? strlen((string) APP_SECRET) : 0;
+$legacyHoldsSecrets = $legacyFile && env_legacy_values($legacyPath) !== [];
 $checks = [
-    [$fromEnv, 'Settings are read from the .env file', $fromEnv ? '.env found ' . (realpath(dirname((string) $st['file'])) === realpath(dirname(__DIR__)) ? 'INSIDE the website folder. On the live server move it one folder up, next to public_html.' : 'outside the website folder (good).') : 'Still using the old config.php' . (!empty($st['missing']) && $st['file'] ? ' because the .env is missing: ' . implode(', ', $st['missing']) : ($st['file'] ? '' : ' (no .env found)'))],
-    [!($fromEnv && $legacyFile), 'The old config.php no longer holds secrets', $legacyFile ? ($fromEnv ? 'config/config.php still exists with the old values. Delete it (or empty it) now that the .env works.' : 'It is the active source until the .env is complete.') : 'Not present'],
+    [$fromEnv, 'Settings are read from the .env file', $fromEnv ? '.env found ' . (realpath(dirname((string) $st['file'])) === realpath((string) ($st['root'] ?? dirname(__DIR__))) ? 'INSIDE the website folder. On the live server move it one folder up, next to public_html.' : 'outside the website folder (good).') : 'Still using the old config.php' . (!empty($st['missing']) && $st['file'] ? ' because the .env is missing: ' . implode(', ', $st['missing']) : ($st['file'] ? '' : ' (no .env found)'))],
+    [$fromEnv && !$legacyHoldsSecrets, 'The old config.php no longer holds secrets', !$legacyFile ? 'Not present' : ($legacyHoldsSecrets ? ($fromEnv ? 'config/config.php still holds the old values. Empty it from the "Move secrets to .env" page now that the .env works.' : 'It is still the active source until the .env is complete.') : 'Emptied')],
     [APP_ENV === 'production', 'APP_ENV is production', 'It is ' . APP_ENV],
     [$secretLen >= 32, 'APP_SECRET is long enough (32+ characters)', $secretLen . ' characters'],
     [ipguard_ready(), 'IP blocker is switched on', ipguard_ready() ? 'Migration 027 applied' : 'Run migration/027_ip_guard.sql in phpMyAdmin'],
