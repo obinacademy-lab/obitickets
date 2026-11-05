@@ -55,7 +55,12 @@ function turnstile_verify(string $token, ?callable $http = null): bool
         error_log('[turnstile] Cloudflare unreachable; letting the visitor through');
         return true;
     }
-    return !empty($res['success']);
+    $GLOBALS['turnstile_codes'] = array_values(array_map('strval', (array) ($res['error-codes'] ?? [])));
+    if (empty($res['success'])) {
+        error_log('[turnstile] check refused: ' . implode(',', $GLOBALS['turnstile_codes']) . ' host=' . (string) ($res['hostname'] ?? ''));
+        return false;
+    }
+    return true;
 }
 
 function turnstile_http(string $url, array $post): ?array
@@ -95,10 +100,11 @@ function render_human_check(): void
           fetch('/api/human-check.php', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({token: token, csrf_token: m ? m.content : ''})
+          }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
+            if (d && d.error && msg()) { msg().textContent = d.error + (d.codes && d.codes.length ? ' (' + d.codes.join(', ') + ')' : ''); msg().style.display = 'block'; }
           }).catch(function () {});
         };
         window.obiHumanFailed = function () { if (msg()) { msg().style.display = 'block'; } return true; };
-        setTimeout(function () { if (!done && msg()) { msg().style.display = 'block'; } }, 15000); /* never leave someone waiting with no explanation */
       })();
     </script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

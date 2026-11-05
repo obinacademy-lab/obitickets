@@ -186,6 +186,10 @@ function google_resolve_user(array $claims, string $role): array
         $byEmail = $stmt->fetch();
 
         if (!$byEmail) {
+            // Only a brand-new account needs the bot check (people who already have an account are never held up by it).
+            if (!human_ok()) {
+                return ['status' => 'error', 'message' => 'To create a new account, please wait for the quick security check on the sign-up page to finish, then press Continue with Google again. If this keeps happening, turn off any ad or tracking blocker for this page, or try another browser.'];
+            }
             return ['status' => 'ok', 'created' => true] + google_create_user($claims, $role);
         }
         if ($byEmail['role'] === 'ADMIN' || (int) $byEmail['totp_enabled'] === 1) {

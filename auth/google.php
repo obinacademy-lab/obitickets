@@ -17,12 +17,5 @@ if (!google_login_enabled()) {
     exit;
 }
 
-// Bots must not mass-create accounts through Google either: the security check on the page has to have passed first.
-if (!human_ok()) {
-    $_SESSION['google_error'] = 'Please wait a moment for the security check to finish, then try Continue with Google again.';
-    header('Location: /' . $mode . '.php');
-    exit;
-}
-
 header('Location: ' . google_begin($mode, $next, (string) ($_GET['role'] ?? 'ATTENDEE')));
 exit;

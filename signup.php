@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors && !human_ok()) {
-        $errors[] = 'Please wait a moment for the quick security check to finish, then press the button again.';
+        $errors[] = 'Please wait a moment for the quick security check to finish, then press the button again. If this keeps happening, turn off any ad or tracking blocker for this page, or try another browser.';
     }
 
     if (!$errors) {

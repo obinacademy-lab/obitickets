@@ -9,7 +9,7 @@ if (!turnstile_enabled()) {
     json_response(['ok' => true]);
 }
 if (!turnstile_verify((string) ($body['token'] ?? ''))) {
-    json_response(['error' => 'The security check did not pass. Please refresh the page and try again.'], 400);
+    json_response(['error' => 'The security check did not pass. Please refresh the page and try again.', 'codes' => $GLOBALS['turnstile_codes'] ?? []], 400);
 }
 human_mark_passed();
 json_response(['ok' => true]);
