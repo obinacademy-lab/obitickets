@@ -113,7 +113,7 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
         <div class="cn-field">
           <label for="phone">Mobile money phone number</label>
           <div class="cn-box">
-            <input type="tel" id="phone" data-phone-input inputmode="tel" placeholder="07XX XXX XXX" autocomplete="tel">
+            <input type="tel" id="phone" data-phone-input inputmode="tel" placeholder="07XX XXX XXX" autocomplete="tel" value="<?= htmlspecialchars((string) ($_SESSION['checkout_phone_hint'] ?? '')) ?>">
             <span class="cn-chip" data-chip><?= $ckTick() ?><span data-chip-text></span></span>
           </div>
           <div class="cn-hint">MTN or Airtel &mdash; you'll get a prompt on this number to approve the payment.</div>

@@ -125,6 +125,7 @@ render_organizer_head('orders', $ctx);
     </div>
 
     <?= render_followup_panel($orderId, followup_sender((int) $ctx['actor_id'], $ctx['is_owner'] ? 'ORGANIZER' : 'TEAM'), $followupError, $followupDraft) ?>
+    <?= render_notify_history($orderId) ?>
 
     <?php if ($existingRequest): ?>
       <div class="admin-card">

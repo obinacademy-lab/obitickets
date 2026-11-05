@@ -363,7 +363,7 @@ function send_sale_notification_emails(int $orderId, ?array $adminEmails = null)
     return $sent;
 }
 
-function render_ticket_reminder_email_html(array $order): string
+function render_ticket_reminder_email_html(array $order, string $kind = 'reminder_24h'): string
 {
     $onlineBlock = render_online_email_block($order);
     $eventTitle = htmlspecialchars($order['event_title']);
@@ -372,11 +372,21 @@ function render_ticket_reminder_email_html(array $order): string
     $venue = htmlspecialchars($order['venue_name'] . ($order['venue_address'] ? ', ' . $order['venue_address'] : ''));
     $ticketUrl = rtrim(APP_URL, '/') . '/order.php?id=' . (int) $order['id'];
     $cards = render_ticket_cards_html($order);
+    $soon = $kind === 'reminder_2h';
+    $heading = $soon ? 'Starting soon ⏰' : 'See you soon? 🎟️';
+    $when = $soon ? 'starts in about 2 hours' : 'starts in about 24 hours';
+    // Online and hybrid events: say exactly when the room opens, because that is the question people have.
+    $opensLine = '';
+    if ((string) ($order['attend_mode'] ?? 'IN_PERSON') !== 'IN_PERSON' && normalize_meeting_url((string) ($order['online_url'] ?? '')) !== null) {
+        $win = online_join_window(['starts_at' => $order['event_starts_at'], 'ends_at' => $order['event_ends_at']]);
+        $opensLine = '<p style="margin:0 0 4px; font-weight:700; color:#1C1526;">Your online room opens at ' . htmlspecialchars(date('g:i A', $win['opens'])) . ' EAT, ' . ONLINE_JOIN_OPENS_MINUTES . ' minutes before the start.</p>';
+    }
 
     return <<<HTML
         <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
-          <h2 style="color:#991B1B;">See you soon? 🎟️</h2>
-          <p>Hi {$buyerName}, just a reminder that {$eventTitle} is coming up &mdash; your tickets are below.</p>
+          <h2 style="color:#991B1B;">{$heading}</h2>
+          <p>Hi {$buyerName}, {$eventTitle} {$when} &mdash; your tickets are below.</p>
+          {$opensLine}
           {$onlineBlock}
           <p style="background:#FEF2F2; border-radius:12px; padding:14px 16px; color:#1C1526;">
             <strong>{$eventTitle}</strong><br>
@@ -401,12 +411,12 @@ function render_ticket_reminder_email_html(array $order): string
  * cron/send-event-reminders.php once per paid order on an event starting in
  * roughly 24 hours; never called from the checkout flow itself.
  */
-function send_order_reminder_email(int $orderId): void
+function send_order_reminder_email(int $orderId, string $kind = 'reminder_24h'): bool
 {
     $order = get_order_ticket_details($orderId);
     if (!$order) {
         error_log("[email] send_order_reminder_email: order $orderId not found");
-        return;
+        return false;
     }
 
     $ticketCount = 0;
@@ -415,10 +425,11 @@ function send_order_reminder_email(int $orderId): void
     }
     if ($ticketCount === 0) {
         error_log("[email] send_order_reminder_email: order $orderId has no tickets yet");
-        return;
+        return false;
     }
 
-    resend_send($order['buyer_email'], 'Reminder: ' . $order['event_title'] . ' is coming up', render_ticket_reminder_email_html($order));
+    $subject = $kind === 'reminder_2h' ? 'Starting in about 2 hours: ' . $order['event_title'] : 'Reminder: ' . $order['event_title'] . ' is coming up';
+    return resend_send($order['buyer_email'], $subject, render_ticket_reminder_email_html($order, $kind), $kind, $orderId);
 }
 
 /**
@@ -533,6 +544,61 @@ function send_abandoned_checkout_email(int $orderId): void
     }
 
     resend_send($order['buyer_email'], 'Still want to go to ' . $order['event_title'] . '?', render_abandoned_checkout_email_html($order));
+}
+
+/**
+ * The one automatic nudge after a payment that did not go through. It names exactly what they were buying, what
+ * it costs, and a button that puts them back on the payment step with the same tickets and their number filled
+ * in (see public/retry-payment.php), instead of the event page and a new selection.
+ */
+function render_recovery_email_html(array $order, string $retryUrl): string
+{
+    $eventTitle = htmlspecialchars($order['event_title']);
+    $buyerName = htmlspecialchars(explode(' ', trim((string) $order['buyer_name']))[0] ?: 'there');
+    $dateRange = htmlspecialchars(format_event_date_range($order['event_starts_at'], $order['event_ends_at']));
+    $href = htmlspecialchars($retryUrl);
+    $contactUrl = htmlspecialchars(rtrim(APP_URL, '/') . '/contact.php');
+    $lines = '';
+    $paidCount = 0;
+    foreach ($order['items'] as $item) {
+        $lines .= '<p style="margin:4px 0; font-family:sans-serif; font-size:14px; color:#1C1526;">' . (int) $item['quantity'] . '&times; ' . htmlspecialchars($item['tier_name']) . '</p>';
+        if ((float) $item['unit_price'] > 0) {
+            $paidCount += (int) $item['quantity'];
+        }
+    }
+    $total = $paidCount > 0 ? htmlspecialchars($order['currency'] . ' ' . number_format((float) $order['subtotal_amount'] + $paidCount * SERVICE_FEE_PER_TICKET, 0)) : '';
+    $button = $paidCount > 0 ? 'Pay ' . $total . ' and get my ticket' : 'Get my ticket';
+    $phone = trim((string) ($order['phone'] ?? ''));
+    $phoneNote = $phone !== '' ? ' We will use ' . htmlspecialchars($phone) . ' for the payment prompt unless you change it.' : '';
+
+    return <<<HTML
+        <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
+          <h2 style="color:#991B1B;">Your payment didn't go through</h2>
+          <p>Hi {$buyerName}, your payment for <strong>{$eventTitle}</strong> ({$dateRange}) did not complete, so no ticket was issued. Nothing was taken for it.</p>
+          <div style="background:#FEF2F2; border-radius:12px; padding:14px 16px; margin:16px 0;">
+            {$lines}
+          </div>
+          <p>It takes one tap to try again with the same tickets.{$phoneNote}</p>
+          <p>
+            <a href="{$href}" style="display:inline-block; background:#DC2626; color:#fff; padding:14px 26px; border-radius:999px; text-decoration:none; font-weight:700;">
+              {$button}
+            </a>
+          </p>
+          <p style="color:#726C7E; font-size:13px;">Tickets are only held for you once you start paying, and they can sell out. If it fails again, check that the number has mobile money and enough balance, or try the other network.</p>
+          <p style="color:#726C7E; font-size:13px;">If money did leave your account, <a href="{$contactUrl}" style="color:#991B1B;">contact us</a> with the phone number you paid from and we will sort it out.</p>
+          <p style="color:#726C7E; font-size:12px;">You will only get this one message. If you no longer want to go, just ignore it.</p>
+        </div>
+        HTML;
+}
+
+function send_recovery_email(int $orderId): bool
+{
+    $order = get_order_ticket_details($orderId);
+    if (!$order) {
+        error_log("[email] send_recovery_email: order $orderId not found");
+        return false;
+    }
+    return resend_send($order['buyer_email'], 'Finish getting your ticket for ' . $order['event_title'], render_recovery_email_html($order, recovery_retry_url($orderId)), 'recovery', $orderId);
 }
 
 function send_contact_notification_email(string $to, string $name, string $fromEmail, string $topic, string $message): void

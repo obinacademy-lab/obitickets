@@ -69,5 +69,6 @@ require_once __DIR__ . '/share-image.php';
 require_once __DIR__ . '/organizer.php';
 require_once __DIR__ . '/organizer-layout.php';
 require_once __DIR__ . '/followup.php';
+require_once __DIR__ . '/notify.php';
 
 track_site_visit();

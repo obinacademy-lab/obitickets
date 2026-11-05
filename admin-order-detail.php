@@ -146,6 +146,7 @@ render_admin_head('orders');
     </div>
 
     <?= render_followup_panel($orderId, followup_sender((int) $admin['id'], 'ADMIN'), $followupError, $followupDraft, true) ?>
+    <?= render_notify_history($orderId) ?>
 
     <?php if (admin_can('orders.refund') && $order['status'] === 'PAID' && !$order['refunded_at']): ?>
       <div class="admin-card">

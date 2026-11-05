@@ -11,8 +11,8 @@ if (PHP_SAPI !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
 }
 
 /**
- * Run on a schedule (hourly is fine — same cadence as
- * cron/send-event-reminders.php) via a Hostinger cron job:
+ * Run every 15 minutes (same cadence as cron/send-event-reminders.php; the failed-payment nudge goes out about
+ * 15 minutes after the failure, so an hourly schedule would delay it by up to an hour) via a Hostinger cron job:
  *   php /home/<user>/domains/obitickets.site/cron/expire-stale-orders.php
  *
  * Closes a known gap flagged in create_pending_order() (includes/payments.php):
@@ -47,9 +47,12 @@ $stmt = db()->prepare("
 $stmt->execute();
 $staleOrders = $stmt->fetchAll();
 
+// With migration 026 applied, the nudge is no longer sent from this loop: the recovery sweep at the bottom covers
+// every failed payment (also the ones that failed while the buyer was still on the page), once, 15 minutes after.
+$sweepNudges = notify_ready();
+
 if (!$staleOrders) {
     echo "No stale pending orders right now.\n";
-    exit;
 }
 
 foreach ($staleOrders as $order) {
@@ -59,13 +62,22 @@ foreach ($staleOrders as $order) {
     if ($resolved['status'] === 'PAID') {
         echo "Order #{$orderId}: iotec confirmed payment — finalized and tickets sent.\n";
     } elseif ($resolved['status'] === 'FAILED') {
-        send_abandoned_checkout_email($orderId);
-        echo "Order #{$orderId}: iotec reports it failed — released and emailed a recovery nudge.\n";
+        if (!$sweepNudges) {
+            send_abandoned_checkout_email($orderId);
+        }
+        echo "Order #{$orderId}: iotec reports it failed — released" . ($sweepNudges ? '; the recovery sweep will follow up.' : ' and emailed a recovery nudge.') . "\n";
     } elseif (!$order['payment_reference']) {
         fail_order($orderId, STALE_ORDER_EXPIRY_MESSAGE);
-        send_abandoned_checkout_email($orderId);
-        echo "Order #{$orderId}: never reached iotec — released and emailed a recovery nudge.\n";
+        if (!$sweepNudges) {
+            send_abandoned_checkout_email($orderId);
+        }
+        echo "Order #{$orderId}: never reached iotec — released" . ($sweepNudges ? '; the recovery sweep will follow up.' : ' and emailed a recovery nudge.') . "\n";
     } else {
         echo "Order #{$orderId}: still pending at iotec — left alone, will retry.\n";
     }
+}
+
+if ($sweepNudges) {
+    $r = recovery_sweep();
+    echo "Recovery nudges: sent {$r['sent']}, skipped {$r['skipped']}, failed {$r['failed']}.\n";
 }

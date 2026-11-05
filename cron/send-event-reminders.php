@@ -11,41 +11,50 @@ if (PHP_SAPI !== 'cli' && isset($_SERVER['REQUEST_METHOD'])) {
 }
 
 /**
- * Run on a schedule (hourly is plenty) via a Hostinger cron job:
+ * Run every 15 minutes via a Hostinger cron job:
  *   php /home/<user>/domains/obitickets.site/cron/send-event-reminders.php
  *
- * Emails every paid attendee of an event starting in roughly 24 hours, once
- * per event (events.reminder_sent_at guards against a second cron run
- * re-sending the same reminder). The 23-25 hour window is deliberately wider
- * than the hourly cadence so a late or missed run still catches every event
- * exactly once.
+ * Emails every paid order a reminder about 24 hours and again about 2 hours before the event starts. Each message
+ * is sent once PER ORDER (notification_log has a unique key), so a late run still catches everyone, an overlapping
+ * run cannot double-send, and someone who buys after the first run still gets the 2-hour reminder. The windows are
+ * in includes/notify.php (REMINDER_24H_WINDOW, REMINDER_2H_WINDOW_MIN). Online events say when the room opens.
+ *
+ * Until migration/026_notification_log.sql has been run, this falls back to the old behaviour: one 24-hour email per
+ * event, guarded by events.reminder_sent_at.
  */
 require_once __DIR__ . '/../includes/bootstrap.php';
 
-$stmt = db()->prepare("
-    SELECT id, title
-    FROM events
-    WHERE status = 'PUBLISHED'
-      AND reminder_sent_at IS NULL
-      AND starts_at BETWEEN (NOW() + INTERVAL 23 HOUR) AND (NOW() + INTERVAL 25 HOUR)
-");
-$stmt->execute();
-$dueEvents = $stmt->fetchAll();
-
-if (!$dueEvents) {
-    echo "No events due for a reminder right now.\n";
+if (!notify_ready()) {
+    $stmt = db()->prepare("
+        SELECT id, title
+        FROM events
+        WHERE status = 'PUBLISHED'
+          AND reminder_sent_at IS NULL
+          AND starts_at BETWEEN (NOW() + INTERVAL 23 HOUR) AND (NOW() + INTERVAL 25 HOUR)
+    ");
+    $stmt->execute();
+    $dueEvents = $stmt->fetchAll();
+    if (!$dueEvents) {
+        echo "No events due for a reminder right now (migration 026 not applied: using the once-per-event fallback).\n";
+        exit;
+    }
+    foreach ($dueEvents as $event) {
+        $orderStmt = db()->prepare("SELECT id FROM orders WHERE event_id = ? AND status = 'PAID'");
+        $orderStmt->execute([$event['id']]);
+        $orderIds = $orderStmt->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($orderIds as $orderId) {
+            send_order_reminder_email((int) $orderId);
+        }
+        db()->prepare('UPDATE events SET reminder_sent_at = NOW() WHERE id = ?')->execute([$event['id']]);
+        echo "Event #{$event['id']} \"{$event['title']}\": reminded " . count($orderIds) . " order(s).\n";
+    }
     exit;
 }
 
-foreach ($dueEvents as $event) {
-    $orderStmt = db()->prepare("SELECT id FROM orders WHERE event_id = ? AND status = 'PAID'");
-    $orderStmt->execute([$event['id']]);
-    $orderIds = $orderStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    foreach ($orderIds as $orderId) {
-        send_order_reminder_email((int) $orderId);
+foreach (['reminder_24h', 'reminder_2h'] as $kind) {
+    $counts = ['sent' => 0, 'skipped' => 0, 'failed' => 0];
+    foreach (reminder_due_order_ids($kind) as $orderId) {
+        $counts[reminder_send($orderId, $kind)]++;
     }
-
-    db()->prepare('UPDATE events SET reminder_sent_at = NOW() WHERE id = ?')->execute([$event['id']]);
-    echo "Event #{$event['id']} \"{$event['title']}\": reminded " . count($orderIds) . " order(s).\n";
+    echo notify_kind_label($kind) . ": sent {$counts['sent']}, skipped {$counts['skipped']}, failed {$counts['failed']}.\n";
 }
