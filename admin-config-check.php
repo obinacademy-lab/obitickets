@@ -37,6 +37,7 @@ render_admin_head('configcheck');
 
 <div class="admin-page-head">
   <div><h1>Settings check</h1><p>Where each setting comes from. Values are never shown here, only whether each one is set.</p></div>
+  <?php if (admin_can('admins.manage')): ?><a class="btn btn-line" href="/admin-env-setup.php">Move secrets to .env &rarr;</a><?php endif; ?>
 </div>
 
 <div class="admin-card" style="margin-bottom:20px">

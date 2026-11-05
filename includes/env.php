@@ -20,6 +20,9 @@ declare(strict_types=1);
 /** Keys the site cannot run without. A value may be empty (a local database often has no password) but the key must be there. */
 const ENV_REQUIRED = ['APP_ENV', 'APP_URL', 'APP_SECRET', 'DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'];
 
+/** Of those, the ones allowed to be blank (a local database often has no password). Every other required key needs a value. */
+const ENV_MAY_BE_EMPTY = ['DB_PASS'];
+
 /** Every setting the code reads, with what it falls back to when the .env does not mention it. */
 const ENV_DEFAULTS = [
     'APP_ENV' => 'production',
@@ -98,7 +101,8 @@ function env_read(string $root): array
     foreach (env_candidates($root) as $file) {
         if (@is_file($file) && @is_readable($file)) {
             $values = env_parse((string) @file_get_contents($file));
-            $missing = array_values(array_filter(ENV_REQUIRED, static fn ($k) => !array_key_exists($k, $values)));
+            // "missing" means absent, or present but blank (a blank template must never be mistaken for a finished file).
+            $missing = array_values(array_filter(ENV_REQUIRED, static fn ($k) => !array_key_exists($k, $values) || ($values[$k] === '' && !in_array($k, ENV_MAY_BE_EMPTY, true))));
             return ['file' => $file, 'values' => $values, 'missing' => $missing, 'complete' => $missing === []];
         }
     }
@@ -128,13 +132,18 @@ function env_boot(string $root): array
                 $fromEnv[] = $key;
             }
         }
-        return ['source' => 'env', 'file' => $env['file'], 'missing' => [], 'from_env' => $fromEnv];
+        return ['source' => 'env', 'file' => $env['file'], 'missing' => [], 'from_env' => $fromEnv, 'root' => $root];
     }
 
     $legacy = $root . '/config/config.php';
     if (is_file($legacy)) {
         require_once $legacy;
-        return ['source' => 'config.php', 'file' => $env['file'], 'missing' => $env['file'] ? $env['missing'] : [], 'from_env' => []];
+        if (!defined('DB_NAME') || !defined('APP_SECRET')) {   // an emptied config.php is not a configuration
+            http_response_code(500);
+            error_log('[config] config/config.php defines nothing and no usable .env was found');
+            exit('The site is not configured yet.');
+        }
+        return ['source' => 'config.php', 'file' => $env['file'], 'missing' => $env['file'] ? $env['missing'] : [], 'from_env' => [], 'root' => $root];
     }
 
     http_response_code(500);
@@ -145,5 +154,128 @@ function env_boot(string $root): array
 /** What the running site is using. Never contains a value. */
 function env_status(): array
 {
-    return $GLOBALS['env_status'] ?? ['source' => 'unknown', 'file' => null, 'missing' => [], 'from_env' => []];
+    return $GLOBALS['env_status'] ?? ['source' => 'unknown', 'file' => null, 'missing' => [], 'from_env' => [], 'root' => ''];
+}
+
+/** Where a new .env belongs: one folder above the project folder (above public_html on the live server). */
+function env_target_file(string $root): string
+{
+    return dirname($root) . DIRECTORY_SEPARATOR . '.env';
+}
+
+/**
+ * Turns settings into the text of a .env file. Returns [text, problems]; a setting that cannot be written safely
+ * (it contains a line break, or both kinds of quote) is listed in problems and left out, never half-written.
+ * @param array<string,string> $values
+ * @return array{0:string,1:list<string>}
+ */
+function env_compose(array $values): array
+{
+    $lines = ['# obitickets settings and secrets. Created from the site\'s previous settings. Keep this file outside public_html and NEVER commit it.'];
+    $problems = [];
+    foreach ($values as $key => $value) {
+        $value = (string) $value;
+        if (!preg_match('/^[A-Z][A-Z0-9_]*$/', (string) $key) || preg_match('/[\r\n]/', $value)) {
+            $problems[] = (string) $key;
+            continue;
+        }
+        if ($value === '') {
+            $lines[] = $key . '=';
+        } elseif (strpos($value, "'") === false) {
+            $lines[] = $key . "='" . $value . "'";
+        } elseif (strpos($value, '"') === false) {
+            $lines[] = $key . '="' . $value . '"';
+        } else {
+            $problems[] = (string) $key;
+        }
+    }
+    return [implode("\n", $lines) . "\n", $problems];
+}
+
+/**
+ * Writes a new .env from the given settings, reads it back, and keeps it only if it is complete and identical.
+ * Never overwrites an existing file. Returns null on success, or a plain-language reason it did not happen.
+ * @param array<string,string> $values
+ */
+function env_create_file(string $root, array $values): ?string
+{
+    $target = env_target_file($root);
+    if (@is_file($target)) {
+        return 'A .env file already exists there, so nothing was created.';
+    }
+    if (!@is_writable(dirname($target))) {
+        return 'The server does not let the website write to ' . dirname($target) . '. Create the .env by hand in File Manager instead (config/env.example is the template).';
+    }
+    [$text, $problems] = env_compose($values);
+    if ($problems) {
+        return 'These settings cannot be written safely and nothing was created: ' . implode(', ', $problems) . '. Create the .env by hand instead.';
+    }
+    if (@file_put_contents($target, $text, LOCK_EX) === false) {
+        return 'The file could not be written. Create it by hand in File Manager instead.';
+    }
+    @chmod($target, 0600);
+    $back = env_parse((string) @file_get_contents($target));
+    $same = true;
+    foreach ($values as $k => $v) {
+        $same = $same && (($back[$k] ?? null) === (string) $v);
+    }
+    $missing = array_filter(ENV_REQUIRED, static fn ($k) => !array_key_exists($k, $back) || ($back[$k] === '' && !in_array($k, ENV_MAY_BE_EMPTY, true)));
+    if (!$same || $missing) {
+        @unlink($target);   // only ever the file this call just made
+        return $missing ? 'The new file would be incomplete (' . implode(', ', $missing) . '), so it was removed. Nothing changed.' : 'The new file did not read back correctly, so it was removed. Nothing changed.';
+    }
+    return null;
+}
+
+/**
+ * Reads the define('NAME', 'value') lines of an old config.php WITHOUT running it (so nothing is executed and no
+ * constant is redefined). Only plain string and number values are understood.
+ * @return array<string,string>
+ */
+function env_legacy_values(string $file): array
+{
+    $out = [];
+    $src = @file_get_contents($file);
+    if ($src === false) {
+        return $out;
+    }
+    $tokens = array_values(array_filter(token_get_all($src), static fn ($t) => !(is_array($t) && in_array($t[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true))));
+    $str = static function ($t): ?string {
+        if (!is_array($t)) {
+            return null;
+        }
+        if ($t[0] === T_LNUMBER || $t[0] === T_DNUMBER) {
+            return (string) $t[1];
+        }
+        if ($t[0] !== T_CONSTANT_ENCAPSED_STRING) {
+            return null;
+        }
+        $raw = $t[1];
+        return $raw[0] === "'" ? str_replace(["\\\\", "\\'"], ["\\", "'"], substr($raw, 1, -1)) : stripcslashes(substr($raw, 1, -1));
+    };
+    for ($i = 0, $n = count($tokens); $i < $n - 5; $i++) {
+        if (is_array($tokens[$i]) && $tokens[$i][0] === T_STRING && strtolower($tokens[$i][1]) === 'define' && $tokens[$i + 1] === '(') {
+            $k = $str($tokens[$i + 2]);
+            $v = ($tokens[$i + 3] === ',' && $tokens[$i + 5] === ')') ? $str($tokens[$i + 4]) : null;   // only define('A', 'literal'): 'a' . 'b' is skipped, not half-read
+            if ($k !== null && $v !== null) {
+                $out[$k] = $v;
+            }
+        }
+    }
+    return $out;
+}
+
+/**
+ * Compares two sets of settings key by key and says only whether each matches, never what the value is.
+ * @param array<string,string> $a the .env
+ * @param array<string,string> $b the old config.php
+ * @return array<string,string> key => 'same' | 'differs' | 'only in .env' | 'only in config.php'
+ */
+function env_compare(array $a, array $b): array
+{
+    $out = [];
+    foreach (array_unique(array_merge(array_keys($a), array_keys($b))) as $k) {
+        $out[$k] = !array_key_exists($k, $b) ? 'only in .env' : (!array_key_exists($k, $a) ? 'only in config.php' : ($a[$k] === $b[$k] ? 'same' : 'differs'));
+    }
+    return $out;
 }
