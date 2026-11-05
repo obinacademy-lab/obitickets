@@ -210,8 +210,11 @@ function env_create_file(string $root, array $values): ?string
     if ($problems) {
         return 'These settings cannot be written safely and nothing was created: ' . implode(', ', $problems) . '. Create the .env by hand instead.';
     }
-    if (@file_put_contents($target, $text, LOCK_EX) === false) {
-        return 'The file could not be written. Create it by hand in File Manager instead.';
+    // Some hosting filesystems refuse the locking flag, so try with it first and then plainly.
+    if (@file_put_contents($target, $text, LOCK_EX) === false && @file_put_contents($target, $text) === false) {
+        $why = (string) (error_get_last()['message'] ?? 'unknown');
+        error_log('[env] could not write ' . $target . ': ' . $why);
+        return 'The file could not be written (' . preg_replace('/^.*?: /', '', mb_substr($why, 0, 160)) . '). Create it by hand in File Manager instead.';
     }
     @chmod($target, 0600);
     $back = env_parse((string) @file_get_contents($target));
