@@ -96,6 +96,40 @@ function resend_send(string $to, string $subject, string $html, string $kind = '
     email_log_write($kind, $to, $subject, 'SENT', is_array($decoded) ? ($decoded['id'] ?? null) : null, null, $orderId);
     return true;
 }
+/** A real Resend key looks like re_ followed by letters, digits, dashes and underscores, with no spaces. */
+function resend_key_format_ok(string $key): bool
+{
+    return (bool) preg_match('/^re_[A-Za-z0-9_\-]{16,120}$/D', $key);   // D: a trailing line break does not count as part of the key
+}
+
+/**
+ * Proves a Resend key works by sending ONE small email with it to $to. Used before a new key is saved, so a bad
+ * paste can never replace a working key. $http is injectable for tests: fn(string $key, array $payload): array{0:int,1:string}.
+ * @return array{0:bool,1:string} [worked, plain-language message]
+ */
+function resend_try_key(string $key, string $to, ?callable $http = null): array
+{
+    if (!resend_key_format_ok($key)) {
+        return [false, 'That does not look like a Resend key. A real one starts with re_ and has no spaces.'];
+    }
+    $payload = ['from' => EMAIL_FROM, 'to' => $to, 'subject' => 'obitickets: your new email key works', 'html' => '<p>This message was sent with the new Resend key to prove it works. You can ignore it.</p>'];
+    if ($http) {
+        [$status, $body] = $http($key, $payload);
+    } else {
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $key, 'Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode($payload), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20]);
+        $body = (string) curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+    }
+    if ($status >= 200 && $status < 300) {
+        return [true, 'Resend accepted the key and sent a test email to ' . $to . '.'];
+    }
+    $detail = (string) ((json_decode((string) $body, true)['message'] ?? '') ?: ('HTTP ' . $status));
+    return [false, 'Resend did not accept that key (' . mb_substr($detail, 0, 140) . '). Nothing was changed.'];
+}
+
 function send_password_reset_email(string $to, string $name, string $resetUrl): void
 {
     resend_send($to, 'Reset your obitickets password', <<<HTML

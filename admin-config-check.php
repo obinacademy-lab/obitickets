@@ -29,8 +29,9 @@ $checks = [
     [$fromEnv && !$legacyHoldsSecrets, 'The old config.php no longer holds secrets', !$legacyFile ? 'Not present' : ($legacyHoldsSecrets ? ($fromEnv ? 'config/config.php still holds the old values. Empty it from the "Move secrets to .env" page now that the .env works.' : 'It is still the active source until the .env is complete.') : 'Emptied')],
     [APP_ENV === 'production', 'APP_ENV is production', 'It is ' . APP_ENV],
     [$secretLen >= 32, 'APP_SECRET is long enough (32+ characters)', $secretLen . ' characters'],
-    [ipguard_ready(), 'IP blocker is switched on', ipguard_ready() ? 'Migration 027 applied' : 'Run migration/027_ip_guard.sql in phpMyAdmin'],
-    [turnstile_enabled(), 'Bot check keys are set', turnstile_enabled() ? 'On' : 'Off (optional)'],
+    [true, 'IP blocker', ipguard_switched_on() ? (ipguard_ready() ? 'ON: blocks addresses with more than 3 failed actions an hour' : 'Switched on in the .env but its tables are missing') : 'OFF (the default). It only runs when IPGUARD_ENABLED=1 is in the .env'],
+    [true, 'Bot check on sign-up', turnstile_enabled() ? 'ON' : 'OFF (the default). It only runs when TURNSTILE_ENABLED=1 is in the .env'],
+    [resend_key_format_ok((string) (defined('RESEND_API_KEY') ? RESEND_API_KEY : '')), 'Email key looks like a real Resend key', resend_key_format_ok((string) (defined('RESEND_API_KEY') ? RESEND_API_KEY : '')) ? 'Yes (starts with re_, no spaces)' : 'NO: tickets and receipts cannot be emailed. Paste a valid key under "Move secrets to .env"'],
 ];
 
 $pageTitle = 'Settings check';

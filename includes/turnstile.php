@@ -16,9 +16,11 @@ declare(strict_types=1);
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const TURNSTILE_PASS_SECONDS = 1800;
 
+/** On only when BOTH keys are set AND TURNSTILE_ENABLED=1 is in the .env: the keys alone never switch it on, so it cannot hold up sign-ups by surprise. */
 function turnstile_enabled(): bool
 {
-    return defined('TURNSTILE_SITE_KEY') && TURNSTILE_SITE_KEY !== '' && defined('TURNSTILE_SECRET_KEY') && TURNSTILE_SECRET_KEY !== '';
+    return defined('TURNSTILE_ENABLED') && in_array(strtolower(trim((string) TURNSTILE_ENABLED)), ['1', 'true', 'yes', 'on'], true)
+        && defined('TURNSTILE_SITE_KEY') && TURNSTILE_SITE_KEY !== '' && defined('TURNSTILE_SECRET_KEY') && TURNSTILE_SECRET_KEY !== '';
 }
 
 /** True when this browser has passed the check recently, or the check is not switched on. */

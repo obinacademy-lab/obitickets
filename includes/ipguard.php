@@ -25,9 +25,18 @@ const IPGUARD_FIRST_BLOCK_MINUTES = 60;
 const IPGUARD_REPEAT_BLOCK_MINUTES = 1440;
 const IPGUARD_REPEAT_WITHIN_HOURS = 24;
 
+/** The blocker is OFF unless IPGUARD_ENABLED=1 is set in the .env, so it can never block real customers by surprise. */
+function ipguard_switched_on(): bool
+{
+    return defined('IPGUARD_ENABLED') && in_array(strtolower(trim((string) IPGUARD_ENABLED)), ['1', 'true', 'yes', 'on'], true);
+}
+
 function ipguard_ready(): bool
 {
     static $ready = null;
+    if (!ipguard_switched_on()) {
+        return false;
+    }
     if ($ready === null) {
         try {
             $ready = (bool) db()->query("SHOW TABLES LIKE 'ip_blocks'")->fetch() && (bool) db()->query("SHOW TABLES LIKE 'ip_events'")->fetch();

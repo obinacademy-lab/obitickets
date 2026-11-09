@@ -42,7 +42,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'set') {
         $key = (string) ($_POST['key'] ?? '');
-        $error = $fromEnv ? env_set_value($root, $key, (string) ($_POST['value'] ?? '')) : 'The site is not running from the .env yet.';
+        $newValue = trim((string) ($_POST['value'] ?? ''));
+        $error = null;
+        if (!$fromEnv) {
+            $error = 'The site is not running from the .env yet.';
+        } elseif ($key === 'RESEND_API_KEY') {
+            // Prove the key works BEFORE it replaces anything: a bad paste must never take email down.
+            [$works, $why] = resend_try_key($newValue, (string) $admin['email']);
+            $error = $works ? null : $why;
+        }
+        if ($error === null) {
+            $error = env_set_value($root, $key, $newValue);
+        }
         if ($error === null) {
             log_admin_action((int) $admin['id'], 'env.set', 'settings', null, ['key' => $key]);   // the name only, never the value
             header('Location: /admin-env-setup.php?set=' . urlencode($key));

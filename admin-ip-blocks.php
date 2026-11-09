@@ -6,7 +6,7 @@ $ready = ipguard_ready();
 $installError = null;
 
 // "Switch on": runs migration/027_ip_guard.sql (two CREATE TABLE IF NOT EXISTS statements) so nobody has to open phpMyAdmin.
-if (!$ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'install' && admin_can('admins.manage')) {
+if (ipguard_switched_on() && !$ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'install' && admin_can('admins.manage')) {
     verify_csrf();
     $sqlFile = rtrim((string) (env_status()['root'] ?? dirname(__DIR__)), '/\\') . '/migration/027_ip_guard.sql';
     $sql = is_file($sqlFile) ? (string) file_get_contents($sqlFile) : '';
@@ -58,7 +58,10 @@ render_admin_head('ipblocks');
   <div><h1>Blocked IP addresses</h1><p>An address that does more than <?= IPGUARD_LIMIT ?> failed or suspicious things in an hour is blocked for <?= $minLabel(IPGUARD_FIRST_BLOCK_MINUTES) ?>, or 24 hours if it was blocked in the last day.</p></div>
 </div>
 
-<?php if (!$ready): ?>
+<?php if (!ipguard_switched_on()): ?>
+  <div class="admin-card"><h3>The IP blocker is switched off</h3>
+    <p class="muted" style="margin-top:8px">It is off by default, so it cannot stop real customers. Nobody is being blocked. To switch it on, add <span class="mono">IPGUARD_ENABLED=1</span> to the .env file.</p></div>
+<?php elseif (!$ready): ?>
   <?php if ($installError): ?><div class="alert alert-error" style="margin-bottom:16px"><?= htmlspecialchars($installError) ?></div><?php endif; ?>
   <div class="admin-card"><h3>Not switched on yet</h3>
     <p class="muted" style="margin:8px 0 14px">The blocker needs two small database tables first. Until then nothing is recorded or blocked, and the site works as normal. The button creates them (it only adds tables, it never changes or removes existing data).</p>
