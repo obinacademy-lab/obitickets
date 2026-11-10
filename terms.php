@@ -26,12 +26,13 @@ include __DIR__ . '/includes/header.php';
 
       <h2>2. Your account</h2>
       <p>You need an account to buy or sell tickets. You're responsible for keeping your password secure and for anything that happens under your account. Tell us right away if you think someone else has access to it. You must be old enough to enter a binding contract under the laws of your country to create an account.</p>
+      <p>By creating an account you agree that when you look at an event on obitickets without buying a ticket, that event's organizer may contact you about it, by email at the address on your account or on WhatsApp at the number on your account, to tell you about the event and invite you to buy tickets. Organizers contact you through obitickets, each person can be contacted only a few times about an event, and you can ask us to stop by <a href="/contact.php">getting in touch</a>.</p>
 
       <h2>3. Buying tickets</h2>
       <p>When you buy a ticket, you're entering into a purchase directly for that event. Ticket prices, availability, and event details (date, time, venue) are set by the organizer, and obitickets is not responsible for an organizer's description being inaccurate, though we'll help you get in touch with them if something's wrong. Purchases are covered separately by our <a href="/purchase-terms.php">Purchase Terms</a>.</p>
 
       <h2>4. Selling tickets as an organizer</h2>
-      <p>If you list an event, you confirm you have the right to sell tickets to it and that your event description is accurate. You're responsible for delivering the event as described, for any refunds owed under our <a href="/refunds.php">refund policy</a> if you cancel or materially change your event, and for complying with any local laws or licensing your event requires. obitickets may remove a listing that's misleading, fraudulent, or violates these terms, and may suspend an organizer account for repeated issues.</p>
+      <p>If you list an event, you confirm you have the right to sell tickets to it and that your event description is accurate. You're responsible for delivering the event as described, for any refunds owed under our <a href="/refunds.php">refund policy</a> if you cancel or materially change your event, and for complying with any local laws or licensing your event requires. If obitickets lets you contact people who looked at your event, you may use their contact details only to tell them about that event, and you may not share, sell or reuse them for anything else. obitickets may remove a listing that's misleading, fraudulent, or violates these terms, and may suspend an organizer account for repeated issues.</p>
 
       <h2>5. Fees</h2>
       <p>obitickets charges organizers a commission on each paid ticket, and charges attendees a small service fee per ticket, shown clearly before checkout. Current rates are available on our <a href="/pricing.php">pricing page</a>.</p>

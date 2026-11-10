@@ -29,6 +29,7 @@ $eventMedia = get_event_media((int) $event['id']);
 $currency = $tiers[0]['currency'] ?? 'UGX';
 
 $currentUser = current_user();
+event_view_record($event, $currentUser);   // remembers who looked, so organizers can follow up with people who never bought
 $likeUserId = $currentUser ? (int) $currentUser['id'] : null;
 $likeSessionToken = $likeUserId ? null : session_id();
 $userLikedEvent = has_liked_event((int) $event['id'], $likeUserId, $likeSessionToken);

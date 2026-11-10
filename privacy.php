@@ -23,6 +23,7 @@ include __DIR__ . '/includes/header.php';
 
       <h2>1. Information we collect</h2>
       <p>When you create an account, we collect your name, email address, phone number (optional), and a securely hashed password — we never store your password in plain text. If you sell tickets as an organizer, we also collect your organization name and bio if you add one.</p>
+      <p>When you are signed in and open an event page, we remember which event you looked at, how many times, and when (kept for up to 90 days). If you are not signed in, we only count the visit and cannot tell who you are.</p>
       <p>When you buy a ticket, your mobile money payment is handled directly by our payment processor (iotec) — obitickets never sees or stores your mobile money PIN, and doesn't store your full mobile money account details beyond the phone number used for that order.</p>
       <p>When you log in or sign up, we automatically record the date and time, your device type, browser, and operating system, and the city/country your connection appears to come from (resolved from your IP address via a third-party lookup) — used only for account activity monitoring and security, never for advertising. We don't keep the raw IP address itself.</p>
 
@@ -32,6 +33,7 @@ include __DIR__ . '/includes/header.php';
         <li>To process ticket purchases and deliver your tickets by email</li>
         <li>To show organizers their event sales and manage payouts</li>
         <li>To respond to support requests and refund claims</li>
+        <li>To let an event's organizer tell you about an event you looked at but did not buy tickets for, by email or WhatsApp, using the email address and phone number on your account. We send the email for the organizer; WhatsApp opens on the organizer's own phone, so they will see your first name and number. Each person can be contacted only a few times about an event.</li>
         <li>To detect suspicious account activity (unusual login locations, for example)</li>
       </ul>
 

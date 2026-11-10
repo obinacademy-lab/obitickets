@@ -44,6 +44,7 @@ function render_organizer_head(string $active, array $orgContext): void
         ]],
         ['key' => 'attendees', 'label' => 'Attendees', 'icon' => 'ic-people', 'group' => 'Main', 'tabs' => [
             ['attendees', 'Attendees', '/org-attendees.php', 'attendees.view'],
+            ['interested', 'Interested', '/org-interested.php', 'audience.use'],
         ]],
         ['key' => 'checkin', 'label' => 'Check-in', 'icon' => 'ic-scan', 'group' => 'Main', 'tabs' => [
             ['checkin', 'Check-in', '/checkin.php', 'checkin.use'],
