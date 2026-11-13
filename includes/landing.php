@@ -53,7 +53,24 @@ function get_upcoming_tickets_for_user(int $userId, int $limit = 8): array
     $stmt->execute([$userId]);
     return $stmt->fetchAll();
 }
-/** Inline style that gives a flyer frame its blurred backdrop (the flyer itself, softened). */
+/**
+ * The flyer's own proportions as a CSS ratio ("800 / 1000"), or '' when there is no flyer or it cannot be measured.
+ * Cards use it so each one takes the shape of its flyer and shows it whole.
+ */
+function flyer_ratio(?string $path): string
+{
+    static $seen = [];
+    $path = trim((string) $path);
+    if ($path === '' || !preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $path) || str_contains($path, '..')) {
+        return '';
+    }
+    if (!array_key_exists($path, $seen)) {
+        $size = @getimagesize(__DIR__ . '/../' . ltrim($path, '/'));
+        $seen[$path] = ($size && $size[0] > 0 && $size[1] > 0) ? ((int) $size[0] . ' / ' . (int) $size[1]) : '';
+    }
+    return $seen[$path];
+}
+/** Inline style for a flyer frame: its blurred backdrop (the flyer itself, softened) and, when known, its proportions. */
 function flyer_backdrop_style(?string $path): string
 {
     $path = trim((string) $path);
@@ -61,7 +78,8 @@ function flyer_backdrop_style(?string $path): string
         return '';
     }
     $safe = str_replace(["'", '"', '\\', '(', ')', ' ', "\n", "\r"], '', $path);
-    return ' style="--art:url(' . htmlspecialchars($safe, ENT_QUOTES) . ')"';
+    $ratio = flyer_ratio($path);
+    return ' style="--art:url(' . htmlspecialchars($safe, ENT_QUOTES) . ')' . ($ratio !== '' ? '; --fly:' . $ratio : '') . '"';
 }
 /** A stable colour for an event that has no poster, chosen by its category. */
 function landing_gradient(array $event): string

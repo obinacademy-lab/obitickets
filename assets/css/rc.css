@@ -298,8 +298,13 @@ html.rc body.auth-photo .auth-badge, html.rc body.auth-photo .auth-or{font-famil
 /* ---------- 13. profile ---------- */
 html.rc body.profile-page .profile-card, html.rc body.profile-page .card{border-radius:24px}
 
-/* ---------- 14. flyers cover their cards (home: featured cards, event cards, the poster wall) ----------
-   Same as the browse page tiles: the flyer fills the whole card, no blurred bands around it. Cards keep one
-   shape (4:5) so rows stay level; a flyer of another shape is trimmed a little at the edges, centred. */
+/* ---------- 14. every flyer is shown whole (home: featured cards, event cards, the poster wall; browse: tiles) ----------
+   The page measures each flyer (flyer_ratio() puts --fly on the frame) and the frame takes that shape, so the flyer
+   fills its card with nothing cut off and no bands around it. Cards in one row can differ in height; their text
+   blocks stretch so each row still ends level. A flyer that cannot be measured keeps the 4:5 frame. */
 html.rc body.landing-home .ld-art::before, html.rc .poster-card-art::before, html.rc body.landing-home .ld-pc.has-img::before{display:none}
 html.rc body.landing-home .ld-art img, html.rc .poster-card-art .poster-card-img, html.rc body.landing-home .ld-pc.has-img img{object-fit:cover; object-position:center}
+html.rc body.landing-home .ld-art, html.rc .poster-card-art, html.rc body.landing-home .ld-pc.has-img, html.rc .rc-browse .event-tile-art{aspect-ratio:var(--fly, 4 / 5); height:auto}
+html.rc body.landing-home .ld-fb{flex:1; display:flex; flex-direction:column}
+html.rc body.landing-home .ld-ff{margin-top:auto; padding-top:14px}
+html.rc .poster-grid{align-items:start}

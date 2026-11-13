@@ -133,7 +133,8 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
             $eventUrl = '/event.php?slug=' . urlencode($event['slug']);
         ?>
           <div class="event-tile reveal">
-            <a class="event-tile-art" href="<?= htmlspecialchars($eventUrl) ?>">
+            <?php $tileFly = ($hasImage && function_exists('flyer_ratio')) ? flyer_ratio((string) $event['banner_image']) : ''; ?>
+            <a class="event-tile-art" href="<?= htmlspecialchars($eventUrl) ?>"<?= $tileFly !== '' ? ' style="--fly:' . $tileFly . '"' : '' ?>>
               <span class="event-tile-date">
                 <span class="d"><?= date('d', strtotime($event['starts_at'])) ?></span>
                 <span class="m"><?= strtoupper(date('M', strtotime($event['starts_at']))) ?></span>
