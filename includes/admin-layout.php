@@ -83,8 +83,10 @@ function render_admin_head(string $active): void
 <?php include __DIR__ . '/pwa-head.php'; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
+<?php /* "Red Carpet" colours and shapes for the dashboard, loaded last. Remove this line to go back. */ ?>
+<link rel="stylesheet" href="/assets/css/rc-dash.css?v=<?= @filemtime(__DIR__ . '/../assets/css/rc-dash.css') ?: time() ?>">
 <script>(function(){try{if(localStorage.getItem('adminSidebarCollapsed')==='1'){document.documentElement.classList.add('admin-collapsed-pref');}}catch(e){}})();</script>
 </head>
 <body class="admin-body">

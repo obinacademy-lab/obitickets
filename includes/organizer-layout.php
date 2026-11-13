@@ -134,6 +134,8 @@ function render_organizer_head(string $active, array $orgContext): void
 <?php foreach ($GLOBALS['orgExtraCss'] ?? [] as $extraCss): ?>
 <link rel="stylesheet" href="/assets/css/<?= htmlspecialchars($extraCss) ?>?v=<?= @filemtime(__DIR__ . '/../assets/css/' . $extraCss) ?: time() ?>">
 <?php endforeach; ?>
+<?php /* "Red Carpet" colours and shapes for the dashboard, loaded last. Remove this line to go back. */ ?>
+<link rel="stylesheet" href="/assets/css/rc-dash.css?v=<?= @filemtime(__DIR__ . '/../assets/css/rc-dash.css') ?: time() ?>">
 <script>(function(){try{if(localStorage.getItem('adminSidebarCollapsed')==='1'){document.documentElement.classList.add('admin-collapsed-pref');}}catch(e){}})();</script>
 </head>
 <body class="admin-body org-shell<?= !empty($GLOBALS['orgFocusMode']) ? ' org-focus' : '' ?>">

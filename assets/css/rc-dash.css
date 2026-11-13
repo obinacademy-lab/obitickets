@@ -1,0 +1,82 @@
+/* ==========================================================================
+   "Red Carpet" for the two dashboards (organizer: body.admin-body.org-shell,
+   admin: body.admin-body). Same colours, type and shapes as the public site
+   (assets/css/rc.css). Loaded last by includes/organizer-layout.php and
+   includes/admin-layout.php; remove those two <link> lines to go back.
+   ========================================================================== */
+
+/* ---------- tokens ---------- */
+body.admin-body, body.admin-body.org-shell{
+  --purple:#DC2626; --purple-deep:#991B1B; --purple-light:#EF4444; --purple-tint:#FDECEC; --purple-tint-2:#FAD9D9;
+  --ink:#1A1010; --muted:#645A5A; --muted-2:#857979; --line:#F0E4E2; --line-strong:#E3D3D0; --paper:#FDF4F3; --surface:#fff;
+  --admin-bg:#FDF7F6; --admin-sidebar-bg:#1A1010; --admin-radius:22px; --ov-red:#DC2626;
+  --admin-shadow:0 18px 34px -28px rgba(26,16,16,.45); --admin-shadow-lifted:0 26px 44px -26px rgba(26,16,16,.5);
+  --rc-disp:'Outfit','Plus Jakarta Sans',system-ui,sans-serif}
+body.admin-body, body.admin-body.org-shell{background:var(--admin-bg)}
+html:has(body.admin-body){background:#FDF7F6}
+body.admin-body h1, body.admin-body h2, body.admin-body h3{font-family:var(--rc-disp); font-weight:700; letter-spacing:-.02em}
+
+/* ---------- side menu ---------- */
+body.admin-body .admin-nav-item{border-radius:14px; padding:10px 12px}
+body.admin-body .admin-nav-item.active{background:var(--purple); color:#fff; box-shadow:none}
+body.admin-body .admin-nav-item.active::before{display:none}
+body.admin-body .admin-nav-item.active svg{color:#fff; opacity:1}
+body.admin-body .admin-nav-item.active .admin-nav-badge{background:#fff; color:var(--purple-deep)}
+body.admin-body .admin-collapse-toggle{border-radius:10px}
+
+/* ---------- top bar ---------- */
+body.admin-body .admin-topbar, body.admin-body.org-shell .admin-topbar{background:rgba(255,255,255,.94)}
+body.admin-body .admin-search{background:var(--paper); border-color:transparent}
+body.admin-body .admin-search:focus-within{border-color:var(--purple); box-shadow:0 0 0 4px rgba(220,38,38,.12)}
+body.admin-body .admin-profile-menu{border-radius:18px}
+body.org-shell .org-tabs{background:#fff}
+body.org-shell .org-bell{border-radius:50%; width:42px; height:42px}
+body.org-shell .org-create{border-radius:999px; padding:11px 18px; background:var(--purple)}
+body.org-shell .org-create:hover{background:#C81E1E}
+
+/* ---------- buttons, fields ---------- */
+body.admin-body .btn, body.org-shell .ov-btn{border-radius:999px}
+body.admin-body .btn-purple{background:var(--purple); color:#fff}
+body.admin-body .btn-purple:hover{background:#C81E1E}
+body.admin-body .admin-content input[type=text], body.admin-body .admin-content input[type=email], body.admin-body .admin-content input[type=tel], body.admin-body .admin-content input[type=number],
+body.admin-body .admin-content input[type=password], body.admin-body .admin-content input[type=search], body.admin-body .admin-content input[type=date], body.admin-body .admin-content input[type=datetime-local],
+body.admin-body .admin-content select, body.admin-body .admin-content textarea{border-radius:14px}
+body.admin-body .admin-table select{border-radius:10px}
+
+/* ---------- cards, tables, tiles ---------- */
+body.admin-body .admin-card, body.admin-body .admin-kpi-card, body.admin-body .admin-table-wrap{border-color:transparent}
+body.admin-body .admin-table th{background:var(--paper); color:var(--muted)}
+body.admin-body .admin-table tbody tr:hover td{background:#FEFAF9}
+body.admin-body .admin-mini-stat{border-radius:18px; border-color:var(--line)}
+body.admin-body .admin-modal{border-radius:26px}
+body.org-shell .ov-kpi, body.org-shell .ov-card{border-color:transparent; border-radius:22px; box-shadow:var(--admin-shadow)}
+body.org-shell .ov-hero{background:#1A1010; border-radius:28px}
+body.org-shell .ov-hero::before{background:radial-gradient(closest-side,rgba(220,38,38,.38),transparent)}
+body.org-shell .ov-seg{border-radius:999px; background:#F1E6E4}
+body.org-shell .ov-seg a{border-radius:999px}
+body.org-shell .ov-top h1{font-weight:700; letter-spacing:-.02em}
+body.org-shell .org-sheet a:hover{background:var(--paper)}
+
+/* ---------- organizer on phones: red top bar and the floating dark tab bar ---------- */
+@media (max-width:1024px){
+  body.admin-body.org-shell .admin-topbar{background:var(--purple); border-bottom:0; -webkit-backdrop-filter:none; backdrop-filter:none}
+  body.org-shell .org-mlogo rect{fill:#fff}
+  body.org-shell .org-mlogo circle{stroke:var(--purple)}
+  body.org-shell .org-mlogo circle:last-child{fill:#fff}
+  body.org-shell .org-bell{border:0; background:rgba(255,255,255,.18); color:#fff}
+  body.org-shell .org-create{background:#1A1010; color:#fff}
+  body.org-shell .org-create:hover{background:#000}
+  body.org-shell .admin-topbar .admin-profile-btn{color:#fff}
+  body.org-shell .admin-topbar .admin-topbar-name, body.org-shell .admin-topbar .admin-topbar-role, body.org-shell .admin-topbar .admin-profile-chev{color:#fff}
+  body.org-shell .org-tabbar{left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); max-width:520px; margin:0 auto; padding:8px; gap:2px; border:0; border-radius:32px;
+    background:#1A1010; -webkit-backdrop-filter:none; backdrop-filter:none; box-shadow:0 0 0 1px rgba(255,255,255,.16), 0 18px 30px -14px rgba(26,16,16,.65)}
+  body.org-shell .org-tabbar a, body.org-shell .org-tabbar button{color:#E7DCDC; border-radius:24px; padding:7px 2px 6px}
+  body.org-shell .org-tabbar .is-on{background:var(--purple); color:#fff}
+  body.org-shell .org-tabbar a:focus-visible, body.org-shell .org-tabbar button:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  body.org-shell .admin-content{padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))}
+  body.org-shell.org-focus .admin-content{padding-bottom:0}
+  body.org-shell .org-sheet-in{border-radius:28px 28px 0 0}
+}
+
+/* the account badge in the side menu: brand red, not gold */
+body.admin-body .admin-sidebar .admin-avatar{background:#DC2626; color:#fff}
