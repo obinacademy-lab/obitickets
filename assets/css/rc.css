@@ -308,3 +308,7 @@ html.rc body.landing-home .ld-art, html.rc .poster-card-art, html.rc body.landin
 html.rc body.landing-home .ld-fb{flex:1; display:flex; flex-direction:column}
 html.rc body.landing-home .ld-ff{margin-top:auto; padding-top:14px}
 html.rc .poster-grid{align-items:start}
+/* past events list: the same, each card frame takes its flyer's shape (the single past-event page already wraps its poster) */
+html.rc .pe-art{aspect-ratio:var(--fly, 4 / 5)}
+html.rc .pe-art .pe-art-bg{display:none}
+html.rc .pe-art img{object-fit:cover; object-position:center}

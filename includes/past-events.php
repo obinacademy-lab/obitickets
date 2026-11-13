@@ -266,7 +266,8 @@ function render_past_card(array $e, bool $feature = false): void
     $photos = (int) ($e['photo_count'] ?? 0);
     ?>
     <article class="pe-card<?= $feature ? ' pe-card-feature' : '' ?> reveal">
-      <a class="pe-art" href="<?= htmlspecialchars($url) ?>" tabindex="-1" aria-hidden="true">
+      <?php $peFly = ($art !== '' && function_exists('flyer_ratio')) ? flyer_ratio($art) : ''; // the frame takes the flyer's own shape, so it is shown whole ?>
+      <a class="pe-art" href="<?= htmlspecialchars($url) ?>" tabindex="-1" aria-hidden="true"<?= $peFly !== '' ? ' style="--fly:' . $peFly . '"' : '' ?>>
         <?php if ($art !== ''): ?>
           <span class="pe-art-bg" style="--art:url(<?= htmlspecialchars($safeArt, ENT_QUOTES) ?>)"></span>
           <img src="<?= htmlspecialchars($art) ?>" alt="" loading="lazy">
