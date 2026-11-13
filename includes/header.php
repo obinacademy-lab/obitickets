@@ -17,7 +17,7 @@ if (!isset($ogImageW)) { $ogImageW = 1200; $ogImageH = 630; } // the default pic
 $ogImageAlt = $ogImageAlt ?? 'obitickets';
 $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 ?><!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="rc">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,9 +45,7 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<?php if (str_contains($bodyClass ?? '', 'classic-page') || str_contains($bodyClass ?? '', 'event-page')): ?>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-<?php endif; ?>
 <link rel="stylesheet" href="/assets/css/style.css?v=<?= @filemtime(__DIR__ . '/../assets/css/style.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/night.css?v=<?= @filemtime(__DIR__ . '/../assets/css/night.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/footer.css?v=<?= @filemtime(__DIR__ . '/../assets/css/footer.css') ?: time() ?>">
@@ -111,6 +109,8 @@ $ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 <link rel="stylesheet" href="/assets/css/marquee.css?v=<?= @filemtime(__DIR__ . '/../assets/css/marquee.css') ?: time() ?>">
 <?php endif; ?>
 <?php endif; ?>
+<?php /* "Red Carpet": the shared look, loaded last. Remove class="rc" from <html> above to switch it off. */ ?>
+<link rel="stylesheet" href="/assets/css/rc.css?v=<?= @filemtime(__DIR__ . '/../assets/css/rc.css') ?: time() ?>">
 </head>
 <body<?= isset($bodyClass) ? ' class="' . htmlspecialchars($bodyClass) . '"' : '' ?>>
 <?php include __DIR__ . '/icons.php'; ?>

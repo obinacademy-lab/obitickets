@@ -648,7 +648,10 @@ function get_order_ticket_details(int $orderId): ?array
 function get_orders_for_user(int $userId): array
 {
     $stmt = db()->prepare('
-        SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at
+        SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at,
+               e.venue_name AS event_venue, e.banner_image AS event_banner,
+               (e.ends_at >= NOW()) AS event_upcoming, DATEDIFF(e.starts_at, NOW()) AS event_days_to,
+               (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS ticket_count
         FROM orders o
         JOIN events e ON e.id = o.event_id
         WHERE o.user_id = ?

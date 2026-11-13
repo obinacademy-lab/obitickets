@@ -9,6 +9,7 @@ $order = $orderId ? get_order_for_user($orderId, (int) $user['id']) : null;
 if (!$order) {
     http_response_code(404);
     $pageTitle = 'Order not found — obitickets';
+    $bodyClass = 'classic-page';
     include __DIR__ . '/includes/header.php';
     ?>
     <div class="wrap">
@@ -69,11 +70,19 @@ $joinAccess = ($isPaid && $orderIsOnline) ? get_online_access($orderEvent, $user
 $orderWhere = $orderIsOnlineOnly ? event_online_label($orderEvent) : $order['venue_name'] . ($orderIsOnline ? ' + online' : '');
 
 $pageTitle = 'Order #' . $order['id'] . ' — obitickets';
+$bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 ?>
 
+<section class="rc-head lift">
+  <div class="wrap">
+    <h1><?= htmlspecialchars($order['event_title']) ?></h1>
+    <p><?= htmlspecialchars(date('D j M Y, g:ia', strtotime($order['event_starts_at']))) ?> &middot; <?= htmlspecialchars($orderWhere) ?></p>
+  </div>
+</section>
+
 <div class="wrap">
-  <section class="sec" style="max-width:640px; margin:0 auto">
+  <section class="rc-order">
 
     <?php if ($justPaid): ?>
       <div class="alert alert-success" style="margin-bottom:20px"><?= $isFreeOrder ? "🎉 You're in &mdash; your free ticket is ready below." : '🎉 Payment confirmed &mdash; your tickets are ready below.' ?></div>
@@ -82,16 +91,11 @@ include __DIR__ . '/includes/header.php';
       <div class="alert alert-<?= $checkNotice[0] ?>" style="margin-bottom:20px"><?= htmlspecialchars($checkNotice[1]) ?></div>
     <?php endif; ?>
 
-    <h1 style="font-size:1.6rem"><?= htmlspecialchars($order['event_title']) ?></h1>
-    <p class="sub" style="text-align:left; margin-top:6px">
-      <?= htmlspecialchars(date('D j M Y, g:ia', strtotime($order['event_starts_at']))) ?> &middot; <?= htmlspecialchars($orderWhere) ?>
-    </p>
-
     <?php if ($joinAccess): ?>
-      <div style="margin-top:20px"><?= render_join_card_html($orderEvent, $joinAccess) ?></div>
+      <div style="margin-bottom:20px"><?= render_join_card_html($orderEvent, $joinAccess) ?></div>
     <?php endif; ?>
 
-    <div class="checkout-card" style="margin-top:20px">
+    <div class="checkout-card">
       <div class="checkout-line"><span>Order number</span><span class="mono">#<?= (int) $order['id'] ?></span></div>
       <div class="checkout-line"><span>Status</span><span class="mono"><?= htmlspecialchars($order['status']) ?></span></div>
       <?php if (!$isFreeOrder): ?><div class="checkout-line"><span>Paid via</span><span class="mono"><?= htmlspecialchars(str_replace('_', ' ', $order['payment_method'] ?? '')) ?></span></div><?php endif; ?>
@@ -163,7 +167,7 @@ include __DIR__ . '/includes/header.php';
       text: el.getAttribute('data-code'),
       width: 128,
       height: 128,
-      colorDark: '#1C1526',
+      colorDark: '#1A1010',
       colorLight: '#ffffff',
     });
   });

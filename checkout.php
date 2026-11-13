@@ -54,7 +54,7 @@ try {
 }
 
 $pageTitle = 'Checkout — obitickets';
-$bodyClass = 'classic-page ev-night ck-night'; // 'classic-page ck-stepper' is the light Stepper look
+$bodyClass = 'classic-page ck-night'; // light "Red Carpet" colours come from rc.css; add ev-night back for the dark look
 $hideWhatsApp = true; // keep the pay button and totals uncluttered
 include __DIR__ . '/includes/header.php';
 ?>

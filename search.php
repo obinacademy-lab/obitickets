@@ -55,29 +55,23 @@ if ($category !== '') {
 $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static fn ($c) => $c !== $category)), 0, 3);
 ?>
 
-<section class="page-hero">
-  <img class="page-hero-bg" src="/assets/images/about/crowd.jpg" alt="">
-  <div class="page-hero-glow"></div>
-  <div class="wrap page-hero-content">
-    <h1 class="hero-in" style="animation-delay:.05s"><?= htmlspecialchars($heroTitle) ?></h1>
-    <div class="page-hero-crumb hero-in" style="animation-delay:.15s">
-      <a href="/">obitickets</a>
-      <span>&rsaquo;</span>
-      <span>Browse events</span>
-    </div>
+<section class="rc-head">
+  <div class="wrap">
+    <h1><?= htmlspecialchars($heroTitle) ?></h1>
+    <p><?= count($results) ?> event<?= count($results) === 1 ? '' : 's' ?> on sale<?= $q !== '' ? ' for &ldquo;' . htmlspecialchars($q) . '&rdquo;' : '' ?></p>
+    <form class="rc-search" action="/search.php" method="get" role="search">
+      <label class="sr-only" for="rcQ">Search events</label>
+      <input id="rcQ" type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search events, artists or venues" autocomplete="off">
+      <?php if ($category !== ''): ?><input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>"><?php endif; ?>
+      <?php if ($freeOnly): ?><input type="hidden" name="free" value="1"><?php endif; ?>
+      <?php if ($onlineOnly): ?><input type="hidden" name="online" value="1"><?php endif; ?>
+      <button type="submit" aria-label="Search"><svg width="19" height="19" aria-hidden="true"><use href="#ic-search"/></svg></button>
+    </form>
   </div>
 </section>
 
 <div class="wrap">
-  <section class="sec">
-
-    <form class="search-bar" action="/search.php" method="get" style="max-width:560px; margin:0 auto">
-      <svg width="17" height="17"><use href="#ic-search"/></svg>
-      <input type="text" name="q" value="<?= htmlspecialchars($q) ?>" placeholder="Search events, artists or venues">
-      <?php if ($category !== ''): ?><input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>"><?php endif; ?>
-      <?php if ($freeOnly): ?><input type="hidden" name="free" value="1"><?php endif; ?>
-      <button type="submit">Search</button>
-    </form>
+  <section class="rc-browse">
 
     <div class="search-cats">
       <a class="cat-chip <?= $category === '' && !$freeOnly && !$onlineOnly ? 'active' : '' ?>" href="<?= htmlspecialchars(search_url($q)) ?>">
@@ -102,9 +96,9 @@ $suggestedCats = array_slice(array_values(array_filter(EVENT_CATEGORIES, static 
       <?php endif; ?>
     </div>
 
-    <div class="sec-head" style="margin-top:32px">
+    <div class="rc-sechead" style="margin-top:26px">
       <h2><?= count($results) ?> event<?= count($results) === 1 ? '' : 's' ?> found<?= $q !== '' ? ' for &ldquo;' . htmlspecialchars($q) . '&rdquo;' : '' ?></h2>
-      <a class="more" href="/past-events.php">Past events &rarr;</a>
+      <a href="/past-events.php">Past events</a>
     </div>
 
     <?php if (!$results): ?>

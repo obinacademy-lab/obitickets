@@ -66,6 +66,17 @@ $colB = $fill($colB);
   </div>
 </section>
 
+<?php $rcCatIcons = category_icon_map(); ?>
+<nav class="wrap rc-home-cats" aria-label="Browse by category">
+  <div class="rc-cats">
+    <?php foreach (EVENT_CATEGORIES as $rcCat): ?>
+      <a class="rc-cat" href="/search.php?category=<?= urlencode((string) $rcCat) ?>"><i><svg width="24" height="24" aria-hidden="true"><use href="#<?= htmlspecialchars($rcCatIcons[$rcCat] ?? 'ic-ticket') ?>"/></svg></i><?= htmlspecialchars((string) $rcCat) ?></a>
+    <?php endforeach; ?>
+    <a class="rc-cat" href="/search.php?free=1"><i><svg width="24" height="24" aria-hidden="true"><use href="#ic-ticket"/></svg></i>Free</a>
+    <?php if (events_online_ready()): ?><a class="rc-cat" href="/search.php?online=1"><i><svg width="24" height="24" aria-hidden="true"><use href="#ic-monitor"/></svg></i>Online</a><?php endif; ?>
+  </div>
+</nav>
+
 <?php if ($slides): $multi = count($slides) > 1; $ticketsSeen = 0; ?>
 <div class="wrap">
   <div class="ld-nx" id="ldNext" data-multi="<?= $multi ? '1' : '0' ?>">
@@ -115,16 +126,6 @@ $colB = $fill($colB);
 </div>
 <?php endif; ?>
 
-<section class="wrap ld-sec">
-  <h2 class="reveal">How it works</h2>
-  <p class="ld-lead reveal">Three steps from search to the gate.</p>
-  <div class="ld-steps">
-    <div class="ld-step reveal"><b>1</b><h3>Find an event</h3><p>Search or browse by category, date, free or online.</p></div>
-    <div class="ld-step reveal"><b>2</b><h3>Pay in seconds</h3><p>Approve a prompt on your phone with MTN MoMo or Airtel Money. Free events skip payment.</p></div>
-    <div class="ld-step reveal"><b>3</b><h3>Show your QR code</h3><p>Your ticket arrives instantly by email and on your account. Online events add a join link.</p></div>
-  </div>
-</section>
-
 <?php if ($featured): ?>
 <section class="wrap ld-sec">
   <div class="ld-head">
@@ -149,6 +150,16 @@ $colB = $fill($colB);
 <?php if (!$wallEvents && !$featured && !$more): ?>
   <p style="text-align:center; padding:40px 0 80px">No events published yet — check back soon.</p>
 <?php endif; ?>
+
+<section class="wrap ld-sec">
+  <h2 class="reveal">How it works</h2>
+  <p class="ld-lead reveal">Three steps from search to the gate.</p>
+  <div class="ld-steps">
+    <div class="ld-step reveal"><b>1</b><h3>Find an event</h3><p>Search or browse by category, date, free or online.</p></div>
+    <div class="ld-step reveal"><b>2</b><h3>Pay in seconds</h3><p>Approve a prompt on your phone with MTN MoMo or Airtel Money. Free events skip payment.</p></div>
+    <div class="ld-step reveal"><b>3</b><h3>Show your QR code</h3><p>Your ticket arrives instantly by email and on your account. Online events add a join link.</p></div>
+  </div>
+</section>
 
 <section class="wrap">
   <?php
