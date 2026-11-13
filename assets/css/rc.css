@@ -297,3 +297,9 @@ html.rc body.auth-photo .auth-badge, html.rc body.auth-photo .auth-or{font-famil
 
 /* ---------- 13. profile ---------- */
 html.rc body.profile-page .profile-card, html.rc body.profile-page .card{border-radius:24px}
+
+/* ---------- 14. flyers cover their cards (home: featured cards, event cards, the poster wall) ----------
+   Same as the browse page tiles: the flyer fills the whole card, no blurred bands around it. Cards keep one
+   shape (4:5) so rows stay level; a flyer of another shape is trimmed a little at the edges, centred. */
+html.rc body.landing-home .ld-art::before, html.rc .poster-card-art::before, html.rc body.landing-home .ld-pc.has-img::before{display:none}
+html.rc body.landing-home .ld-art img, html.rc .poster-card-art .poster-card-img, html.rc body.landing-home .ld-pc.has-img img{object-fit:cover; object-position:center}
