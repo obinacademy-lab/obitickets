@@ -448,8 +448,22 @@ $bnDateSub = $bnSameDay ? 'East Africa Time' : 'to ' . date('D j M Y', $wlEnd);
 $bnWhereSub = $isOnlineOnly ? ((string) ($event['online_platform'] ?? '') !== '' ? (string) $event['online_platform'] : 'The link arrives with your ticket') : (string) ($event['venue_address'] ?? '');
 $bnHasActions = $eventHasEnded || ($communityReady && $showCommunityUi && $eventReactions !== null);
 $bnSteps = $eventIsFree ? ['Tickets', 'Your ticket'] : ['Tickets', 'Pay', 'Your ticket'];
+
+// The flyer's own shape decides how much room the poster tile takes, so the flyer fills its card edge to edge
+// without being cut: tall (stories), portrait (most flyers), square, or wide (banners). bento.css does the rest.
+$bnFly = '';
+$bnFlyRatio = '';
+$bnFlyPath = (string) ($event['banner_image'] ?? '');
+if ($bnFlyPath !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $bnFlyPath) && !str_contains($bnFlyPath, '..')) {
+    $bnFlySize = @getimagesize(__DIR__ . $bnFlyPath);
+    if ($bnFlySize && $bnFlySize[0] > 0 && $bnFlySize[1] > 0) {
+        $bnFlyTall = $bnFlySize[1] / $bnFlySize[0];
+        $bnFly = ' bn-fly ' . ($bnFlyTall >= 1.6 ? 'bn-fly-t' : ($bnFlyTall >= 1.12 ? 'bn-fly-p' : ($bnFlyTall >= 0.8 ? 'bn-fly-s' : 'bn-fly-l')));
+        $bnFlyRatio = (int) $bnFlySize[0] . ' / ' . (int) $bnFlySize[1];
+    }
+}
 ?>
-<div class="bn-wrap"><div class="bn-grid<?= ($bnCd || $bnRing) ? '' : ' bn-short' ?>">
+<div class="bn-wrap"><div class="bn-grid<?= ($bnCd || $bnRing) ? '' : ' bn-short' ?><?= $bnFly ?>">
 
   <section class="bn-t bn-title" data-spot>
     <div class="bn-tags">
@@ -510,7 +524,7 @@ $bnSteps = $eventIsFree ? ['Tickets', 'Your ticket'] : ['Tickets', 'Pay', 'Your 
     <?php endif; ?>
   </section>
 
-  <section class="bn-t bn-poster" data-tilt>
+  <section class="bn-t bn-poster" data-tilt<?= $bnFlyRatio !== '' ? ' style="--fly:' . $bnFlyRatio . '"' : '' ?>>
     <div class="bn-pw">
       <?php if (!empty($event['banner_image'])): ?>
         <div class="ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($event['banner_image']) ?>" role="button" tabindex="0" aria-label="View banner full size">

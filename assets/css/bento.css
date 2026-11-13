@@ -256,3 +256,32 @@ body.ev-bento .ev a:focus-visible,body.ev-bento .ev button:focus-visible{outline
   body.ev-bento .bn-rg .fg{transition:none}
   body.ev-bento.wl-js .bn-ring:not(.in) .fg{stroke-dashoffset:calc(1 - var(--p,1))}
 }
+
+/* ---------- the flyer fills its card ----------
+   event.php measures the flyer and names its shape on the grid: bn-fly-t (tall), bn-fly-p (portrait), bn-fly-s (square),
+   bn-fly-l (wide), with the exact proportions in --fly on the poster tile. The tile then takes the rows that come closest
+   to that shape and the flyer covers it edge to edge, so there are no empty bands and the flyer is not cut.
+   Events without a picture (or one that cannot be measured) keep the padded tile above. */
+body.ev-bento .bn-fly .bn-poster{padding:0; align-items:stretch; aspect-ratio:var(--fly, auto); min-width:0; max-width:100%}
+body.ev-bento .bn-fly .bn-poster .bn-pw{display:flex; width:100%; transform:none !important}
+body.ev-bento .bn-fly .bn-poster .ev-cover{display:flex; width:100%; height:100%}
+body.ev-bento .bn-fly .bn-poster .ev-cover img{width:100%; height:100%; max-height:none; object-fit:cover; border-radius:0; box-shadow:none}
+@media (min-width:921px){
+  /* portrait: beside the title and the facts; the countdown row then runs the full width */
+  body.ev-bento .bn-fly-p .bn-poster{grid-row:1 / 3}
+  /* square: beside the title only */
+  body.ev-bento .bn-fly-s .bn-poster{grid-row:1 / 2}
+  body.ev-bento .bn-fly-s .bn-facts{grid-column:1 / 13}
+  /* wide: the flyer gets the larger share of the top row, the title sits beside it at the same height */
+  body.ev-bento .bn-fly-l .bn-title{grid-column:1 / 6}
+  body.ev-bento .bn-fly-l .bn-poster{grid-column:6 / 13; grid-row:1 / 2}
+  body.ev-bento .bn-fly-l .bn-facts{grid-column:1 / 13}
+  body.ev-bento .bn-fly-p .bn-cd, body.ev-bento .bn-fly-s .bn-cd, body.ev-bento .bn-fly-l .bn-cd{grid-column:1 / 8}
+  body.ev-bento .bn-fly-p .bn-ring, body.ev-bento .bn-fly-s .bn-ring, body.ev-bento .bn-fly-l .bn-ring{grid-column:8 / 13}
+  body.ev-bento .bn-fly-p:not(:has(.bn-ring)) .bn-cd, body.ev-bento .bn-fly-s:not(:has(.bn-ring)) .bn-cd, body.ev-bento .bn-fly-l:not(:has(.bn-ring)) .bn-cd,
+  body.ev-bento .bn-fly-p:not(:has(.bn-cd)) .bn-ring, body.ev-bento .bn-fly-s:not(:has(.bn-cd)) .bn-ring, body.ev-bento .bn-fly-l:not(:has(.bn-cd)) .bn-ring{grid-column:1 / 13}
+}
+@media (max-width:920px){
+  body.ev-bento .bn-fly .bn-poster{padding:0}
+  body.ev-bento .bn-fly .bn-poster .ev-cover img{max-height:none}
+}
