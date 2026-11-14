@@ -748,6 +748,9 @@ function moment_buy_info(array $event): ?array
     $tiers = [];
     $left = 0;
     $capacity = 0;
+    // Ticket counts reach the page only when the organizer chose to show them; otherwise each tier carries just
+    // enough for the quantity buttons (they stop at 10 anyway).
+    $showLeft = event_shows_tickets_left($event);
     $currency = 'UGX';
     foreach (get_ticket_types_for_event((int) $event['id']) as $t) {
         $remaining = max(0, (int) $t['quantity_total'] - (int) $t['quantity_sold']);
@@ -757,7 +760,7 @@ function moment_buy_info(array $event): ?array
         }
         $left += $remaining;
         $currency = (string) $t['currency'];
-        $tiers[] = ['id' => (int) $t['id'], 'name' => (string) $t['name'], 'price' => (float) $t['price'], 'left' => $remaining, 'limit' => tier_person_limit($t)];
+        $tiers[] = ['id' => (int) $t['id'], 'name' => (string) $t['name'], 'price' => (float) $t['price'], 'left' => $showLeft ? $remaining : min($remaining, 10), 'limit' => tier_person_limit($t)];
     }
     if (!$tiers) {
         return null;
@@ -782,7 +785,8 @@ function moment_buy_info(array $event): ?array
         'fee' => SERVICE_FEE_PER_TICKET,
         'from' => min(array_column($tiers, 'price')),
         'tiers' => $tiers,
-        'left' => ($left <= 50 || ($capacity > 0 && $left / $capacity <= 0.25)) ? $left : null,
+        'left' => ($showLeft && ($left <= 50 || ($capacity > 0 && $left / $capacity <= 0.25))) ? $left : null,
+        'showLeft' => $showLeft,
         'days' => $days,
         'now' => $now,
     ];

@@ -453,7 +453,7 @@
       var q = cartQty[t.id] || 0, row = el('div', 'trow' + (q ? ' on' : ''));
       row.innerHTML = '<div class="a"><b></b><span></span></div><div class="qty"><button type="button" aria-label="Fewer">\u2212</button><output>' + q + '</output><button type="button" aria-label="More">+</button></div>';
       $('b', row).textContent = t.name;
-      $('.a span', row).textContent = money(t.price) + ' \u00b7 ' + t.left + ' left' + (t.price <= 0 && t.limit ? ' \u00b7 limit ' + t.limit + ' each' : '');
+      $('.a span', row).textContent = money(t.price) + (BUY.showLeft ? ' \u00b7 ' + t.left + ' left' : '') + (t.price <= 0 && t.limit ? ' \u00b7 limit ' + t.limit + ' each' : '');
       var btns = row.querySelectorAll('.qty button');
       btns[0].addEventListener('click', function () { cartQty[t.id] = Math.max(0, q - 1); paintCart(); });
       btns[1].addEventListener('click', function () { cartQty[t.id] = Math.min(Math.min(10, t.left, t.limit || 10), q + 1); paintCart(); });

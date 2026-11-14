@@ -198,3 +198,8 @@ textarea.ef-inp{height:auto; padding:13px 14px; resize:vertical; line-height:1.6
   .ef.is-flow .ef-step.is-active,.ef-tier,.ef-step.shake{animation:none}
   .ef *{transition-duration:.01ms!important}
 }
+
+/* "Show how many tickets are left" switch on the ticket step (events.show_tickets_left, off by default) */
+.ef-sw.ef-left{display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,.12); font-size:.86rem; line-height:1.35}
+.ef-sw.ef-left i{margin-top:1px}
+.ef-sw.ef-left small{display:block; margin-top:3px; font-weight:500; font-size:.76rem; opacity:.75}

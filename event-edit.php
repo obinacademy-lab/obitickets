@@ -40,6 +40,7 @@ $event = [
     'online_platform' => $existing['online_platform'] ?? 'Zoom',
     'online_url' => $existing['online_url'] ?? '',
     'online_notes' => $existing['online_notes'] ?? '',
+    'show_tickets_left' => event_shows_tickets_left($existing) ? 1 : 0,
 ];
 $tiers = get_ticket_types_for_event($id);
 if (!$tiers) {
@@ -59,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event['starts_at'] = $_POST['starts_at'] ?? '';
     $event['ends_at'] = $_POST['ends_at'] ?? '';
     $event['status'] = ($_POST['status'] ?? 'DRAFT') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT';
+    $event['show_tickets_left'] = !empty($_POST['show_tickets_left']) ? 1 : 0;
 
     $tiers = parse_tier_submission($_POST);
     if (!$tiers) {
@@ -127,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['ends_at'] = to_mysql_datetime($event['ends_at']);
         $eventFields['banner_image'] = $bannerImage;
         update_event($id, $eventFields);
+        set_event_show_tickets_left($id, (bool) $event['show_tickets_left']);
         replace_ticket_types($id, $validTiers);
         log_organizer_action($organizerId, $ctx['actor_id'], 'event.update', 'event', $id);
 

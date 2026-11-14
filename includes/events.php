@@ -891,3 +891,32 @@ function replace_ticket_types(int $eventId, array $tiers): void
         }
     }
 }
+
+/** True once migration 030 (events.show_tickets_left) has run. */
+function events_left_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM events LIKE 'show_tickets_left'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** Does this event's public page show how many tickets are left? Off unless the organizer switched it on. */
+function event_shows_tickets_left(array $event): bool
+{
+    return !empty($event['show_tickets_left']);
+}
+
+/** Saves the organizer's choice; does nothing before migration 030. */
+function set_event_show_tickets_left(int $eventId, bool $on): void
+{
+    if (!events_left_ready()) {
+        return;
+    }
+    db()->prepare('UPDATE events SET show_tickets_left = ? WHERE id = ?')->execute([$on ? 1 : 0, $eventId]);
+}

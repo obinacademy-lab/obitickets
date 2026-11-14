@@ -291,9 +291,11 @@ $wlDate = date('D j M Y', $wlStart);
 $wlTime = date('g:i A', $wlStart) . ' – ' . (date('Y-m-d', $wlStart) === date('Y-m-d', $wlEnd) ? date('g:i A', $wlEnd) : date('D j M, g:i A', $wlEnd)) . ' EAT';
 $wlPlace = $isOnlineOnly ? ($onlineLabel ?: 'Online') : $event['venue_name'] . ($isOnline ? ' + online' : '');
 $wlLeft = 0;
+// How many are left is shown only when the organizer chose to (events.show_tickets_left, off by default).
+$showLeft = event_shows_tickets_left($event);
 foreach ($tiers as $wlT) { $wlLeft += max(0, (int) $wlT['quantity_total'] - (int) $wlT['quantity_sold']); }
 $wlPrice = $minPrice === null ? '' : ($eventIsFree ? 'Free entry' : 'From ' . format_money((string) $minPrice, $currency));
-$wlRib = array_values(array_filter([$wlPlace, $wlDate, date('g:i A', $wlStart) . ' EAT', (!$eventHasEnded && $wlLeft > 0) ? number_format($wlLeft) . ' tickets left' : '', $wlPrice]));
+$wlRib = array_values(array_filter([$wlPlace, $wlDate, date('g:i A', $wlStart) . ' EAT', ($showLeft && !$eventHasEnded && $wlLeft > 0) ? number_format($wlLeft) . ' tickets left' : '', $wlPrice]));
 $wlIc = static function (string $n): string {
     $p = [
         'cal' => '<rect x="4" y="5.5" width="16" height="14.5" rx="2.4"/><path d="M4 10h16M8 3.5v3.5M16 3.5v3.5"/>',
@@ -438,7 +440,7 @@ ob_start(); ?>
 <?php
 $bnCap = 0;
 foreach ($tiers as $bnT) { $bnCap += max(0, (int) $bnT['quantity_total']); }
-$bnRing = !$eventHasEnded && $tiers && $bnCap > 0;
+$bnRing = $showLeft && !$eventHasEnded && $tiers && $bnCap > 0;
 $bnPct = $bnRing ? max(0, min(1, $wlLeft / $bnCap)) : 0;
 $bnCd = !$eventHasEnded;
 $bnLive = $bnCd && $wlStart <= time();
@@ -712,7 +714,7 @@ if ($bnFlyPath !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $bnFlyPath
       <div><span class="wl-bx"><?= $wlIc('cal') ?></span><span><small>Date</small><b><?= htmlspecialchars($wlDate) ?></b></span></div>
       <div><span class="wl-bx"><?= $wlIc('clk') ?></span><span><small>Time</small><b><?= htmlspecialchars($wlTime) ?></b></span></div>
       <div><span class="wl-bx"><?= $wlIc($isOnlineOnly ? 'scr' : 'pin') ?></span><span><small>Where</small><b><?= htmlspecialchars($wlPlace) ?></b><?php if (!$isOnlineOnly && $event['venue_address']): ?><em><?= htmlspecialchars($event['venue_address']) ?></em><?php endif; ?></span></div>
-      <?php if ($tiers): ?><div><span class="wl-bx"><?= $wlIc('tk') ?></span><span><small>Tickets</small><b><?= $eventHasEnded ? 'Event ended' : ($wlLeft > 0 ? number_format($wlLeft) . ' left' : 'Sold out') ?></b></span></div><?php endif; ?>
+      <?php if ($tiers): ?><div><span class="wl-bx"><?= $wlIc('tk') ?></span><span><small>Tickets</small><b><?= $eventHasEnded ? 'Event ended' : ($wlLeft > 0 ? ($showLeft ? number_format($wlLeft) . ' left' : 'On sale') : 'Sold out') ?></b></span></div><?php endif; ?>
     </div>
   </div>
     <!-- ===== about ===== -->

@@ -181,6 +181,15 @@ function render_tier_form_row(array $tier, bool $withId): void
   </div>
   <button type="button" class="btn btn-line" id="add-tier">+ Add another ticket type</button>
 
+  <?php if (events_left_ready()): ?>
+  <label class="tier-free-sw" style="display:flex; margin-top:22px">
+    <input type="checkbox" name="show_tickets_left" value="1"<?= !empty($event['show_tickets_left']) ? ' checked' : '' ?>>
+    <span class="sw-track" aria-hidden="true"></span>
+    <span>Show how many tickets are left on the event page</span>
+  </label>
+  <p class="field-hint" style="margin-top:6px">Off by default: buyers see only your ticket prices, never how many have sold.</p>
+  <?php endif; ?>
+
   <button class="btn btn-purple btn-lg btn-block" type="submit" style="margin-top:28px"><?= htmlspecialchars($submitLabel) ?></button>
 </form>
 
