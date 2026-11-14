@@ -1,0 +1,123 @@
+/* ==========================================================================
+   Event page, "Black Label" (owner pick 11/14 from the premium app mockups).
+   A dark, nightlife-luxury skin over the Bento tiles: near-black page, charcoal cards, white text, one font
+   (Plus Jakarta Sans), red only for the ticket button, the chosen ticket and small accents.
+   On phones the flyer comes first, edge to edge, and fades into the page with the title over the fade.
+   Loaded by public/event.php after header.php, so it wins over bento.css, wallet*.css and rc.css.
+   Every hook (#buyPanel, .tier, .qty, #buySubmit, #heroImgWrap ...) is untouched.
+   ========================================================================== */
+body.ev-black{background:#0A0A0B; color:#F5F5F7}
+body.ev-black .ev{
+  --ink:#F5F5F7; --muted:#A1A1AA; --muted-2:#A1A1AA; --line:#26262A; --line-strong:#2E2E33; --paper:#0A0A0B; --surface:#141416;
+  --bn-ink:#F5F5F7; --bn-mute:#A1A1AA; --bn-line:#232327; --bn-soft:#1B1B1E; --bn-red:#DC2626; --bn-red-d:#EF4444; --bn-rd:22px;
+  --bn-disp:'Plus Jakarta Sans',system-ui,sans-serif; --bn-mono:'Plus Jakarta Sans',system-ui,sans-serif;
+  background:#0A0A0B; color:#F5F5F7; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+
+/* header: dark glass with the red logo */
+@media (max-width:900px){
+  html.rc body.ev-black .site-nav{background:rgba(10,10,11,.9); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-bottom:1px solid #1F1F23}
+  html.rc body.ev-black .site-nav .logo{color:#fff}
+  html.rc body.ev-black .site-nav .logo-mark rect{fill:#DC2626}
+  html.rc body.ev-black .site-nav .logo-mark circle{stroke:#fff}
+  html.rc body.ev-black .site-nav .logo-mark circle:last-child{fill:#DC2626}
+  html.rc body.ev-black .site-nav .nav-toggle{background:#1C1C1F}
+}
+
+/* computers keep the white site menu: the logo goes back to ink so it shows */
+@media (min-width:901px){
+  html.rc body.ev-black .site-nav .logo{color:#111113}
+  html.rc body.ev-black .site-nav .logo-mark rect{fill:#DC2626}
+  html.rc body.ev-black .site-nav .logo-mark circle{stroke:#fff}
+  html.rc body.ev-black .site-nav .logo-mark circle:last-child{fill:#DC2626}
+}
+
+/* tiles: charcoal cards, no heavy shadows */
+body.ev-black.ev-bento .bn-t{background:#141416; border-color:#1F1F23; box-shadow:none}
+body.ev-black.ev-bento .bn-t::before{background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%), rgba(220,38,38,.08), transparent 60%)}
+body.ev-black.wl-js .bn-t.in:hover,body.ev-black:not(.wl-js) .bn-t:hover{box-shadow:none}
+body.ev-black.ev-bento .bn-poster,body.ev-black.ev-bento .bn-cd{background:#141416}
+@supports (background:color-mix(in srgb,red,blue)){
+  body.ev-black.ev-bento .bn-poster,body.ev-black.ev-bento .bn-cd{background:#141416}
+}
+body.ev-black.ev-bento .bn-poster::after{animation:none; display:none}
+
+/* small labels: the same font as everything else, gently spaced (no typewriter look) */
+body.ev-black.ev-bento .bn-k,body.ev-black.ev-bento .bn-pill,body.ev-black.ev-bento .bn-steps li,body.ev-black.ev-bento .bn-org small,
+body.ev-black.ev-bento .bn-rn span,body.ev-black.ev-bento .bn-cd .ev-cd-u small,body.ev-black.ev-bento .bn-title .ev-pulse-item span,body.ev-black.ev-bento .bn-dir{
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-weight:700; letter-spacing:.06em}
+body.ev-black.ev-bento .bn-k{color:#A1A1AA}
+body.ev-black.ev-bento .bn-pill{background:#1B1B1E; border-color:#26262A; color:#D4D4D8}
+body.ev-black.ev-bento .bn-pill-on{background:#DC2626; border-color:#DC2626; color:#fff}
+body.ev-black.ev-bento .bn-pill-free{background:rgba(34,197,94,.14); border-color:rgba(34,197,94,.35); color:#86EFAC}
+body.ev-black.ev-bento .bn-pill-end{background:#F5F5F7; border-color:#F5F5F7; color:#0A0A0B}
+
+/* title and organizer */
+body.ev-black.ev-bento .bn-title .ev-title{color:#fff; font-weight:800; letter-spacing:-.04em}
+body.ev-black.ev-bento .bn-av{box-shadow:0 0 0 3px #232327}
+body.ev-black.ev-bento .bn-org b{color:#fff}
+body.ev-black.ev-bento .bn-cta{background:#1B1B1E; border-color:#26262A; color:#A1A1AA}
+body.ev-black.ev-bento .bn-cta b{color:#fff}
+
+/* facts, ring, about, your ticket, venue */
+body.ev-black.ev-bento .bn-big{color:#fff}
+body.ev-black.ev-bento .bn-about .ev-about .about-text{color:#D4D4D8}
+body.ev-black.ev-bento .bn-how li{background:#1B1B1E; border-color:#26262A}
+body.ev-black.ev-bento .bn-how li:hover{background:#202024; border-color:#DC2626}
+body.ev-black.ev-bento .bn-ic{background:rgba(220,38,38,.14); color:#F87171}
+body.ev-black.ev-bento .bn-how b{color:#fff}
+body.ev-black.ev-bento .bn-how a{color:#F87171}
+body.ev-black.ev-bento .bn-dir{background:#F5F5F7; color:#0A0A0B}
+body.ev-black.ev-bento .bn-dir:hover{background:#DC2626; color:#fff}
+body.ev-black.ev-bento .bn-cd .ev-cd-u,body.ev-black.ev-bento .bn-cd .ev-cd-u:first-child,body.ev-black.ev-bento .bn-cd .ev-cd-u.is-sec{background:#1B1B1E; border-color:#26262A}
+
+/* the ticket panel: dark rows, the chosen ticket outlined in red */
+body.ev-black.ev-bento .bn-pay{border:1.5px solid #2A2A2E; box-shadow:none}
+body.ev-black.ev-bento .bn-pay #buyPanel.buy-panel.ev-stub{--st-bg:#141416; --st-ink:#F5F5F7; --st-muted:#A1A1AA; --st-line:#26262A; --st-ctl:#3F3F46; --st-field:#1B1B1E; color:#F5F5F7}
+body.ev-black.ev-bento .bn-payh h2{color:#fff}
+body.ev-black.ev-bento .bn-steps li{border-color:#26262A; color:#A1A1AA}
+body.ev-black.ev-bento .bn-steps li.on{background:#F5F5F7; border-color:#F5F5F7; color:#0A0A0B}
+body.ev-black.ev-bento .bn-pay .buy-panel .tier{background:#1B1B1E; border-color:#26262A}
+body.ev-black.ev-bento .bn-pay .buy-panel .tier.has{background:rgba(220,38,38,.1); border-color:#DC2626; box-shadow:0 0 0 1px #DC2626}
+body.ev-black.ev-bento .bn-pay .buy-panel .tier .tn,body.ev-black.ev-bento .bn-pay .buy-panel .tier .tp{color:#fff}
+body.ev-black.ev-bento .bn-pay .buy-panel .tier .tlim{color:#F87171}
+body.ev-black.ev-bento .bn-pay .buy-panel .qty button{border-color:#3F3F46; background:#141416; color:#fff}
+body.ev-black.ev-bento .bn-pay .buy-panel .qty button:hover{background:#DC2626; border-color:#DC2626; color:#fff}
+body.ev-black.ev-bento .bn-pay .buy-panel .qty .n{color:#fff}
+body.ev-black.ev-bento .bn-pay .buy-panel .waitlist-btn{border-color:#3F3F46; background:#141416; color:#fff}
+body.ev-black.ev-bento .bn-pay .buy-panel .waitlist-btn:hover{background:#F5F5F7; color:#0A0A0B; border-color:#F5F5F7}
+body.ev-black.ev-bento .bn-pay .buy-panel .waitlist-state{color:#F87171}
+body.ev-black.ev-bento .bn-pay .buy-panel #buySubmit{border-radius:14px}
+body.ev-black.ev-bento .bn-pay .buy-panel #buySubmit:disabled{background:#232327; color:#71717A}
+body.ev-black.ev-bento .bn-pay .buy-panel .ev-online-note{background:#1B1B1E; border-color:#26262A; color:#D4D4D8}
+body.ev-black.ev-bento .bn-pay .buy-panel .poster-summary .mono,body.ev-black.ev-bento .bn-pay .buy-panel .poster-summary .r.total{color:#fff}
+body.ev-black.ev-bento .bn-pay.bn-ended{border-color:#26262A}
+
+/* one font in the panel too: ticket names, quantities and amounts lose the typewriter look */
+body.ev-black.ev-wallet .buy-panel .tier .tn{font:800 .95rem 'Plus Jakarta Sans',system-ui,sans-serif; letter-spacing:0; text-transform:none}
+body.ev-black.ev-wallet .buy-panel .tier-foot small{font-family:'Plus Jakarta Sans',system-ui,sans-serif; letter-spacing:.04em; text-transform:none; color:#A1A1AA}
+body.ev-black.ev-wallet .buy-panel .qty .n,body.ev-black.ev-wallet .buy-panel .poster-summary .mono{font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-weight:700}
+/* the round share button, dark like the rest */
+body.ev-black.ev-wallet .ev-icon-btn{background:#1B1B1E; border-color:#2E2E33; color:#fff}
+body.ev-black.ev-wallet .ev-icon-btn:hover{background:#26262A}
+
+/* sections below the tiles */
+body.ev-black .wl-extra .ev-section{background:#141416; border-color:#1F1F23; color:#F5F5F7}
+
+/* the sticky ticket bar on phones */
+body.ev-black .mobile-buy-bar{background:#0A0A0B; border-top:1px solid #1F1F23; box-shadow:none}
+body.ev-black .mobile-buy-bar .lbl{color:#A1A1AA}
+body.ev-black .mobile-buy-bar .amt{color:#fff; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-weight:800}
+body.ev-black .mobile-buy-bar .btn{background:#DC2626; color:#fff; border-radius:14px}
+
+/* phones: the flyer first, edge to edge, fading into the page; the title sits over the fade */
+@media (max-width:920px){
+  body.ev-black.ev-bento .bn-wrap{padding:0 16px 28px}
+  body.ev-black.ev-bento .bn-poster{order:0; margin:0 -16px; border:0; border-radius:0; padding:0}
+  body.ev-black.ev-bento .bn-poster .ev-cover img{border-radius:0; box-shadow:none}
+  body.ev-black.ev-bento .bn-poster::after{display:block; content:""; position:absolute; left:0; right:0; top:auto; bottom:0; width:auto; height:34%;
+    transform:none; animation:none; pointer-events:none; background:linear-gradient(180deg, rgba(10,10,11,0), #0A0A0B)}
+  body.ev-black.ev-bento .bn-title{order:1; position:relative; z-index:2; margin-top:-64px; padding:0 4px 6px; background:transparent; border:0; gap:16px}
+  body.ev-black.ev-bento .bn-title::before{display:none}
+  body.ev-black.ev-bento .bn-title .ev-title{font-size:2rem; line-height:1.05}
+}

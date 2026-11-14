@@ -244,7 +244,7 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-wallet ev-bento'; // Bento tiles. Drop ev-bento for the Wallet look (and ev-wallet too for the plain light one).
+$bodyClass = 'event-page ev-wallet ev-bento ev-black'; // Bento tiles in the dark "Black Label" skin (black-label.css). Drop ev-black for the light Bento; drop ev-bento for the Wallet look.
 $isBento = str_contains($bodyClass, 'ev-bento');
 include __DIR__ . '/includes/header.php';
 ?>
@@ -261,6 +261,7 @@ $evOrgInitials = initials_from_name($orgName);
 $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 ?>
 <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/black-label.css?v=<?= @filemtime(__DIR__ . '/assets/css/black-label.css') ?: time() ?>">
 <div class="ev" id="evRoot"<?= $communityReady && !$currentUser ? ' data-login="' . htmlspecialchars('/login.php?next=' . urlencode('/event.php?slug=' . $event['slug'] . '#community'), ENT_QUOTES) . '"' : '' ?> data-event-id="<?= (int) $event['id'] ?>" data-event-url="<?= htmlspecialchars($eventUrl, ENT_QUOTES) ?>">
 
 <div class="lightbox-overlay" id="heroLightbox">
