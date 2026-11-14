@@ -16,7 +16,10 @@ function csrf_field(): string
 
 function csrf_valid(string $token): bool
 {
-    return hash_equals($_SESSION['csrf_token'] ?? '', $token);
+    // An empty token never matches. Without this, a session that has no token yet (nobody logged in, no page
+    // rendered) accepted a request with no token at all, because hash_equals('', '') is true.
+    $expected = (string) ($_SESSION['csrf_token'] ?? '');
+    return $expected !== '' && $token !== '' && hash_equals($expected, $token);
 }
 
 function verify_csrf(): void
