@@ -146,7 +146,6 @@ function render_landing_card(array $event): void
     ?>
     <a class="ld-fc reveal" href="<?= htmlspecialchars($url) ?>">
       <span class="ld-art"<?= flyer_backdrop_style($event['banner_image'] ?? null) ?>>
-        <span class="ld-date" aria-hidden="true"><b><?= date('j', $ts) ?></b><small><?= strtoupper(date('M', $ts)) ?></small></span>
         <?php if (!empty($event['banner_image'])): ?>
           <img src="<?= htmlspecialchars($event['banner_image']) ?>" alt="" loading="lazy">
         <?php else: ?>

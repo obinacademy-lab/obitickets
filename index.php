@@ -44,12 +44,12 @@ $colB = $fill($colB);
 <section class="ld-hero">
   <div class="wrap ld-hero-grid">
     <div class="ld-copy">
-      <h1>Find your next <i>night out.</i></h1>
+      <h1>Tickets to everything happening in <i>Uganda.</i></h1>
       <p>Discover concerts, conferences, comedy and festivals, in person or online. Pay with mobile money and get your QR ticket instantly.</p>
       <form class="ld-search" action="/search.php" method="get" role="search">
         <label class="sr-only" for="ldQ">Search events</label>
         <input id="ldQ" type="text" name="q" placeholder="Search events, artists or venues" autocomplete="off">
-        <button type="submit" class="btn btn-purple ld-go" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="ld-go-t">Search</span></button>
+        <button type="submit" class="btn btn-purple">Search</button>
       </form>
       <ul class="ld-trust">
         <li>MTN MoMo and Airtel Money</li>
@@ -69,7 +69,6 @@ $colB = $fill($colB);
 <?php $rcCatIcons = category_icon_map(); ?>
 <nav class="wrap rc-home-cats" aria-label="Browse by category">
   <div class="rc-cats">
-    <a class="rc-cat rc-cat-all is-on" href="/search.php"><i><svg width="24" height="24" aria-hidden="true"><use href="#ic-grid"/></svg></i>All</a>
     <?php foreach (EVENT_CATEGORIES as $rcCat): ?>
       <a class="rc-cat" href="/search.php?category=<?= urlencode((string) $rcCat) ?>"><i><svg width="24" height="24" aria-hidden="true"><use href="#<?= htmlspecialchars($rcCatIcons[$rcCat] ?? 'ic-ticket') ?>"/></svg></i><?= htmlspecialchars((string) $rcCat) ?></a>
     <?php endforeach; ?>
@@ -197,5 +196,4 @@ $colB = $fill($colB);
 
 <script src="/assets/js/landing.js?v=<?= @filemtime(__DIR__ . '/assets/js/landing.js') ?: time() ?>"></script>
 <script src="/assets/js/cinematic.js"></script>
-<link rel="stylesheet" href="/assets/css/premium-white.css?v=<?= @filemtime(__DIR__ . '/assets/css/premium-white.css') ?: time() ?>">
 <?php include __DIR__ . '/includes/footer.php'; ?>
