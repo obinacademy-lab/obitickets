@@ -102,12 +102,8 @@ html.rc body.classic-page:not(.ev-night) input[type=tel], html.rc body.classic-p
   /* pages with their own bottom bar (event page, checkout) keep it and drop the tabs */
   html.rc body.event-page .rc-tabs, html.rc body.ck-night .rc-tabs, html.rc body.ck-stepper .rc-tabs{display:none}
   html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) .wa-float{bottom:calc(80px + env(safe-area-inset-bottom, 0px))}
-  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) #site-footer .foot-bottom-section{padding-bottom:84px}
-
-  /* a shorter footer on phones */
-  html.rc #site-footer .foot-brand p + p, html.rc #site-footer .foot-mark{display:none}
-  html.rc #site-footer .foot-main{grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 18px; padding-top:34px; padding-bottom:26px}
-  html.rc #site-footer .foot-brand{grid-column:1 / -1}
+  /* the footer ends above the tab bar */
+  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) #site-footer{padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px))}
 }
 @media (min-width:901px){
   .rc-head{border-radius:0 0 40px 40px; padding:44px 0 48px}
