@@ -276,3 +276,54 @@ body.socials-page .masthead-bar{display:none}
 .so-rail .so-follow{background:#DC2626; color:#fff; min-width:0; width:22px; height:22px; padding:0; border-radius:50%; display:grid; place-items:center; font-size:1rem; font-weight:800; line-height:1; text-shadow:none}
 .so-rail .so-follow.is-on{background:#fff; color:#DC2626}
 @media (max-width:360px){ .so-tabs{gap:12px; font-size:.94rem} .so-top-gap{width:8px} }
+
+/* ==========================================================================
+   The card list (the template's first screen): public/socials.php without ?v=, assets/js/socials-list.js.
+   A dark page that scrolls: header (menu, logo, bell), For You / Following / Trending, then wide video cards.
+   ========================================================================== */
+body.socials-list .so-app{position:static; inset:auto; height:auto; min-height:calc(100vh - 80px); overflow:visible; padding-bottom:28px}
+.sl-head{display:flex; align-items:center; justify-content:space-between; height:60px; padding:0 10px; background:#0B0708}
+.sl-icon{position:relative; width:44px; height:44px; border:0; border-radius:50%; background:none; color:#fff; display:grid; place-items:center; cursor:pointer}
+.sl-icon:hover{background:rgba(255,255,255,.08)}
+.sl-bell i{position:absolute; top:9px; right:10px; width:9px; height:9px; border-radius:50%; background:#DC2626; box-shadow:0 0 0 2px #0B0708}
+.sl-logo{display:flex; align-items:center; gap:8px; color:#fff; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.45rem; letter-spacing:-.02em}
+.sl-logo b{font-weight:700; color:#DC2626}
+.sl-icon:focus-visible,.sl-logo:focus-visible,.sl-card:focus-visible{outline:3px solid #fff; outline-offset:3px}
+
+.so-top.sl-top{position:relative; height:54px; padding:0 14px; background:none; justify-content:space-between}
+.sl-top .so-tabs{gap:22px}
+.sl-top .so-tabs a{padding:12px 0; text-shadow:none}
+.sl-top .so-tabs a.on::after{left:0; right:0; bottom:4px}
+
+.sl-list{display:grid; gap:14px; padding:6px 14px 0}
+.sl-card{display:block; color:#fff; border-radius:18px; overflow:hidden; background:#1A1214; box-shadow:0 16px 30px -18px rgba(0,0,0,.8); transition:transform .25s ease}
+.sl-card:active{transform:scale(.985)}
+.sl-media{position:relative; display:block; aspect-ratio:16/9; background:#1A1214}
+.sl-media img,.sl-media video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.sl-media::after{content:""; position:absolute; inset:auto 0 0 0; height:62%; background:linear-gradient(0deg, rgba(0,0,0,.82), rgba(0,0,0,0))}
+.sl-play{position:absolute; z-index:2; left:50%; top:44%; width:58px; height:58px; margin:-29px 0 0 -29px; border-radius:50%; background:rgba(20,12,13,.62); color:#fff; display:grid; place-items:center; border:2px solid rgba(255,255,255,.85); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); transition:transform .2s}
+.sl-play svg{margin-left:3px}
+.sl-card:hover .sl-play{transform:scale(1.08)}
+.sl-dur{position:absolute; z-index:2; right:12px; bottom:54px; padding:3px 9px; border-radius:8px; background:rgba(0,0,0,.66); font-weight:700; font-size:.8rem}
+.sl-info{position:absolute; z-index:2; left:14px; right:12px; bottom:12px; display:grid; gap:6px}
+.sl-title{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.2rem; line-height:1.15; letter-spacing:-.01em; text-shadow:0 1px 8px rgba(0,0,0,.5); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:64px}
+.sl-by{display:flex; align-items:center; gap:7px; font-size:.86rem; font-weight:600; min-width:0}
+.sl-av{flex:none; width:24px; height:24px; border-radius:50%; overflow:hidden; background:#3A2A2D; display:grid; place-items:center; font:700 .62rem 'Outfit',sans-serif; box-shadow:0 0 0 1.5px #fff}
+.sl-av img{width:100%; height:100%; object-fit:cover}
+.sl-handle{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sl-ver{flex:none; width:16px; height:16px; border-radius:50%; background:#3B9CFF; display:grid; place-items:center}
+.sl-likes{margin-left:auto; flex:none; display:flex; align-items:center; gap:5px; font-weight:700}
+.sl-more{text-align:center; color:#C9BCBC; padding:18px 0 4px}
+.sl-more[hidden]{display:none}
+
+/* phones: the list scrolls under the full-width tab bar */
+@media (max-width:900px){
+  body.socials-list .so-app{min-height:100vh; padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px))}
+}
+/* computers: the site menu stays on top; the cards sit two to a row in the middle */
+@media (min-width:901px){
+  body.socials-list .sl-head{display:none}
+  body.socials-list .so-top.sl-top{left:auto; width:auto; margin:0 auto; max-width:960px; padding:12px 14px 0}
+  body.socials-list .sl-list{max-width:960px; margin:0 auto; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px}
+}
+@media (prefers-reduced-motion: reduce){ .sl-card,.sl-play{transition:none} }

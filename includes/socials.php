@@ -452,6 +452,43 @@ function socials_item_public(array $row): array
     return $item;
 }
 
+/**
+ * One card of the Socials list (the template's first screen): the post's picture with a play button and its length,
+ * the event title, the organizer's photo, handle and tick, and the likes. Tapping it opens the player on that post.
+ * assets/js/socials-list.js builds the same markup for the cards it loads later; keep the two in step.
+ */
+function socials_card_html(array $it, string $tab = 'foryou'): string
+{
+    $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES);
+    $q = ['v' => (int) $it['id']];
+    if ($tab !== 'foryou') {
+        $q['tab'] = $tab;
+    }
+    $href = '/socials.php?' . http_build_query($q);
+    $thumb = $it['type'] === 'video' ? ($it['poster'] ?? '') : ($it['type'] === 'slideshow' ? ($it['slides'][0] ?? '') : $it['src']);
+    $thumb = preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', (string) $thumb) ? (string) $thumb : '';
+    $badge = $it['type'] === 'video' ? moment_clock($it['duration']) : ($it['type'] === 'slideshow' ? count($it['slides']) . ' photos' : 'Photo');
+    $o = $it['org'];
+    $out = '<a class="sl-card" href="' . $h($href) . '" aria-label="' . $h(($it['type'] === 'video' ? 'Watch: ' : 'Open: ') . $it['event']['title'] . ', by ' . $o['name']) . '">'
+        . '<span class="sl-media">';
+    if ($thumb !== '') {
+        $out .= '<img src="' . $h($thumb) . '" alt="" loading="lazy">';
+    } elseif ($it['type'] === 'video') {
+        $out .= '<video src="' . $h($it['src']) . '#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>';
+    }
+    $out .= '<span class="sl-play" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>';
+    if ($badge !== '') {
+        $out .= '<span class="sl-dur">' . $h($badge) . '</span>';
+    }
+    $out .= '<span class="sl-info"><b class="sl-title">' . $h($it['event']['title']) . '</b>'
+        . '<span class="sl-by"><span class="sl-av">' . (!empty($o['avatar']) ? '<img src="' . $h($o['avatar']) . '" alt="">' : $h($o['initials'])) . '</span>'
+        . '<span class="sl-handle">' . $h($o['handle']) . '</span>'
+        . (!empty($o['verified']) ? '<span class="sl-ver" title="Verified organizer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' : '')
+        . '<span class="sl-likes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.6 3.9 4.5 7.2 4.5c1.9 0 3.6 1 4.8 2.6 1.2-1.6 2.9-2.6 4.8-2.6 3.3 0 5.7 3.1 4.5 6.6-1.8 4.8-9.3 9.4-9.3 9.4z"/></svg>' . $h($it['likes']) . '</span>'
+        . '</span></span></span></a>';
+    return $out;
+}
+
 /** The organizer's own posts with their numbers, newest first, for the dashboard page. */
 function socials_organizer_posts(int $organizerId, int $limit = 30): array
 {

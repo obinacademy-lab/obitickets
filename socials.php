@@ -8,6 +8,14 @@ $uid = $user ? (int) $user['id'] : null;
 $tab = in_array($_GET['tab'] ?? '', ['following', 'trending'], true) ? (string) $_GET['tab'] : 'foryou';
 $startId = (int) ($_GET['v'] ?? 0);
 $ready = function_exists('socials_ready') && moments_ready();
+// Two screens, as in the template: the card list (the Socials tab opens it) and the full-screen player,
+// which a card or a shared link opens on one post (?v=<id>), or ?play=1 for the player from the top.
+$view = ($startId > 0 || isset($_GET['play'])) ? 'player' : 'list';
+$tabQuery = $tab !== 'foryou' ? 'tab=' . $tab : '';
+$tabUrl = static function (string $t) use ($view): string {
+    $q = array_filter(['play' => $view === 'player' ? '1' : null, 'tab' => $t !== 'foryou' ? $t : null]);
+    return '/socials.php' . ($q ? '?' . http_build_query($q) : '');
+};
 
 $rows = $ready ? socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null) : [];
 $items = array_map('socials_item_public', $rows);
@@ -26,7 +34,7 @@ if ($startId && $rows && (int) $rows[0]['id'] === $startId) {
         $ogImageW = 0;
     }
 }
-$bodyClass = 'classic-page socials-page';
+$bodyClass = 'classic-page socials-page' . ($view === 'list' ? ' socials-list' : '');
 $hideWhatsApp = true; // the rail of buttons sits where the WhatsApp button would be
 $ctx = $user ? resolve_organizer_context($user) : null;
 $loginUrl = '/login.php?next=' . rawurlencode('/socials.php' . ($tab !== 'foryou' ? '?tab=' . $tab : ''));
@@ -35,17 +43,37 @@ include __DIR__ . '/includes/header.php';
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
 
 <main class="so-app" id="soApp">
-  <div class="so-top">
-    <span class="so-top-gap" aria-hidden="true"></span>
+  <?php if ($view === 'list'): ?>
+  <header class="sl-head">
+    <button type="button" class="sl-icon" id="slMenu" aria-label="Open menu" aria-controls="navDrawer" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <a class="sl-logo" href="/" aria-label="obitickets home">
+      <svg viewBox="0 0 34 34" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
+      <span><b>obi</b>tickets</span>
+    </a>
+    <?php if ($ctx): $slUnread = count_unread_notifications((int) $user['id']); ?>
+      <a class="sl-icon sl-bell" href="/org-notifications.php" aria-label="Notifications<?= $slUnread ? ', ' . (int) $slUnread . ' unread' : '' ?>"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><?php if ($slUnread): ?><i></i><?php endif; ?></a>
+    <?php else: ?>
+      <a class="sl-icon" href="/search.php" aria-label="Search events"><svg width="23" height="23" aria-hidden="true"><use href="#ic-search"/></svg></a>
+    <?php endif; ?>
+  </header>
+  <?php endif; ?>
+
+  <div class="so-top<?= $view === 'list' ? ' sl-top' : '' ?>">
+    <?php if ($view === 'player'): ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
     <nav class="so-tabs" aria-label="Socials">
-      <a href="/socials.php"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
-      <a href="/socials.php?tab=following"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
-      <a href="/socials.php?tab=trending"<?= $tab === 'trending' ? ' class="on" aria-current="page"' : '' ?>>Trending</a>
+      <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
+      <a href="<?= htmlspecialchars($tabUrl('following')) ?>"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
+      <a href="<?= htmlspecialchars($tabUrl('trending')) ?>"<?= $tab === 'trending' ? ' class="on" aria-current="page"' : '' ?>>Trending</a>
     </nav>
     <a class="so-search" href="/search.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
   </div>
 
-  <?php if ($items): ?>
+  <?php if ($items && $view === 'list'): ?>
+    <div class="sl-list" id="slList" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($items) ?>" data-more="<?= count($items) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
+      <?php foreach ($items as $it) { echo socials_card_html($it, $tab); } ?>
+    </div>
+    <p class="sl-more" id="slMore" hidden>Loading more&hellip;</p>
+  <?php elseif ($items): ?>
     <div class="so-feed" id="soFeed" tabindex="0" aria-label="Socials feed. Swipe or use the arrow keys to move between videos."></div>
   <?php else: ?>
     <div class="so-empty">
@@ -75,7 +103,11 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 </main>
 
-<?php if ($items): ?>
+<?php if ($items && $view === 'list'): ?>
+<script src="/assets/js/socials-list.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials-list.js') ?: time() ?>" defer></script>
+<?php endif; ?>
+
+<?php if ($items && $view === 'player'): ?>
 <div class="so-shade" id="soShade" hidden></div>
 
 <section class="so-sheet" id="soComments" role="dialog" aria-modal="true" aria-labelledby="soCmTitle" hidden>
