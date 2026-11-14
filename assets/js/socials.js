@@ -311,7 +311,7 @@
   }
   function loadMore() {
     loading = true;
-    api('/api/socials.php', { action: 'feed', tab: D.tab, offset: offset, start: D.start }).then(function (r) {
+    api('/api/socials.php', { action: 'feed', tab: D.tab, offset: offset, start: D.org ? null : D.start, org: D.org || null }).then(function (r) {
       loading = false;
       if (!r || !r.ok) { hasMore = false; return; }
       offset += r.items.length; hasMore = !!r.has_more;
@@ -537,4 +537,10 @@
   // ---------------------------------------------------------------- go
   add(D.items);
   applyMute();
+  // opened from a small picture on an organizer card: start on that post (it may not be the first)
+  if (D.org && D.start) {
+    for (var si = 0; si < items.length; si++) {
+      if (items[si].data.id === D.start) { items[si].el.scrollIntoView({ block: 'start' }); break; }
+    }
+  }
 })();

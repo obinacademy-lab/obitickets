@@ -8,23 +8,47 @@ $uid = $user ? (int) $user['id'] : null;
 $tab = in_array($_GET['tab'] ?? '', ['following', 'trending'], true) ? (string) $_GET['tab'] : 'foryou';
 $startId = (int) ($_GET['v'] ?? 0);
 $ready = function_exists('socials_ready') && moments_ready();
-// Two screens, as in the template: the card list (the Socials tab opens it) and the full-screen player,
-// which a card or a shared link opens on one post (?v=<id>), or ?play=1 for the player from the top.
-$view = ($startId > 0 || isset($_GET['play'])) ? 'player' : 'list';
-$tabQuery = $tab !== 'foryou' ? 'tab=' . $tab : '';
+// Two screens: the list (the Socials tab opens it), one card per organizer holding their posts; and the
+// full-screen player. A card opens the player on that organizer's posts (?org=<id>, newest first, ?v= to start on
+// one of them); a shared link opens one post in the main feed (?v=<id>); ?play=1 opens the main feed from the top.
+$orgFilter = (int) ($_GET['org'] ?? 0);
+$view = ($startId > 0 || $orgFilter > 0 || isset($_GET['play'])) ? 'player' : 'list';
 $tabUrl = static function (string $t) use ($view): string {
     $q = array_filter(['play' => $view === 'player' ? '1' : null, 'tab' => $t !== 'foryou' ? $t : null]);
     return '/socials.php' . ($q ? '?' . http_build_query($q) : '');
 };
 
-$rows = $ready ? socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null) : [];
+$cards = [];
+$orgInfo = null;
+if (!$ready) {
+    $rows = [];
+} elseif ($view === 'list') {
+    $cards = socials_organizer_cards($uid, $tab, 0, SOCIALS_FEED_PAGE);
+    $rows = [];
+} elseif ($orgFilter > 0) {
+    // all of this organizer's posts, newest first; the player scrolls to ?v= if it is one of them
+    $rows = socials_feed($uid, 'profile', 0, 24, null, $orgFilter);
+    $orgCount = socials_profile_counts($orgFilter)['posts'];
+} else {
+    $rows = socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null);
+}
 $items = array_map('socials_item_public', $rows);
+if ($orgFilter > 0 && $items) {
+    $orgInfo = $items[0]['org'] + ['count' => $orgCount ?? count($items)];
+}
 
 $pageTitle = 'Socials: event videos | obitickets';
 $pageDescription = 'Watch videos from events across Uganda, follow organizers and get your ticket straight from the video.';
 // A shared link opens on that post, so the preview shows it.
-if ($startId && $rows && (int) $rows[0]['id'] === $startId) {
-    $first = $rows[0];
+$startRow = null;
+foreach ($rows as $r) {
+    if ($startId && (int) $r['id'] === $startId) {
+        $startRow = $r;
+        break;
+    }
+}
+if ($startRow) {
+    $first = $startRow;
     $pageTitle = $first['event_title'] . ' on obitickets Socials';
     $caption = trim((string) ($first['caption'] ?? ''));
     $pageDescription = $caption !== '' ? mb_substr($caption, 0, 180) : 'Watch this on obitickets Socials and get your ticket.';
@@ -58,6 +82,16 @@ include __DIR__ . '/includes/header.php';
   </header>
   <?php endif; ?>
 
+  <?php if ($orgInfo): ?>
+  <div class="so-top so-orgtop">
+    <a class="so-back" href="/socials.php" aria-label="Back to Socials"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div class="so-orgname">
+      <b><?= htmlspecialchars($orgInfo['name']) ?><?php if (!empty($orgInfo['verified'])): ?> <span class="sl-ver" title="Verified organizer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><?php endif; ?></b>
+      <small><?= (int) $orgInfo['count'] ?> <?= (int) $orgInfo['count'] === 1 ? 'video' : 'videos' ?></small>
+    </div>
+    <?php if (!empty($orgInfo['url'])): ?><a class="so-search" href="<?= htmlspecialchars($orgInfo['url']) ?>" aria-label="<?= htmlspecialchars($orgInfo['name']) ?> profile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></a><?php else: ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
+  </div>
+  <?php else: ?>
   <div class="so-top<?= $view === 'list' ? ' sl-top' : '' ?>">
     <?php if ($view === 'player'): ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
     <nav class="so-tabs" aria-label="Socials">
@@ -67,10 +101,11 @@ include __DIR__ . '/includes/header.php';
     </nav>
     <a class="so-search" href="/search.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
   </div>
+  <?php endif; ?>
 
-  <?php if ($items && $view === 'list'): ?>
-    <div class="sl-list" id="slList" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($items) ?>" data-more="<?= count($items) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
-      <?php foreach ($items as $it) { echo socials_card_html($it, $tab); } ?>
+  <?php if ($cards): ?>
+    <div class="sl-list sc-list" id="slList" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($cards) ?>" data-more="<?= count($cards) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
+      <?php foreach ($cards as $card) { echo socials_org_card_html($card); } ?>
     </div>
     <p class="sl-more" id="slMore" hidden>Loading more&hellip;</p>
   <?php elseif ($items): ?>
@@ -103,7 +138,7 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 </main>
 
-<?php if ($items && $view === 'list'): ?>
+<?php if ($cards): ?>
 <script src="/assets/js/socials-list.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials-list.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 
@@ -163,9 +198,10 @@ include __DIR__ . '/includes/header.php';
 
 <script type="application/json" id="soData"><?= json_encode([
     'items' => $items,
-    'hasMore' => count($items) === SOCIALS_FEED_PAGE,
+    'hasMore' => count($items) === ($orgFilter ? 24 : SOCIALS_FEED_PAGE),
     'tab' => $tab,
     'start' => $startId ?: null,
+    'org' => $orgFilter ?: null,
     'signedIn' => (bool) $user,
     'loginUrl' => $loginUrl,
     'me' => $uid,

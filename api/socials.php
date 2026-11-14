@@ -45,8 +45,16 @@ try {
             $tab = in_array($body['tab'] ?? '', ['following', 'trending'], true) ? (string) $body['tab'] : 'foryou';
             $offset = max(0, (int) ($body['offset'] ?? 0));
             $start = !empty($body['start']) ? (int) $body['start'] : null;
-            $rows = socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start);
+            $org = max(0, (int) ($body['org'] ?? 0));
+            // one organizer's posts (the player opened from their card), or the main feed
+            $rows = $org ? socials_feed($uid, 'profile', $offset, SOCIALS_FEED_PAGE, null, $org) : socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start);
             json_response(['ok' => true, 'items' => array_map('socials_item_public', $rows), 'has_more' => count($rows) === SOCIALS_FEED_PAGE]);
+
+        case 'org_cards':
+            // more organizer cards for the list, drawn here so the page and this match exactly
+            $tab = in_array($body['tab'] ?? '', ['following', 'trending'], true) ? (string) $body['tab'] : 'foryou';
+            $cards = socials_organizer_cards($uid, $tab, max(0, (int) ($body['offset'] ?? 0)), SOCIALS_FEED_PAGE);
+            json_response(['ok' => true, 'html' => implode('', array_map('socials_org_card_html', $cards)), 'count' => count($cards), 'has_more' => count($cards) === SOCIALS_FEED_PAGE]);
 
         case 'comments':
             $post = get_post((int) ($body['post_id'] ?? 0));

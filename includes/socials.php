@@ -453,6 +453,128 @@ function socials_item_public(array $row): array
 }
 
 /**
+ * The Socials list: one card per organizer, holding their posts. Ranked like the feed tabs:
+ *   foryou    organizers whose posts are liked, commented and shared most, with the freshest first
+ *   following only organizers this viewer follows, newest post first
+ *   trending  most engagement on posts from the last 14 days
+ * Each row: the organizer, how many posts they have, and their newest posts (up to 4) for the cover and thumbnails.
+ *
+ * @return list<array<string,mixed>>
+ */
+function socials_organizer_cards(?int $viewerId, string $tab = 'foryou', int $offset = 0, int $limit = 8): array
+{
+    if (!moments_ready()) {
+        return [];
+    }
+    $viewer = (int) ($viewerId ?? 0);
+    $limit = max(1, min(24, $limit));
+    $offset = max(0, $offset);
+    $where = "e.status = 'PUBLISHED'";
+    if ($tab === 'following') {
+        if (!$viewer) {
+            return [];
+        }
+        $where .= " AND e.organizer_id IN (SELECT f.organizer_user_id FROM organizer_follows f WHERE f.user_id = $viewer)";
+    }
+    if ($viewer) {
+        $where .= " AND x.author_id NOT IN (SELECT b.blocked_id FROM user_blocks b WHERE b.blocker_id = $viewer)";
+    }
+    $engage = '(x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 5000) / 10)';
+    if ($tab === 'trending') {
+        $where .= ' AND x.created_at >= NOW() - INTERVAL 14 DAY';
+        $order = "SUM($engage) DESC, MAX(x.id) DESC";
+    } elseif ($tab === 'following') {
+        $order = 'MAX(x.id) DESC';
+    } else {
+        $order = "((SUM($engage) + 4) / POW(TIMESTAMPDIFF(HOUR, MAX(x.created_at), NOW()) + 6, 1.1)) DESC, MAX(x.id) DESC";
+    }
+    $stmt = db()->prepare('
+        SELECT e.organizer_id, COUNT(*) AS post_count, SUM(x.reaction_count) AS likes, SUM(x.view_count) AS views,
+               MAX(x.id) AS latest_id, MAX(x.created_at) AS latest_at
+        FROM (' . moment_select_sql() . ') x
+        JOIN events e ON e.id = x.event_id
+        WHERE ' . $where . '
+        GROUP BY e.organizer_id
+        ORDER BY ' . $order . '
+        LIMIT ' . $limit . ' OFFSET ' . $offset);
+    $stmt->bindValue(':viewer', $viewer, PDO::PARAM_INT);
+    $stmt->execute();
+    $groups = $stmt->fetchAll();
+    $cards = [];
+    foreach ($groups as $g) {
+        $orgId = (int) $g['organizer_id'];
+        $posts = array_map('socials_item_public', socials_feed($viewerId, 'profile', 0, 4, null, $orgId));
+        if (!$posts) {
+            continue;
+        }
+        $cards[] = [
+            'org' => $posts[0]['org'],
+            'count' => (int) $g['post_count'],
+            'likes' => moment_compact((int) $g['likes']),
+            'views' => moment_compact((int) $g['views']),
+            'when' => community_time_ago((string) $g['latest_at']),
+            'posts' => $posts,
+        ];
+    }
+    return $cards;
+}
+
+/** The picture that stands for a post on a card (the video's cover, a photo, or a slideshow's first photo). */
+function socials_post_thumb(array $it): string
+{
+    $thumb = $it['type'] === 'video' ? ($it['poster'] ?? '') : ($it['type'] === 'slideshow' ? ($it['slides'][0] ?? '') : $it['src']);
+    return preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', (string) $thumb) ? (string) $thumb : '';
+}
+
+/**
+ * One organizer card: their photo, name, tick and how many posts; a big cover from the newest post with a play
+ * button; and a row of their next posts. The card opens the player on this organizer's posts (newest first);
+ * a small picture opens it on that post. assets/js/socials-list.js builds the same markup for later cards.
+ */
+function socials_org_card_html(array $c): string
+{
+    $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES);
+    $o = $c['org'];
+    $first = $c['posts'][0];
+    $play = '/socials.php?' . http_build_query(['org' => (int) $o['id']]);
+    $count = (int) $c['count'];
+    $out = '<article class="sc-card">'
+        . '<a class="sc-head" href="' . $h($play) . '">'
+        . '<span class="sc-av">' . (!empty($o['avatar']) ? '<img src="' . $h($o['avatar']) . '" alt="">' : $h($o['initials'])) . '</span>'
+        . '<span class="sc-who"><b>' . $h($o['name'])
+        . (!empty($o['verified']) ? ' <span class="sl-ver" title="Verified organizer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' : '')
+        . '</b><small>' . $h($o['handle']) . ' &middot; ' . $count . ' ' . ($count === 1 ? 'video' : 'videos') . '</small></span>'
+        . '<span class="sc-go" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>'
+        . '</a>';
+    // the cover: the newest post
+    $thumb = socials_post_thumb($first);
+    $badge = $first['type'] === 'video' ? moment_clock($first['duration']) : ($first['type'] === 'slideshow' ? count($first['slides']) . ' photos' : 'Photo');
+    $out .= '<a class="sl-media sc-cover" href="' . $h($play) . '" aria-label="' . $h('Watch ' . $o['name'] . '’s videos, starting with ' . $first['event']['title']) . '">'
+        . ($thumb !== '' ? '<img src="' . $h($thumb) . '" alt="" loading="lazy">' : ($first['type'] === 'video' ? '<video src="' . $h($first['src']) . '#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>' : ''))
+        . '<span class="sl-play" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>'
+        . ($badge !== '' ? '<span class="sl-dur">' . $h($badge) . '</span>' : '')
+        . '<span class="sl-info"><b class="sl-title">' . $h($first['event']['title']) . '</b>'
+        . '<span class="sl-by"><span class="sc-meta">' . $h($first['event']['when']) . '</span>'
+        . '<span class="sl-likes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.6 3.9 4.5 7.2 4.5c1.9 0 3.6 1 4.8 2.6 1.2-1.6 2.9-2.6 4.8-2.6 3.3 0 5.7 3.1 4.5 6.6-1.8 4.8-9.3 9.4-9.3 9.4z"/></svg>' . $h($c['likes']) . '</span></span></span></a>';
+    // the next posts, small
+    $rest = array_slice($c['posts'], 1, 3);
+    if ($rest) {
+        $out .= '<div class="sc-strip">';
+        foreach ($rest as $i => $p) {
+            $t = socials_post_thumb($p);
+            $more = ($i === count($rest) - 1) ? $count - 1 - count($rest) : 0;
+            $out .= '<a class="sc-thumb" href="' . $h('/socials.php?' . http_build_query(['org' => (int) $o['id'], 'v' => (int) $p['id']])) . '" aria-label="' . $h('Watch: ' . $p['event']['title']) . '">'
+                . ($t !== '' ? '<img src="' . $h($t) . '" alt="" loading="lazy">' : ($p['type'] === 'video' ? '<video src="' . $h($p['src']) . '#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>' : ''))
+                . '<span class="sc-tplay" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>'
+                . ($more > 0 ? '<span class="sc-more">+' . $more . '</span>' : '')
+                . '</a>';
+        }
+        $out .= '</div>';
+    }
+    return $out . '</article>';
+}
+
+/**
  * One card of the Socials list (the template's first screen): the post's picture with a play button and its length,
  * the event title, the organizer's photo, handle and tick, and the likes. Tapping it opens the player on that post.
  * assets/js/socials-list.js builds the same markup for the cards it loads later; keep the two in step.
