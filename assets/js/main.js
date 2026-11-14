@@ -316,7 +316,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // from each .tier's real data-price whenever a quantity changes, since
   // ticket prices now vary per event instead of being a fixed mockup number.
   var buyForm = document.querySelector('[data-currency]');
-  var SERVICE_FEE_PER_TICKET = 700; // flat UGX fee per ticket — see SERVICE_FEE_PER_TICKET in includes/payments.php
+  // The flat UGX fee per paid ticket comes from the page (data-fee, set from SERVICE_FEE_PER_TICKET in
+  // includes/payments.php), so the preview can never show a different fee from the one checkout charges.
+  var SERVICE_FEE_PER_TICKET = buyForm && buyForm.hasAttribute('data-fee') ? (parseInt(buyForm.getAttribute('data-fee'), 10) || 0) : 500;
 
   function formatAmount(n) {
     return Math.round(n).toLocaleString('en-US');
@@ -349,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (subtotalLabel) subtotalLabel.textContent = 'Subtotal (' + ticketCount + ' ticket' + (ticketCount === 1 ? '' : 's') + ')';
     if (subtotalAmount) subtotalAmount.textContent = currency + ' ' + formatAmount(subtotal);
-    if (feeLabel) feeLabel.textContent = paidCount ? 'Service fee (UGX 700 × ' + paidCount + ')' : 'Service fee';
+    if (feeLabel) feeLabel.textContent = paidCount ? 'Service fee (UGX ' + formatAmount(SERVICE_FEE_PER_TICKET) + ' × ' + paidCount + ')' : 'Service fee';
     if (feeAmount) feeAmount.textContent = currency + ' ' + formatAmount(fee);
     var isFreeCart = ticketCount > 0 && total === 0;
     if (totalAmount) totalAmount.textContent = isFreeCart ? 'Free' : currency + ' ' + formatAmount(total);

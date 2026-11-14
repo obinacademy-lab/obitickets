@@ -369,7 +369,7 @@ ob_start(); ?>
         <div class="alert alert-error" style="margin:16px 22px 0">Sorry, one of the tickets you selected sold out. Please pick another.</div>
       <?php endif; ?>
 
-      <form method="post" action="/checkout.php" data-currency="<?= htmlspecialchars($currency) ?>">
+      <form method="post" action="/checkout.php" data-currency="<?= htmlspecialchars($currency) ?>" data-fee="<?= (int) SERVICE_FEE_PER_TICKET ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="event_slug" value="<?= htmlspecialchars($event['slug']) ?>">
 

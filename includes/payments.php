@@ -29,7 +29,7 @@ function commission_percent_label(): string
  * Unlike PLATFORM_COMMISSION_RATE above, this is per ticket, not a
  * percentage of the order — see checkout.php for where it's applied.
  */
-const SERVICE_FEE_PER_TICKET = 700;
+const SERVICE_FEE_PER_TICKET = 500; // UGX; was 700 until 2026-11-14 (orders keep the fee they were charged)
 
 /**
  * Stamped by cron/expire-stale-orders.php on an order it failed on its own
