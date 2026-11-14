@@ -85,7 +85,7 @@ include __DIR__ . '/includes/header.php';
     $playUrl = '/socials.php?' . http_build_query(array_filter(['play' => '1', 'tab' => $tab !== 'foryou' ? $tab : null]));
   ?>
   <header class="ss-head">
-    <h1 class="ss-brand"><span class="ss-mark" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg></span>Socials</h1>
+    <h1 class="ss-brand"><a class="ss-mark" href="/" aria-label="obitickets home"><svg width="32" height="32" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg></a>Socials</h1>
     <div class="ss-acts">
       <a class="ss-icon" href="/search.php" aria-label="Search events"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
       <?php if ($ctx): $slUnread = count_unread_notifications((int) $user['id']); ?>
@@ -116,7 +116,7 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
   <?php if ($shorts): ?>
   <div class="ss-sec">
-    <h2><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="6" fill="#DC2626"/><path d="M10 8.5v7l6-3.5z" fill="#fff"/></svg><?= $cat !== '' ? htmlspecialchars($cat) . ' shorts' : ($tab === 'trending' ? 'Trending shorts' : ($tab === 'following' ? 'From organizers you follow' : 'Event shorts')) ?></h2>
+    <h2><svg width="22" height="22" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg><?= $cat !== '' ? htmlspecialchars($cat) . ' shorts' : ($tab === 'trending' ? 'Trending shorts' : ($tab === 'following' ? 'From organizers you follow' : 'Event shorts')) ?></h2>
     <a href="<?= htmlspecialchars($playUrl) ?>">Watch all</a>
   </div>
   <?php endif; ?>

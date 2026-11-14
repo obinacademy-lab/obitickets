@@ -511,8 +511,9 @@ body.socials-list{background:#fff}
 body.socials-list .so-app{background:#fff; color:#1A1010}
 .ss-head{display:flex; align-items:center; justify-content:space-between; padding:10px 8px 4px 16px}
 .ss-brand{display:flex; align-items:center; gap:8px; margin:0; font:700 1.4rem/1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; color:#1A1010}
-.ss-mark{width:30px; height:30px; border-radius:9px; background:#DC2626; display:grid; place-items:center}
-.ss-mark svg{margin-left:2px}
+.ss-mark{flex:none; display:block; line-height:0; border-radius:10px; transition:transform .4s ease}
+.ss-mark:hover{transform:rotate(-12deg) scale(1.06)}
+.ss-mark:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
 .ss-acts{display:flex}
 .ss-icon{position:relative; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:#1A1010}
 .ss-icon:hover{background:#F4EFEF}
