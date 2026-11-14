@@ -463,3 +463,42 @@ body.socials-list .sc-list{grid-template-columns:minmax(0,1fr)}
 .pc-reel:has(> .pc-tile:only-child){overflow:hidden}
 .pc-reel > .pc-tile:only-child{flex:1 1 100%; max-width:none; aspect-ratio:16/11}
 .pc-reel > .pc-tile:only-child .pc-cap b{font-size:1.05rem}
+
+/* ==========================================================================
+   TikTok-profile grid per organizer (chosen 11/14): header row, then 3 tall tiles across with the views on each.
+   Red on the photo ring, the Follow button and a thin line above each organizer.
+   ========================================================================== */
+body.socials-list .tg-list{display:block; padding:4px 0 0; max-width:none}
+.tg-org{padding:16px 0 6px; border-top:1px solid rgba(255,255,255,.07); position:relative}
+.tg-org::before{content:""; position:absolute; left:16px; top:-1px; width:44px; height:2px; border-radius:2px; background:#DC2626}
+.tg-org:first-child{border-top:0}
+.tg-org:first-child::before{display:none}
+.tg-head{display:flex; align-items:center; gap:12px; padding:0 16px 12px}
+.tg-av{flex:none; width:48px; height:48px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:linear-gradient(135deg,#FF4D4D,#991B1B); color:#fff; font:700 .95rem 'Outfit',sans-serif; box-shadow:0 0 0 2px #0B0708, 0 0 0 4px #DC2626}
+.tg-av img{width:100%; height:100%; object-fit:cover}
+.tg-who{flex:1; min-width:0; display:grid; grid-template-columns:minmax(0,1fr); gap:2px; color:#fff}
+.tg-who b{display:flex; align-items:center; gap:6px; min-width:0; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:-.01em}
+.tg-name{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tg-who b .sl-ver{flex:none}
+.tg-who small{font-size:.8rem; color:#A99C9C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.tg-who small strong{color:#fff; font-weight:700}
+.tg-follow{height:34px; padding:0 18px; border-radius:6px; font-size:.84rem}
+.tg-follow.is-on{background:rgba(255,255,255,.12)}
+.tg-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px}
+.tg-tile{position:relative; display:block; aspect-ratio:3/4; overflow:hidden; background:#1A1214; color:#fff; isolation:isolate}
+.tg-tile img,.tg-tile video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1; transition:transform .4s ease, filter .3s}
+.tg-tile:hover img,.tg-tile:hover video{transform:scale(1.04)}
+.tg-tile::after{content:""; position:absolute; inset:auto 0 0 0; height:42%; z-index:-1; background:linear-gradient(0deg, rgba(0,0,0,.7), rgba(0,0,0,0))}
+.tg-views{position:absolute; left:7px; bottom:6px; display:flex; align-items:center; gap:4px; font-weight:700; font-size:.82rem; text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.tg-kind{position:absolute; right:7px; top:7px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.tg-more{position:absolute; inset:0; display:grid; place-content:center; justify-items:center; background:rgba(11,7,8,.66); font-size:.82rem; color:#E6DADA}
+.tg-more strong{font-family:'Outfit',sans-serif; font-size:1.6rem; color:#fff; line-height:1}
+.tg-tile:focus-visible,.tg-who:focus-visible,.tg-follow:focus-visible{outline:3px solid #fff; outline-offset:-3px}
+@media (min-width:901px){
+  body.socials-list .tg-list{max-width:1080px; margin:0 auto; padding:8px 14px 0; display:block}
+  .tg-head{padding:0 0 12px}
+  .tg-org::before{left:0}
+  .tg-grid{grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px}
+  .tg-tile{border-radius:8px}
+}
+@media (prefers-reduced-motion: reduce){ .tg-tile img,.tg-tile video{transition:none} }

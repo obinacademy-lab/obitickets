@@ -534,9 +534,11 @@ function socials_post_thumb(array $it): string
  */
 function socials_org_card_html(array $c): string
 {
+    // TikTok-profile style (chosen by the owner 11/14): a header row, then the organizer's videos 3 across as tall
+    // thumbnails with the views on each; the last one says "+N" when there are more. Tapping opens the player.
     $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     $o = $c['org'];
-    $posts = $c['posts'];
+    $posts = array_slice($c['posts'], 0, 6);
     $count = (int) $c['count'];
     $orgUrl = '/socials.php?' . http_build_query(['org' => (int) $o['id']]);
     $tick = !empty($o['verified'])
@@ -545,54 +547,30 @@ function socials_org_card_html(array $c): string
     $me = current_user();
     $isMe = $me && (int) $me['id'] === (int) $o['id'];
 
-    // 1. who: photo in a red ring, name and tick, handle and numbers, Follow
-    $out = '<article class="pc-card">'
-        . '<header class="pc-head">'
-        . '<a class="pc-av" href="' . $h($orgUrl) . '" aria-hidden="true" tabindex="-1">' . (!empty($o['avatar']) ? '<img src="' . $h($o['avatar']) . '" alt="">' : $h($o['initials'])) . '</a>'
-        . '<a class="pc-who" href="' . $h($orgUrl) . '"><b><span class="pc-name">' . $h($o['name']) . '</span>' . $tick . '</b>'
-        . '<small>' . $h($o['handle']) . '</small>'
-        . '<span class="pc-stats"><span><strong>' . $count . '</strong> ' . ($count === 1 ? 'video' : 'videos') . '</span><span><strong>' . $h($c['views']) . '</strong> views</span></span></a>';
+    $out = '<section class="tg-org" aria-label="' . $h($o['name']) . '">'
+        . '<header class="tg-head">'
+        . '<a class="tg-av" href="' . $h($orgUrl) . '" tabindex="-1" aria-hidden="true">' . (!empty($o['avatar']) ? '<img src="' . $h($o['avatar']) . '" alt="">' : $h($o['initials'])) . '</a>'
+        . '<a class="tg-who" href="' . $h($orgUrl) . '"><b><span class="tg-name">' . $h($o['name']) . '</span>' . $tick . '</b>'
+        . '<small><strong>' . $count . '</strong> ' . ($count === 1 ? 'video' : 'videos') . ' &middot; <strong>' . $h($c['views']) . '</strong> views</small></a>';
     if (!$isMe) {
-        $out .= '<button type="button" class="pc-follow' . (!empty($o['following']) ? ' is-on' : '') . '" data-pc-follow="' . (int) $o['id'] . '" aria-pressed="' . (!empty($o['following']) ? 'true' : 'false') . '" aria-label="' . $h((!empty($o['following']) ? 'Following ' : 'Follow ') . $o['name']) . '">' . (!empty($o['following']) ? 'Following' : 'Follow') . '</button>';
+        $on = !empty($o['following']);
+        $out .= '<button type="button" class="pc-follow tg-follow' . ($on ? ' is-on' : '') . '" data-pc-follow="' . (int) $o['id'] . '" aria-pressed="' . ($on ? 'true' : 'false') . '" aria-label="' . $h(($on ? 'Following ' : 'Follow ') . $o['name']) . '">' . ($on ? 'Following' : 'Follow') . '</button>';
     }
-    $out .= '</header>';
-
-    // 2. their videos: a row of tall tiles, the newest first
-    $out .= '<div class="pc-reel" role="list" aria-label="' . $h('Videos by ' . $o['name']) . '">';
-    $fresh = static fn (array $p) => str_ends_with((string) ($p['when'] ?? ''), 'm') || str_ends_with((string) ($p['when'] ?? ''), 'h') || ($p['when'] ?? '') === 'just now';
+    $out .= '</header><div class="tg-grid">';
     foreach ($posts as $i => $p) {
         $t = socials_post_thumb($p);
-        $href = '/socials.php?' . http_build_query(['org' => (int) $o['id'], 'v' => (int) $p['id']]);
-        $len = $p['type'] === 'video' ? moment_clock($p['duration']) : ($p['type'] === 'slideshow' ? count($p['slides']) . ' photos' : '');
-        $out .= '<a class="pc-tile" role="listitem" href="' . $h($href) . '" aria-label="' . $h(($p['type'] === 'video' ? 'Watch: ' : 'Open: ') . $p['event']['title'] . ($p['caption'] !== '' ? '. ' . mb_substr($p['caption'], 0, 80) : '')) . '">'
+        $isLast = $i === count($posts) - 1;
+        $extra = $isLast ? $count - count($posts) : 0;
+        $href = $extra > 0 ? $orgUrl : '/socials.php?' . http_build_query(['org' => (int) $o['id'], 'v' => (int) $p['id']]);
+        $label = $extra > 0 ? 'See all ' . $count . ' videos by ' . $o['name'] : (($p['type'] === 'video' ? 'Watch: ' : 'Open: ') . $p['event']['title'] . ($p['caption'] !== '' ? '. ' . mb_substr($p['caption'], 0, 80) : ''));
+        $out .= '<a class="tg-tile" href="' . $h($href) . '" aria-label="' . $h($label) . '">'
             . ($t !== '' ? '<img src="' . $h($t) . '" alt="" loading="lazy">' : ($p['type'] === 'video' ? '<video src="' . $h($p['src']) . '#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>' : ''))
-            . '<span class="pc-top">'
-            . '<span class="pc-views"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>' . $h(moment_compact((int) $p['views'])) . '</span>'
-            . ($i === 0 && $fresh($p) ? '<span class="pc-new">New</span>' : ($len !== '' ? '<span class="pc-len">' . $h($len) . '</span>' : ''))
-            . '</span>'
-            . '<span class="pc-cap"><b>' . $h($p['event']['title']) . '</b>' . ($p['caption'] !== '' ? '<span>' . $h($p['caption']) . '</span>' : '') . '</span>'
+            . ($p['type'] === 'slideshow' ? '<span class="tg-kind" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="7" y="7" width="13" height="13" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></span>' : '')
+            . '<span class="tg-views"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>' . $h(moment_compact((int) $p['views'])) . '</span>'
+            . ($extra > 0 ? '<span class="tg-more"><strong>+' . $extra . '</strong>more</span>' : '')
             . '</a>';
     }
-    if ($count > count($posts)) {
-        $out .= '<a class="pc-tile pc-all" role="listitem" href="' . $h($orgUrl) . '"><span><strong>+' . ($count - count($posts)) . '</strong>more videos</span></a>';
-    }
-    $out .= '</div>';
-
-    // 3. what to buy: their next event from these posts (the soonest one still to come), else their profile
-    $next = null;
-    foreach ($posts as $p) {
-        if (empty($p['event']['ended']) && ($next === null || $p['event']['start_ts'] < $next['start_ts'])) {
-            $next = $p['event'];
-        }
-    }
-    if ($next) {
-        $out .= '<footer class="pc-foot"><span class="pc-next"><small>Next event</small><b>' . $h($next['title']) . '</b><span>' . $h($next['when']) . ($next['price'] !== '' ? ' &middot; ' . $h($next['price']) : '') . '</span></span>'
-            . '<a class="pc-cta" href="' . $h($next['url'] . '#tickets') . '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z"/></svg>Get Tickets</a></footer>';
-    } else {
-        $out .= '<footer class="pc-foot"><span class="pc-next"><small>Latest</small><b>' . $h($posts[0]['event']['title']) . '</b><span>Event has ended</span></span>'
-            . '<a class="pc-cta pc-cta-ghost" href="' . $h($orgUrl) . '">Watch all</a></footer>';
-    }
-    return $out . '</article>';
+    return $out . '</div></section>';
 }
 
 /**
