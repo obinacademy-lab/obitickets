@@ -8,9 +8,14 @@ $exampleTicket = 100000;
 $exampleCommission = round($exampleTicket * PLATFORM_COMMISSION_RATE);
 $exampleBalance = $exampleTicket - $exampleCommission;
 $buyerFee = SERVICE_FEE_PER_TICKET;
+// Socials is an optional organizer add-on; its price and periods come from includes/socials.php.
+$socPrice = socials_price_label();
+$socDays = (int) SOCIALS_PERIOD_DAYS;
+$socTrial = (int) SOCIALS_TRIAL_DAYS;
+$socTrialLabel = $socTrial === 30 ? 'first month free' : "first {$socTrial} days free";
 
 $pageTitle = 'Pricing — Simple, Transparent Ticketing | obitickets';
-$pageDescription = "Simple, transparent ticketing on obitickets: free organizer registration, no monthly subscriptions, a {$rate}% commission only on paid tickets you sell, and 0% commission on free events.";
+$pageDescription = "Simple, transparent ticketing on obitickets: free organizer registration, no subscription to sell tickets, a {$rate}% commission only on paid tickets you sell, 0% commission on free events, and an optional Socials plan at {$socPrice} per {$socDays} days.";
 $bodyClass = 'classic-page pricing-page motion-page';
 include __DIR__ . '/includes/header.php';
 
@@ -33,14 +38,23 @@ $steps = [
 ];
 $zeros = [
     ['Registration fees', 'Create your organizer account for free.'],
-    ['Monthly subscriptions', 'Nothing to pay while you are not selling.'],
+    ['Monthly subscriptions', 'None needed to sell tickets. Socials is an optional extra.'],
     ['Complicated plans', 'One standard rate on every paid ticket.'],
 ];
 $ticks = [
     'No hidden organizer registration fees',
-    'No monthly subscriptions',
+    'No subscription needed to sell tickets',
     "One standard commission, {$rate}% on paid tickets",
     'Attendees pay a flat UGX ' . number_format($buyerFee) . ' service fee per paid ticket, separate from your commission',
+    "Socials is optional: {$socPrice} per {$socDays} days, {$socTrialLabel}, never charged automatically",
+];
+$socPoints = [
+    'Post event videos and photo slideshows with sound to the Socials feed.',
+    'Anyone can watch, even without an account. Signed-in fans like, comment and send stickers.',
+    'Every post carries a Get Tickets button that opens your event.',
+    'Pay by MTN or Airtel Mobile Money only when you choose to. Nothing renews by itself.',
+    'We email you 3 days and 1 day before your plan ends.',
+    'When a plan ends your posts stay up. You just cannot add new ones until you renew.',
 ];
 $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
 $ic = static fn (string $id, int $px = 16): string => '<svg width="' . $px . '" height="' . $px . '" aria-hidden="true"><use href="#' . $id . '"/></svg>';
@@ -129,6 +143,29 @@ $img = '/assets/images/about/';
     <div class="pr-wrap pr-fg">
       <div class="pr-zr" data-in="up"><span data-count="0" data-from="100" data-dur="1600">0</span><small>%</small></div>
       <div data-in="up" style="--d:150"><p class="pr-kick">Hosting a free event?</p><h2>Free events? Zero commission!</h2><p>You can publish free events on Obitickets without paying ticket-sales commission.</p><span class="pr-eq">Free tickets = 0% commission</span></div>
+    </div>
+  </section>
+
+  <section class="pr-soc" id="socials">
+    <div class="pr-wrap pr-socg">
+      <div class="pr-socc" data-in="clipup">
+        <span class="pr-socb"><?= $ic('ic-play', 14) ?> Optional add-on</span>
+        <h3>obitickets Socials</h3>
+        <div class="pr-socp"><b><?= $h($socPrice) ?></b><span>per <?= $socDays ?> days</span></div>
+        <p class="pr-soct"><?= $h(ucfirst($socTrialLabel)) ?> for every organizer</p>
+        <a class="pr-btn pri" data-mag href="/org-socials.php">Start your free month <?= $ic('ic-arrow') ?></a>
+        <a class="pr-soclk" href="/socials.php">Watch Socials</a>
+      </div>
+      <div>
+        <p class="pr-kick" data-in="up">Promote with video</p>
+        <h2 data-in="up">Put your event on the Socials feed.</h2>
+        <p class="s" data-in="up">Selling tickets never needs a plan. Socials is extra: a TikTok-style feed where people discover events through short videos, and every post leads straight to your tickets.</p>
+        <ul class="pr-ticks">
+          <?php foreach ($socPoints as $i => $t): ?>
+          <li data-in="up"<?= $i ? ' style="--d:' . ($i * 70) . '"' : '' ?>><span><?= $ic('ic-check', 14) ?></span><?= $h($t) ?></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
     </div>
   </section>
 

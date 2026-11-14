@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 
 $pageTitle = 'Help centre — obitickets';
-$pageDescription = 'Answers to common questions about buying tickets, selling events, check-in and payments on obitickets.';
+$pageDescription = 'Answers to common questions about buying tickets, selling events, check-in, payments and Socials on obitickets.';
 $bodyClass = 'classic-page';
 include __DIR__ . '/includes/header.php';
 ?>
@@ -26,6 +26,10 @@ include __DIR__ . '/includes/header.php';
       <div class="faq-item">
         <div class="faq-q">How do I buy a ticket?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
         <div class="faq-a">Find an event, choose your ticket tiers on the event page, and pay by MTN MoMo, Airtel Money or card. Your ticket — a scannable QR code — lands instantly on the confirmation page and in "My tickets".</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is there a service fee?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">Yes, a flat UGX <?= number_format(SERVICE_FEE_PER_TICKET) ?> per paid ticket, added at checkout and shown before you pay. Free tickets have no service fee.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Where do I find my tickets after buying?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
@@ -54,7 +58,7 @@ include __DIR__ . '/includes/header.php';
       </div>
       <div class="faq-item">
         <div class="faq-q">How much does it cost to sell tickets?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
-        <div class="faq-a">Listing is free. We take a <?= commission_percent_label() ?>% commission, only on paid tickets that actually sell (free tickets carry none) — see our <a href="/pricing.php" style="color:var(--purple-deep); font-weight:700;">pricing page</a> for the full breakdown.</div>
+        <div class="faq-a">Listing is free and selling tickets needs no subscription. We take a <?= commission_percent_label() ?>% commission, only on paid tickets that actually sell (free tickets carry none). Attendees pay the UGX <?= number_format(SERVICE_FEE_PER_TICKET) ?> service fee themselves, so it never comes out of your balance — see our <a href="/pricing.php" style="color:var(--purple-deep); font-weight:700;">pricing page</a> for the full breakdown.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">How do I check attendees in at the door?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
@@ -63,6 +67,35 @@ include __DIR__ . '/includes/header.php';
       <div class="faq-item">
         <div class="faq-q">Can I edit an event after publishing it?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
         <div class="faq-a">Yes — details, banner, gallery and ticket tiers can all be edited from "My events". A tier that already has sales against it can be updated but not deleted, so a buyer's ticket is never pulled out from under them.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ah-section" id="socials">
+    <div class="ah-section-head">
+      <span class="kicker">Socials</span>
+      <h2>Event videos on obitickets</h2>
+    </div>
+    <div style="max-width:680px; margin:0 auto">
+      <div class="faq-item">
+        <div class="faq-q">What is Socials?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">A feed of short event videos and photo slideshows posted by organizers. Swipe through, follow organizers you like, and tap Get Tickets on any post to open the event. <a href="/socials.php" style="color:var(--purple-deep); font-weight:700;">Open Socials</a>.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Do I need an account?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">Not to watch — anyone can. To like, comment, reply, send stickers or follow an organizer, log in or create a free account.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How much does Socials cost organizers?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">Posting needs a Socials plan: <?= socials_price_label() ?> for <?= (int) SOCIALS_PERIOD_DAYS ?> days, and your first <?= (int) SOCIALS_TRIAL_DAYS === 30 ? 'month is' : (int) SOCIALS_TRIAL_DAYS . ' days are' ?> free. Start it from "Socials" in your organizer menu and pay by MTN or Airtel Mobile Money. Nothing is charged automatically, and the plan is optional: selling tickets works without it.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What can organizers post?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">Videos and photo slideshows (with a sound if you like) about your own events. Every post is linked to one of your events, so viewers can buy tickets straight from it. Large videos are shrunk on your phone before upload so they send faster.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens when my plan ends?<svg width="16" height="16"><use href="#ic-chev"/></svg></div>
+        <div class="faq-a">We email you 3 days and 1 day before it ends. After that your posts stay up and keep their views and comments; you just cannot add new posts until you pay for another <?= (int) SOCIALS_PERIOD_DAYS ?> days.</div>
       </div>
     </div>
   </section>

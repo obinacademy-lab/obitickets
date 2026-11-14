@@ -162,8 +162,26 @@
 .pr-cta .pr-btn.pri{background:#fff; color:#1A1614}
 .pr-cta .pr-btn.pri:hover{color:#1A1614}
 
+/* Socials add-on: a red plan card beside the points */
+.pr-soc{padding:110px 0; background:var(--ps)}
+.pr-socg{display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); gap:80px; align-items:center}
+.pr-socc{position:relative; overflow:hidden; isolation:isolate; padding:38px 34px 32px; border-radius:30px; color:#fff;
+  background:radial-gradient(120% 90% at 100% 0,#E0362F 0,transparent 60%),linear-gradient(160deg,#B91C1C,#5E0B0B)}
+.pr-socc::after{content:""; position:absolute; right:-60px; bottom:-60px; z-index:-1; width:220px; height:220px; border-radius:50%; border:28px solid rgba(255,255,255,.07)}
+.pr-socb{display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; background:rgba(255,255,255,.14); font:600 .62rem var(--f-mono); letter-spacing:.18em; text-transform:uppercase}
+.pr-socc h3{margin-top:22px; font:500 1.5rem/1.1 var(--f-display); letter-spacing:-.02em}
+.pr-socp{display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; margin-top:16px}
+.pr-socp b{font:300 clamp(2.6rem,5vw,3.6rem)/1 var(--f-display); letter-spacing:-.05em}
+.pr-socp span{color:#FBD5D0}
+.pr .pr-soct{margin:10px 0 26px; font-weight:700; color:#FFE9A8}
+.pr-socc .pr-btn.pri{background:#fff; color:#7F1212; width:100%}
+.pr-soclk{display:block; margin-top:14px; text-align:center; color:#fff; font-weight:600; font-size:.86rem; opacity:.85}
+.pr-soc h2{margin-top:14px; font:500 clamp(1.9rem,3.4vw,2.8rem)/1.06 var(--f-display); letter-spacing:-.04em}
+.pr-soc .s{margin:14px 0 22px; color:var(--pm); line-height:1.7}
+
 @media (max-width:900px){
   .pr-wrap{width:calc(100% - 40px)}
+  .pr-soc{padding:68px 0} .pr-socg{grid-template-columns:minmax(0,1fr); gap:34px} .pr-socc{padding:30px 24px 26px}
   .pr-hero{padding:44px 0 52px} .pr-hg,.pr-sg,.pr-fg,.pr-fgrid,.pr-cg,.pr-calc{grid-template-columns:minmax(0,1fr); gap:34px}
   .pr-ph{height:380px; border-radius:26px} .pr-chip{left:14px; bottom:14px; padding:12px 16px} .pr-chip b{font-size:2.6rem}
   .pr-zeros{grid-template-columns:minmax(0,1fr)} .pr-zeros li,.pr-zeros li:first-child{border-left:0; border-top:1px solid var(--pl); padding:20px 0} .pr-zeros li:first-child{border-top:0}
