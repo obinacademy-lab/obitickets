@@ -215,3 +215,64 @@ body.socials-page .masthead-bar{display:none}
 .so-emojis{overflow-x:auto; scrollbar-width:none; justify-content:flex-start}
 .so-emojis::-webkit-scrollbar{display:none}
 .so-emojis button{flex:0 0 40px}
+
+/* ==========================================================================
+   Template match (11/14): the feed now follows the owner's template phone for phone.
+   ========================================================================== */
+/* top: For You / Following / Trending in the middle, search on the right */
+.so-top{height:64px; padding:0 12px}
+.so-top-gap{width:44px; flex:none}
+.so-tabs{font-weight:700; font-size:1.05rem; gap:20px}
+.so-tabs a{color:rgba(255,255,255,.72)}
+.so-tabs a.on{color:#fff}
+.so-tabs a.on::after{left:10%; right:10%; bottom:2px; height:3px}
+
+/* right rail: white glyphs with a soft shadow, the counts under them, "..." in a dark circle */
+.so-rail{gap:18px; right:8px}
+.so-rail .so-glyph .so-ic{width:44px; height:40px; background:none; -webkit-backdrop-filter:none; backdrop-filter:none; border-radius:0}
+.so-rail .so-glyph svg{width:36px; height:36px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+.so-rail .so-glyph:hover .so-ic{background:none}
+.so-rail .so-glyph.is-on .so-ic{background:none; color:#FF2D55}
+.so-rail .so-n{font-size:.82rem; font-weight:700}
+.so-rail .so-more .so-ic{width:44px; height:44px; background:rgba(40,30,32,.62); border-radius:50%}
+.so-rail .so-more .so-n{display:none}
+.so-org .so-av{width:50px; height:50px; border:2px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.so-follow{width:22px; height:22px; margin-left:-11px; bottom:-9px; font-size:.95rem; box-shadow:0 2px 6px rgba(0,0,0,.35)}
+
+/* bottom left: title + tick, @handle, caption, date | place, the sound line */
+.so-info{gap:5px; right:72px}
+.so-title{font-size:1.32rem; font-weight:700; letter-spacing:-.01em; text-shadow:0 1px 10px rgba(0,0,0,.5)}
+.so-ver{width:20px; height:20px}
+.so-by{font-size:.92rem; font-weight:600; color:#fff}
+.so-cap{font-size:.92rem; color:#fff}
+.so-meta{font-size:.88rem; color:#fff; font-weight:500}
+.so-snd{font-size:.86rem; color:#fff; font-weight:500}
+
+/* the red Get Tickets bar: ticket icon, words in the middle, an arrow on the right */
+.so-cta{height:54px; border-radius:16px; padding:0 18px; justify-content:space-between; font-size:1.08rem; box-shadow:0 14px 26px -14px rgba(220,38,38,.95)}
+.so-cta span{flex:1; text-align:center; margin-right:-6px}
+.so-cta svg:first-child{flex:none}
+.so-cta svg:last-child{flex:none; opacity:.95}
+
+/* phones: the template's full-width dark tab bar with a label under every icon and the red play button raised */
+@media (max-width:900px){
+  .so-info{bottom:154px}
+  .so-rail{bottom:170px}
+  .so-cta{bottom:calc(84px + env(safe-area-inset-bottom, 0px))}
+  html.rc body.socials-page .rc-tabs{left:0; right:0; bottom:0; max-width:none; height:calc(68px + env(safe-area-inset-bottom, 0px)); padding:0 6px env(safe-area-inset-bottom, 0px);
+    border-radius:0; background:#0B0708; border-top:1px solid rgba(255,255,255,.08); box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none;
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center}
+  html.rc body.socials-page .rc-tab{height:auto; min-width:0; padding:6px 0; flex-direction:column; gap:3px; border-radius:12px; background:none; color:#A99C9C; font-size:.7rem; font-weight:600}
+  html.rc body.socials-page .rc-tab span{position:static; width:auto; height:auto; overflow:visible; clip:auto}
+  html.rc body.socials-page .rc-tab.on{background:none; color:#fff}
+  html.rc body.socials-page .rc-tab-so i{width:46px; height:46px; margin-top:-16px; box-shadow:0 0 0 4px #0B0708, 0 8px 18px -6px rgba(220,38,38,.9)}
+  html.rc body.socials-page .rc-tab-so.on i{box-shadow:0 0 0 4px #0B0708, 0 8px 18px -6px rgba(220,38,38,.9)}
+  html.rc body.socials-page .rc-tab-so span{color:#fff; font-weight:700}
+}
+/* tabs stay on one line; the follow badge keeps its red circle (the rail's button reset would wipe it) */
+.so-tabs{gap:16px; font-size:1rem}
+.so-tabs a{white-space:nowrap}
+.so-top-gap{width:24px}
+.so-rail .so-follow{background:#DC2626; color:#fff; min-width:0; width:22px; height:22px; padding:0; border-radius:50%; display:grid; place-items:center; font-size:1rem; font-weight:800; line-height:1; text-shadow:none}
+.so-rail .so-follow.is-on{background:#fff; color:#DC2626}
+@media (max-width:360px){ .so-tabs{gap:12px; font-size:.94rem} .so-top-gap{width:8px} }

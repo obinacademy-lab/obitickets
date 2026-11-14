@@ -416,11 +416,22 @@ function socials_item_public(array $row): array
     $min = $row['min_price'];
     $price = $min === null ? '' : ((float) $min <= 0.0 ? 'Free' : 'From UGX ' . number_format((float) $min));
     $orgId = (int) $row['organizer_id'];
+    // "4 – 5 Dec 2026", "30 Nov – 2 Dec 2026", "12 Dec 2026": short, like the template.
+    $te = strtotime((string) ($row['event_ends_at'] ?? $row['event_starts_at']));
+    if (date('Y-m-d', $ts) === date('Y-m-d', $te) || $te < $ts) {
+        $when = date('j M Y', $ts);
+    } elseif (date('M Y', $ts) === date('M Y', $te)) {
+        $when = date('j', $ts) . ' – ' . date('j M Y', $te);
+    } elseif (date('Y', $ts) === date('Y', $te)) {
+        $when = date('j M', $ts) . ' – ' . date('j M Y', $te);
+    } else {
+        $when = date('j M Y', $ts) . ' – ' . date('j M Y', $te);
+    }
     $item['event'] = [
         'id' => (int) $row['event_id'],
         'title' => (string) $row['event_title'],
         'url' => ($ended && function_exists('past_event_url')) ? past_event_url((string) $row['event_slug']) : '/event.php?slug=' . rawurlencode((string) $row['event_slug']),
-        'when' => date('D j M Y', $ts),
+        'when' => $when,
         'where' => ($row['event_mode'] ?? '') === 'ONLINE' ? 'Online event' : (string) $row['event_venue'],
         'price' => $price,
         'ended' => $ended,
@@ -428,6 +439,8 @@ function socials_item_public(array $row): array
     $item['org'] = [
         'id' => $orgId,
         'name' => (string) $row['org_name'],
+        // "@KumiFestival": the organizer's name without spaces or punctuation (their profile address stays the slug)
+        'handle' => '@' . (preg_replace('/[^\p{L}\p{N}_]+/u', '', ucwords(strtolower((string) $row['org_name']))) ?: (string) ($row['org_slug'] ?? 'organizer')),
         'initials' => community_initials((string) $row['org_name']),
         'avatar' => function_exists('user_avatar_url') ? user_avatar_url($orgId) : null,
         'verified' => (int) ($row['org_verified'] ?? 0) === 1,

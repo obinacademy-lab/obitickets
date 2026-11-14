@@ -17,7 +17,6 @@
   var loading = false;
   var hasMore = !!D.hasMore;
   var offset = D.items.length;
-  var soundBtn = document.getElementById('soSound');
   var toastEl = document.getElementById('soToast');
   var shade = document.getElementById('soShade');
   var openSheet = null, lastFocus = null;
@@ -39,8 +38,10 @@
   }
   var IC = {
     heart: ['M12 20.5s-7.5-4.6-9.300-9.400C1.500 7.600 3.900 4.500 7.200 4.500c1.900 0 3.600 1 4.800 2.600 1.200-1.600 2.900-2.600 4.800-2.600 3.300 0 5.700 3.100 4.500 6.600-1.800 4.800-9.300 9.400-9.300 9.400z'],
-    chat: ['M21 12a8.500 8.500 0 0 1-12.400 7.500L3 21l1.500-5.300A8.500 8.500 0 1 1 21 12z'],
-    share: ['M14 5l7 6.500-7 6.500v-4c-5 0-8.500 1.500-11 5 .5-6 4-10 11-10.500z'],
+    // a speech bubble with three dots cut out of it (filled, like the template)
+    chat: ['M12 3C6.500 3 2 6.800 2 11.500c0 2.400 1.100 4.500 3 6.100L4 21.500l4.600-2.200c1.100.300 2.200.500 3.400.500 5.500 0 10-3.800 10-8.500S17.500 3 12 3zM7.500 13a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3zm4.500 0a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3zm4.500 0a1.500 1.500 0 1 1 0-3 1.500 1.500 0 0 1 0 3z'],
+    share: ['M13.500 4.500 22 11.800l-8.500 7.300v-4.300C7.900 14.700 4.300 16.600 2 20.500c.700-6.600 4.500-11.300 11.500-12.100z'],
+    chev: ['M9 6l6 6-6 6'],
     more: ['M5 12h.01M12 12h.01M19 12h.01'],
     play: ['M8 5v14l11-7z'],
     note: ['M9 18V5l11-2v13', 'M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z', 'M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'],
@@ -142,7 +143,8 @@
     like.setAttribute('aria-pressed', it.liked ? 'true' : 'false');
     var com = railButton('Comments', IC.chat, compact(d.comments), true);
     var sh = railButton('Share', IC.share, compact(d.shares), true);
-    var more = railButton('Report', IC.more, '', false);
+    var more = railButton('More options', IC.more, '', false);
+    more.classList.add('so-more'); like.classList.add('so-glyph'); com.classList.add('so-glyph'); sh.classList.add('so-glyph');
     rail.appendChild(like); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(more);
     a.appendChild(rail);
 
@@ -152,25 +154,25 @@
     var tl = el('a', null, d.event.title); tl.href = d.event.url; title.appendChild(tl);
     if (d.org.verified) { var ver = el('span', 'so-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 12)); title.appendChild(ver); }
     info.appendChild(title);
-    info.appendChild(el('div', 'so-by', 'by ' + d.org.name + ' · ' + d.when));
+    info.appendChild(el('div', 'so-by', d.org.handle || ('by ' + d.org.name)));
     if (d.caption) {
       var cap = el('div', 'so-cap', d.caption);
       cap.addEventListener('click', function () { cap.classList.toggle('open'); });
       info.appendChild(cap);
     }
     info.appendChild(el('div', 'so-meta', d.event.when + ' | ' + d.event.where));
-    if (d.sound) {
-      var snd = el('div', 'so-snd'); snd.appendChild(svg(IC.note, 15));
-      snd.appendChild(el('span', null, d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '')));
-      info.appendChild(snd);
-    }
+    // the sound line: the chosen track, or "Original Sound – <organizer>" like the template
+    var snd = el('div', 'so-snd'); snd.appendChild(svg(IC.note, 15, true));
+    snd.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Sound – ' + d.org.name));
+    info.appendChild(snd);
     a.appendChild(info);
 
     var cta = el('a', 'so-cta' + (d.event.ended ? ' is-ended' : ''));
     cta.href = d.event.url + (d.event.ended ? '' : '#tickets');
-    cta.appendChild(svg(IC.ticket, 22));
+    if (!d.event.ended && d.event.price) { cta.setAttribute('aria-label', 'Get Tickets, ' + d.event.price); }
+    cta.appendChild(svg(IC.ticket, 24));
     cta.appendChild(el('span', null, d.event.ended ? 'See this event' : 'Get Tickets'));
-    if (!d.event.ended && d.event.price) { cta.appendChild(el('small', null, d.event.price)); }
+    cta.appendChild(svg(IC.chev, 22));
     a.appendChild(cta);
 
     // ---- behaviour
@@ -184,7 +186,12 @@
         return;
       }
       lastTap = now;
-      tapTimer = setTimeout(function () { togglePause(it); }, 330);
+      tapTimer = setTimeout(function () {
+        // Phones start videos silent. The first tap on a post with sound turns the sound on (for every post after it);
+        // after that a tap pauses and plays.
+        if (muted && (it.video || it.audio)) { muted = false; applyMute(); toast('Sound on'); return; }
+        togglePause(it);
+      }, 330);
     });
 
     function toggleLike(forceOn) {
@@ -282,12 +289,10 @@
     }
   }
   function applyMute() {
-    if (soundBtn) { soundBtn.setAttribute('aria-pressed', muted ? 'false' : 'true'); soundBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off'); }
     if (!current) { return; }
     if (current.video) { current.video.muted = muted || !!current.audio; }
     if (current.audio) { if (muted) { current.audio.pause(); } else if (!current.el.classList.contains('is-paused')) { playAudio(current); } }
   }
-  if (soundBtn) { soundBtn.addEventListener('click', function () { muted = !muted; applyMute(); }); }
 
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (en) {

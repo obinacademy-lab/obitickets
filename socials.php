@@ -36,9 +36,7 @@ include __DIR__ . '/includes/header.php';
 
 <main class="so-app" id="soApp">
   <div class="so-top">
-    <a class="so-home" href="/" aria-label="obitickets home">
-      <svg viewBox="0 0 34 34" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
-    </a>
+    <span class="so-top-gap" aria-hidden="true"></span>
     <nav class="so-tabs" aria-label="Socials">
       <a href="/socials.php"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
       <a href="/socials.php?tab=following"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
@@ -49,10 +47,6 @@ include __DIR__ . '/includes/header.php';
 
   <?php if ($items): ?>
     <div class="so-feed" id="soFeed" tabindex="0" aria-label="Socials feed. Swipe or use the arrow keys to move between videos."></div>
-    <button type="button" class="so-sound" id="soSound" aria-pressed="false">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9l5 6M21 9l-5 6"/></svg>
-      <span>Tap for sound</span>
-    </button>
   <?php else: ?>
     <div class="so-empty">
       <i><svg width="30" height="30" aria-hidden="true"><use href="#ic-play"/></svg></i>
