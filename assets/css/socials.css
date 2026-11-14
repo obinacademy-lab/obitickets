@@ -265,9 +265,6 @@ body.socials-page .masthead-bar{display:none}
   html.rc body.socials-page .rc-tab{height:auto; min-width:0; padding:6px 0; flex-direction:column; gap:3px; border-radius:12px; background:none; color:#A99C9C; font-size:.7rem; font-weight:600}
   html.rc body.socials-page .rc-tab span{position:static; width:auto; height:auto; overflow:visible; clip:auto}
   html.rc body.socials-page .rc-tab.on{background:none; color:#fff}
-  html.rc body.socials-page .rc-tab-so i{width:46px; height:46px; margin-top:-16px; box-shadow:0 0 0 4px #0B0708, 0 8px 18px -6px rgba(220,38,38,.9)}
-  html.rc body.socials-page .rc-tab-so.on i{box-shadow:0 0 0 4px #0B0708, 0 8px 18px -6px rgba(220,38,38,.9)}
-  html.rc body.socials-page .rc-tab-so span{color:#fff; font-weight:700}
 }
 /* tabs stay on one line; the follow badge keeps its red circle (the rail's button reset would wipe it) */
 .so-tabs{gap:16px; font-size:1rem}
@@ -555,9 +552,7 @@ body.socials-list .so-empty p{color:#645A5A}
 @media (max-width:900px){
   html.rc body.socials-list .rc-tabs{background:rgba(255,255,255,.97); border-top:1px solid #F0E4E2}
   html.rc body.socials-list .rc-tab{color:#645A5A}
-  html.rc body.socials-list .rc-tab.on{color:#1A1010}
-  html.rc body.socials-list .rc-tab-so i,html.rc body.socials-list .rc-tab-so.on i{box-shadow:0 0 0 4px #fff, 0 8px 18px -6px rgba(220,38,38,.7)}
-  html.rc body.socials-list .rc-tab-so span{color:#DC2626}
+  html.rc body.socials-list .rc-tab.on{color:#1A1010; font-weight:700}
 }
 /* computers: the site menu stays on top; a wider shelf, more tiles across */
 @media (min-width:600px){
