@@ -20,6 +20,7 @@
   function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
   function mb(n) { return (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB'; }
   var canShrink = !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream);
+  var SOFT_VIDEO_BYTES = 12 * 1024 * 1024; // above this a video is re-encoded at 720 x 1280 before it uploads
 
   /* ---------- entry points: the button, the whole page as a drop target, the round + on phones ---------- */
   var fileInput = document.getElementById('euFile');
@@ -266,9 +267,12 @@
         if (settled || S.dead) return; settled = true;
         S.duration = v.duration || 0;
         var tooBig = file.size > cfg.maxVideo, tooLong = S.duration > cfg.maxSeconds + 0.5;
-        S.needsPrep = tooBig || tooLong;
+        // Heavy phone videos are made lighter even when they fit the limit, so they load fast for people on mobile data.
+        var heavy = canShrink && file.size > SOFT_VIDEO_BYTES;
+        S.needsPrep = tooBig || tooLong || heavy;
         if (tooLong) notice('This video is ' + Math.floor(S.duration / 60) + ':' + ('0' + Math.round(S.duration % 60)).slice(-2) + ' and moments can be up to ' + Math.floor(cfg.maxSeconds / 60) + ':' + ('0' + (cfg.maxSeconds % 60)).slice(-2) + '. We use the first ' + cfg.maxSeconds + ' seconds.');
         else if (tooBig) notice('This video is ' + mb(file.size) + '. We shrink it so it uploads fast. It takes about as long as the video.');
+        else if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones. It takes about as long as the video.');
         if (S.needsPrep && !canShrink) { showError('This video is ' + mb(file.size) + ' (limit ' + mb(cfg.maxVideo) + ') and this browser can’t shrink it. Use Chrome on a computer or Android phone, or trim it in your gallery first.'); return; }
         paintStatus();
         if (S.needsPrep) {
@@ -383,9 +387,9 @@
           srcNode.connect(dest); // the sound goes into the recording, not the speakers
           dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
         } catch (e) { /* silent video if the browser refuses */ }
-        var type = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
+        var type = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
         var chunks = [];
-        try { rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 2500000 } : undefined); } catch (e) { reject(new Error("This browser couldn't start recording.")); return; }
+        try { rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 2000000, audioBitsPerSecond: 128000 } : undefined); } catch (e) { reject(new Error("This browser couldn't start recording.")); return; }
         rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
         rec.onstop = function () { if (cancelled) return; clearInterval(timer); resolve({ blob: new Blob(chunks, { type: rec.mimeType || type || 'video/webm' }), mime: rec.mimeType || type || 'video/webm', duration: Math.min(seconds, v.duration || seconds) }); };
         var draw = function () {

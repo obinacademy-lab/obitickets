@@ -157,3 +157,61 @@ body.socials-page .masthead-bar{display:none}
   .so-heart.go{animation:none}
   .so-slide,.so-paused,.so-toast{transition:none}
 }
+
+/* ---------- stickers (comments) ---------- */
+.so-cm p.st{margin-top:4px}
+.so-sticker{display:block; width:96px; height:96px}
+.ev-comment-text .so-sticker{width:88px; height:88px; margin-top:4px}
+.so-st-toggle{flex:0 0 44px !important}
+.so-st-toggle img{display:block; width:30px; height:30px; margin:0 auto}
+.so-st-toggle[aria-expanded="true"]{background:#FDECEC !important}
+.so-stickers{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; max-height:200px; overflow-y:auto; padding:4px 2px}
+.so-stickers[hidden]{display:none}
+.so-stickers button{border:0; border-radius:16px; background:#FDF4F3; padding:6px; cursor:pointer; transition:transform .15s, background .15s}
+.so-stickers button:hover{background:#FDECEC; transform:scale(1.05)}
+.so-stickers img{display:block; width:100%; height:auto; aspect-ratio:1}
+/* three tabs on top fit a phone */
+.so-tabs{gap:16px; font-size:1rem}
+@media (max-width:380px){ .so-tabs{gap:12px; font-size:.94rem} }
+
+/* ---------- organizer profile (public/organizer.php): centred header, Videos / Events tabs ---------- */
+.op-page{--op-red:#DC2626}
+.op-hero{display:grid; justify-items:center; text-align:center; gap:8px; padding-top:28px; padding-bottom:8px}
+.op-avatar{width:96px; height:96px; border-radius:50%; display:grid; place-items:center; overflow:hidden; background:var(--op-red); color:#fff; font:700 2rem 'Outfit','Plus Jakarta Sans',sans-serif; box-shadow:0 0 0 4px #fff, 0 0 0 6px var(--op-red)}
+.op-avatar img{width:100%; height:100%; object-fit:cover}
+.op-name{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:6px}
+.op-name h1{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:clamp(1.5rem,4vw,2rem); letter-spacing:-.02em; color:#1A1010}
+.op-ver{width:22px; height:22px; border-radius:50%; background:#3B9CFF; color:#fff; display:grid; place-items:center}
+.op-handle{color:#645A5A; font-weight:600; font-size:.92rem; margin:0}
+.op-stats{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:min(440px,100%); margin-top:10px; border-radius:20px; background:#FDF4F3}
+.op-stats div{display:grid; gap:2px; padding:12px 6px}
+.op-stats div + div{border-left:1px solid #F0E4E2}
+.op-stats b{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.25rem; color:#1A1010}
+.op-stats span{font-size:.74rem; color:#645A5A; font-weight:600}
+.op-actions{display:flex; gap:10px; align-items:center; margin-top:8px}
+.op-follow{min-width:180px; height:48px; padding:0 28px; border:0; border-radius:24px; background:var(--op-red); color:#fff; font:800 1rem 'Plus Jakarta Sans',system-ui,sans-serif; cursor:pointer; transition:background .2s, color .2s}
+.op-follow:hover{background:#C81E1E}
+.op-follow[aria-pressed="true"]{background:#F5ECEB; color:#1A1010}
+.op-icon{width:48px; height:48px; border:0; border-radius:50%; background:#F5ECEB; color:#1A1010; display:grid; place-items:center; cursor:pointer}
+.op-follow:focus-visible,.op-icon:focus-visible,.op-tabs button:focus-visible,.op-tile:focus-visible{outline:3px solid #1A1010; outline-offset:3px}
+.op-bio{max-width:52ch; color:#1A1010; margin-top:6px}
+.op-sub{display:flex; gap:6px 16px; flex-wrap:wrap; justify-content:center; font-size:.84rem; color:#645A5A; margin:0}
+.op-links{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:4px}
+.op-tabs{display:grid; grid-template-columns:1fr 1fr; max-width:520px; margin-top:18px; border-bottom:1px solid #F0E4E2}
+.op-tabs button{height:50px; border:0; background:none; font:700 1rem 'Plus Jakarta Sans',system-ui,sans-serif; color:#645A5A; cursor:pointer; position:relative}
+.op-tabs button[aria-selected="true"]{color:#1A1010}
+.op-tabs button[aria-selected="true"]::after{content:""; position:absolute; left:20%; right:20%; bottom:-1px; height:3px; border-radius:3px; background:var(--op-red)}
+.op-panel{padding-top:16px}
+.op-panel[hidden]{display:none}
+.op-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px}
+@media (min-width:900px){ .op-grid{grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px} }
+.op-tile{position:relative; display:block; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#1A1010}
+.op-tile img,.op-tile video{width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s ease}
+.op-tile:hover img,.op-tile:hover video{transform:scale(1.04)}
+.op-tile::after{content:""; position:absolute; inset:auto 0 0 0; height:40%; background:linear-gradient(0deg,rgba(0,0,0,.65),transparent)}
+.op-views{position:absolute; z-index:1; left:8px; bottom:7px; display:flex; align-items:center; gap:4px; color:#fff; font-weight:700; font-size:.8rem}
+@media (prefers-reduced-motion: reduce){ .op-tile img,.op-tile video{transition:none} }
+/* the emoji row scrolls sideways on narrow phones instead of spilling off the sheet */
+.so-emojis{overflow-x:auto; scrollbar-width:none; justify-content:flex-start}
+.so-emojis::-webkit-scrollbar{display:none}
+.so-emojis button{flex:0 0 40px}

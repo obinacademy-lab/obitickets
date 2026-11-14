@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS social_subscriptions (
   trial_started_at DATETIME NULL,
   trial_ends_at DATETIME NULL,
   paid_until DATETIME NULL,
+  -- the plan end each reminder email was sent for, so each is sent once per period (cron/send-event-reminders.php)
+  remind_3d_for DATETIME NULL,
+  remind_1d_for DATETIME NULL,
+  ended_notice_for DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_socsub_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -30,6 +30,7 @@ $commentOut = static function (array $c) use (&$commentOut): array {
         'organizer' => $isOrg,
         'ticket' => (int) ($c['is_verified_attendee'] ?? 0) === 1,
         'body' => (string) $c['body'],
+        'sticker' => socials_sticker_of((string) $c['body']),
         'when' => community_time_ago((string) $c['created_at']),
         'likes' => (int) ($c['reaction_count'] ?? 0),
         'mine' => !empty($c['my_reaction']),
@@ -41,7 +42,7 @@ $commentOut = static function (array $c) use (&$commentOut): array {
 try {
     switch ($action) {
         case 'feed':
-            $tab = ($body['tab'] ?? '') === 'following' ? 'following' : 'foryou';
+            $tab = in_array($body['tab'] ?? '', ['following', 'trending'], true) ? (string) $body['tab'] : 'foryou';
             $offset = max(0, (int) ($body['offset'] ?? 0));
             $start = !empty($body['start']) ? (int) $body['start'] : null;
             $rows = socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start);
@@ -66,7 +67,16 @@ try {
                 json_response(['error' => 'Post not found.'], 404);
             }
             $parent = !empty($body['parent_id']) ? (int) $body['parent_id'] : null;
-            $r = add_comment($user, (int) $post['id'], (string) ($body['body'] ?? ''), $parent);
+            $text = (string) ($body['body'] ?? '');
+            if (!empty($body['sticker'])) {
+                // A sticker is sent by name and stored as "[sticker:name]"; only names in the set are accepted.
+                $name = (string) $body['sticker'];
+                if (!isset(SOCIALS_STICKERS[$name])) {
+                    json_response(['error' => 'Unknown sticker.'], 400);
+                }
+                $text = '[sticker:' . $name . ']';
+            }
+            $r = add_comment($user, (int) $post['id'], $text, $parent);
             if (!$r['ok']) {
                 json_response($r, 400);
             }

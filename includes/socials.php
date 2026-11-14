@@ -363,11 +363,17 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
         // People the viewer blocked never show up in their feed.
         $where .= ' AND x.author_id NOT IN (SELECT b.blocked_id FROM user_blocks b WHERE b.blocker_id = ' . (int) $viewer . ')';
     }
-    $order = ($tab === 'following' || $organizerId)
-        ? 'x.id DESC'
-        : '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 600) / 20 + 4)
+    if ($tab === 'trending') {
+        // Trending: the posts people engaged with most in the last 14 days, without the freshness pull of For You.
+        $where .= ' AND x.created_at >= NOW() - INTERVAL 14 DAY';
+        $order = '(x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 5000) / 10) DESC, x.id DESC';
+    } elseif ($tab === 'following' || $organizerId) {
+        $order = 'x.id DESC';
+    } else {
+        $order = '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 600) / 20 + 4)
               * IF(e.ends_at >= NOW(), 1, 0.45)
               / POW(TIMESTAMPDIFF(HOUR, x.created_at, NOW()) + 6, 1.15)) DESC, x.id DESC';
+    }
     $first = $startId ? '(x.id = ' . (int) $startId . ') DESC, ' : '';
 
     $sql = '
@@ -448,4 +454,152 @@ function socials_postable_events(int $organizerId): array
     $stmt = db()->prepare("SELECT id, title, starts_at, ends_at, (ends_at < NOW()) AS ended FROM events WHERE organizer_id = ? AND status = 'PUBLISHED' ORDER BY (ends_at < NOW()), starts_at ASC LIMIT 60");
     $stmt->execute([$organizerId]);
     return $stmt->fetchAll();
+}
+
+// ------------------------------------------------------------------ reminders before a plan runs out
+
+/** True once the reminder columns exist (they are part of migration 029). */
+function socials_reminders_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            db()->query('SELECT remind_3d_for FROM social_subscriptions LIMIT 0');
+            $ready = socials_ready();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/**
+ * Emails organizers whose plan (free month or paid) ends in about 3 days, in about 1 day, or has just ended.
+ * Each email is sent once per plan period: the period's end is stored next to the plan, so paying again (which
+ * moves the end) starts fresh, and two cron runs at the same moment cannot both send (the row is claimed first).
+ * Runs from cron/send-event-reminders.php every 15 minutes.
+ *
+ * @return array{sent:int, skipped:int, failed:int}
+ */
+function socials_send_plan_reminders(?callable $send = null): array
+{
+    $counts = ['sent' => 0, 'skipped' => 0, 'failed' => 0];
+    if (!socials_reminders_ready()) {
+        return $counts;
+    }
+    $send = $send ?? 'resend_send';
+    $until = "GREATEST(COALESCE(s.paid_until, '1970-01-01'), COALESCE(s.trial_ends_at, '1970-01-01'))";
+    $stages = [
+        // column that remembers it was sent, which plans are due, subject, how the email words it
+        ['remind_3d_for', "$until > NOW() + INTERVAL 1 DAY AND $until <= NOW() + INTERVAL 3 DAY", 'Your Socials plan ends in 3 days', 'ends in 3 days'],
+        ['remind_1d_for', "$until > NOW() AND $until <= NOW() + INTERVAL 1 DAY", 'Your Socials plan ends tomorrow', 'ends within a day'],
+        ['ended_notice_for', "$until <= NOW() AND $until > NOW() - INTERVAL 2 DAY", 'Your Socials plan has ended', 'has ended'],
+    ];
+    foreach ($stages as [$col, $when, $subject, $lead]) {
+        $rows = db()->query("
+            SELECT s.user_id, $until AS until_at, (s.paid_until IS NULL OR s.paid_until < s.trial_ends_at) AS was_trial,
+                   u.email, u.name, COALESCE(NULLIF(op.org_name, ''), u.name) AS org_name
+            FROM social_subscriptions s
+            JOIN users u ON u.id = s.user_id AND u.account_status = 'ACTIVE'
+            LEFT JOIN organizer_profiles op ON op.user_id = s.user_id
+            WHERE $when AND (s.$col IS NULL OR s.$col <> $until)
+            LIMIT 200")->fetchAll();
+        foreach ($rows as $r) {
+            $claim = db()->prepare("UPDATE social_subscriptions SET $col = ? WHERE user_id = ? AND ($col IS NULL OR $col <> ?)");
+            $claim->execute([$r['until_at'], (int) $r['user_id'], $r['until_at']]);
+            if ($claim->rowCount() !== 1) {
+                $counts['skipped']++;
+                continue;
+            }
+            $ended = $col === 'ended_notice_for';
+            $html = socials_reminder_email_html((string) $r['name'], (string) $r['org_name'], $lead, (string) $r['until_at'],
+                (int) $r['was_trial'] === 1, $ended, rtrim(APP_URL, '/') . '/org-socials.php');
+            try {
+                $ok = (bool) $send((string) $r['email'], $subject, $html, 'socials_' . $col);
+            } catch (Throwable $e) {
+                error_log('[socials] reminder failed for ' . (int) $r['user_id'] . ': ' . $e->getMessage());
+                $ok = false;
+            }
+            $counts[$ok ? 'sent' : 'failed']++;
+            try {
+                create_notification((int) $r['user_id'], 'socials_plan', $subject, $ended
+                    ? 'Renew for ' . socials_price_label() . ' to post again. Your posts stay up.'
+                    : 'Renew now to keep posting. The paid days start after your current period.', '/org-socials.php');
+            } catch (Throwable $e) {
+                error_log('[socials] reminder notification failed: ' . $e->getMessage());
+            }
+        }
+    }
+    return $counts;
+}
+
+function socials_reminder_email_html(string $name, string $orgName, string $lead, string $untilAt, bool $wasTrial, bool $ended, string $url): string
+{
+    $first = htmlspecialchars(explode(' ', trim($name))[0] ?: 'there');
+    $plan = $wasTrial ? 'free month on obitickets Socials' : 'obitickets Socials plan';
+    $date = htmlspecialchars(date('l j F Y, g:ia', strtotime($untilAt)));
+    $price = htmlspecialchars(socials_price_label());
+    $days = (int) SOCIALS_PERIOD_DAYS;
+    $org = htmlspecialchars($orgName);
+    $safeUrl = htmlspecialchars($url);
+    $body = $ended
+        ? "<p>Your {$plan} for <strong>{$org}</strong> ended on {$date}. Your videos and photos are still up, but you can't post new ones until you renew.</p>"
+        : "<p>Your {$plan} for <strong>{$org}</strong> {$lead}, on {$date}. Renew now to keep posting; the new {$days} days start when the current period ends, so you lose nothing by paying early.</p>";
+    $button = $ended ? 'Renew my plan' : 'Keep posting';
+    return '<div style="font-family:sans-serif; max-width:560px; margin:0 auto; color:#1A1010;">'
+        . '<h2 style="color:#991B1B;">Hi ' . $first . ',</h2>' . $body
+        . '<p>It costs <strong>' . $price . '</strong> for ' . $days . ' days, paid by MTN MoMo or Airtel Money.</p>'
+        . '<p><a href="' . $safeUrl . '" style="display:inline-block; background:#DC2626; color:#fff; padding:12px 24px; border-radius:999px; text-decoration:none; font-weight:600;">' . $button . '</a></p>'
+        . '<p style="color:#645A5A; font-size:12px;">You are getting this because you post on obitickets Socials. Nothing is charged automatically.</p>'
+        . '</div>';
+}
+
+// ------------------------------------------------------------------ stickers
+
+/** The sticker set for comments: name => what a screen reader says. The pictures are assets/stickers/<name>.svg. */
+const SOCIALS_STICKERS = [
+    'lets-go' => "Let's go!",
+    'see-you-there' => 'See you there',
+    'fire' => 'Fire',
+    'vip' => 'VIP',
+    'ticket-bought' => 'Ticket bought',
+    'cant-wait' => "Can't wait",
+    'vibes' => 'Vibes',
+    'on-my-way' => 'On my way',
+    'big-up' => 'Big up',
+    'wow' => 'Wow',
+    'party' => 'Party time',
+    'love-it' => 'Love it',
+];
+
+/** A comment that is one sticker is stored as "[sticker:fire]". Returns 'fire', or null for any other text. */
+function socials_sticker_of(string $body): ?string
+{
+    if (preg_match('/^\[sticker:([a-z0-9-]{1,30})\]$/', trim($body), $m) && isset(SOCIALS_STICKERS[$m[1]])) {
+        return $m[1];
+    }
+    return null;
+}
+
+// ------------------------------------------------------------------ organizer profile
+
+/** The numbers at the top of an organizer's profile: posts, and how many organizers they follow. */
+function socials_profile_counts(int $organizerId): array
+{
+    $posts = 0;
+    if (moments_ready()) {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM event_moments m JOIN event_posts p ON p.id = m.post_id JOIN events e ON e.id = m.event_id
+            WHERE e.organizer_id = ? AND p.status = 'PUBLISHED' AND e.status = 'PUBLISHED' AND m.media_path <> ''" . (moments_draft_ready() ? ' AND m.is_draft = 0' : ''));
+        $stmt->execute([$organizerId]);
+        $posts = (int) $stmt->fetchColumn();
+    }
+    $following = 0;
+    try {
+        $stmt = db()->prepare('SELECT COUNT(*) FROM organizer_follows WHERE user_id = ?');
+        $stmt->execute([$organizerId]);
+        $following = (int) $stmt->fetchColumn();
+    } catch (Throwable $e) {
+        $following = 0;
+    }
+    return ['posts' => $posts, 'following' => $following];
 }

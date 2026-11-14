@@ -360,9 +360,14 @@
     var name = el('b', null, c.name);
     if (c.organizer) { name.appendChild(el('em', null, 'Organizer')); } else if (c.ticket) { name.appendChild(el('em', null, 'Has a ticket')); }
     main.appendChild(name);
-    var p = el('p', emojiOnly(c.body) ? 'big' : null);
+    var p = el('p', c.sticker ? 'st' : (emojiOnly(c.body) ? 'big' : null));
     if (c.replyTo) { p.appendChild(el('i', null, '@' + c.replyTo + ' ')); }
-    p.appendChild(document.createTextNode(c.body));
+    if (c.sticker && D.stickers && D.stickers[c.sticker]) {
+      var st = el('img', 'so-sticker'); st.src = '/assets/stickers/' + c.sticker + '.svg'; st.alt = D.stickers[c.sticker]; st.width = 96; st.height = 96;
+      p.appendChild(st);
+    } else {
+      p.appendChild(document.createTextNode(c.body));
+    }
     main.appendChild(p);
     var meta = el('small'); meta.appendChild(el('span', null, c.when));
     var rb = el('button', null, 'Reply'); rb.type = 'button';
@@ -421,30 +426,53 @@
       cmInput.focus();
     });
   });
-  if (cmForm) {
-    cmForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var text = cmInput.value.trim();
-      if (!text || !cmFor) { return; }
-      var it = cmFor, btn = cmForm.querySelector('button');
-      btn.disabled = true;
-      api('/api/socials.php', { action: 'comment_add', post_id: it.data.id, body: text, parent_id: replyTo }).then(function (r) {
-        btn.disabled = false;
-        if (!r || !r.ok) { toast((r && r.error) || 'Could not post your comment.'); if (r && r._status === 401) { window.location.href = D.loginUrl; } return; }
-        cmInput.value = '';
-        var none = cmList.querySelector('.so-cm-none'); if (none) { none.remove(); }
-        if (r.comment) {
-          var parent = r.parent_id ? cmList.querySelector('.so-cm[data-id="' + Number(r.parent_id) + '"] .so-cm-replies') : null;
-          var node = commentNode(r.comment, !!parent);
-          (parent || cmList).appendChild(node);
-          node.scrollIntoView({ block: 'nearest' });
-        }
-        replyTo = null; if (replying) { replying.hidden = true; }
-        setCount(it, r.count);
+  // stickers: a button at the start of the emoji row opens the set; tapping one sends it straight away
+  var stToggle = document.getElementById('soStToggle'), stBox = document.getElementById('soStickers');
+  if (stToggle && stBox) {
+    stToggle.addEventListener('click', function () {
+      if (needLogin()) { return; }
+      stBox.hidden = !stBox.hidden;
+      stToggle.setAttribute('aria-expanded', stBox.hidden ? 'false' : 'true');
+    });
+    stBox.querySelectorAll('[data-so-sticker]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (needLogin()) { return; }
+        sendComment({ sticker: b.getAttribute('data-so-sticker') }, function () { stBox.hidden = true; stToggle.setAttribute('aria-expanded', 'false'); });
       });
     });
   }
 
+  var sending = false;
+  function sendComment(extra, done) {
+    if (!cmFor || sending) { return; }
+    var it = cmFor, btn = cmForm ? cmForm.querySelector('button') : null;
+    var body = { action: 'comment_add', post_id: it.data.id, parent_id: replyTo };
+    Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+    sending = true; if (btn) { btn.disabled = true; }
+    api('/api/socials.php', body).then(function (r) {
+      sending = false; if (btn) { btn.disabled = false; }
+      if (!r || !r.ok) { toast((r && r.error) || 'Could not post your comment.'); if (r && r._status === 401) { window.location.href = D.loginUrl; } return; }
+      if (done) { done(); }
+      var none = cmList.querySelector('.so-cm-none'); if (none) { none.remove(); }
+      if (r.comment) {
+        var parent = r.parent_id ? cmList.querySelector('.so-cm[data-id="' + Number(r.parent_id) + '"] .so-cm-replies') : null;
+        var node = commentNode(r.comment, !!parent);
+        (parent || cmList).appendChild(node);
+        node.scrollIntoView({ block: 'nearest' });
+      }
+      replyTo = null; if (replying) { replying.hidden = true; }
+      setCount(it, r.count);
+    }, function () { sending = false; if (btn) { btn.disabled = false; } toast('Could not post your comment.'); });
+  }
+
+  if (cmForm) {
+    cmForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var text = cmInput.value.trim();
+      if (!text) { return; }
+      sendComment({ body: text }, function () { cmInput.value = ''; });
+    });
+  }
   // ---- share
   var shareFor = null;
   function openShare(it, opener) {

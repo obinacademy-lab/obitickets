@@ -58,3 +58,15 @@ foreach (['reminder_24h', 'reminder_2h'] as $kind) {
     }
     echo notify_kind_label($kind) . ": sent {$counts['sent']}, skipped {$counts['skipped']}, failed {$counts['failed']}.\n";
 }
+
+// Socials: email organizers whose plan ends in 3 days, within a day, or has just ended (once per plan period).
+// Kept in this cron so no new cron job is needed. Does nothing until migration 029 has been run.
+if (function_exists('socials_send_plan_reminders')) {
+    try {
+        $soCounts = socials_send_plan_reminders();
+        echo "Socials plan reminders: sent {$soCounts['sent']}, skipped {$soCounts['skipped']}, failed {$soCounts['failed']}.\n";
+    } catch (Throwable $e) {
+        error_log('[socials] plan reminders: ' . $e->getMessage());
+        echo "Socials plan reminders failed: " . $e->getMessage() . "\n";
+    }
+}

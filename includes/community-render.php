@@ -224,7 +224,11 @@ function community_comment_html(array $c, array $ctx, bool $isReply = false): st
             $h .= '<div class="ev-quote is-gone"><span>Original comment is no longer available</span></div>';
         }
     }
-    $h .= '<div class="ev-comment-text">' . nl2br(ev_h($c['body'])) . '</div></div>';
+    // A comment that is one Socials sticker shows the sticker picture instead of its code.
+    $sticker = function_exists('socials_sticker_of') ? socials_sticker_of((string) $c['body']) : null;
+    $h .= '<div class="ev-comment-text">' . ($sticker !== null
+        ? '<img class="so-sticker" src="/assets/stickers/' . ev_h($sticker) . '.svg" alt="' . ev_h(SOCIALS_STICKERS[$sticker]) . '" width="96" height="96">'
+        : nl2br(ev_h($c['body']))) . '</div></div>';
     $h .= '<div class="ev-comment-meta"><span>' . ev_h(community_time_ago($c['created_at'])) . '</span>';
     $h .= '<div class="ev-react-wrap"><button type="button" class="ev-link-btn ev-react-btn' . ($mine ? ' is-on' : '') . '" data-act="react-open" data-target="comment" data-my="' . ev_h((string) $mine) . '">'
         . ($mine && isset(REACTION_TYPES[$mine]) ? REACTION_TYPES[$mine] . ' ' . ev_h(ucfirst(strtolower((string) $mine))) : 'React') . '</button>' . community_reaction_picker_html() . '</div>';

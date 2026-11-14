@@ -5,7 +5,7 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $user = current_user();
 $uid = $user ? (int) $user['id'] : null;
-$tab = ($_GET['tab'] ?? '') === 'following' ? 'following' : 'foryou';
+$tab = in_array($_GET['tab'] ?? '', ['following', 'trending'], true) ? (string) $_GET['tab'] : 'foryou';
 $startId = (int) ($_GET['v'] ?? 0);
 $ready = function_exists('socials_ready') && moments_ready();
 
@@ -29,7 +29,7 @@ if ($startId && $rows && (int) $rows[0]['id'] === $startId) {
 $bodyClass = 'classic-page socials-page';
 $hideWhatsApp = true; // the rail of buttons sits where the WhatsApp button would be
 $ctx = $user ? resolve_organizer_context($user) : null;
-$loginUrl = '/login.php?next=' . rawurlencode('/socials.php' . ($tab === 'following' ? '?tab=following' : ''));
+$loginUrl = '/login.php?next=' . rawurlencode('/socials.php' . ($tab !== 'foryou' ? '?tab=' . $tab : ''));
 include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
@@ -42,6 +42,7 @@ include __DIR__ . '/includes/header.php';
     <nav class="so-tabs" aria-label="Socials">
       <a href="/socials.php"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
       <a href="/socials.php?tab=following"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
+      <a href="/socials.php?tab=trending"<?= $tab === 'trending' ? ' class="on" aria-current="page"' : '' ?>>Trending</a>
     </nav>
     <a class="so-search" href="/search.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
   </div>
@@ -63,6 +64,10 @@ include __DIR__ . '/includes/header.php';
         <h1>Follow your favourite organizers</h1>
         <p>Log in to follow organizers and see their videos here.</p>
         <a class="so-btn" href="<?= htmlspecialchars($loginUrl) ?>">Log in</a>
+      <?php elseif ($tab === 'trending'): ?>
+        <h1>Nothing trending yet</h1>
+        <p>The most-liked, most-shared posts of the last two weeks will show up here.</p>
+        <a class="so-btn" href="/socials.php">Open For You</a>
       <?php elseif ($tab === 'following'): ?>
         <h1>Nothing from the organizers you follow yet</h1>
         <p>Follow an organizer from any video and their posts will appear here.</p>
@@ -84,8 +89,14 @@ include __DIR__ . '/includes/header.php';
   <div class="so-cm-list" id="soCmList" aria-live="polite"></div>
   <div class="so-cm-foot">
     <div class="so-replying" id="soReplying" hidden><span></span><button type="button" id="soReplyCancel" aria-label="Cancel reply">&times;</button></div>
+    <div class="so-stickers" id="soStickers" role="group" aria-label="Send a sticker" hidden>
+      <?php foreach (SOCIALS_STICKERS as $stName => $stLabel): ?>
+        <button type="button" data-so-sticker="<?= htmlspecialchars($stName) ?>" aria-label="Send the <?= htmlspecialchars($stLabel) ?> sticker"><img src="/assets/stickers/<?= htmlspecialchars($stName) ?>.svg" alt="" width="64" height="64" loading="lazy"></button>
+      <?php endforeach; ?>
+    </div>
     <div class="so-emojis" role="group" aria-label="Add an emoji">
-      <?php foreach (["\u{2764}\u{FE0F}", "\u{1F525}", "\u{1F44F}", "\u{1F602}", "\u{1F60D}", "\u{1F62E}", "\u{1F389}", "\u{1F64C}"] as $emoji): ?>
+      <button type="button" class="so-st-toggle" id="soStToggle" aria-expanded="false" aria-controls="soStickers" aria-label="Stickers"><img src="/assets/stickers/lets-go.svg" alt="" width="30" height="30"></button>
+      <?php foreach (["\u{2764}\u{FE0F}", "\u{1F525}", "\u{1F44F}", "\u{1F602}", "\u{1F60D}", "\u{1F62E}", "\u{1F389}"] as $emoji): ?>
         <button type="button" data-so-emoji="<?= $emoji ?>"><?= $emoji ?></button>
       <?php endforeach; ?>
     </div>
@@ -132,6 +143,7 @@ include __DIR__ . '/includes/header.php';
     'signedIn' => (bool) $user,
     'loginUrl' => $loginUrl,
     'me' => $uid,
+    'stickers' => SOCIALS_STICKERS,
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>
