@@ -49,6 +49,11 @@ function render_organizer_head(string $active, array $orgContext): void
         ['key' => 'checkin', 'label' => 'Check-in', 'icon' => 'ic-scan', 'group' => 'Main', 'tabs' => [
             ['checkin', 'Check-in', '/checkin.php', 'checkin.use'],
         ]],
+        // Socials (the event video feed): the plan page, and the page where posts are uploaded and managed.
+        ['key' => 'socials', 'label' => 'Socials', 'icon' => 'ic-play', 'group' => 'Main', 'tabs' => [
+            ['socials', 'Plan and posts', '/org-socials.php', 'social.view'],
+            ['social', 'Upload and manage', '/org-social.php', 'social.view'],
+        ]],
         ['key' => 'money', 'label' => 'Earnings & payouts', 'icon' => 'ic-wallet', 'group' => 'Money', 'tabs' => [
             ['payouts', 'Payouts', '/org-payouts.php', 'payouts.view'],
             ['earnings', 'How it is calculated', '/org-earnings.php', 'earnings.view'],
@@ -61,6 +66,10 @@ function render_organizer_head(string $active, array $orgContext): void
             ['team', 'Team', '/org-team.php', 'team.manage'],
         ]],
     ];
+    // Socials shows in the menu once it is switched on (migration 029).
+    if (!function_exists('socials_ready') || !socials_ready()) {
+        $hubs = array_values(array_filter($hubs, static fn ($h) => $h['key'] !== 'socials'));
+    }
     $footLinks = [
         ['settings', 'Settings', '/org-settings.php', 'ic-settings'],
         ['support', 'Help', '/org-support.php', 'ic-help'],

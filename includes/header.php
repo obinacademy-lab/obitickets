@@ -149,6 +149,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
     <div class="nv-links" aria-label="Main">
       <a class="nv-t<?= $navCur('/') ?>" href="/" data-pop="ev" aria-haspopup="true" aria-expanded="false">Browse events <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
       <a class="nv-t<?= $navCur('/my-events.php') ?>" href="/my-events.php" data-pop="org" aria-haspopup="true" aria-expanded="false">Sell tickets <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
+      <?php if (function_exists('socials_feed') && moments_ready()): ?><a class="nv-a<?= $navCur('/socials.php') ?>" href="/socials.php">Socials</a><?php endif; ?>
       <a class="nv-a<?= $navCur('/past-events.php') ?>" href="/past-events.php">Past events</a>
       <a class="nv-a<?= $navCur('/about.php') ?>" href="/about.php">About Us</a>
       <a class="nv-a<?= $navCur('/contact.php') ?>" href="/contact.php">Contact Us</a>
@@ -237,6 +238,13 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
       <a href="/search.php?online=1">Online events</a>
       <?php foreach ($navCatLinks as $navCat): ?><a href="/search.php?category=<?= urlencode((string) $navCat) ?>"><?= htmlspecialchars((string) $navCat) ?></a><?php endforeach; ?>
     </div></div>
+    <?php if (function_exists('socials_feed') && moments_ready()): ?>
+    <a class="nav-drawer-row<?= $navPath === '/socials.php' ? ' current' : '' ?>" href="/socials.php">
+      <span class="ic"><svg width="17" height="17"><use href="#ic-play"/></svg></span>
+      <span class="label">Socials</span>
+      <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+    </a>
+    <?php endif; ?>
     <a class="nav-drawer-row<?= $navPath === '/past-events.php' ? ' current' : '' ?>" href="/past-events.php">
       <span class="ic"><svg width="17" height="17"><use href="#ic-clock"/></svg></span>
       <span class="label">Past events</span>

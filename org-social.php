@@ -140,16 +140,32 @@ if ($event) {
 $links = get_organizer_social_links($organizerId, false);
 $linksByPlatform = array_column($links, null, 'platform');
 
-$pageTitle = 'Community';
+$pageTitle = 'Socials';
 render_organizer_head('social', $ctx);
+$soStatus = function_exists('socials_ready') && socials_ready() ? socials_status($organizerId) : null;
 ?>
 
 <div class="admin-page-head">
-  <div><h1>Community</h1><p>Talk to the people coming to your events and keep the conversation healthy.</p></div>
-  <?php if ($event): ?>
-    <a class="btn btn-line" href="/event.php?slug=<?= urlencode($event['slug']) ?>#community" target="_blank" rel="noopener">View community &rarr;</a>
-  <?php endif; ?>
+  <div><h1>Upload and manage</h1><p>Post videos and photos to Socials, answer comments, and keep the conversation healthy.</p></div>
+  <a class="btn btn-line" href="/socials.php" target="_blank" rel="noopener">Open the Socials feed &rarr;</a>
 </div>
+
+<?php if ($soStatus && !$soStatus['can_post']): ?>
+  <div class="admin-card sx-lock">
+    <div>
+      <strong><?= $soStatus['state'] === 'expired' ? 'Your Socials plan has ended' : 'Start your free month to post' ?></strong>
+      <p><?= $soStatus['state'] === 'expired'
+          ? 'Your posts are still up. Renew for ' . htmlspecialchars(socials_price_label()) . ' to post new videos and photos.'
+          : 'Posting to Socials is a paid plan: ' . htmlspecialchars(socials_price_label()) . ' a month, and your first month is free.' ?></p>
+    </div>
+    <a class="btn btn-purple" href="/org-socials.php"><?= $soStatus['state'] === 'expired' ? 'Renew my plan' : 'Start my free month' ?></a>
+  </div>
+<?php elseif ($soStatus && $soStatus['state'] === 'trial' && $soStatus['days_left'] <= 5): ?>
+  <div class="admin-card sx-lock sx-soon">
+    <div><strong>Your free month ends in <?= (int) $soStatus['days_left'] ?> day<?= $soStatus['days_left'] === 1 ? '' : 's' ?></strong><p>Pay <?= htmlspecialchars(socials_price_label()) ?> now to keep posting. The paid days start after your free month.</p></div>
+    <a class="btn btn-purple" href="/org-socials.php">Keep posting</a>
+  </div>
+<?php endif; ?>
 
 <?php if (isset($_GET['done'], $messages[$_GET['done']])): ?><span data-flash="<?= htmlspecialchars($messages[$_GET['done']], ENT_QUOTES) ?>" hidden></span><?php endif; ?>
 <?php if ($error): ?><span data-flash="<?= htmlspecialchars($error, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>

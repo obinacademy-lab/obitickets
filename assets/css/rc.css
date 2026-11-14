@@ -312,3 +312,13 @@ html.rc .poster-grid{align-items:start}
 html.rc .pe-art{aspect-ratio:var(--fly, 4 / 5)}
 html.rc .pe-art .pe-art-bg{display:none}
 html.rc .pe-art img{object-fit:cover; object-position:center}
+
+/* ---------- 15. the Socials tab: a red play button in the middle of the phone tab bar ---------- */
+@media (max-width:900px){
+  html.rc .rc-tabs:has(.rc-tab-so) .rc-tab{min-width:46px; padding:0 12px}
+  .rc-tab-so i{width:40px; height:40px; border-radius:50%; background:var(--rc-red); color:#fff; display:grid; place-items:center; box-shadow:0 8px 16px -8px rgba(220,38,38,.9)}
+  .rc-tab-so.on{background:transparent; padding:0 6px}
+  .rc-tab-so.on i{box-shadow:0 0 0 3px rgba(255,255,255,.9)}
+  /* on the Socials feed the bar sits over the video: a little see-through */
+  html.rc body.socials-page .rc-tabs{background:rgba(20,12,13,.82); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
+}

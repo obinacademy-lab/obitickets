@@ -16,7 +16,17 @@ function ev_h(?string $s): string
 /** "just now", "5m", "2h", "3d", then "12 Sep". */
 function community_time_ago(string $datetime): string
 {
-    $diff = time() - strtotime($datetime);
+    // Stored times come from the database clock, which can sit in a different time zone from PHP's
+    // (a fresh comment then read "1h" or "3h"). Measure against the database's own NOW(), asked once per request.
+    static $skew = null;
+    if ($skew === null) {
+        try {
+            $skew = time() - (int) strtotime((string) db()->query('SELECT NOW()')->fetchColumn());
+        } catch (Throwable $e) {
+            $skew = 0;
+        }
+    }
+    $diff = time() - $skew - strtotime($datetime);
     if ($diff < 60) {
         return 'just now';
     }

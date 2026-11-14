@@ -62,6 +62,7 @@ $rcPath = isset($navPath) ? (string) $navPath : (parse_url($_SERVER['REQUEST_URI
 $rcTab = 'none';
 if ($rcPath === '/' || $rcPath === '/index.php') { $rcTab = 'home'; }
 elseif (in_array($rcPath, ['/search.php', '/past-events.php', '/past-event.php', '/event.php', '/organizer.php'], true)) { $rcTab = 'browse'; }
+elseif ($rcPath === '/socials.php') { $rcTab = 'socials'; }
 elseif (in_array($rcPath, ['/my-tickets.php', '/order.php', '/join.php', '/retry-payment.php'], true)) { $rcTab = 'tickets'; }
 elseif (in_array($rcPath, ['/profile.php', '/login.php', '/signup.php', '/forgot-password.php', '/reset-password.php', '/verify-2fa.php', '/delete-account.php'], true)) { $rcTab = 'account'; }
 $rcSignedIn = !empty($authUser);
@@ -70,6 +71,9 @@ $rcOn = static fn (string $t): string => $rcTab === $t ? ' on" aria-current="pag
 <nav class="rc-tabs" aria-label="App">
   <a class="rc-tab<?= $rcOn('home') ?>" href="/"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
   <a class="rc-tab<?= $rcOn('browse') ?>" href="/search.php"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.300-4.300"/></svg><span>Browse</span></a>
+  <?php if (function_exists('socials_feed') && moments_ready()): /* Socials: the event video feed, in the middle like the play button it is */ ?>
+  <a class="rc-tab rc-tab-so<?= $rcOn('socials') ?>" href="/socials.php"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></i><span>Socials</span></a>
+  <?php endif; ?>
   <a class="rc-tab<?= $rcOn('tickets') ?>" href="/my-tickets.php"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z"/><path d="M14 5v14" stroke-dasharray="2 3"/></svg><span>Tickets</span></a>
   <a class="rc-tab<?= $rcOn('account') ?>" href="<?= $rcSignedIn ? '/profile.php' : '/login.php' ?>"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span><?= $rcSignedIn ? 'Account' : 'Log in' ?></span></a>
 </nav>

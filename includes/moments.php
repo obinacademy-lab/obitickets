@@ -390,6 +390,10 @@ function create_moment(array $event, array $user, array $file, ?array $poster, s
     if (!can_moderate_event($user, $event)) {
         return ['ok' => false, 'error' => 'Only the organizer and their team can add moments.'];
     }
+    // Socials is a paid plan: the event's organizer needs an active plan (or the free month) to post.
+    if (function_exists('socials_can_post_event') && !socials_can_post_event($event, $user)) {
+        return ['ok' => false, 'error' => socials_paywall_message(), 'paywall' => true];
+    }
     $caption = community_clean_text($caption);
     if (mb_strlen($caption) > MOMENT_CAPTION_MAX) {
         return ['ok' => false, 'error' => 'That caption is too long (limit ' . MOMENT_CAPTION_MAX . ' characters).'];
@@ -935,6 +939,9 @@ function finish_moment_draft(array $user, int $postId, string $caption, array $o
     $post = get_post($postId);
     if (!$post || !can_moderate_event($user, get_event_for_post($post))) {
         return ['ok' => false, 'error' => "You can't post to this event."];
+    }
+    if (function_exists('socials_can_post_event') && !socials_can_post_event(get_event_for_post($post), $user)) {
+        return ['ok' => false, 'error' => socials_paywall_message(), 'paywall' => true];
     }
     $updated = update_moment($user, $postId, $caption, (int) $draft['focus_x'], $draft['fit_mode'], array_key_exists('comments', $opts) ? !empty($opts['comments']) : true, $opts);
     if (!$updated['ok']) {

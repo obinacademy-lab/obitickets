@@ -80,3 +80,55 @@ body.org-shell .org-sheet a:hover{background:var(--paper)}
 
 /* the account badge in the side menu: brand red, not gold */
 body.admin-body .admin-sidebar .admin-avatar{background:#DC2626; color:#fff}
+
+/* ---------- organizer Socials page (public/org-socials.php) ---------- */
+.sx-grid{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:16px; align-items:start}
+.sx-plan{display:grid; gap:12px; align-content:start}
+.sx-plan h2,.sx-post h2{font-size:1.45rem; line-height:1.15}
+.sx-post h2{font-size:1.1rem}
+.sx-post{display:grid; gap:12px; align-content:start}
+.sx-tag{justify-self:start; padding:5px 12px; border-radius:999px; background:#FDECEC; color:#991B1B; font-weight:700; font-size:.74rem; letter-spacing:.04em; text-transform:uppercase}
+.sx-tag-on{background:#E8F6EC; color:#17663A}
+.sx-tag-off{background:#F1ECEB; color:#645A5A}
+.sx-plan.sx-none,.sx-plan.sx-expired{background:#1A1010; color:#fff}
+.sx-plan.sx-none h2,.sx-plan.sx-expired h2{color:#fff}
+.sx-plan.sx-none p,.sx-plan.sx-expired p,.sx-plan.sx-none .sx-list,.sx-plan.sx-expired label,.sx-plan.sx-expired .sx-hint{color:#E7DCDC}
+.sx-list{margin:0; padding:0; list-style:none; display:grid; gap:8px; font-weight:600; font-size:.92rem}
+.sx-list li{padding-left:26px; position:relative}
+.sx-list li::before{content:"\2713"; position:absolute; left:0; top:0; width:18px; height:18px; border-radius:50%; background:#DC2626; color:#fff; font-size:.7rem; display:grid; place-items:center}
+.sx-pay{display:grid; gap:8px; margin-top:4px}
+.sx-pay label{font-weight:700; font-size:.84rem}
+.sx-pay-row{display:flex; gap:10px; flex-wrap:wrap}
+.sx-pay-row input{flex:1 1 180px; min-width:0; height:50px; padding:0 16px; border:1.5px solid #E3D3D0; border-radius:16px !important; background:#fff; color:#1A1010; font:600 1rem 'JetBrains Mono',ui-monospace,monospace}
+.sx-pay-row input:focus{outline:0; border-color:#DC2626; box-shadow:0 0 0 4px rgba(220,38,38,.15)}
+.sx-pay-row .btn{height:50px; white-space:nowrap}
+.sx-hint{font-size:.82rem; color:var(--muted)}
+.sx-wait{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:18px; background:#FDF4F3; color:#1A1010}
+.sx-wait[hidden],.sx-pay[hidden]{display:none}
+.sx-wait strong{display:block}
+.sx-wait span{font-size:.86rem; color:#645A5A}
+.sx-spin{flex:none; width:34px; height:34px; border-radius:50%; border:4px solid #F3DADA; border-top-color:#DC2626; animation:sxSpin 1s linear infinite}
+@keyframes sxSpin{to{transform:rotate(360deg)}}
+.sx-msg{padding:12px 14px; border-radius:14px; background:#FDECEC; border:1px solid #F3B4B4; color:#7F1D1D; font-size:.9rem}
+.sx-msg[hidden]{display:none}
+.sx-post-form{display:grid; gap:10px}
+.sx-post-form select{height:50px; padding:0 14px; border:1.5px solid #E3D3D0; background:#fff; color:#1A1010; font:inherit; font-weight:600}
+.sx-posts{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-top:14px}
+.sx-postcard{display:flex; gap:12px; padding:10px; border-radius:18px; background:#FDF4F3; color:inherit; text-decoration:none; transition:background .2s}
+.sx-postcard:hover{background:#FDECEC}
+.sx-thumb{position:relative; flex:none; width:72px; aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:#1A1010}
+.sx-thumb img{width:100%; height:100%; object-fit:cover; display:block}
+.sx-thumb em{position:absolute; left:4px; bottom:4px; padding:2px 6px; border-radius:6px; background:rgba(0,0,0,.6); color:#fff; font-style:normal; font-size:.62rem; font-weight:700}
+.sx-postbody{min-width:0; display:grid; gap:4px; align-content:start}
+.sx-postbody b{font-size:.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sx-postbody small{color:var(--muted); font-size:.78rem}
+.sx-nums{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 10px; margin-top:4px; font-size:.78rem; color:var(--muted)}
+.sx-nums strong{color:var(--ink); font-family:var(--rc-disp); font-size:.95rem}
+@media (max-width:900px){ .sx-grid{grid-template-columns:minmax(0,1fr)} }
+@media (prefers-reduced-motion: reduce){ .sx-spin{animation:none} }
+.sx-lock{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; background:#1A1010; color:#fff}
+.sx-lock strong{display:block; font-family:var(--rc-disp); font-size:1.1rem; color:#fff}
+.sx-lock p{margin-top:4px; color:#E7DCDC; font-size:.9rem}
+.sx-lock.sx-soon{background:#FDF4F3; color:var(--ink)}
+.sx-lock.sx-soon strong{color:var(--ink)}
+.sx-lock.sx-soon p{color:var(--muted)}
