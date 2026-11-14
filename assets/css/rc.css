@@ -86,18 +86,23 @@ html.rc body.classic-page:not(.ev-night) input[type=tel], html.rc body.classic-p
   html.rc .site-nav .nav-toggle:hover{background:rgba(255,255,255,.28)}
   html.rc .site-nav .nav-burger span{background:#fff}
 
-  html.rc .rc-tabs{position:fixed; z-index:45; left:16px; right:16px; bottom:calc(14px + env(safe-area-inset-bottom, 0px)); max-width:440px; margin:0 auto; height:64px; padding:0 9px;
-    border-radius:32px; background:var(--rc-ink); color:#E7DCDC; display:flex; align-items:center; justify-content:space-between; box-shadow:0 0 0 1px rgba(255,255,255,.16), 0 18px 30px -14px rgba(26,16,16,.65)}
-  .rc-tab{height:46px; min-width:56px; padding:0 16px; border-radius:23px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:.88rem; color:inherit; transition:background .25s var(--rc-ease), color .2s}
+  /* the phone tab bar, "Classic Labeled" (owner pick 11/14): full width, white, a hairline on top, every tab with its
+     name; the open tab turns red with a short red line on its top edge */
+  html.rc .rc-tabs{position:fixed; z-index:45; left:0; right:0; bottom:0; height:calc(64px + env(safe-area-inset-bottom, 0px)); padding:0 4px env(safe-area-inset-bottom, 0px);
+    background:rgba(255,255,255,.97); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); border-top:1px solid var(--rc-line); color:#645A5A;
+    display:flex; align-items:stretch}
+  .rc-tab{position:relative; flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-weight:600; font-size:.69rem; line-height:1; color:inherit; transition:color .2s}
   .rc-tab svg{flex:none}
-  .rc-tab span{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
-  .rc-tab.on{background:var(--rc-red); color:#fff}
-  .rc-tab.on span{position:static; width:auto; height:auto; overflow:visible; clip:auto}
-  .rc-tab:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  .rc-tab span{white-space:nowrap}
+  .rc-tab::before{content:""; position:absolute; top:-1px; left:50%; width:28px; height:3px; margin-left:-14px; border-radius:0 0 3px 3px; background:var(--rc-red); transform:scaleX(0); transition:transform .25s var(--rc-ease)}
+  .rc-tab:hover{color:var(--rc-ink)}
+  .rc-tab.on{color:var(--rc-red); font-weight:700}
+  .rc-tab.on::before{transform:scaleX(1)}
+  .rc-tab:focus-visible{outline:3px solid var(--rc-red); outline-offset:-3px; border-radius:12px}
   /* pages with their own bottom bar (event page, checkout) keep it and drop the tabs */
   html.rc body.event-page .rc-tabs, html.rc body.ck-night .rc-tabs, html.rc body.ck-stepper .rc-tabs{display:none}
-  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) .wa-float{bottom:calc(90px + env(safe-area-inset-bottom, 0px))}
-  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) #site-footer .foot-bottom-section{padding-bottom:92px}
+  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) .wa-float{bottom:calc(80px + env(safe-area-inset-bottom, 0px))}
+  html.rc body:not(.event-page):not(.ck-night):not(.ck-stepper) #site-footer .foot-bottom-section{padding-bottom:84px}
 
   /* a shorter footer on phones */
   html.rc #site-footer .foot-brand p + p, html.rc #site-footer .foot-mark{display:none}
@@ -315,9 +320,5 @@ html.rc .pe-art img{object-fit:cover; object-position:center}
 
 /* ---------- 15. the Socials tab: the obitickets logo in the middle of the phone tab bar, in line with the others ---------- */
 @media (max-width:900px){
-  html.rc .rc-tabs:has(.rc-tab-so) .rc-tab{min-width:46px; padding:0 12px}
   .rc-logo{flex:none; display:block}
-  .rc-tab-so.on{background:transparent; padding:0 6px}
-  /* on the Socials feed the bar sits over the video: a little see-through */
-  html.rc body.socials-page .rc-tabs{background:rgba(20,12,13,.82); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
 }

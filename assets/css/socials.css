@@ -259,12 +259,10 @@ body.socials-page .masthead-bar{display:none}
   .so-info{bottom:154px}
   .so-rail{bottom:170px}
   .so-cta{bottom:calc(84px + env(safe-area-inset-bottom, 0px))}
-  html.rc body.socials-page .rc-tabs{left:0; right:0; bottom:0; max-width:none; height:calc(68px + env(safe-area-inset-bottom, 0px)); padding:0 6px env(safe-area-inset-bottom, 0px);
-    border-radius:0; background:#0B0708; border-top:1px solid rgba(255,255,255,.08); box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none;
-    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center}
-  html.rc body.socials-page .rc-tab{height:auto; min-width:0; padding:6px 0; flex-direction:column; gap:3px; border-radius:12px; background:none; color:#A99C9C; font-size:.7rem; font-weight:600}
-  html.rc body.socials-page .rc-tab span{position:static; width:auto; height:auto; overflow:visible; clip:auto}
-  html.rc body.socials-page .rc-tab.on{background:none; color:#fff}
+  /* the video player: the same Classic Labeled bar, dark so it sits quietly under the video */
+  html.rc body.socials-page:not(.socials-list) .rc-tabs{background:#0B0708; border-top-color:rgba(255,255,255,.08); color:#A99C9C; -webkit-backdrop-filter:none; backdrop-filter:none}
+  html.rc body.socials-page:not(.socials-list) .rc-tab:hover{color:#fff}
+  html.rc body.socials-page:not(.socials-list) .rc-tab.on{color:#fff}
 }
 /* tabs stay on one line; the follow badge keeps its red circle (the rail's button reset would wipe it) */
 .so-tabs{gap:16px; font-size:1rem}
@@ -548,12 +546,6 @@ body.socials-list .so-empty{color:#1A1010}
 body.socials-list .so-empty p{color:#645A5A}
 .ss-icon:focus-visible,.ss-chips a:focus-visible,.ss-buy:focus-visible,.ss-sec a:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
 .ss-tile:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
-/* phones: the white tab bar of the mockup */
-@media (max-width:900px){
-  html.rc body.socials-list .rc-tabs{background:rgba(255,255,255,.97); border-top:1px solid #F0E4E2}
-  html.rc body.socials-list .rc-tab{color:#645A5A}
-  html.rc body.socials-list .rc-tab.on{color:#1A1010; font-weight:700}
-}
 /* computers: the site menu stays on top; a wider shelf, more tiles across */
 @media (min-width:600px){
   .ss-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
