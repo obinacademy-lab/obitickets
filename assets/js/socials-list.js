@@ -40,3 +40,30 @@
   function watch() { var last = list.lastElementChild; if (io && last && hasMore) { io.observe(last); } }
   watch();
 })();
+
+/* Follow buttons on the organizer cards (they work on cards loaded later too). */
+(function () {
+  'use strict';
+  var list = document.getElementById('slList');
+  if (!list) { return; }
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+  list.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pc-follow]');
+    if (!b) { return; }
+    e.preventDefault();
+    if (list.getAttribute('data-signed-in') !== '1') { window.location.href = list.getAttribute('data-login') || '/login.php'; return; }
+    var id = Number(b.getAttribute('data-pc-follow')), on = b.getAttribute('aria-pressed') !== 'true';
+    var paint = function (state) {
+      list.querySelectorAll('[data-pc-follow="' + id + '"]').forEach(function (x) {
+        x.setAttribute('aria-pressed', state ? 'true' : 'false');
+        x.classList.toggle('is-on', state);
+        x.textContent = state ? 'Following' : 'Follow';
+      });
+    };
+    paint(on); b.disabled = true;
+    fetch('/api/community.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ action: 'follow_organizer', organizer_id: id, follow: on, csrf_token: csrf }) })
+      .then(function (r) { return r.json(); })
+      .then(function (r) { b.disabled = false; if (!r || !r.ok) { paint(!on); } }, function () { b.disabled = false; paint(!on); });
+  });
+})();

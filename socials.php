@@ -80,6 +80,10 @@ include __DIR__ . '/includes/header.php';
       <a class="sl-icon" href="/search.php" aria-label="Search events"><svg width="23" height="23" aria-hidden="true"><use href="#ic-search"/></svg></a>
     <?php endif; ?>
   </header>
+  <section class="pc-intro">
+    <h1>Socials</h1>
+    <p>Videos from the events everyone is talking about. Watch, follow your favourite organizers and get your ticket in a tap.</p>
+  </section>
   <?php endif; ?>
 
   <?php if ($orgInfo): ?>
@@ -104,7 +108,7 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 
   <?php if ($cards): ?>
-    <div class="sl-list sc-list" id="slList" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($cards) ?>" data-more="<?= count($cards) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
+    <div class="sl-list sc-list" id="slList" data-signed-in="<?= $user ? '1' : '0' ?>" data-login="<?= htmlspecialchars($loginUrl) ?>" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($cards) ?>" data-more="<?= count($cards) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
       <?php foreach ($cards as $card) { echo socials_org_card_html($card); } ?>
     </div>
     <p class="sl-more" id="slMore" hidden>Loading more&hellip;</p>

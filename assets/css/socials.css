@@ -366,3 +366,100 @@ body.socials-list .so-app{position:static; inset:auto; height:auto; min-height:c
   body.socials-list .sc-list{grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start}
 }
 @media (prefers-reduced-motion: reduce){ .sc-go{transition:none} }
+
+/* ==========================================================================
+   Premium organizer cards (11/14): one shell per organizer in a red gradient frame, a row of tall video tiles,
+   and a "Next event / Get Tickets" bar. Page intro and red pill tabs above them.
+   ========================================================================== */
+body.socials-list{background:#0B0708}
+body.socials-list .so-app{background:radial-gradient(120% 380px at 50% -60px, rgba(220,38,38,.28), transparent 70%), #0B0708}
+.sl-head{background:transparent}
+
+.pc-intro{padding:6px 18px 4px}
+.pc-intro h1{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:2rem; letter-spacing:-.025em; color:#fff; line-height:1.05}
+.pc-intro p{margin-top:6px; color:#CDBFBF; font-size:.92rem; max-width:44ch}
+
+/* tabs as red pills */
+body.socials-list .so-top.sl-top{height:auto; padding:14px 18px 6px; gap:12px}
+body.socials-list .sl-top .so-tabs{gap:8px; font-size:.9rem}
+body.socials-list .sl-top .so-tabs a{padding:9px 16px; border-radius:999px; background:rgba(255,255,255,.07); color:#E6DADA; border:1px solid rgba(255,255,255,.08)}
+body.socials-list .sl-top .so-tabs a.on{background:#DC2626; border-color:#DC2626; color:#fff; box-shadow:0 10px 22px -12px rgba(220,38,38,.9)}
+body.socials-list .sl-top .so-tabs a.on::after{display:none}
+body.socials-list .sl-top .so-search{width:40px; height:40px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08)}
+
+.sc-list.pc-list,.sc-list{gap:18px; padding:10px 14px 0}
+
+/* the shell: a 1.5px red gradient frame with a soft red glow */
+.pc-card{position:relative; border-radius:24px; padding:1.5px; background:linear-gradient(150deg, #FF4D4D 0%, #DC2626 35%, #5C1414 75%, #2A0E0E 100%); box-shadow:0 22px 44px -26px rgba(220,38,38,.75), 0 2px 0 rgba(255,255,255,.02) inset}
+.pc-card > *{position:relative}
+.pc-card::before{content:""; position:absolute; inset:1.5px; border-radius:22.5px; background:linear-gradient(180deg, #1C1214 0%, #140C0E 100%)}
+
+.pc-head{display:flex; align-items:center; gap:12px; padding:16px 16px 12px}
+.pc-av{flex:none; width:52px; height:52px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:linear-gradient(135deg,#FF4D4D,#991B1B); color:#fff; font:700 1rem 'Outfit',sans-serif; box-shadow:0 0 0 2px #140C0E, 0 0 0 4px #DC2626}
+.pc-av img{width:100%; height:100%; object-fit:cover}
+.pc-who{flex:1; min-width:0; display:grid; gap:1px; color:#fff}
+.pc-who b{display:flex; align-items:center; gap:6px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.08rem; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pc-who small{font-size:.8rem; color:#B9AAAA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pc-stats{display:flex; gap:12px; margin-top:4px; font-size:.76rem; color:#B9AAAA; white-space:nowrap}
+.pc-stats strong{color:#fff; font-weight:700}
+.pc-follow{flex:none; height:38px; padding:0 18px; border:0; border-radius:19px; background:#DC2626; color:#fff; font:700 .86rem 'Plus Jakarta Sans',system-ui,sans-serif; cursor:pointer; box-shadow:0 10px 20px -10px rgba(220,38,38,.9); transition:background .2s, color .2s}
+.pc-follow:hover{background:#C81E1E}
+.pc-follow.is-on{background:rgba(255,255,255,.1); color:#fff; box-shadow:none}
+
+/* the reel: tall 9:16 tiles that scroll sideways */
+.pc-reel{display:flex; gap:10px; overflow-x:auto; padding:2px 16px 4px; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.pc-reel::-webkit-scrollbar{display:none}
+.pc-tile{position:relative; flex:0 0 40%; max-width:190px; aspect-ratio:9/16; border-radius:16px; overflow:hidden; background:#2A1D20; scroll-snap-align:start; color:#fff; isolation:isolate}
+.pc-tile:first-child{flex-basis:46%; max-width:220px}
+.pc-tile img,.pc-tile video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1; transition:transform .5s ease}
+.pc-tile:hover img,.pc-tile:hover video{transform:scale(1.05)}
+.pc-tile::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,0) 52%, rgba(0,0,0,.85) 100%)}
+.pc-top{position:absolute; left:8px; right:8px; top:8px; display:flex; align-items:center; justify-content:space-between; gap:6px}
+.pc-views{display:flex; align-items:center; gap:4px; font-weight:700; font-size:.74rem; text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.pc-len{padding:2px 7px; border-radius:7px; background:rgba(0,0,0,.6); font-weight:700; font-size:.7rem}
+.pc-new{padding:3px 8px; border-radius:7px; background:#DC2626; font-weight:800; font-size:.66rem; letter-spacing:.06em; text-transform:uppercase}
+.pc-cap{position:absolute; left:10px; right:10px; bottom:10px; display:grid; gap:2px}
+.pc-cap b{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:.88rem; line-height:1.15; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.pc-cap span{font-size:.72rem; color:#E6DADA; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.pc-all{display:grid; place-items:center; background:linear-gradient(160deg,#2A1416,#1A0D0F); border:1px dashed rgba(220,38,38,.6)}
+.pc-all::after{display:none}
+.pc-all span{display:grid; justify-items:center; gap:2px; font-size:.8rem; color:#E6DADA}
+.pc-all strong{font-family:'Outfit',sans-serif; font-size:1.6rem; color:#fff}
+
+/* the next event and the red button */
+.pc-foot{display:flex; align-items:center; gap:12px; margin:12px 12px 12px; padding:12px 12px 12px 14px; border-radius:16px; background:rgba(220,38,38,.10); border:1px solid rgba(220,38,38,.28)}
+.pc-next{flex:1; min-width:0; display:grid; gap:1px}
+.pc-next small{font-size:.66rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#FF8A8A}
+.pc-next b{color:#fff; font-weight:700; font-size:.94rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pc-next span{font-size:.78rem; color:#CDBFBF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pc-cta{flex:none; height:42px; padding:0 16px; border-radius:21px; background:#DC2626; color:#fff; display:inline-flex; align-items:center; gap:7px; font-weight:800; font-size:.88rem; box-shadow:0 12px 22px -12px rgba(220,38,38,.95); transition:background .2s, transform .2s}
+.pc-cta:hover{background:#C81E1E}
+.pc-cta:active{transform:scale(.97)}
+.pc-cta-ghost{background:rgba(255,255,255,.1); box-shadow:none}
+
+.pc-card a:focus-visible,.pc-follow:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+@media (min-width:901px){
+  body.socials-list .pc-intro{max-width:1080px; margin:0 auto; padding:28px 14px 0}
+  body.socials-list .pc-intro h1{font-size:2.6rem}
+  body.socials-list .so-top.sl-top{max-width:1080px}
+  body.socials-list .sc-list{max-width:1080px; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px}
+  .pc-tile{flex-basis:30%}
+  .pc-tile:first-child{flex-basis:34%}
+}
+@media (prefers-reduced-motion: reduce){ .pc-tile img,.pc-tile video,.pc-cta,.pc-follow{transition:none} }
+/* keep each shell inside the screen: the sideways reel must not widen the column */
+body.socials-list .sc-list{grid-template-columns:minmax(0,1fr)}
+.pc-card,.pc-head,.pc-reel,.pc-foot{min-width:0}
+@media (min-width:901px){ body.socials-list .sc-list{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* long names end in "…" before the Follow button; the first tile keeps its gap from the frame */
+.pc-who{grid-template-columns:minmax(0,1fr)}
+.pc-who b{min-width:0}
+.pc-name{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.pc-who b .sl-ver{flex:none}
+.pc-stats{overflow:hidden}
+.pc-reel{scroll-padding-left:16px; scroll-padding-right:16px}
+/* an organizer with one post: a single wide tile instead of a lone narrow one */
+.pc-reel:has(> .pc-tile:only-child){overflow:hidden}
+.pc-reel > .pc-tile:only-child{flex:1 1 100%; max-width:none; aspect-ratio:16/11}
+.pc-reel > .pc-tile:only-child .pc-cap b{font-size:1.05rem}
