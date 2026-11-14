@@ -18,6 +18,8 @@ const SOCIALS_PRICE_UGX = 25000;
 const SOCIALS_PERIOD_DAYS = 30;
 const SOCIALS_TRIAL_DAYS = 30;
 const SOCIALS_FEED_PAGE = 8;
+/** Video tiles per load on the Socials list (two across on phones, so keep it even). */
+const SOCIALS_SHELF_PAGE = 12;
 /** A payment prompt that nobody approved is treated as failed after this many minutes. */
 const SOCIALS_PENDING_EXPIRY_MINUTES = 30;
 
@@ -339,7 +341,7 @@ function socials_admin_payments(int $limit = 60): array
  *
  * @return list<array<string,mixed>> rows ready for socials_item_public()
  */
-function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, int $limit = SOCIALS_FEED_PAGE, ?int $startId = null, ?int $organizerId = null): array
+function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, int $limit = SOCIALS_FEED_PAGE, ?int $startId = null, ?int $organizerId = null, ?string $category = null): array
 {
     if (!moments_ready()) {
         return [];
@@ -358,6 +360,10 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
     }
     if ($organizerId) {
         $where .= ' AND e.organizer_id = ' . (int) $organizerId;
+    }
+    $category = trim((string) $category);
+    if ($category !== '') {
+        $where .= ' AND e.category = :cat';
     }
     if ($viewer) {
         // People the viewer blocked never show up in their feed.
@@ -392,6 +398,9 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
         LIMIT ' . $limit . ' OFFSET ' . $offset;
     $stmt = db()->prepare($sql);
     $stmt->bindValue(':viewer', $viewer, PDO::PARAM_INT);
+    if ($category !== '') {
+        $stmt->bindValue(':cat', $category);
+    }
     $stmt->execute();
     return moment_attach_slides($stmt->fetchAll());
 }
@@ -773,4 +782,103 @@ function socials_profile_counts(int $organizerId): array
         $following = 0;
     }
     return ['posts' => $posts, 'following' => $following];
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+   The Socials list, "Shorts Shelf" (chosen by the owner 11/14 from five mockups): category chips, one featured
+   event, then every post as a tall tile two across. public/socials.php draws it; api/socials.php `shorts` adds more.
+   --------------------------------------------------------------------------------------------------------------- */
+
+/** Event categories that have Socials posts, most posts first (the list's chips). */
+function socials_categories(int $limit = 6): array
+{
+    if (!moments_ready()) {
+        return [];
+    }
+    try {
+        $rows = db()->query("
+            SELECT e.category, COUNT(*) AS n
+            FROM event_moments m JOIN event_posts p ON p.id = m.post_id JOIN events e ON e.id = m.event_id
+            WHERE p.status = 'PUBLISHED' AND e.status = 'PUBLISHED' AND m.media_path <> '' AND e.category <> ''"
+            . (moments_draft_ready() ? ' AND m.is_draft = 0' : '') . '
+            GROUP BY e.category ORDER BY n DESC, e.category LIMIT ' . max(1, min(12, $limit)))->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+    return array_map(static fn ($r) => (string) $r['category'], $rows);
+}
+
+/**
+ * The event at the top of the list: of the events that have not ended, the one whose Socials posts people engage
+ * with most (then the one with most posts, then the soonest). Null when no upcoming event has posts.
+ */
+function socials_featured(): ?array
+{
+    if (!moments_ready()) {
+        return null;
+    }
+    try {
+        $stmt = db()->prepare('
+            SELECT e.id, e.title, e.slug, e.banner_image, e.venue_name, e.starts_at, e.ends_at, COUNT(*) AS posts,
+                   SUM(x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 5000) / 10) AS score,
+                   (SELECT MIN(t.price) FROM ticket_types t WHERE t.event_id = e.id) AS min_price
+            FROM (' . moment_select_sql() . ') x
+            JOIN events e ON e.id = x.event_id
+            WHERE e.status = "PUBLISHED" AND e.ends_at >= NOW()
+            GROUP BY e.id
+            ORDER BY score DESC, posts DESC, e.starts_at ASC
+            LIMIT 1');
+        $stmt->bindValue(':viewer', 0, PDO::PARAM_INT);
+        $stmt->execute();
+        $r = $stmt->fetch();
+    } catch (Throwable $e) {
+        return null;
+    }
+    if (!$r) {
+        return null;
+    }
+    $img = (string) ($r['banner_image'] ?? '');
+    $ts = strtotime((string) $r['starts_at']);
+    $te = strtotime((string) $r['ends_at']);
+    $when = date('Y-m-d', $ts) === date('Y-m-d', $te) || $te < $ts ? date('D j M', $ts)
+        : (date('M', $ts) === date('M', $te) ? date('j', $ts) . '–' . date('j M', $te) : date('j M', $ts) . ' – ' . date('j M', $te));
+    $min = $r['min_price'];
+    return [
+        'id' => (int) $r['id'],
+        'title' => (string) $r['title'],
+        'url' => '/event.php?slug=' . rawurlencode((string) $r['slug']),
+        'image' => preg_match('#^/(uploads|assets)/[A-Za-z0-9/_.\-]+$#', $img) ? $img : '',
+        'where' => (string) $r['venue_name'],
+        'when' => $when,
+        'posts' => (int) $r['posts'],
+        'price' => $min === null ? '' : ((float) $min <= 0.0 ? 'Free' : 'From UGX ' . number_format((float) $min)),
+    ];
+}
+
+/** One tall tile on the list: the post's picture, a title (the caption's first line, else the event) and views. */
+function socials_short_tile_html(array $it, string $tab = 'foryou'): string
+{
+    $h = static fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES);
+    $q = ['v' => (int) $it['id']];
+    if ($tab !== 'foryou') {
+        $q['tab'] = $tab;
+    }
+    $href = '/socials.php?' . http_build_query($q);
+    $thumb = socials_post_thumb($it);
+    $caption = trim(strtok(str_replace("\r", '', (string) $it['caption']), "\n") ?: '');
+    $title = $caption !== '' ? (mb_strlen($caption) > 80 ? mb_substr($caption, 0, 78) . '…' : $caption) : $it['event']['title'];
+    $views = (int) $it['views'];
+    $label = ($it['type'] === 'video' ? 'Watch: ' : 'Open: ') . $title . ($caption !== '' ? ', ' . $it['event']['title'] : '') . ', by ' . $it['org']['name'];
+    $out = '<a class="ss-tile" href="' . $h($href) . '" aria-label="' . $h($label) . '">';
+    if ($thumb !== '') {
+        $out .= '<img src="' . $h($thumb) . '" alt="" loading="lazy">';
+    } elseif ($it['type'] === 'video') {
+        $out .= '<video src="' . $h($it['src']) . '#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>';
+    }
+    if ($it['type'] === 'slideshow') {
+        $out .= '<span class="ss-kind" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="7" y="7" width="13" height="13" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></span>';
+    } elseif ($it['type'] === 'video' && !empty($it['duration'])) {
+        $out .= '<span class="ss-kind ss-dur">' . $h(moment_clock((int) $it['duration'])) . '</span>';
+    }
+    return $out . '<span class="ss-cap"><b>' . $h($title) . '</b><small>' . $h(moment_compact($views)) . ' ' . ($views === 1 ? 'view' : 'views') . '</small></span></a>';
 }

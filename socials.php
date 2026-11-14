@@ -18,12 +18,21 @@ $tabUrl = static function (string $t) use ($view): string {
     return '/socials.php' . ($q ? '?' . http_build_query($q) : '');
 };
 
-$cards = [];
+$shorts = [];
+$featured = null;
+$cats = [];
+$cat = trim((string) ($_GET['cat'] ?? ''));
 $orgInfo = null;
 if (!$ready) {
     $rows = [];
 } elseif ($view === 'list') {
-    $cards = socials_organizer_cards($uid, $tab, 0, SOCIALS_FEED_PAGE);
+    // Shorts Shelf: chips (All, Following, Trending, then categories with posts), one featured event, then tiles
+    $cats = socials_categories();
+    if (!in_array($cat, $cats, true)) {
+        $cat = '';
+    }
+    $shorts = array_map('socials_item_public', socials_feed($uid, $tab, 0, SOCIALS_SHELF_PAGE, null, null, $cat));
+    $featured = ($tab === 'foryou' && $cat === '') ? socials_featured() : null;
     $rows = [];
 } elseif ($orgFilter > 0) {
     // all of this organizer's posts, newest first; the player scrolls to ?v= if it is one of them
@@ -67,23 +76,50 @@ include __DIR__ . '/includes/header.php';
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
 
 <main class="so-app" id="soApp">
-  <?php if ($view === 'list'): ?>
-  <header class="sl-head">
-    <button type="button" class="sl-icon" id="slMenu" aria-label="Open menu" aria-controls="navDrawer" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <a class="sl-logo" href="/" aria-label="obitickets home">
-      <svg viewBox="0 0 34 34" width="30" height="30" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
-      <span><b>obi</b>tickets</span>
-    </a>
-    <?php if ($ctx): $slUnread = count_unread_notifications((int) $user['id']); ?>
-      <a class="sl-icon sl-bell" href="/org-notifications.php" aria-label="Notifications<?= $slUnread ? ', ' . (int) $slUnread . ' unread' : '' ?>"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><?php if ($slUnread): ?><i></i><?php endif; ?></a>
-    <?php else: ?>
-      <a class="sl-icon" href="/search.php" aria-label="Search events"><svg width="23" height="23" aria-hidden="true"><use href="#ic-search"/></svg></a>
-    <?php endif; ?>
+  <?php if ($view === 'list'):
+    $chip = static function (string $label, string $t, string $c) use ($tab, $cat): string {
+        $q = array_filter(['tab' => $t !== 'foryou' ? $t : null, 'cat' => $c !== '' ? $c : null]);
+        $on = $tab === $t && $cat === $c;
+        return '<a href="' . htmlspecialchars('/socials.php' . ($q ? '?' . http_build_query($q) : '')) . '"' . ($on ? ' class="on" aria-current="page"' : '') . '>' . htmlspecialchars($label) . '</a>';
+    };
+    $playUrl = '/socials.php?' . http_build_query(array_filter(['play' => '1', 'tab' => $tab !== 'foryou' ? $tab : null]));
+  ?>
+  <header class="ss-head">
+    <h1 class="ss-brand"><span class="ss-mark" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#fff"/></svg></span>Socials</h1>
+    <div class="ss-acts">
+      <a class="ss-icon" href="/search.php" aria-label="Search events"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+      <?php if ($ctx): $slUnread = count_unread_notifications((int) $user['id']); ?>
+      <a class="ss-icon ss-bell" href="/org-notifications.php" aria-label="Notifications<?= $slUnread ? ', ' . (int) $slUnread . ' unread' : '' ?>"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><?php if ($slUnread): ?><i></i><?php endif; ?></a>
+      <?php elseif (!$user): ?>
+      <a class="ss-icon" href="<?= htmlspecialchars($loginUrl) ?>" aria-label="Log in"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
+      <?php endif; ?>
+    </div>
   </header>
-  <section class="pc-intro">
-    <h1>Socials</h1>
-    <p>Videos from the events everyone is talking about. Watch, follow your favourite organizers and get your ticket in a tap.</p>
-  </section>
+  <?php if ($ready): ?>
+  <nav class="ss-chips" aria-label="Filter Socials">
+    <?= $chip('All', 'foryou', '') ?><?= $chip('Following', 'following', '') ?><?= $chip('Trending', 'trending', '') ?>
+    <?php foreach ($cats as $c) { echo $chip($c, 'foryou', $c); } ?>
+  </nav>
+  <?php endif; ?>
+  <?php if ($featured): ?>
+  <article class="ss-hero">
+    <?php if ($featured['image'] !== ''): ?><img src="<?= htmlspecialchars($featured['image']) ?>" alt="" fetchpriority="high"><?php endif; ?>
+    <span class="ss-flag">Featured</span>
+    <div class="ss-hero-row">
+      <div class="ss-hero-txt">
+        <h2><?= htmlspecialchars($featured['title']) ?></h2>
+        <p><?= htmlspecialchars(implode(' · ', array_filter([$featured['where'], $featured['when'], $featured['posts'] . ' ' . ($featured['posts'] === 1 ? 'video' : 'videos')]))) ?></p>
+      </div>
+      <a class="ss-buy" href="<?= htmlspecialchars($featured['url']) ?>">Get tickets</a>
+    </div>
+  </article>
+  <?php endif; ?>
+  <?php if ($shorts): ?>
+  <div class="ss-sec">
+    <h2><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="6" fill="#DC2626"/><path d="M10 8.5v7l6-3.5z" fill="#fff"/></svg><?= $cat !== '' ? htmlspecialchars($cat) . ' shorts' : ($tab === 'trending' ? 'Trending shorts' : ($tab === 'following' ? 'From organizers you follow' : 'Event shorts')) ?></h2>
+    <a href="<?= htmlspecialchars($playUrl) ?>">Watch all</a>
+  </div>
+  <?php endif; ?>
   <?php endif; ?>
 
   <?php if ($orgInfo): ?>
@@ -95,8 +131,8 @@ include __DIR__ . '/includes/header.php';
     </div>
     <?php if (!empty($orgInfo['url'])): ?><a class="so-search" href="<?= htmlspecialchars($orgInfo['url']) ?>" aria-label="<?= htmlspecialchars($orgInfo['name']) ?> profile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></a><?php else: ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
   </div>
-  <?php else: ?>
-  <div class="so-top<?= $view === 'list' ? ' sl-top' : '' ?>">
+  <?php elseif ($view === 'player'): ?>
+  <div class="so-top">
     <?php if ($view === 'player'): ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
     <nav class="so-tabs" aria-label="Socials">
       <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
@@ -107,9 +143,9 @@ include __DIR__ . '/includes/header.php';
   </div>
   <?php endif; ?>
 
-  <?php if ($cards): ?>
-    <div class="sl-list sc-list tg-list" id="slList" data-signed-in="<?= $user ? '1' : '0' ?>" data-login="<?= htmlspecialchars($loginUrl) ?>" data-tab="<?= htmlspecialchars($tab) ?>" data-offset="<?= count($cards) ?>" data-more="<?= count($cards) === SOCIALS_FEED_PAGE ? '1' : '0' ?>">
-      <?php foreach ($cards as $card) { echo socials_org_card_html($card); } ?>
+  <?php if ($shorts): ?>
+    <div class="ss-grid" id="slList" data-tab="<?= htmlspecialchars($tab) ?>" data-cat="<?= htmlspecialchars($cat) ?>" data-offset="<?= count($shorts) ?>" data-more="<?= count($shorts) === SOCIALS_SHELF_PAGE ? '1' : '0' ?>">
+      <?php foreach ($shorts as $it) { echo socials_short_tile_html($it, $tab); } ?>
     </div>
     <p class="sl-more" id="slMore" hidden>Loading more&hellip;</p>
   <?php elseif ($items): ?>
@@ -128,11 +164,11 @@ include __DIR__ . '/includes/header.php';
       <?php elseif ($tab === 'trending'): ?>
         <h1>Nothing trending yet</h1>
         <p>The most-liked, most-shared posts of the last two weeks will show up here.</p>
-        <a class="so-btn" href="/socials.php">Open For You</a>
+        <a class="so-btn" href="/socials.php">See all videos</a>
       <?php elseif ($tab === 'following'): ?>
         <h1>Nothing from the organizers you follow yet</h1>
         <p>Follow an organizer from any video and their posts will appear here.</p>
-        <a class="so-btn" href="/socials.php">Open For You</a>
+        <a class="so-btn" href="/socials.php">See all videos</a>
       <?php else: ?>
         <h1>Socials is just getting started</h1>
         <p>Event videos from organizers will show up here. Check back soon.</p>
@@ -142,7 +178,7 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 </main>
 
-<?php if ($cards): ?>
+<?php if ($shorts): ?>
 <script src="/assets/js/socials-list.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials-list.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 

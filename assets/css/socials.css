@@ -502,3 +502,76 @@ body.socials-list .tg-list{display:block; padding:4px 0 0; max-width:none}
   .tg-tile{border-radius:8px}
 }
 @media (prefers-reduced-motion: reduce){ .tg-tile img,.tg-tile video{transition:none} }
+
+/* ==========================================================================
+   "Shorts Shelf" list (chosen 11/14 from five mockups, YouTube Shorts style): a white page with the brand mark,
+   chips, one featured event and every post as a tall tile two across. Overrides the darker list styles above.
+   ========================================================================== */
+body.socials-list{background:#fff}
+body.socials-list .so-app{background:#fff; color:#1A1010}
+.ss-head{display:flex; align-items:center; justify-content:space-between; padding:10px 8px 4px 16px}
+.ss-brand{display:flex; align-items:center; gap:8px; margin:0; font:700 1.4rem/1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; color:#1A1010}
+.ss-mark{width:30px; height:30px; border-radius:9px; background:#DC2626; display:grid; place-items:center}
+.ss-mark svg{margin-left:2px}
+.ss-acts{display:flex}
+.ss-icon{position:relative; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:#1A1010}
+.ss-icon:hover{background:#F4EFEF}
+.ss-bell i{position:absolute; top:10px; right:11px; width:9px; height:9px; border-radius:50%; background:#DC2626; box-shadow:0 0 0 2px #fff}
+.ss-chips{display:flex; gap:8px; padding:6px 16px 14px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.ss-chips::-webkit-scrollbar{display:none}
+.ss-chips a{flex:none; padding:8px 14px; border-radius:10px; background:#F4EFEF; color:#1A1010; font-weight:600; font-size:.84rem; white-space:nowrap; transition:background .2s}
+.ss-chips a:hover{background:#EBE3E3}
+.ss-chips a.on{background:#1A1010; color:#fff; font-weight:700}
+.ss-hero{position:relative; margin:0 16px; height:200px; border-radius:18px; overflow:hidden; background:#1A1010; isolation:isolate}
+.ss-hero img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 30%; z-index:-2}
+.ss-hero::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(11,7,8,0) 30%, rgba(11,7,8,.88) 100%)}
+.ss-flag{position:absolute; top:12px; left:12px; padding:5px 10px; border-radius:999px; background:#DC2626; color:#fff; font-weight:700; font-size:.68rem; letter-spacing:.06em; text-transform:uppercase}
+.ss-hero-row{position:absolute; left:14px; right:14px; bottom:14px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px}
+.ss-hero-txt{min-width:0}
+.ss-hero h2{margin:0; color:#fff; font:700 1.3rem/1.1 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.ss-hero p{margin:5px 0 0; color:#F1E4E4; font-size:.78rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ss-buy{flex:none; padding:10px 14px; border-radius:999px; background:#fff; color:#1A1010; font-weight:700; font-size:.82rem; transition:background .2s}
+.ss-buy:hover{background:#FDECEC; color:#1A1010}
+.ss-sec{display:flex; align-items:center; justify-content:space-between; padding:20px 16px 10px}
+.ss-sec h2{display:flex; align-items:center; gap:8px; margin:0; font:700 1.12rem 'Outfit','Plus Jakarta Sans',sans-serif; letter-spacing:-.01em; color:#1A1010}
+.ss-sec a{color:#DC2626; font-weight:700; font-size:.82rem}
+.ss-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:0 16px}
+.ss-tile{position:relative; display:block; aspect-ratio:9/16; border-radius:14px; overflow:hidden; background:#1A1010; color:#fff; isolation:isolate}
+.ss-tile img,.ss-tile video{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; transition:transform .4s ease}
+.ss-tile:hover img,.ss-tile:hover video{transform:scale(1.04)}
+.ss-tile::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(11,7,8,0) 50%, rgba(11,7,8,.85) 100%)}
+.ss-kind{position:absolute; top:8px; right:8px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.ss-dur{padding:2px 7px; border-radius:6px; background:rgba(11,7,8,.66); font-weight:700; font-size:.72rem; filter:none}
+.ss-cap{position:absolute; left:10px; right:10px; bottom:10px; display:grid; gap:4px}
+.ss-cap b{font-weight:700; font-size:.84rem; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.ss-cap small{color:#F1E4E4; font-weight:600; font-size:.72rem}
+body.socials-list .sl-more{color:#645A5A}
+body.socials-list .so-empty{color:#1A1010}
+body.socials-list .so-empty p{color:#645A5A}
+.ss-icon:focus-visible,.ss-chips a:focus-visible,.ss-buy:focus-visible,.ss-sec a:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
+.ss-tile:focus-visible{outline:3px solid #DC2626; outline-offset:2px}
+/* phones: the white tab bar of the mockup */
+@media (max-width:900px){
+  html.rc body.socials-list .rc-tabs{background:rgba(255,255,255,.97); border-top:1px solid #F0E4E2}
+  html.rc body.socials-list .rc-tab{color:#645A5A}
+  html.rc body.socials-list .rc-tab.on{color:#1A1010}
+  html.rc body.socials-list .rc-tab-so i,html.rc body.socials-list .rc-tab-so.on i{box-shadow:0 0 0 4px #fff, 0 8px 18px -6px rgba(220,38,38,.7)}
+  html.rc body.socials-list .rc-tab-so span{color:#DC2626}
+}
+/* computers: the site menu stays on top; a wider shelf, more tiles across */
+@media (min-width:600px){
+  .ss-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+  .ss-hero{height:260px}
+}
+@media (min-width:901px){
+  body.socials-list .so-app{max-width:1120px; margin:0 auto; padding:18px 8px 40px}
+  .ss-head{padding:4px 8px 6px 16px}
+  .ss-brand{font-size:1.8rem}
+  .ss-hero{height:320px; border-radius:22px}
+  .ss-hero h2{font-size:2rem}
+  .ss-hero p{font-size:.92rem}
+  .ss-buy{padding:13px 22px; font-size:.92rem}
+  .ss-grid{grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px}
+
+}
+@media (prefers-reduced-motion: reduce){ .ss-tile img,.ss-tile video{transition:none} }
