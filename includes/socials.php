@@ -882,3 +882,77 @@ function socials_short_tile_html(array $it, string $tab = 'foryou'): string
     }
     return $out . '<span class="ss-cap"><b>' . $h($title) . '</b><small>' . $h(moment_compact($views)) . ' ' . ($views === 1 ? 'view' : 'views') . '</small></span></a>';
 }
+
+/* ---------------------------------------------------------------------------------------------------------------
+   The organizer's Socials dashboard (public/org-socials.php, the "premium" template the owner sent 11/14):
+   totals for the stat cards, and every video/photo post with its event, numbers and status, drafts included.
+   --------------------------------------------------------------------------------------------------------------- */
+
+/**
+ * @return array{stats: array{posts:int, views:int, likes:int, comments:int, tickets:int}, rows: list<array<string,mixed>>, events: array<int,array<string,mixed>>}
+ */
+function socials_dashboard_data(int $organizerId, int $viewerId): array
+{
+    $out = ['stats' => ['posts' => 0, 'views' => 0, 'likes' => 0, 'comments' => 0, 'tickets' => 0], 'rows' => [], 'events' => []];
+    if (!moments_ready()) {
+        return $out;
+    }
+    $ev = db()->prepare('SELECT id, title, slug, banner_image, starts_at, ends_at, (ends_at < NOW()) AS ended FROM events WHERE organizer_id = ? ORDER BY starts_at DESC');
+    $ev->execute([$organizerId]);
+    foreach ($ev->fetchAll() as $e) {
+        $out['events'][(int) $e['id']] = $e;
+    }
+    if (!$out['events']) {
+        return $out;
+    }
+    $in = implode(',', array_map('intval', array_keys($out['events'])));
+    $drafts = moments_draft_ready();
+
+    // published posts (newest first) plus the viewer's own drafts on these events
+    $sql = 'SELECT x.*, ' . ($drafts ? 'mm.is_draft' : '0') . ' AS is_draft FROM (' . moment_select_sql() . ' AND p.event_id IN (' . $in . ')) x'
+        . ($drafts ? ' JOIN event_moments mm ON mm.post_id = x.id' : '') . ' ORDER BY x.id DESC LIMIT 60';
+    $st = db()->prepare($sql);
+    $st->bindValue(':viewer', $viewerId, PDO::PARAM_INT);
+    $st->execute();
+    $rows = $st->fetchAll();
+    if ($drafts) {
+        $st = db()->prepare('SELECT x.*, 1 AS is_draft FROM (' . moment_select_sql(true) . ' AND p.event_id IN (' . $in . ') AND p.author_id = :me) x ORDER BY x.id DESC LIMIT 20');
+        $st->bindValue(':viewer', $viewerId, PDO::PARAM_INT);
+        $st->bindValue(':me', $viewerId, PDO::PARAM_INT);
+        $st->execute();
+        $rows = array_merge($st->fetchAll(), $rows);
+    }
+    $rows = moment_attach_slides($rows);
+    foreach ($rows as $r) {
+        $isDraft = (int) ($r['is_draft'] ?? 0) === 1;
+        $slides = $r['slides'] ?? [];
+        $thumb = (string) ($r['media_type'] === 'VIDEO' ? ($r['poster_path'] ?: '') : ($r['media_type'] === 'SLIDESHOW' ? ($slides[0] ?? '') : $r['media_path']));
+        $caption = trim((string) strtok(str_replace("\r", '', (string) ($r['caption'] ?? '')), "\n"));
+        $out['rows'][] = [
+            'id' => (int) $r['id'],
+            'event_id' => (int) $r['event_id'],
+            'type' => $r['media_type'] === 'VIDEO' ? 'video' : ($r['media_type'] === 'SLIDESHOW' ? 'slideshow' : 'photo'),
+            'src' => (string) $r['media_path'],
+            'thumb' => preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $thumb) ? $thumb : '',
+            'duration' => $r['duration_seconds'] !== null ? (int) $r['duration_seconds'] : null,
+            'title' => $caption !== '' ? (mb_strlen($caption) > 70 ? mb_substr($caption, 0, 68) . '…' : $caption) : 'Untitled post',
+            'created' => (string) $r['created_at'],
+            'views' => (int) $r['view_count'],
+            'likes' => (int) $r['reaction_count'],
+            'comments' => (int) $r['comment_count'],
+            'status' => $isDraft ? 'draft' : 'published',
+        ];
+        if (!$isDraft) {
+            $out['stats']['posts']++;
+            $out['stats']['views'] += (int) $r['view_count'];
+            $out['stats']['likes'] += (int) $r['reaction_count'];
+            $out['stats']['comments'] += (int) $r['comment_count'];
+        }
+    }
+    if (moments_sales_ready()) {
+        $t = db()->query("SELECT COALESCE(SUM(oi.quantity), 0) FROM orders o JOIN order_items oi ON oi.order_id = o.id
+            JOIN event_posts p ON p.id = o.source_moment_id WHERE o.status = 'PAID' AND p.event_id IN ($in)");
+        $out['stats']['tickets'] = (int) $t->fetchColumn();
+    }
+    return $out;
+}
