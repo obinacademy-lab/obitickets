@@ -62,70 +62,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Sign up — obitickets';
-$bodyClass = 'classic-page auth-photo';
+$bodyClass = 'classic-page auth-ep';
 include __DIR__ . '/includes/header.php';
 ?>
+<link rel="stylesheet" href="/assets/css/auth-event.css?v=<?= @filemtime(__DIR__ . '/assets/css/auth-event.css') ?: time() ?>">
 
-<div class="wrap auth-stage">
-  <section class="auth-section">
-    <div class="auth-card reveal">
-      <div class="auth-top"><a class="logo" href="/">
-        <svg class="logo-mark" viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="10" fill="var(--purple)"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="var(--purple)" stroke="#fff" stroke-width="1.6"/></svg>
-        obitickets
-      </a><span class="auth-badge">Sign up</span></div>
-      <h1>Create your account</h1>
-      <p class="sub">Buy tickets or start selling &mdash; it only takes a minute.</p>
+<div class="ae ae-up">
+  <div class="ae-hero">
+    <img class="ae-photo" src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high">
+    <a class="ae-logo" href="/" aria-label="obitickets home">
+      <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
+      obitickets
+    </a>
+    <p class="ae-tag">Join the crowd.</p>
+  </div>
 
-      <?php foreach ($errors as $e): ?>
-        <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
-      <?php endforeach; ?>
+  <section class="ae-sheet" aria-labelledby="aeH">
+    <h1 id="aeH">Create your account</h1>
 
-      <?php render_human_check(); ?>
-      <?php render_google_button('signup', $next, $role); ?>
+    <?php foreach ($errors as $e): ?>
+      <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
+    <?php endforeach; ?>
 
-      <form method="post" novalidate>
-        <?= csrf_field() ?>
-        <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
+    <form method="post" novalidate>
+      <?= csrf_field() ?>
+      <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
 
-        <div class="field">
-          <label for="name">Full name</label>
-          <input id="name" name="name" type="text" value="<?= htmlspecialchars($name) ?>" autocomplete="name" required>
-        </div>
+      <div class="ae-role" role="radiogroup" aria-label="I want to">
+        <label><input type="radio" name="role" value="ATTENDEE" <?= $role === 'ATTENDEE' ? 'checked' : '' ?>><span>Attend events</span></label>
+        <label><input type="radio" name="role" value="ORGANIZER" <?= $role === 'ORGANIZER' ? 'checked' : '' ?>><span>Sell tickets</span></label>
+      </div>
 
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" value="<?= htmlspecialchars($email) ?>" autocomplete="email" required>
-        </div>
-
-        <div class="field">
-          <label for="phone">Phone (optional)</label>
-          <input id="phone" name="phone" type="tel" value="<?= htmlspecialchars($phone) ?>" placeholder="+256 7xx xxx xxx" autocomplete="tel">
-        </div>
-
-        <div class="field">
-          <span class="field-label" id="role-label">I want to</span>
-          <div class="role-pick" role="radiogroup" aria-labelledby="role-label">
-            <label class="role-opt"><input type="radio" name="role" value="ATTENDEE" <?= $role === 'ATTENDEE' ? 'checked' : '' ?>><span>Attend events</span></label>
-            <label class="role-opt"><input type="radio" name="role" value="ORGANIZER" <?= $role === 'ORGANIZER' ? 'checked' : '' ?>><span>Sell tickets for my events</span></label>
-          </div>
-        </div>
-
+      <div class="field">
+        <label for="name">Full name</label>
+        <input id="name" name="name" type="text" value="<?= htmlspecialchars($name) ?>" placeholder="Your name" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="<?= htmlspecialchars($email) ?>" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">Phone <span class="ae-opt">(optional)</span></label>
+        <input id="phone" name="phone" type="tel" value="<?= htmlspecialchars($phone) ?>" placeholder="07XX XXX XXX" autocomplete="tel">
+      </div>
+      <div class="ae-pair">
         <div class="field">
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-          <div class="field-hint">At least 8 characters.</div>
+          <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="pwHint">
         </div>
-
         <div class="field">
-          <label for="confirm_password">Confirm password</label>
+          <label for="confirm_password">Confirm</label>
           <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required>
         </div>
+      </div>
+      <p class="ae-hint" id="pwHint">At least 8 characters.</p>
 
-        <button class="btn btn-purple btn-block btn-lg" type="submit" style="margin-top:24px">Create account</button>
-      </form>
+      <button class="ae-btn" type="submit">Create account</button>
+    </form>
 
-      <div class="auth-foot">Already have an account? <a href="/login.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Log in</a></div>
+    <div class="ae-alt">
+      <?php render_human_check(); ?>
+      <?php render_google_button('signup', $next, $role); ?>
     </div>
+
+    <p class="ae-switch">Have an account? <a href="/login.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Log in</a></p>
+    <p class="ae-terms">By signing up you agree to our <a href="/terms.php">Terms of Use</a> and <a href="/privacy.php">Privacy Policy</a>.</p>
   </section>
 </div>
 
