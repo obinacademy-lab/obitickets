@@ -1,0 +1,111 @@
+/* ==========================================================================
+   Home page, "Stories Feed": built exactly to the owner's mockup (11/16, layout 3).
+   White top bar (logo + search + saved), story circles, organizer posts with a buy bar, dark Trending top three.
+   Computers: the feed is one centred column with Trending beside it.
+   Only index.php loads this (body.home-stories), after rc.css, so it wins.
+   ========================================================================== */
+body.home-stories{background:#fff}
+body.home-stories main,body.home-stories .page{padding-top:0}
+.st-topbtns{display:none}
+
+/* ---------- phones: the top bar of the mockup ---------- */
+@media (max-width:900px){
+  html.rc body.home-stories .site-nav{background:#fff; border-bottom:0; box-shadow:none}
+  html.rc body.home-stories .site-nav .nav-row{height:64px}
+  html.rc body.home-stories .site-nav .logo{color:var(--rc-ink); font-size:1.45rem; letter-spacing:-.03em}
+  html.rc body.home-stories .site-nav .logo-mark{width:34px; height:34px}
+  html.rc body.home-stories .site-nav .logo-mark rect{fill:var(--rc-red)}
+  html.rc body.home-stories .site-nav .logo-mark circle{stroke:#fff}
+  html.rc body.home-stories .site-nav .logo-mark circle:last-child{fill:var(--rc-red)}
+  html.rc body.home-stories .site-nav .nav-toggle{display:none}
+  .st-topbtns{display:flex; gap:8px; margin-left:auto}
+  .st-topbtn{width:42px; height:42px; border-radius:50%; background:#F7F2F1; color:var(--rc-ink); display:grid; place-items:center}
+  .st-topbtn:hover{background:var(--rc-tint); color:var(--rc-ink)}
+  .st-topbtn:focus-visible{outline:3px solid var(--rc-red); outline-offset:2px}
+}
+
+.st-page{padding-bottom:12px}
+.st-h1{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* ---------- story circles ---------- */
+.st-stories{display:flex; gap:14px; margin:14px -18px 0; padding:4px 18px 2px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; position:relative}
+.st-stories::-webkit-scrollbar{display:none}
+.st-story{flex:none; width:70px; display:flex; flex-direction:column; align-items:center; gap:6px; padding:0; border:0; background:none; cursor:pointer; color:var(--rc-ink); font:700 12px 'Plus Jakarta Sans',sans-serif; text-align:center}
+.st-ring{width:66px; height:66px; border-radius:50%; padding:3px; box-sizing:border-box; background:linear-gradient(135deg,#DC2626,#F97316); display:block; transition:transform .25s var(--rc-ease)}
+.st-ring.red{background:var(--rc-red)}
+.st-ring.seen{background:#EADCDA}
+.st-in{width:100%; height:100%; border-radius:50%; border:3px solid #fff; box-sizing:border-box; object-fit:cover; display:block; background:var(--rc-tint)}
+.st-in-ic{display:grid; place-items:center; color:#B91C1C}
+.st-story:hover .st-ring{transform:scale(1.05)}
+.st-story:focus-visible{outline:3px solid var(--rc-red); outline-offset:3px; border-radius:12px}
+.st-story.busy{opacity:.6; cursor:progress}
+.st-story-l{max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.st-msg{margin:10px 0 0; padding:10px 14px; border-radius:12px; background:var(--rc-soft); color:var(--rc-mute); font-size:.85rem}
+
+/* ---------- posts ---------- */
+.st-feed{display:flex; flex-direction:column}
+.st-post{margin-top:22px}
+.st-trend + .st-post{margin-top:28px}
+.st-who{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+.st-ava{flex:none; width:36px; height:36px; border-radius:50%; background:var(--rc-ink); color:#fff; font-size:13px; font-weight:800; display:grid; place-items:center}
+.st-ava.alt{background:var(--rc-tint); color:#B91C1C}
+.st-ava:hover{color:#fff}
+.st-ava.alt:hover{color:#B91C1C}
+.st-who-tx{flex:1; min-width:0; display:flex; flex-direction:column}
+.st-who-tx a{color:var(--rc-ink)}
+.st-who-tx b{font-size:14px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.st-who-tx > span{font-size:12px; color:var(--rc-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.st-follow{flex:none; height:34px; padding:0 14px; border-radius:999px; border:1.5px solid #EADCDA; background:#fff; color:var(--rc-ink); font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:background .2s, border-color .2s, color .2s}
+.st-follow:hover{border-color:var(--rc-ink)}
+.st-follow[aria-pressed="true"]{background:var(--rc-ink); border-color:var(--rc-ink); color:#fff}
+.st-follow:disabled{opacity:.7; cursor:progress}
+.st-pic{position:relative; display:block; aspect-ratio:5 / 6; border-radius:24px; overflow:hidden; background:var(--rc-soft)}
+.st-pic img,.st-emoji{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; transition:transform .6s var(--rc-ease)}
+.st-emoji{display:grid; place-items:center; font-size:4rem}
+.st-post:hover .st-pic img{transform:scale(1.02)}
+.st-date{position:absolute; left:14px; top:14px; width:54px; padding:8px 0; border-radius:16px; background:#fff; text-align:center; line-height:1; box-shadow:0 6px 16px -10px rgba(26,16,16,.6)}
+.st-date b{display:block; font-family:var(--rc-disp); font-size:22px; color:var(--rc-ink)}
+.st-date span{font-size:11px; font-weight:800; color:#B91C1C}
+.st-title{margin:12px 0 0; font-family:var(--rc-disp); font-weight:700; font-size:22px; line-height:1.15; letter-spacing:-.02em}
+.st-title a{color:var(--rc-ink)}
+.st-title a:hover{color:#B91C1C}
+.st-line{margin:4px 0 0; font-size:14px; line-height:1.5; color:var(--rc-mute)}
+.st-buy{margin-top:14px; height:60px; border-radius:18px; background:var(--rc-soft); display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 8px 0 18px}
+.st-buy-p{display:flex; flex-direction:column; line-height:1.2}
+.st-buy-p small{font-size:12px; color:var(--rc-mute)}
+.st-buy-p b{font-size:17px; color:var(--rc-ink)}
+.st-buy-p b.free{color:#15803D}
+.st-buy-btn{flex:none; display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:14px; background:var(--rc-red); color:#fff; font-weight:800; font-size:15px; transition:background .2s}
+.st-buy-btn:hover{background:#B91C1C; color:#fff}
+.st-buy-btn:focus-visible,.st-follow:focus-visible,.st-go:focus-visible,.st-more:focus-visible{outline:3px solid var(--rc-red); outline-offset:2px}
+
+/* ---------- trending ---------- */
+.st-trend{margin-top:28px; padding:18px; border-radius:24px; background:var(--rc-ink); color:#fff}
+.st-trend h2{margin:0 0 12px; font-family:var(--rc-disp); font-weight:700; font-size:20px; color:#fff}
+.st-trend ol{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:12px}
+.st-trend li{display:flex; align-items:center; gap:12px}
+.st-rank{flex:none; width:24px; font-family:var(--rc-disp); font-size:20px; font-weight:800; color:#F87171}
+.st-trend img,.st-thumb{flex:none; width:46px; height:46px; border-radius:12px; object-fit:cover; display:grid; place-items:center}
+.st-trend-tx{flex:1; min-width:0; display:flex; flex-direction:column; color:#fff}
+.st-trend-tx:hover{color:#fff}
+.st-trend-tx b{font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.st-trend-tx span{font-size:12px; color:#C9BDBB}
+.st-go{flex:none; width:38px; height:38px; border-radius:12px; background:var(--rc-red); color:#fff; display:grid; place-items:center}
+.st-go:hover{background:#B91C1C; color:#fff}
+
+.st-more{align-self:center; margin-top:26px; display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:999px; border:1.5px solid #EADCDA; color:var(--rc-ink); font-weight:700; font-size:14px}
+.st-more:hover{border-color:var(--rc-ink); color:var(--rc-ink)}
+.st-none{text-align:center; padding:40px 0; color:var(--rc-mute)}
+
+/* ---------- computers: one feed column, Trending beside it ---------- */
+@media (min-width:901px){
+  .st-page{max-width:1000px; padding-top:28px}
+  .st-h1{position:static; width:auto; height:auto; overflow:visible; clip:auto; white-space:normal; margin:0 0 6px; font-family:var(--rc-disp); font-weight:700; font-size:clamp(1.9rem,3vw,2.5rem); letter-spacing:-.025em; color:var(--rc-ink)}
+  .st-stories{margin:14px 0 0; padding:4px 0 2px}
+  .st-feed{display:grid; grid-template-columns:minmax(0,600px) 340px; column-gap:40px; justify-content:space-between; align-items:start}
+  .st-feed > *{grid-column:1}
+  .st-trend{grid-column:2; grid-row:1 / span 50; position:sticky; top:96px; margin-top:22px}
+  .st-trend + .st-post{margin-top:22px}
+  .st-more{justify-self:center}
+}
+@media (prefers-reduced-motion:reduce){ .st-ring,.st-pic img,.st-follow,.st-buy-btn{transition:none} .st-post:hover .st-pic img,.st-story:hover .st-ring{transform:none} }

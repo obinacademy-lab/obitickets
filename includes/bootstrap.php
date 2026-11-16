@@ -66,7 +66,7 @@ require_once __DIR__ . '/uploads.php';
 require_once __DIR__ . '/contact.php';
 require_once __DIR__ . '/online.php';
 require_once __DIR__ . '/landing.php';
-require_once __DIR__ . '/home-grid.php';
+require_once __DIR__ . '/home-stories.php';
 require_once __DIR__ . '/features.php';
 require_once __DIR__ . '/share-image.php';
 require_once __DIR__ . '/organizer.php';

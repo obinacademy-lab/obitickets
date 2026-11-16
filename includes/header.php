@@ -275,6 +275,22 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
       <span class="label">Contact Us</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </a>
+    <button type="button" class="nav-drawer-row nav-acc-btn" aria-expanded="false" aria-controls="navSubMore">
+      <span class="ic"><svg width="17" height="17"><use href="#ic-shield"/></svg></span>
+      <span class="label">Help &amp; legal</span>
+      <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+    </button>
+    <div class="nav-sub" id="navSubMore"><div>
+      <a href="/help.php">Help centre</a>
+      <a href="/refunds.php">Refunds</a>
+      <a href="<?= htmlspecialchars(support_whatsapp_url()) ?>" target="_blank" rel="noopener">WhatsApp us</a>
+      <a href="/team.php">Our team</a>
+      <a href="/terms.php">Terms of Use</a>
+      <a href="/purchase-terms.php">Purchase Terms</a>
+      <a href="/privacy.php">Privacy Policy</a>
+      <a href="/delete-account.php">Delete account</a>
+      <a href="#" data-install-app hidden>Install the app</a>
+    </div></div>
     <a class="nav-drawer-row" href="#" data-install-app hidden>
       <span class="ic"><svg width="17" height="17"><use href="#ic-ticket"/></svg></span>
       <span class="label">Install the app</span>
