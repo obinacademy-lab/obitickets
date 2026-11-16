@@ -14,6 +14,10 @@
     if (!msg) return;
     msg.textContent = text;
     msg.hidden = false;
+    // The home page has no district picker: send the buyer to Browse, where it is.
+    if (!pick && btn.getAttribute('data-fallback') && /instead|outside/.test(text)) {
+      setTimeout(function () { window.location.href = btn.getAttribute('data-fallback'); }, 1800);
+    }
   }
 
   function nearest(lat, lng) {

@@ -348,3 +348,14 @@ html.rc .sx-msg{margin:0; padding:10px 14px; border-radius:14px; background:var(
 html.rc .sx-dist{display:inline-flex; align-items:center; gap:4px; margin-bottom:6px; padding:3px 9px; border-radius:999px; background:var(--rc-tint); color:var(--rc-red-d); font-size:.72rem; font-weight:700}
 @media (min-width:901px){ html.rc .sx-bar{grid-template-columns:auto minmax(0,1fr); align-items:center; gap:14px 18px} html.rc .sx-msg{grid-column:1/-1} }
 @media (prefers-reduced-motion:reduce){ html.rc .sx-near.busy svg{animation:none} }
+
+/* Home hero: Near me + date shortcuts under the search (they open Browse already filtered) */
+html.rc .ld-quick{display:flex; gap:8px; margin:14px 0 0; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; position:relative}
+html.rc .ld-quick::-webkit-scrollbar{display:none}
+html.rc .ld-qk{flex:none; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 15px; border:1.5px solid rgba(255,255,255,.55); border-radius:999px; background:rgba(255,255,255,.12); color:#fff; font:700 .86rem 'Plus Jakarta Sans',sans-serif; white-space:nowrap; cursor:pointer; transition:background .2s, color .2s}
+html.rc .ld-qk:hover{background:rgba(255,255,255,.24); color:#fff}
+html.rc .ld-qk-near{background:#fff; border-color:#fff; color:var(--rc-red-d)}
+html.rc .ld-qk-near:hover{background:var(--rc-tint); color:var(--rc-red-d)}
+html.rc .ld-qk-near.busy{opacity:.75; cursor:progress}
+html.rc .ld-qk:focus-visible{outline:3px solid #fff; outline-offset:2px}
+html.rc .ld-qk-msg{margin:10px 0 0; color:#fff; font-size:.85rem; font-weight:600}

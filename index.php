@@ -51,6 +51,14 @@ $colB = $fill($colB);
         <input id="ldQ" type="text" name="q" placeholder="Search events, artists or venues" autocomplete="off">
         <button type="submit" class="btn btn-purple">Search</button>
       </form>
+      <div class="ld-quick" aria-label="Find events fast">
+        <button type="button" class="ld-qk ld-qk-near" id="sxNear" data-url="/search.php?near=__D__" data-fallback="/search.php" data-pts="<?= htmlspecialchars(json_encode(array_map(static fn ($n, $v) => [$n, $v[1], $v[2]], array_keys(uganda_districts()), uganda_districts()))) ?>"><svg width="15" height="15" aria-hidden="true"><use href="#ic-pin"/></svg><span>Near me</span></button>
+        <a class="ld-qk" href="/search.php?when=today">Today</a>
+        <a class="ld-qk" href="/search.php?when=weekend">This weekend</a>
+        <a class="ld-qk" href="/search.php?when=week">This week</a>
+      </div>
+      <p class="ld-qk-msg" id="sxMsg" role="status" hidden></p>
+      <script src="/assets/js/search-near.js" defer></script>
       <ul class="ld-trust">
         <li>MTN MoMo and Airtel Money</li>
         <li>Instant QR tickets</li>
