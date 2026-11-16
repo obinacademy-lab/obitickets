@@ -46,6 +46,15 @@ $canPost = $status['can_post'] && $events;
     <h1>Socials <span class="sp-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>Premium</span></h1>
     <a class="sp-feed" href="/socials.php">Open the Socials feed</a>
   </div>
+<?php if ($ready): ?>
+  <nav class="sp-jump" aria-label="Socials sections">
+    <a href="#spUp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Upload</a>
+    <a href="#spVids"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4-2.5z"/></svg>My videos</a>
+    <a href="#spStats"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analytics</a>
+    <a href="#sxPlan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>Plan</a>
+    <a href="/socials.php"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>Feed</a>
+  </nav>
+<?php endif; ?>
 
 <?php if (!$ready): ?>
   <div class="sp-card" style="padding:24px"><h2>Socials is being switched on</h2><p>This page will open as soon as the setup is finished. Nothing is needed from you.</p></div>
@@ -112,7 +121,7 @@ $canPost = $status['can_post'] && $events;
     </section>
 
     <!-- numbers -->
-    <div class="sp-stats">
+    <div class="sp-stats" id="spStats">
       <div class="sp-card sp-stat"><i class="sp-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></i><div><b><?= number_format((int) $st['views']) ?></b><span>Video views</span><small>across <?= (int) $st['posts'] ?> post<?= (int) $st['posts'] === 1 ? '' : 's' ?></small></div></div>
       <div class="sp-card sp-stat"><i class="sp-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/></svg></i><div><b><?= number_format((int) $st['likes']) ?></b><span>Likes</span><small>reactions on your posts</small></div></div>
       <div class="sp-card sp-stat"><i class="sp-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.3A8 8 0 1 1 21 12z"/></svg></i><div><b><?= number_format((int) $st['comments']) ?></b><span>Comments</span><small>from viewers</small></div></div>
@@ -162,7 +171,7 @@ $canPost = $status['can_post'] && $events;
     </section>
 
     <!-- videos -->
-    <section class="sp-card sp-vids" aria-labelledby="spVidH">
+    <section class="sp-card sp-vids" id="spVids" aria-labelledby="spVidH">
       <div class="sp-vids-top">
         <h2 id="spVidH">Your Social Videos</h2>
         <?php if ($canPost): ?><a class="sp-btn sp-btn-red" href="#spUp" id="spUpGo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Upload Video</a><?php endif; ?>
@@ -186,9 +195,9 @@ $canPost = $status['can_post'] && $events;
                 <div><b><?= $h($r['title']) ?></b><small><?= $h(date('M j, Y', strtotime($r['created']))) ?></small></div>
               </div></td>
               <td><?php if ($e): ?><div class="sp-e"><?php if (!empty($e['banner_image'])): ?><img src="<?= $h($e['banner_image']) ?>" alt="" loading="lazy"><?php else: ?><span class="sp-e-ph"></span><?php endif; ?><div><b><?= $h($e['title']) ?></b><small><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><?= $h($evRange($e)) ?></small></div></div><?php endif; ?></td>
-              <td class="sp-n"><?= number_format($r['views']) ?></td>
-              <td class="sp-n"><?= number_format($r['likes']) ?></td>
-              <td class="sp-n"><?= number_format($r['comments']) ?></td>
+              <td class="sp-n" data-l="views"><?= number_format($r['views']) ?></td>
+              <td class="sp-n" data-l="likes"><?= number_format($r['likes']) ?></td>
+              <td class="sp-n" data-l="comments"><?= number_format($r['comments']) ?></td>
               <td><span class="sp-st sp-st-<?= $h($r['status']) ?>"><?= $r['status'] === 'draft' ? 'Draft' : 'Published' ?></span></td>
               <td><details class="sp-more"><summary aria-label="More actions">&bull;&bull;&bull;</summary><div>
                 <?php if ($r['status'] === 'published'): ?><a href="/socials.php?v=<?= (int) $r['id'] ?>">View on Socials</a><?php endif; ?>

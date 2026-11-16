@@ -128,7 +128,10 @@ function render_organizer_head(string $active, array $orgContext): void
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<?php /* owner 11/14: the platform must not zoom. Phones that ignore user-scalable (iPhone Safari) get the pinch and double-tap blocked here. */ ?>
+<script>(function(){var n=function(e){e.preventDefault();};document.addEventListener("gesturestart",n,{passive:false});document.addEventListener("gesturechange",n,{passive:false});document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1){e.preventDefault();}},{passive:false});})();</script>
+<style>html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}</style>
 <title><?= htmlspecialchars($pageTitle) ?></title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="csrf-token" content="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>">

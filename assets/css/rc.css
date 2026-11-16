@@ -157,7 +157,7 @@ html.rc body.landing-home .ld-org-rail{background:rgba(255,255,255,.05); border-
   html.rc body.landing-home .ld-wall{display:none}
   html.rc body.landing-home .ld-copy>p{display:none}
   /* featured events slide sideways as tall posters */
-  html.rc body.landing-home .ld-feat{display:flex; gap:12px; overflow-x:auto; margin:14px -20px 0; padding:0 20px 6px; scroll-snap-type:x mandatory; scrollbar-width:none}
+  html.rc body.landing-home .ld-feat{display:flex; gap:12px; overflow-x:auto; margin:14px -18px 0; padding:0 18px 6px; scroll-padding-inline:18px; scroll-snap-type:x mandatory; scrollbar-width:none}
   html.rc body.landing-home .ld-feat::-webkit-scrollbar{display:none}
   html.rc body.landing-home .ld-fc{flex:0 0 62%; max-width:260px; scroll-snap-align:start}
   html.rc body.landing-home .ld-fb{padding:12px 14px 14px}
