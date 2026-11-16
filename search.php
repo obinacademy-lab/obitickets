@@ -20,6 +20,11 @@ $near = is_uganda_district($near) ? $near : '';
 if ($near !== '') {
     $where = '';
 }
+// Remember the place a buyer looked at, so the home page can show "Popular in <place>" next time.
+$rememberPlace = $near !== '' ? $near : $where;
+if ($rememberPlace !== '' && ($_COOKIE['ot_place'] ?? '') !== $rememberPlace) {
+    setcookie('ot_place', $rememberPlace, ['expires' => time() + 90 * 86400, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off', 'samesite' => 'Lax']);
+}
 const NEAR_KM = 100;
 
 $window = $when !== '' ? search_when_window($when) : null;

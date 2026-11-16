@@ -168,6 +168,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
         <a class="btn btn-purple" href="/signup.php">Sign up</a>
       <?php endif; ?>
     </div>
+    <?= isset($navPlace) && is_string($navPlace) ? $navPlace : '' ?>
     <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
       <span class="nav-burger"><span></span><span></span><span></span></span>
     </button>

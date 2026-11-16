@@ -1,121 +1,110 @@
 /* ==========================================================================
-   Home page, "Marketplace Grid" (owner pick 11/16 from five app layouts).
-   Clean white app screen: search, a For you / Near me / Weekend / Free switch, featured events in a sideways row,
-   then every upcoming event in a two-column grid (more columns on bigger screens), categories and a short organizer
-   band. Flyers are always whole: each frame takes its flyer's shape (--fly), nothing is laid over it.
+   Home page, "Marketplace Grid": built exactly to the owner's mockup (11/16, layout 5).
+   White header (logo + place pill), search, For you / Near me / Weekend / Free, one big banner,
+   "Popular in ..." grid of square cards with the price on the picture, dark Selling tickets band.
    Only index.php loads this (body.home-grid), after rc.css, so it wins.
    ========================================================================== */
 body.home-grid{background:#fff}
 body.home-grid main,body.home-grid .page{padding-top:0}
+.mg-place{display:none}
 
-/* phones: a white top bar with the red logo (the rest of the site keeps its red bar) */
+/* ---------- phones: the app screen ---------- */
 @media (max-width:900px){
-  html.rc body.home-grid .site-nav{background:#fff; border-bottom:1px solid var(--rc-line)}
-  html.rc body.home-grid .site-nav .logo{color:var(--rc-ink)}
+  /* the top bar and the search block read as one white header with one line under it */
+  html.rc body.home-grid .site-nav{background:#fff; border-bottom:0; box-shadow:none}
+  html.rc body.home-grid .site-nav .nav-row{height:62px}
+  html.rc body.home-grid .site-nav .logo{color:var(--rc-ink); font-size:1.38rem}
+  html.rc body.home-grid .site-nav .logo-mark{width:32px; height:32px}
   html.rc body.home-grid .site-nav .logo-mark rect{fill:var(--rc-red)}
   html.rc body.home-grid .site-nav .logo-mark circle{stroke:#fff}
   html.rc body.home-grid .site-nav .logo-mark circle:last-child{fill:var(--rc-red)}
-  html.rc body.home-grid .site-nav .nav-toggle{background:#F7F2F1}
-  html.rc body.home-grid .site-nav .nav-toggle:hover{background:var(--rc-tint)}
-  html.rc body.home-grid .site-nav .nav-burger span{background:var(--rc-ink)}
+  html.rc body.home-grid .site-nav .nav-toggle{display:none}
+  .mg-place{position:relative; display:inline-flex; align-items:center; gap:5px; height:36px; padding:0 12px; margin-left:auto; border-radius:999px; background:#F7F2F1; color:var(--rc-ink); font:700 13px 'Plus Jakarta Sans',sans-serif; white-space:nowrap}
+  .mg-place select{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; border:0}
+  .mg-place:focus-within{outline:3px solid var(--rc-red); outline-offset:2px}
+  .mg-place-l{max-width:120px; overflow:hidden; text-overflow:ellipsis}
 }
 
-/* search + switch */
-.hg-top{padding:16px 0 4px}
-.hg-h1{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
-.hg-search{display:flex; align-items:center; gap:10px; height:52px; padding:0 6px 0 16px; border:1.5px solid #EADCDA; border-radius:16px; background:#fff; color:var(--rc-mute); transition:border-color .2s, box-shadow .2s}
-.hg-search:focus-within{border-color:var(--rc-red); box-shadow:0 0 0 4px rgba(220,38,38,.1)}
-.hg-search svg{flex:none}
-.hg-search input{flex:1; min-width:0; height:100%; border:0 !important; outline:0; background:transparent; padding:0; border-radius:0 !important; box-shadow:none !important; font:500 .97rem 'Plus Jakarta Sans',sans-serif; color:var(--rc-ink)}
-.hg-go{flex:none; height:40px; padding:0 16px; border:0; border-radius:12px; background:var(--rc-ink); color:#fff; font:700 .9rem 'Plus Jakarta Sans',sans-serif; cursor:pointer}
-.hg-go:hover{background:#000}
-.hg-seg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin-top:12px; padding:4px; border-radius:14px; background:#F7F2F1}
-.hg-seg a,.hg-seg button{display:flex; align-items:center; justify-content:center; height:38px; border:0; border-radius:10px; background:transparent; color:var(--rc-mute); font:700 .86rem 'Plus Jakarta Sans',sans-serif; cursor:pointer; white-space:nowrap; transition:background .2s, color .2s}
-.hg-seg a:hover,.hg-seg button:hover{color:var(--rc-ink)}
-.hg-seg .on{background:#fff; color:var(--rc-ink); font-weight:800; box-shadow:0 2px 6px -2px rgba(26,16,16,.25)}
-.hg-seg button.busy{opacity:.6; cursor:progress}
-.hg-msg{margin:10px 0 0; padding:10px 14px; border-radius:12px; background:var(--rc-soft); color:var(--rc-mute); font-size:.85rem}
+/* ---------- search + switch ---------- */
+.mg-top{padding:0 0 14px; border-bottom:1px solid #F0E4E2; background:#fff}
+.mg-h1{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.mg-search{display:flex; align-items:center; gap:10px; height:48px; padding:0 14px; border:1.5px solid #EADCDA; border-radius:14px; background:#fff; color:var(--rc-mute); transition:border-color .2s, box-shadow .2s}
+.mg-search:focus-within{border-color:var(--rc-red); box-shadow:0 0 0 4px rgba(220,38,38,.1)}
+.mg-search svg{flex:none}
+.mg-search input{flex:1; min-width:0; height:100%; border:0 !important; outline:0; background:transparent; padding:0; border-radius:0 !important; box-shadow:none !important; font:500 15px 'Plus Jakarta Sans',sans-serif; color:var(--rc-ink)}
+.mg-search input::placeholder{color:#8A7F7F}
+.mg-seg{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); height:42px; margin-top:14px; padding:4px; box-sizing:border-box; border-radius:14px; background:#F7F2F1}
+.mg-seg a,.mg-seg button{display:flex; align-items:center; justify-content:center; border:0; border-radius:10px; background:transparent; color:var(--rc-mute); font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; white-space:nowrap; transition:background .2s, color .2s}
+.mg-seg a:hover,.mg-seg button:hover{color:var(--rc-ink)}
+.mg-seg .on{background:#fff; color:var(--rc-ink); font-weight:800; box-shadow:0 2px 6px -2px rgba(26,16,16,.25)}
+.mg-seg button.busy{opacity:.6; cursor:progress}
+.mg-msg{margin:10px 0 0; padding:10px 14px; border-radius:12px; background:var(--rc-soft); color:var(--rc-mute); font-size:.85rem}
 
-/* sections */
-.hg-sec{margin-top:26px}
-.hg-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px}
-.hg-head h2{margin:0; font-family:var(--rc-disp); font-weight:700; font-size:1.35rem; letter-spacing:-.02em; color:var(--rc-ink)}
-.hg-head a{font-weight:700; font-size:.88rem; color:#B91C1C; white-space:nowrap}
-.hg-head a:hover{text-decoration:underline}
+/* ---------- banner ---------- */
+.mg-body{padding-bottom:8px}
+.mg-banner{position:relative; display:block; height:196px; margin-top:18px; border-radius:24px; overflow:hidden; color:#fff; background:#1A1010}
+.mg-banner img,.mg-banner-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 30%; transition:transform .6s var(--rc-ease)}
+.mg-banner:hover img{transform:scale(1.03)}
+.mg-banner-shade{position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,6,6,.05) 20%, rgba(10,6,6,.8) 100%)}
+.mg-banner-in{position:absolute; left:18px; right:18px; bottom:16px; display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
+.mg-banner-tx{display:flex; flex-direction:column; gap:3px; min-width:0}
+.mg-banner-date{font-size:12px; font-weight:800; color:#FECACA}
+.mg-banner-tx b{font-family:var(--rc-disp); font-weight:700; font-size:22px; line-height:1.05; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.mg-banner-place{font-size:13px; opacity:.9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mg-banner-price{flex:none; display:inline-flex; align-items:center; height:40px; padding:0 14px; border-radius:12px; background:var(--rc-red); font-size:13px; font-weight:800; color:#fff}
 
-/* a flyer frame: the frame takes the flyer's shape, the flyer covers it, nothing on top */
-.hg-fly{position:relative; display:block; width:100%; aspect-ratio:var(--fly, 4 / 5); border-radius:18px; overflow:hidden; background:var(--rc-soft)}
-.hg-fly img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s var(--rc-ease)}
-.hg-fly.is-empty{aspect-ratio:4 / 5}
-.hg-emoji{position:absolute; inset:0; display:grid; place-items:center; font-size:3rem}
+/* ---------- popular grid ---------- */
+.mg-sec{margin-top:24px}
+.mg-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px}
+.mg-head h2{margin:0; font-family:var(--rc-disp); font-weight:700; font-size:21px; letter-spacing:-.02em; color:var(--rc-ink)}
+.mg-head a{font-size:14px; font-weight:700; color:#B91C1C; white-space:nowrap}
+.mg-head a:hover{text-decoration:underline}
+.mg-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px}
+.mg-card{display:flex; flex-direction:column; gap:6px; min-width:0; color:var(--rc-ink)}
+.mg-img{position:relative; display:block; aspect-ratio:1 / 1; border-radius:18px; overflow:hidden; background:var(--rc-soft)}
+.mg-img img,.mg-emoji{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s var(--rc-ease)}
+.mg-emoji{display:grid; place-items:center; font-size:3rem}
+.mg-card:hover .mg-img img{transform:scale(1.04)}
+.mg-tag{position:absolute; left:8px; top:8px; display:flex; align-items:center; height:24px; padding:0 8px; border-radius:8px; background:var(--rc-red); color:#fff; font-size:11px; font-weight:800}
+.mg-price{position:absolute; left:8px; bottom:8px; display:flex; align-items:center; height:26px; padding:0 9px; border-radius:9px; background:#fff; color:var(--rc-ink); font-size:12px; font-weight:800; box-shadow:0 4px 10px -6px rgba(26,16,16,.5)}
+.mg-price.free{color:#15803D}
+.mg-title{font-size:14px; font-weight:700; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; transition:color .2s}
+.mg-card:hover .mg-title{color:#B91C1C}
+.mg-meta{font-size:12px; color:var(--rc-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.mg-none{text-align:center; padding:40px 0; color:var(--rc-mute)}
 
-.hg-when{font-size:.74rem; font-weight:800; letter-spacing:.02em; text-transform:uppercase; color:var(--rc-mute)}
-.hg-when.soon{color:#B91C1C}
-.hg-place{font-size:.82rem; color:var(--rc-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+/* ---------- selling tickets band ---------- */
+.mg-org{display:flex; align-items:center; gap:14px; margin-top:26px; padding:20px; border-radius:24px; background:var(--rc-ink); color:#fff}
+.mg-org-tx{flex:1; display:flex; flex-direction:column; gap:4px}
+.mg-org-tx b{font-family:var(--rc-disp); font-weight:700; font-size:19px}
+.mg-org-tx span{font-size:13px; color:#C9BDBB}
+.mg-org-btn{flex:none; display:inline-flex; align-items:center; height:44px; padding:0 16px; border-radius:14px; background:#fff; color:var(--rc-ink); font-size:14px; font-weight:800}
+.mg-org-btn:hover{background:var(--rc-tint); color:var(--rc-ink)}
 
-/* featured: a sideways row on phones (next card peeks), three or four across on computers */
-.hg-feat{display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; position:relative; margin:0 -18px; padding:2px 18px 6px; scroll-padding-inline:18px; align-items:stretch}
-.hg-feat::-webkit-scrollbar{display:none}
-.hg-ft{flex:none; width:min(70vw, 300px); scroll-snap-align:start; display:flex; flex-direction:column; border-radius:22px; background:#fff; box-shadow:0 1px 0 #F0E4E2, 0 14px 30px -24px rgba(26,16,16,.55); overflow:hidden}
-.hg-ft .hg-fly{border-radius:22px 22px 0 0}
-.hg-ft-art:hover img{transform:scale(1.03)}
-.hg-ft-tx{flex:1; display:flex; flex-direction:column; gap:4px; padding:14px 16px 16px}
-.hg-ft h3{margin:0; font-family:var(--rc-disp); font-weight:700; font-size:1.12rem; line-height:1.2; letter-spacing:-.01em}
-.hg-ft h3 a{color:var(--rc-ink)}
-.hg-ft h3 a:hover{color:#B91C1C}
-.hg-ft-buy{margin-top:auto; padding-top:12px; display:flex; align-items:center; justify-content:space-between; gap:10px}
-.hg-ft-price{display:flex; flex-direction:column; line-height:1.15}
-.hg-ft-price small{font-size:.72rem; color:var(--rc-mute)}
-.hg-ft-price b{font-family:var(--rc-disp); font-size:1.08rem; color:var(--rc-ink)}
-.hg-ft-price b.free{color:#15803D}
-.hg-btn{flex:none; display:inline-flex; align-items:center; height:42px; padding:0 18px; border-radius:13px; background:var(--rc-red); color:#fff; font-weight:800; font-size:.9rem; transition:background .2s}
-.hg-btn:hover{background:#B91C1C; color:#fff}
+.mg-seg a:focus-visible,.mg-seg button:focus-visible,.mg-card:focus-visible,.mg-banner:focus-visible,.mg-org-btn:focus-visible{outline:3px solid var(--rc-red); outline-offset:2px}
 
-/* the grid: two columns on phones, cards keep their flyer's shape so rows may differ in height */
-.hg-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 12px; align-items:start}
-.hg-card{display:flex; flex-direction:column; gap:5px; min-width:0; color:var(--rc-ink)}
-.hg-card .hg-fly{margin-bottom:4px}
-.hg-card:hover img{transform:scale(1.03)}
-.hg-card:hover .hg-title{color:#B91C1C}
-.hg-title{font-size:.95rem; font-weight:700; line-height:1.28; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; transition:color .2s}
-.hg-price{font-size:.88rem; font-weight:800; color:var(--rc-ink)}
-.hg-price.free{color:#15803D}
-
-/* categories reuse the Red Carpet tiles */
-html.rc body.home-grid .rc-home-cats{padding-top:0}
-
-/* organizer band + trust line */
-.hg-org{display:flex; align-items:center; gap:14px; padding:20px; border-radius:22px; background:var(--rc-ink); color:#fff}
-.hg-org-tx{flex:1; display:flex; flex-direction:column; gap:4px}
-.hg-org-tx b{font-family:var(--rc-disp); font-size:1.15rem}
-.hg-org-tx span{font-size:.86rem; color:#D6CBC9}
-.hg-org-btn{flex:none; display:inline-flex; align-items:center; height:44px; padding:0 18px; border-radius:13px; background:#fff; color:var(--rc-ink); font-weight:800; font-size:.9rem}
-.hg-org-btn:hover{background:var(--rc-tint); color:var(--rc-ink)}
-.hg-trust{display:flex; flex-wrap:wrap; justify-content:center; gap:6px 18px; margin:16px 0 0; padding:0; list-style:none; font-size:.8rem; font-weight:700; color:var(--rc-mute)}
-.hg-trust li::before{content:"\2713"; color:var(--rc-red); margin-right:6px}
-.hg-none{text-align:center; padding:40px 0 60px; color:var(--rc-mute)}
-
-/* signed-in "Your next event" strip sits between the switch and Featured */
-body.home-grid #ldNext{margin-top:22px}
-
-.hg-search:focus-visible,.hg-seg a:focus-visible,.hg-seg button:focus-visible,.hg-card:focus-visible,.hg-btn:focus-visible,.hg-org-btn:focus-visible{outline:3px solid var(--rc-red); outline-offset:2px}
-
-/* tablets and computers */
-@media (min-width:640px){
-  .hg-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:26px 18px}
-}
+/* ---------- tablets and computers: the same screen, wider ---------- */
+@media (min-width:640px){ .mg-grid{grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px 16px} .mg-banner{height:280px} }
 @media (min-width:901px){
-  .hg-top{padding:34px 0 6px}
-  .hg-h1{position:static; width:auto; height:auto; overflow:visible; clip:auto; white-space:normal; margin:0 0 18px; font-family:var(--rc-disp); font-weight:700; font-size:clamp(2rem,3.4vw,2.8rem); line-height:1.08; letter-spacing:-.025em; color:var(--rc-ink); max-width:760px}
-  .hg-top .wrap{display:grid; grid-template-columns:minmax(0,1fr) 420px; column-gap:18px; align-items:center}
-  .hg-h1{grid-column:1 / -1}
-  .hg-seg{margin-top:0}
-  .hg-msg{grid-column:1 / -1}
-  .hg-sec{margin-top:40px}
-  .hg-head h2{font-size:1.6rem}
-  .hg-feat{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); overflow:visible; margin:0; padding:0; gap:20px}
-  .hg-ft{width:auto}
-  .hg-grid{grid-template-columns:repeat(4,minmax(0,1fr)); gap:30px 20px}
+  .mg-top{padding:30px 0 22px}
+  .mg-top .wrap{display:grid; grid-template-columns:minmax(0,1fr) 440px; gap:16px 18px; align-items:center}
+  .mg-h1{position:static; width:auto; height:auto; overflow:visible; clip:auto; white-space:normal; grid-column:1 / -1; margin:0 0 4px; font-family:var(--rc-disp); font-weight:700; font-size:clamp(2rem,3.2vw,2.7rem); line-height:1.08; letter-spacing:-.025em; color:var(--rc-ink)}
+  .mg-seg{margin-top:0; height:48px}
+  .mg-msg{grid-column:1 / -1}
+  .mg-banner{height:360px; margin-top:28px; border-radius:28px}
+  .mg-banner-in{left:32px; right:32px; bottom:28px}
+  .mg-banner-tx b{font-size:34px}
+  .mg-banner-date{font-size:13px}
+  .mg-banner-place{font-size:15px}
+  .mg-banner-price{height:48px; padding:0 20px; font-size:15px; border-radius:14px}
+  .mg-sec{margin-top:36px}
+  .mg-head h2{font-size:26px}
+  .mg-grid{grid-template-columns:repeat(4,minmax(0,1fr)); gap:30px 20px}
+  .mg-title{font-size:15px}
+  .mg-meta{font-size:13px}
+  .mg-org{margin-top:40px; padding:28px 32px}
+  .mg-org-tx b{font-size:22px}
+  .mg-org-tx span{font-size:14px}
 }
-@media (min-width:1280px){ .hg-grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
-@media (prefers-reduced-motion:reduce){ .hg-fly img,.hg-search,.hg-seg a,.hg-seg button,.hg-btn{transition:none} .hg-card:hover img,.hg-ft-art:hover img{transform:none} }
+@media (min-width:1280px){ .mg-grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
+@media (prefers-reduced-motion:reduce){ .mg-banner img,.mg-img img,.mg-search,.mg-seg a,.mg-seg button,.mg-title{transition:none} .mg-banner:hover img,.mg-card:hover .mg-img img{transform:none} }
