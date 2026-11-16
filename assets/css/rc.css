@@ -322,3 +322,29 @@ html.rc .pe-art img{object-fit:cover; object-position:center}
 @media (max-width:900px){
   .rc-logo{flex:none; display:block}
 }
+
+/* Browse: Near me + Where picker, then the date chips (search.php) */
+html.rc .sx-bar{display:grid; gap:12px; margin:0 0 18px}
+html.rc .sx-where{display:flex; align-items:center; gap:8px; min-width:0}
+html.rc .sx-near{flex:none; display:inline-flex; align-items:center; gap:7px; height:44px; padding:0 16px; border:1.5px solid var(--rc-red); border-radius:999px; background:#fff; color:var(--rc-red-d); font:700 .9rem 'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:background .2s, color .2s}
+html.rc .sx-near:hover{background:var(--rc-tint)}
+html.rc .sx-near.on{background:var(--rc-red); color:#fff}
+html.rc .sx-near.busy{opacity:.7; cursor:progress}
+html.rc .sx-near.busy svg{animation:sxPulse 1s ease-in-out infinite}
+@keyframes sxPulse{50%{transform:translateY(-2px)}}
+html.rc .sx-clear{flex:none; width:32px; height:32px; margin-left:-4px; display:grid; place-items:center; border-radius:50%; background:var(--rc-tint); color:var(--rc-red-d)}
+html.rc .sx-clear:hover{background:var(--rc-red); color:#fff}
+html.rc .sx-pick{flex:1 1 auto; min-width:0; display:flex; gap:6px; margin:0}
+html.rc .sx-pick select{width:100%; min-width:0; max-width:300px; height:44px; padding:0 38px 0 16px; border:1.5px solid var(--rc-line); border-radius:999px; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23645A5A' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 15px center; -webkit-appearance:none; appearance:none; font:600 .9rem 'Plus Jakarta Sans',sans-serif; color:var(--rc-ink); cursor:pointer; text-overflow:ellipsis}
+html.rc .sx-pick select.on{border-color:var(--rc-red); background-color:var(--rc-soft); color:var(--rc-red-d)}
+html.rc .sx-pick select:focus-visible,html.rc .sx-near:focus-visible,html.rc .sx-chip:focus-visible{outline:3px solid var(--rc-red); outline-offset:2px}
+html.rc .sx-go{height:44px; padding:0 16px; border:0; border-radius:999px; background:var(--rc-ink); color:#fff; font-weight:700}
+html.rc .sx-when{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; padding-bottom:2px; position:relative}
+html.rc .sx-when::-webkit-scrollbar{display:none}
+html.rc .sx-chip{flex:none; display:inline-flex; align-items:center; height:38px; padding:0 15px; border-radius:999px; background:var(--rc-soft); color:var(--rc-ink); font-weight:600; font-size:.86rem; white-space:nowrap; transition:background .2s, color .2s}
+html.rc .sx-chip:hover{background:var(--rc-tint)}
+html.rc .sx-chip.on{background:var(--rc-ink); color:#fff}
+html.rc .sx-msg{margin:0; padding:10px 14px; border-radius:14px; background:var(--rc-soft); color:var(--rc-mute); font-size:.86rem}
+html.rc .sx-dist{display:inline-flex; align-items:center; gap:4px; margin-bottom:6px; padding:3px 9px; border-radius:999px; background:var(--rc-tint); color:var(--rc-red-d); font-size:.72rem; font-weight:700}
+@media (min-width:901px){ html.rc .sx-bar{grid-template-columns:auto minmax(0,1fr); align-items:center; gap:14px 18px} html.rc .sx-msg{grid-column:1/-1} }
+@media (prefers-reduced-motion:reduce){ html.rc .sx-near.busy svg{animation:none} }

@@ -122,6 +122,8 @@ function ef_tier_row(array $tier, bool $onlineReady): void
             <label class="ef-fld"><span class="ef-lbl">Venue name</span><input class="ef-inp" id="venue_name" name="venue_name" type="text" value="<?= htmlspecialchars($mode === 'ONLINE' ? '' : $event['venue_name']) ?>" placeholder="e.g. Lutembe Beach" autocomplete="off"></label>
             <label class="ef-fld"><span class="ef-lbl">Venue address <small>(optional)</small></span><input class="ef-inp" id="venue_address" name="venue_address" type="text" value="<?= htmlspecialchars($event['venue_address'] ?? '') ?>" placeholder="Town or street" autocomplete="off"></label>
           </div>
+          <label class="ef-fld"><span class="ef-lbl">District <small>(helps buyers nearby find you)</small></span><select class="ef-inp" id="district" name="district" data-places="<?= htmlspecialchars(json_encode(district_detect_map())) ?>"><option value="">Choose the district</option><?= district_options_html($event['district'] ?? '') ?></select></label>
+          <script src="/assets/js/district-pick.js" defer></script>
         </div>
         <?php if ($onlineReady): ?>
         <div class="ef-mf ef-only-online">

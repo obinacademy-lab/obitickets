@@ -110,6 +110,12 @@ function render_tier_form_row(array $tier, bool $withId): void
     <label for="venue_address">Venue address</label>
     <input id="venue_address" name="venue_address" type="text" value="<?= htmlspecialchars($event['venue_address'] ?? '') ?>">
   </div>
+  <div class="field">
+    <label for="district">District</label>
+    <select class="" id="district" name="district" data-places="<?= htmlspecialchars(json_encode(district_detect_map())) ?>"><option value="">Choose the district</option><?= district_options_html($event['district'] ?? '') ?></select>
+    <div class="field-hint">Buyers searching near them or in this district will find your event.</div>
+    <script src="/assets/js/district-pick.js" defer></script>
+  </div>
   <?php else: $mode = event_attend_mode($event); ?>
   <section class="nt-panel" id="attendPanel" data-mode="<?= htmlspecialchars($mode) ?>" aria-label="How will people attend">
     <div class="nt-grid">
@@ -125,6 +131,7 @@ function render_tier_form_row(array $tier, bool $withId): void
         <div class="nt-venue">
           <div class="nt-fld"><label for="venue_name">Venue name</label><input class="nt-inp" id="venue_name" name="venue_name" type="text" value="<?= htmlspecialchars($mode === 'ONLINE' ? '' : $event['venue_name']) ?>"></div>
           <div class="nt-fld"><label for="venue_address">Venue address</label><input class="nt-inp" id="venue_address" name="venue_address" type="text" value="<?= htmlspecialchars($event['venue_address'] ?? '') ?>"></div>
+          <div class="nt-fld"><label for="district">District</label><select class="nt-inp" id="district" name="district" data-places="<?= htmlspecialchars(json_encode(district_detect_map())) ?>"><option value="">Choose the district</option><?= district_options_html($event['district'] ?? '') ?></select><script src="/assets/js/district-pick.js" defer></script></div>
         </div>
 
         <div class="nt-online">

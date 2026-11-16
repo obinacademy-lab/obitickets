@@ -20,6 +20,7 @@ $event = [
     'online_url' => '',
     'online_notes' => '',
     'show_tickets_left' => 0,
+    'district' => '',
 ];
 $tiers = [['name' => '', 'description' => '', 'price' => '', 'currency' => 'UGX', 'quantity_total' => '', 'max_per_person' => '']];
 
@@ -36,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event['ends_at'] = $_POST['ends_at'] ?? '';
     $event['status'] = ($_POST['status'] ?? 'DRAFT') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT';
     $event['show_tickets_left'] = !empty($_POST['show_tickets_left']) ? 1 : 0;
+    $event['district'] = is_string($_POST['district'] ?? null) && is_uganda_district($_POST['district']) ? $_POST['district'] : '';
 
     $tiers = parse_tier_submission($_POST);
     if (!$tiers) {
@@ -80,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['banner_image'] = $bannerImage;
         $eventId = create_event($organizerId, $eventFields, $validTiers);
         set_event_show_tickets_left($eventId, (bool) $event['show_tickets_left']);
+        set_event_district($eventId, ($event['attend_mode'] ?? '') === 'ONLINE' ? null : ($event['district'] !== '' ? $event['district'] : detect_district($event['venue_address'], $event['venue_name'])));
         log_organizer_action($organizerId, $ctx['actor_id'], 'event.create', 'event', $eventId, ['title' => $eventFields['title']]);
 
         // The event now exists, so a gallery file that fails to validate here

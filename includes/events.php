@@ -102,16 +102,22 @@ function free_community_events(int $limit = 6): array
  * description), an optional exact category, and an optional "free events
  * only" filter — any combination of the three, all AND-ed together.
  */
-function search_events(?string $q, ?string $category, bool $freeOnly = false, int $limit = 60, bool $onlineOnly = false): array
+function search_events(?string $q, ?string $category, bool $freeOnly = false, int $limit = 60, bool $onlineOnly = false, ?array $window = null): array
 {
     $conditions = ["e.status = 'PUBLISHED'", 'e.ends_at >= NOW()'];
     $params = [];
 
+    // A date chip on Browse: the event runs at some point inside [from, to].
+    if ($window !== null) {
+        $conditions[] = 'e.starts_at <= ? AND e.ends_at > ?';
+        array_push($params, date('Y-m-d H:i:s', $window[1]), date('Y-m-d H:i:s', $window[0]));
+    }
+
     $q = trim((string) $q);
     if ($q !== '') {
-        $conditions[] = '(e.title LIKE ? OR e.venue_name LIKE ? OR e.description LIKE ?)';
+        $conditions[] = '(e.title LIKE ? OR e.venue_name LIKE ? OR e.venue_address LIKE ? OR e.description LIKE ?)';
         $like = '%' . $q . '%';
-        array_push($params, $like, $like, $like);
+        array_push($params, $like, $like, $like, $like);
     }
 
     if ($category !== null && $category !== '' && in_array($category, EVENT_CATEGORIES, true)) {
@@ -127,7 +133,8 @@ function search_events(?string $q, ?string $category, bool $freeOnly = false, in
         $conditions[] = "e.attend_mode IN ('ONLINE', 'HYBRID')";
     }
 
-    $sql = 'SELECT ' . event_select_sql() . ' FROM events e WHERE ' . implode(' AND ', $conditions)
+    $place = ', e.venue_address' . (function_exists('places_ready') && places_ready() ? ', e.district' : '');
+    $sql = 'SELECT ' . event_select_sql() . $place . ' FROM events e WHERE ' . implode(' AND ', $conditions)
         . ' ORDER BY e.starts_at ASC LIMIT ' . (int) $limit;
     $stmt = db()->prepare($sql);
     $stmt->execute($params);

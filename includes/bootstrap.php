@@ -59,6 +59,7 @@ require_once __DIR__ . '/community-render.php';
 require_once __DIR__ . '/moments.php';
 require_once __DIR__ . '/sounds.php';
 require_once __DIR__ . '/socials.php';
+require_once __DIR__ . '/places.php';
 require_once __DIR__ . '/admin.php';
 require_once __DIR__ . '/admin-layout.php';
 require_once __DIR__ . '/uploads.php';
