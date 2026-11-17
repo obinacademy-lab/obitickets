@@ -608,6 +608,42 @@ function set_post_comments_enabled(array $user, int $postId, bool $enabled): arr
 }
 
 // =====================================================================
+// Saved videos (the Save button in the feed; migration 032)
+// =====================================================================
+
+/** True once migration 032 (post_saves) has run. */
+function post_saves_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW TABLES LIKE 'post_saves'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** Save or un-save a published post for this person. @return array{ok:bool, error?:string, saved?:bool} */
+function set_post_save(int $postId, int $userId, bool $save): array
+{
+    if (!post_saves_ready()) {
+        return ['ok' => false, 'error' => 'Saving is not available yet.'];
+    }
+    $post = get_post($postId);
+    if (!$post || $post['status'] !== 'PUBLISHED') {
+        return ['ok' => false, 'error' => 'Post not found.'];
+    }
+    if ($save) {
+        db()->prepare('INSERT IGNORE INTO post_saves (post_id, user_id) VALUES (?, ?)')->execute([$postId, $userId]);
+    } else {
+        db()->prepare('DELETE FROM post_saves WHERE post_id = ? AND user_id = ?')->execute([$postId, $userId]);
+    }
+    return ['ok' => true, 'saved' => $save];
+}
+
+// =====================================================================
 // Reactions
 // =====================================================================
 

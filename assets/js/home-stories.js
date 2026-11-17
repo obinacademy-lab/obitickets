@@ -27,7 +27,7 @@
         body: JSON.stringify({ action: 'follow_organizer', organizer_id: parseInt(org, 10), follow: next, csrf_token: csrf })
       }).then(function (r) {
         if (r.status === 401) {
-          window.location.href = '/login.php?next=' + encodeURIComponent('/');
+          window.location.href = '/login.php?next=' + encodeURIComponent('/discover.php');
           return null;
         }
         return r.json().then(function (d) { if (!r.ok || !d || d.ok === false) throw new Error('fail'); });

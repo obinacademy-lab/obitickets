@@ -563,3 +563,49 @@ body.socials-list .so-empty p{color:#645A5A}
 
 }
 @media (prefers-reduced-motion: reduce){ .ss-tile img,.ss-tile video{transition:none} }
+
+/* ==========================================================================
+   v3: the app mockup (11/17). The feed is the home page. Rail = like, comments, share, save; the organizer
+   (picture, @handle, event, Follow pill) sits above the caption; one wide BOOK TICKET button under it.
+   ========================================================================== */
+.so-bell{position:relative}
+.so-bell i{position:absolute; top:7px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--so-red); border:2px solid #0B0708}
+body.so-v3 .so-tabs{gap:22px; font-size:1.02rem}
+
+.so-who{display:flex; align-items:center; gap:10px; min-width:0; margin-bottom:2px}
+.so-who .so-av{flex:none; width:40px; height:40px; border-radius:50%; border:2px solid #fff; background:#3A2A2D; display:grid; place-items:center; font:700 .8rem 'Outfit',sans-serif; color:#fff; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.so-who .so-av img{width:100%; height:100%; object-fit:cover}
+.so-who-tx{min-width:0; display:grid; gap:1px}
+.so-handle{display:flex; align-items:center; gap:5px; min-width:0; font-weight:800; font-size:.95rem; color:#fff; text-shadow:0 1px 8px rgba(0,0,0,.55)}
+.so-handle a,.so-handle > span:first-child{color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.so-handle .so-ver{flex:none}
+.so-evname{font-size:.78rem; font-weight:500; color:#EDE3E3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.so-evname:hover{color:#fff; text-decoration:underline}
+.so-info .so-follow{position:static; flex:none; width:auto; height:30px; margin:0 0 0 2px; padding:0 14px; border-radius:999px; border:1px solid transparent; background:var(--so-red); color:#fff;
+  font:800 .78rem 'Plus Jakarta Sans',system-ui,sans-serif; line-height:1; display:inline-flex !important; align-items:center; box-shadow:none; text-shadow:none; cursor:pointer; transition:background .2s}
+.so-info .so-follow:hover{background:#C81E1E}
+.so-info .so-follow.is-on{background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.4); color:#fff}
+.so-info .so-follow[hidden]{display:none !important}
+.so-info .so-follow:focus-visible,.so-cap:focus-visible{outline:3px solid #fff; outline-offset:2px}
+body.so-v3 .so-info{gap:6px}
+body.so-v3 .so-cap{cursor:pointer}
+body.so-v3 .so-meta{font-size:.82rem; font-weight:600}
+
+body.so-v3 .so-rail{gap:16px}
+.so-rail .so-save.is-on .so-ic{color:var(--so-red)}
+.so-rail .so-save .so-n{font-size:.76rem}
+
+body.so-v3 .so-cta{height:50px; border-radius:12px; padding:0 18px; justify-content:center; font-size:.98rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; box-shadow:0 14px 26px -14px rgba(220,38,38,.95)}
+body.so-v3 .so-cta span{flex:none; margin:0; text-align:center}
+
+@media (max-width:900px){
+  body.so-v3 .so-cta{bottom:calc(76px + env(safe-area-inset-bottom, 0px))}
+  body.so-v3 .so-info{bottom:calc(138px + env(safe-area-inset-bottom, 0px)); right:70px}
+  body.so-v3 .so-rail{bottom:calc(214px + env(safe-area-inset-bottom, 0px))}
+}
+@media (min-width:901px){
+  body.so-v3 .so-cta{bottom:20px}
+  body.so-v3 .so-info{bottom:82px}
+  body.so-v3 .so-rail{bottom:158px}
+}
+@media (prefers-reduced-motion: reduce){ .so-info .so-follow{transition:none} }

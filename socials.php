@@ -12,10 +12,12 @@ $ready = function_exists('socials_ready') && moments_ready();
 // full-screen player. A card opens the player on that organizer's posts (?org=<id>, newest first, ?v= to start on
 // one of them); a shared link opens one post in the main feed (?v=<id>); ?play=1 opens the main feed from the top.
 $orgFilter = (int) ($_GET['org'] ?? 0);
-$view = ($startId > 0 || $orgFilter > 0 || isset($_GET['play'])) ? 'player' : 'list';
-$tabUrl = static function (string $t) use ($view): string {
-    $q = array_filter(['play' => $view === 'player' ? '1' : null, 'tab' => $t !== 'foryou' ? $t : null]);
-    return '/socials.php' . ($q ? '?' . http_build_query($q) : '');
+$soHome = !empty($socialsHome);                    // opened as the home page (index.php)
+$soBase = $soHome ? '/' : '/socials.php';
+$view = ($soHome || $startId > 0 || $orgFilter > 0 || isset($_GET['play'])) ? 'player' : 'list';
+$tabUrl = static function (string $t) use ($view, $soHome, $soBase): string {
+    $q = array_filter(['play' => ($view === 'player' && !$soHome) ? '1' : null, 'tab' => $t !== 'foryou' ? $t : null]);
+    return $soBase . ($q ? '?' . http_build_query($q) : '');
 };
 
 $shorts = [];
@@ -46,7 +48,7 @@ if ($orgFilter > 0 && $items) {
     $orgInfo = $items[0]['org'] + ['count' => $orgCount ?? count($items)];
 }
 
-$pageTitle = 'Socials: event videos | obitickets';
+$pageTitle = $soHome ? 'obitickets — Ticketing Made Simple' : 'Socials: event videos | obitickets';
 $pageDescription = 'Watch videos from events across Uganda, follow organizers and get your ticket straight from the video.';
 // A shared link opens on that post, so the preview shows it.
 $startRow = null;
@@ -67,10 +69,12 @@ if ($startRow) {
         $ogImageW = 0;
     }
 }
-$bodyClass = 'classic-page socials-page' . ($view === 'list' ? ' socials-list' : '');
+$bodyClass = 'classic-page socials-page' . ($view === 'list' ? ' socials-list' : ' so-v3') . ($soHome ? ' home-feed' : '');
+$rcTabForce = $view === 'list' ? 'discover' : 'home';   // which bottom tab is lit
 $hideWhatsApp = true; // the rail of buttons sits where the WhatsApp button would be
 $ctx = $user ? resolve_organizer_context($user) : null;
-$loginUrl = '/login.php?next=' . rawurlencode('/socials.php' . ($tab !== 'foryou' ? '?tab=' . $tab : ''));
+$loginUrl = '/login.php?next=' . rawurlencode($soBase . ($tab !== 'foryou' ? '?tab=' . $tab : ''));
+$soUnread = $user ? count_unread_notifications((int) $user['id']) : 0;
 include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
@@ -133,13 +137,12 @@ include __DIR__ . '/includes/header.php';
   </div>
   <?php elseif ($view === 'player'): ?>
   <div class="so-top">
-    <?php if ($view === 'player'): ?><span class="so-top-gap" aria-hidden="true"></span><?php endif; ?>
-    <nav class="so-tabs" aria-label="Socials">
-      <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= $tab === 'foryou' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
+    <a class="so-search so-bell" href="<?= $user ? '/notifications.php' : htmlspecialchars($loginUrl) ?>" aria-label="Notifications<?= $soUnread ? ', ' . (int) $soUnread . ' unread' : '' ?>"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><?php if ($soUnread): ?><i></i><?php endif; ?></a>
+    <nav class="so-tabs" aria-label="Feed">
+      <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= $tab !== 'following' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
       <a href="<?= htmlspecialchars($tabUrl('following')) ?>"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
-      <a href="<?= htmlspecialchars($tabUrl('trending')) ?>"<?= $tab === 'trending' ? ' class="on" aria-current="page"' : '' ?>>Trending</a>
     </nav>
-    <a class="so-search" href="/search.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
+    <a class="so-search" href="/discover.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
   </div>
   <?php endif; ?>
 
@@ -164,11 +167,11 @@ include __DIR__ . '/includes/header.php';
       <?php elseif ($tab === 'trending'): ?>
         <h1>Nothing trending yet</h1>
         <p>The most-liked, most-shared posts of the last two weeks will show up here.</p>
-        <a class="so-btn" href="/socials.php">See all videos</a>
+        <a class="so-btn" href="<?= htmlspecialchars($soBase) ?>">See all videos</a>
       <?php elseif ($tab === 'following'): ?>
         <h1>Nothing from the organizers you follow yet</h1>
         <p>Follow an organizer from any video and their posts will appear here.</p>
-        <a class="so-btn" href="/socials.php">See all videos</a>
+        <a class="so-btn" href="<?= htmlspecialchars($soBase) ?>">See all videos</a>
       <?php else: ?>
         <h1>Socials is just getting started</h1>
         <p>Event videos from organizers will show up here. Check back soon.</p>
@@ -222,6 +225,7 @@ include __DIR__ . '/includes/header.php';
     <a data-so-share="telegram" target="_blank" rel="noopener"><i class="tg"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.5 4.5 2.9 11.6c-.9.4-.9 1.1-.2 1.300l4.700 1.500 1.800 5.600c.2.600.4.800.900.800s.600-.2.900-.500l2.300-2.200 4.700 3.500c.9.500 1.500.2 1.700-.800l3.100-14.700c.3-1.300-.5-1.900-1.300-1.600zM8.300 14.100l9.300-5.900c.4-.3.800-.1.500.2l-7.700 7-.3 3.300z"/></svg></i>Telegram</a>
     <button type="button" data-so-share="copy"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1"/><path d="M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/></svg></i><span>Copy link</span></button>
     <button type="button" data-so-share="more"><i><svg width="22" height="22" aria-hidden="true"><use href="#ic-more"/></svg></i>More</button>
+    <button type="button" data-so-share="report"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg></i>Report</button>
   </div>
 </section>
 
@@ -246,6 +250,7 @@ include __DIR__ . '/includes/header.php';
     'loginUrl' => $loginUrl,
     'me' => $uid,
     'stickers' => SOCIALS_STICKERS,
+    'canSave' => function_exists('post_saves_ready') && post_saves_ready(),
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>

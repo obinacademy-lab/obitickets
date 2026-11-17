@@ -384,11 +384,12 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
 
     $sql = '
         SELECT x.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at, e.ends_at AS event_ends_at,
-               e.venue_name AS event_venue, e.attend_mode AS event_mode, e.organizer_id, e.banner_image AS event_banner,
+               e.venue_name AS event_venue, ' . (events_online_ready() ? 'e.attend_mode' : '"IN_PERSON"') . ' AS event_mode, e.organizer_id, e.banner_image AS event_banner,
                (e.ends_at < NOW()) AS event_ended,
                COALESCE(NULLIF(op.org_name, ""), ou.name) AS org_name, op.slug AS org_slug, (op.verification_status = "VERIFIED") AS org_verified,
                (SELECT MIN(t.price) FROM ticket_types t WHERE t.event_id = e.id) AS min_price,
-               (SELECT COUNT(*) FROM organizer_follows f2 WHERE f2.organizer_user_id = e.organizer_id AND f2.user_id = ' . (int) $viewer . ') AS i_follow
+               (SELECT COUNT(*) FROM organizer_follows f2 WHERE f2.organizer_user_id = e.organizer_id AND f2.user_id = ' . (int) $viewer . ') AS i_follow' . ($viewer && function_exists('post_saves_ready') && post_saves_ready() ? ',
+               (SELECT COUNT(*) FROM post_saves ps WHERE ps.post_id = x.id AND ps.user_id = ' . (int) $viewer . ') AS i_saved' : '') . '
         FROM (' . moment_select_sql() . ') x
         JOIN events e ON e.id = x.event_id
         JOIN users ou ON ou.id = e.organizer_id
@@ -459,6 +460,7 @@ function socials_item_public(array $row): array
     ];
     $item['share'] = rtrim(APP_URL, '/') . '/socials.php?v=' . (int) $row['id'];
     $item['likes'] = moment_compact((int) $row['reaction_count']);
+    $item['saved'] = (int) ($row['i_saved'] ?? 0) > 0;
     return $item;
 }
 

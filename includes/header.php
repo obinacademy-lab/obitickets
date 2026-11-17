@@ -150,7 +150,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
       obitickets
     </a>
     <div class="nv-links" aria-label="Main">
-      <a class="nv-t<?= $navCur('/') ?>" href="/" data-pop="ev" aria-haspopup="true" aria-expanded="false">Browse events <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
+      <a class="nv-t<?= $navCur('/discover.php') ?>" href="/discover.php" data-pop="ev" aria-haspopup="true" aria-expanded="false">Browse events <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
       <a class="nv-t<?= $navCur('/my-events.php') ?>" href="/my-events.php" data-pop="org" aria-haspopup="true" aria-expanded="false">Sell tickets <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
       <?php if (function_exists('socials_feed') && moments_ready()): ?><a class="nv-a<?= $navCur('/socials.php') ?>" href="/socials.php">Socials</a><?php endif; ?>
       <a class="nv-a<?= $navCur('/past-events.php') ?>" href="/past-events.php">Past events</a>
@@ -178,7 +178,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
   <div class="nv-pop" id="nvPop" aria-label="Menu panel">
     <div class="nv-sec nv-ev" data-sec="ev" data-w="700">
       <div class="nv-col">
-        <a class="nv-it" href="/"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-grid"/></svg></i><div><b>Browse all events</b><small>Everything on sale across Uganda</small></div></a>
+        <a class="nv-it" href="/discover.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-grid"/></svg></i><div><b>Browse all events</b><small>Everything on sale across Uganda</small></div></a>
         <a class="nv-it" href="/search.php?free=1"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-ticket"/></svg></i><div><b>Free events</b><small>Claim a free ticket in seconds</small></div></a>
         <a class="nv-it" href="/search.php?online=1"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-monitor"/></svg></i><div><b>Online events</b><small>Join from anywhere with a link</small></div></a>
         <a class="nv-it" href="/past-events.php"><i class="nv-ic"><svg width="19" height="19"><use href="#ic-clock"/></svg></i><div><b>Past events</b><small>Photos and highlights</small></div></a>
@@ -198,7 +198,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
         <em>Get tickets</em>
       </a>
       <?php else: ?>
-      <a class="nv-promo" href="/"><span class="nv-pk">Welcome</span><b>Find your next event</b><small>Concerts, conferences, faith and comedy</small><em>Browse events</em></a>
+      <a class="nv-promo" href="/discover.php"><span class="nv-pk">Welcome</span><b>Find your next event</b><small>Concerts, conferences, faith and comedy</small><em>Browse events</em></a>
       <?php endif; ?>
     </div>
     <div class="nv-sec" data-sec="org" data-w="410">
@@ -237,7 +237,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </button>
     <div class="nav-sub" id="navSubEv"><div>
-      <a href="/">Browse all events</a>
+      <a href="/discover.php">Browse all events</a>
       <a href="/search.php?free=1">Free events</a>
       <a href="/search.php?online=1">Online events</a>
       <?php foreach ($navCatLinks as $navCat): ?><a href="/search.php?category=<?= urlencode((string) $navCat) ?>"><?= htmlspecialchars((string) $navCat) ?></a><?php endforeach; ?>

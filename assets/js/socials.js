@@ -46,6 +46,7 @@
     play: ['M8 5v14l11-7z'],
     note: ['M9 18V5l11-2v13', 'M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z', 'M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'],
     ticket: ['M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z'],
+    save: ['M6 3h12a1 1 0 0 1 1 1v17l-7-4.500L5 21V4a1 1 0 0 1 1-1z'],
     check: ['M5 12.500l4.500 4.500L19 7.500']
   };
 
@@ -125,54 +126,62 @@
     var paused = el('span', 'so-paused'); paused.appendChild(svg(IC.play, 40, true)); a.appendChild(paused);
     var heart = el('span', 'so-heart', '❤️'); heart.setAttribute('aria-hidden', 'true'); a.appendChild(heart);
 
-    // rail
+    // rail (the mockup): like, comments, share, save
     var rail = el('div', 'so-rail');
-    var org = el('div', 'so-org');
-    var av = d.org.url ? el('a', 'so-av') : el('span', 'so-av');
-    if (d.org.url) { av.href = d.org.url; av.setAttribute('aria-label', d.org.name + ' profile'); }
-    if (d.org.avatar) { var ai = el('img'); ai.alt = ''; ai.src = d.org.avatar; av.appendChild(ai); } else { av.textContent = d.org.initials; }
-    org.appendChild(av);
-    var fol = el('button', 'so-follow' + (d.org.following ? ' is-on' : ''), d.org.following ? '✓' : '+');
-    fol.type = 'button'; fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
-    if (D.me && D.me === d.org.id) { fol.hidden = true; }
-    org.appendChild(fol);
-    rail.appendChild(org);
-
     var like = railButton('Like', IC.heart, compact(d.reactions), true);
     if (it.liked) { like.classList.add('is-on'); }
     like.setAttribute('aria-pressed', it.liked ? 'true' : 'false');
     var com = railButton('Comments', IC.chat, compact(d.comments), true);
     var sh = railButton('Share', IC.share, compact(d.shares), true);
-    var more = railButton('More options', IC.more, '', false);
-    more.classList.add('so-more'); like.classList.add('so-glyph'); com.classList.add('so-glyph'); sh.classList.add('so-glyph');
-    rail.appendChild(like); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(more);
+    var save = railButton(d.saved ? 'Saved' : 'Save', IC.save, d.saved ? 'Saved' : 'Save', true);
+    save.classList.add('so-save'); if (d.saved) { save.classList.add('is-on'); }
+    save.setAttribute('aria-pressed', d.saved ? 'true' : 'false');
+    if (!D.canSave) { save.hidden = true; }
+    like.classList.add('so-glyph'); com.classList.add('so-glyph'); sh.classList.add('so-glyph'); save.classList.add('so-glyph');
+    rail.appendChild(like); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
     a.appendChild(rail);
 
-    // info
+    // info (the mockup): organizer picture, @handle with the verified tick, the event under it, a Follow pill;
+    // then the caption, when and where, and the sound line
     var info = el('div', 'so-info');
-    var title = el('div', 'so-title');
-    var tl = el('a', null, d.event.title); tl.href = d.event.url; title.appendChild(tl);
-    if (d.org.verified) { var ver = el('span', 'so-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 12)); title.appendChild(ver); }
-    info.appendChild(title);
-    info.appendChild(el('div', 'so-by', d.org.handle || ('by ' + d.org.name)));
+    var who = el('div', 'so-who');
+    var av = d.org.url ? el('a', 'so-av') : el('span', 'so-av');
+    if (d.org.url) { av.href = d.org.url; av.setAttribute('aria-label', d.org.name + ' profile'); }
+    if (d.org.avatar) { var ai = el('img'); ai.alt = ''; ai.src = d.org.avatar; av.appendChild(ai); } else { av.textContent = d.org.initials; }
+    who.appendChild(av);
+    var whoTx = el('div', 'so-who-tx');
+    var handle = el('div', 'so-handle');
+    var hl = d.org.url ? el('a', null, d.org.handle || d.org.name) : el('span', null, d.org.handle || d.org.name);
+    if (d.org.url) { hl.href = d.org.url; }
+    handle.appendChild(hl);
+    if (d.org.verified) { var ver = el('span', 'so-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 12)); handle.appendChild(ver); }
+    whoTx.appendChild(handle);
+    var evl = el('a', 'so-evname', d.event.title); evl.href = d.event.url; whoTx.appendChild(evl);
+    who.appendChild(whoTx);
+    var fol = el('button', 'so-follow' + (d.org.following ? ' is-on' : ''), d.org.following ? 'Following' : 'Follow');
+    fol.type = 'button'; fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
+    if (D.me && D.me === d.org.id) { fol.hidden = true; }
+    who.appendChild(fol);
+    info.appendChild(who);
     if (d.caption) {
       var cap = el('div', 'so-cap', d.caption);
-      cap.addEventListener('click', function () { cap.classList.toggle('open'); });
+      cap.setAttribute('role', 'button'); cap.setAttribute('tabindex', '0'); cap.setAttribute('aria-label', 'Caption. Tap to read more or less.');
+      var flip = function () { cap.classList.toggle('open'); };
+      cap.addEventListener('click', flip);
+      cap.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
       info.appendChild(cap);
     }
-    info.appendChild(el('div', 'so-meta', d.event.when + ' | ' + d.event.where));
-    // the sound line: the chosen track, or "Original Sound – <organizer>" like the template
+    info.appendChild(el('div', 'so-meta', d.event.when + ' · ' + d.event.where));
+    // the sound line: the chosen track, or "Original Audio" like the mockup
     var snd = el('div', 'so-snd'); snd.appendChild(svg(IC.note, 15, true));
-    snd.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Sound – ' + d.org.name));
+    snd.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio'));
     info.appendChild(snd);
     a.appendChild(info);
 
     var cta = el('a', 'so-cta' + (d.event.ended ? ' is-ended' : ''));
     cta.href = d.event.url + (d.event.ended ? '' : '#tickets');
-    if (!d.event.ended && d.event.price) { cta.setAttribute('aria-label', 'Get Tickets, ' + d.event.price); }
-    cta.appendChild(svg(IC.ticket, 24));
-    cta.appendChild(el('span', null, d.event.ended ? 'See this event' : 'Get Tickets'));
-    cta.appendChild(svg(IC.chev, 22));
+    if (!d.event.ended && d.event.price) { cta.setAttribute('aria-label', 'Book ticket, ' + d.event.price); }
+    cta.appendChild(el('span', null, d.event.ended ? 'See this event' : 'Book Ticket'));
     a.appendChild(cta);
 
     // ---- behaviour
@@ -209,7 +218,21 @@
     like.addEventListener('click', function () { toggleLike(false); });
     com.addEventListener('click', function () { openComments(it, com); });
     sh.addEventListener('click', function () { openShare(it, sh); });
-    more.addEventListener('click', function () { if (!needLogin()) { reportFor = it; show('soMore', more); } });
+    save.addEventListener('click', function () {
+      if (needLogin()) { return; }
+      var on = !d.saved;
+      var paint = function (v) {
+        d.saved = v;
+        save.classList.toggle('is-on', v); save.setAttribute('aria-pressed', v ? 'true' : 'false');
+        save.setAttribute('aria-label', v ? 'Saved' : 'Save'); save._count.textContent = v ? 'Saved' : 'Save';
+      };
+      paint(on);
+      api('/api/community.php', { action: 'save_post', id: d.id, save: on }).then(function (r) {
+        if (r && r._status === 401) { window.location.href = D.loginUrl; return; }
+        if (!r || !r.ok) { paint(!on); toast((r && r.error) || 'Could not save. Try again.'); }
+        else { toast(on ? 'Saved' : 'Removed from saved'); }
+      }, function () { paint(!on); toast('Could not save. Try again.'); });
+    });
     fol.addEventListener('click', function () {
       if (needLogin()) { return; }
       var on = !d.org.following;
@@ -231,7 +254,7 @@
       if (it.data.org.id !== orgId) { return; }
       it.data.org.following = on;
       it.followBtn.classList.toggle('is-on', on);
-      it.followBtn.textContent = on ? '✓' : '+';
+      it.followBtn.textContent = on ? 'Following' : 'Follow';
       it.followBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
       it.followBtn.setAttribute('aria-label', (on ? 'Following ' : 'Follow ') + it.data.org.name);
     });
@@ -511,6 +534,13 @@
         var done = function () { toast('Link copied'); countShare(); hide(); };
         if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); }); }
         else { window.prompt('Copy this link', url); }
+        return;
+      }
+      if (kind === 'report') {
+        e.preventDefault();
+        var target = shareFor;
+        if (needLogin()) { return; }
+        reportFor = target; show('soMore', target.shareBtn);
         return;
       }
       if (kind === 'more') {
