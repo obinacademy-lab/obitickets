@@ -93,11 +93,24 @@
     if (!(ar > 0.2 && ar < 5)) { return; }
     it.ar = ar;
     it.el.style.setProperty('--ar', String(Math.round(ar * 10000) / 10000));
-    var shape = (1 / ar) >= TALL ? 'tall' : (ar >= WIDE ? 'wide' : 'short');
+    // 11/18 owner: pictures were too small above the words. Every post now uses the whole screen like TikTok:
+    // the picture is as big as it can be while staying whole, and the words sit over its bottom (tap hides them).
+    var shape = 'tall';
     ['tall', 'short', 'wide'].forEach(function (k) { it.el.classList.toggle('is-' + k, k === shape); });
+    fill(it);
+  }
+  // when the picture is almost the screen's own shape, it fills edge to edge (loses at most a sliver at two edges)
+  var FILL = 0.15;
+  function fill(it) {
+    if (!it.stage || !it.ar) { return; }
+    var w = it.stage.clientWidth, h = it.stage.clientHeight;
+    if (!w || !h) { return; }
+    var r = it.ar / (w / h);
+    it.el.classList.toggle('is-fill', r > 1 - FILL && r < 1 + FILL);
   }
   // how tall the words under a short picture are, so the picture ends just above them
   function measure(it) {
+    fill(it);
     if (it.info && it.info.offsetHeight) { it.el.style.setProperty('--fd-ih', it.info.offsetHeight + 'px'); }
     if (it.rail && it.rail.offsetHeight) { it.el.style.setProperty('--fd-rh', it.rail.offsetHeight + 'px'); }
   }
@@ -138,6 +151,7 @@
 
     // the picture, in a frame of its own shape
     var stage = el('div', 'fd-stage'), pic = el('div', 'fd-pic');
+    it.stage = stage;
     stage.appendChild(pic); a.appendChild(stage);
     if (d.type === 'video') {
       var v = document.createElement('video');

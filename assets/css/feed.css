@@ -3,6 +3,8 @@
    photos never partly off the screen".
    Every picture and video is shown whole. Its frame takes its own shape (--ar = width / height, set by socials.js)
    and sits on a soft, blurred copy of itself:
+     11/18: every post now uses .is-tall (owner: pictures were too small); .is-short / .is-wide rules stay but are unused.
+     .is-fill   the picture is within 15% of the screen's shape, so it fills it (object-fit:cover)
      .is-tall   stories and 9:16 videos fill the screen, words over the bottom like TikTok
      .is-short  portrait and square pictures sit above the words; the buttons keep their own column on the right
      .is-wide   landscape pictures use the full width and sit above the buttons
@@ -39,6 +41,8 @@ body.so-v3 .so-search:hover{background:rgba(255,255,255,.1)}
 .fd-amb{position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; background:#0B0708}
 .fd-amb i{position:absolute; left:37.5%; top:37.5%; width:25%; height:25%; background-position:center; background-size:cover; background-repeat:no-repeat;
   transform:scale(4.8); filter:blur(6px) saturate(1.3) brightness(.55)}
+/* 11/18 owner: no blurred copy around the picture; any space left is plain black, like TikTok / Instagram */
+.fd-amb i{display:none}
 .fd-amb::after{content:""; position:absolute; inset:0;
   background:radial-gradient(130% 78% at 50% 36%, rgba(5,3,4,0) 0%, rgba(5,3,4,.42) 62%, rgba(5,3,4,.85) 100%),
              linear-gradient(0deg, rgba(5,3,4,.85) 0%, rgba(5,3,4,0) 50%)}
@@ -52,6 +56,9 @@ body.so-v3 .so-search:hover{background:rgba(255,255,255,.1)}
 }
 .fd-pic > img,.fd-pic > video{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
 .fd-pic > video{background:#000}
+/* almost the screen's shape: fill it edge to edge, no blurred bands */
+.fd-item.is-fill .fd-pic{width:100%; height:100%; aspect-ratio:auto}
+.fd-item.is-fill .fd-pic > img,.fd-item.is-fill .fd-pic > video{object-fit:cover}
 .fd-slide{opacity:0; transition:opacity .6s ease}
 .fd-slide.on{opacity:1}
 

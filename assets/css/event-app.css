@@ -109,7 +109,10 @@ body.ev-app .ea .ended-panel-link{color:#FF8A94}
 /* ---------- phones: a bottom Buy bar (it steps aside while the ticket options are on screen) ---------- */
 .ea-bar{display:none}
 @media (max-width:900px){
-  body.ev-app .ev{padding-bottom:calc(86px + env(safe-area-inset-bottom, 0px))}
+  /* no empty strip at the bottom: the Buy bar steps aside while the ticket options (the end of the page) are on screen */
+  body.event-page.ev-app{padding-bottom:0}
+  body.ev-app .ev{padding-bottom:env(safe-area-inset-bottom, 0px)}
+  body.ev-app .ea-body{padding-bottom:24px}
   .ea-bar{position:fixed; z-index:60; left:0; right:0; bottom:0; display:flex; align-items:center; gap:12px; padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     background:rgba(11,7,8,.92); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid rgba(255,255,255,.08); transition:transform .3s ease, opacity .3s ease}
   .ea-bar.is-away{transform:translateY(110%); opacity:0}
