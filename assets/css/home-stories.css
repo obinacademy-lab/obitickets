@@ -89,7 +89,7 @@ body.home-stories main,body.home-stories .page{padding-top:0}
 .st-trend-tx{flex:1; min-width:0; display:flex; flex-direction:column; color:#fff}
 .st-trend-tx:hover{color:#fff}
 .st-trend-tx b{font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.st-trend-tx span{font-size:12px; color:#C9BDBB}
+.st-trend-tx span{font-size:12px; color:#C9BDBB; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .st-go{flex:none; width:38px; height:38px; border-radius:12px; background:var(--rc-red); color:#fff; display:grid; place-items:center}
 .st-go:hover{background:#B91C1C; color:#fff}
 
@@ -97,15 +97,24 @@ body.home-stories main,body.home-stories .page{padding-top:0}
 .st-more:hover{border-color:var(--rc-ink); color:var(--rc-ink)}
 .st-none{text-align:center; padding:40px 0; color:var(--rc-mute)}
 
-/* ---------- computers: one feed column, Trending beside it ---------- */
+/* ---------- computers: lined up with the top bar; posts two per row, Trending in its own column on the right ---------- */
 @media (min-width:901px){
-  .st-page{max-width:1000px; padding-top:28px}
-  .st-h1{position:static; width:auto; height:auto; overflow:visible; clip:auto; white-space:normal; margin:0 0 6px; font-family:var(--rc-disp); font-weight:700; font-size:clamp(1.9rem,3vw,2.5rem); letter-spacing:-.025em; color:var(--rc-ink)}
-  .st-stories{margin:14px 0 0; padding:4px 0 2px}
-  .st-feed{display:grid; grid-template-columns:minmax(0,600px) 340px; column-gap:40px; justify-content:space-between; align-items:start}
-  .st-feed > *{grid-column:1}
-  .st-trend{grid-column:2; grid-row:1 / span 50; position:sticky; top:96px; margin-top:22px}
-  .st-trend + .st-post{margin-top:22px}
-  .st-more{justify-self:center}
+  .st-page{padding-top:30px; padding-bottom:48px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) 340px; column-gap:28px; align-items:start}
+  .st-feed{display:contents}
+  .st-h1,.st-stories,.st-msg,.st-more,.st-none{grid-column:1 / 3}
+  .st-h1{position:static; width:auto; height:auto; overflow:visible; clip:auto; white-space:normal; margin:0; font-family:var(--rc-disp); font-weight:700; font-size:clamp(1.9rem,2.6vw,2.4rem); line-height:1.1; letter-spacing:-.025em; color:var(--rc-ink)}
+  .st-stories{margin:18px 0 0; padding:4px 2px 2px; gap:16px}
+  .st-trend{grid-column:3; grid-row:1 / span 99; position:sticky; top:96px; margin-top:0}
+  .st-post,.st-trend + .st-post{margin-top:30px; display:flex; flex-direction:column; min-width:0; align-self:stretch}
+  .st-pic{aspect-ratio:4 / 5; border-radius:22px}
+  .st-title{font-size:20px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .st-line{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:14px}
+  .st-buy{margin-top:auto}
+  .st-more{justify-self:center; margin-top:36px}
+}
+@media (min-width:901px) and (max-width:1100px){
+  .st-page{grid-template-columns:repeat(2,minmax(0,1fr)) 300px; column-gap:22px}
+  .st-buy{padding:0 6px 0 14px}
+  .st-buy-btn{padding:0 16px; font-size:14px}
 }
 @media (prefers-reduced-motion:reduce){ .st-ring,.st-pic img,.st-follow,.st-buy-btn{transition:none} .st-post:hover .st-pic img,.st-story:hover .st-ring{transform:none} }

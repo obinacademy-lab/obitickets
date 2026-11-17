@@ -363,10 +363,16 @@ html.rc .ld-qk-msg{margin:10px 0 0; color:#fff; font-size:.85rem; font-weight:60
 /* No page footer any more (owner, 11/16: "appear like an app"). Its links live in the menu drawer under
    Help & legal, so on computers the menu button shows too. */
 @media (min-width:901px){
-  html.rc .site-nav .nav-toggle{display:flex; width:42px; height:42px; margin-left:10px; border:0; border-radius:50%; background:#F7F2F1; box-shadow:none}
+  html.rc .site-nav .nav-toggle{display:flex; width:42px; height:42px; margin-left:0; border:0; border-radius:50%; background:#F7F2F1; box-shadow:none}
+  /* room for the menu button: the avatar already stands for the profile, so the "Hi, name" text goes */
+  html.rc .site-nav .nv-auth a.ghost[href="/dashboard.php"]{display:none}
   html.rc .site-nav .nav-toggle:hover{background:var(--rc-tint)}
   html.rc .site-nav .nav-burger span{background:var(--rc-ink)}
   html.rc main,html.rc .page{padding-bottom:40px}
 }
 /* With no dark footer, the page behind short screens (and the overscroll area) is white like the app. */
 html.rc{background:#fff}
+@media (min-width:901px) and (max-width:1180px){
+  /* mid-size screens: About and Contact live in the menu, so the bar never runs past the page edge */
+  html.rc .site-nav .nv-links a[href="/about.php"],html.rc .site-nav .nv-links a[href="/contact.php"]{display:none}
+}
