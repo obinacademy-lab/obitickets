@@ -376,3 +376,10 @@ html.rc{background:#fff}
   /* mid-size screens: About and Contact live in the menu, so the bar never runs past the page edge */
   html.rc .site-nav .nv-links a[href="/about.php"],html.rc .site-nav .nv-links a[href="/contact.php"]{display:none}
 }
+/* the top bar fits its row for guests too ("Log in" never wraps, the menu button ends where the page ends) */
+@media (min-width:901px){
+  html.rc .site-nav .nav-row{gap:12px}
+  html.rc .site-nav .nv-auth{gap:6px}
+  html.rc .site-nav .nv-auth a{white-space:nowrap}
+  html.rc .site-nav .nv-links a{padding:9px 11px}
+}
