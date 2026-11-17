@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Event page, "app" layout: the owner's dark mockup (Phase 2, 11/18). public/event.php with body.ev-app.
+   The flyer whole on a blurred copy of itself, back and share over it; title, when and where, organizer and Follow;
+   About; Ticket options (the shared ticket form, restyled dark). Loaded after app-dark.css.
+   ========================================================================== */
+body.ev-app .ev{background:transparent}
+
+/* ---------- hero: the flyer, whole ---------- */
+.ea-hero{position:relative; isolation:isolate; overflow:hidden; padding-bottom:18px}
+.ea-amb{position:absolute; inset:-40px 0 0; z-index:-1; background:var(--ea-art, none) center/cover no-repeat; filter:blur(38px) saturate(1.3) brightness(.5); transform:scale(1.15)}
+.ea-amb::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,7,8,.2) 0%, rgba(11,7,8,.55) 60%, var(--ad-bg) 100%)}
+.ea-top{position:relative; z-index:2; display:flex; align-items:center; gap:10px; min-height:60px; padding-top:env(safe-area-inset-top, 0px)}
+.ea-top-gap{flex:1}
+.ea-top .ad-icon{background:rgba(11,7,8,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
+body.ev-app .ea-top .share-wrap{position:relative}
+body.ev-app .ea-top .ev-icon-btn{width:42px; height:42px; border:0; border-radius:50%; background:rgba(11,7,8,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:#fff; display:grid; place-items:center; box-shadow:none}
+body.ev-app .ea-top .ev-icon-btn:hover{background:rgba(11,7,8,.7)}
+body.ev-app .share-popover{right:0; left:auto; background:#1E181A; border:1px solid rgba(255,255,255,.1); box-shadow:0 20px 40px -16px rgba(0,0,0,.8)}
+body.ev-app .share-option{color:#fff}
+body.ev-app .share-option:hover{background:rgba(255,255,255,.08)}
+.ea-pic-wrap{display:grid; place-items:center}
+.ea-pic{position:relative; width:min(100%, calc(62vh * var(--fly-n, .8))); max-width:560px; aspect-ratio:var(--fly, 4 / 5); border-radius:20px; overflow:hidden; cursor:zoom-in;
+  box-shadow:0 30px 60px -28px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.08)}
+.ea-pic img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+.ea-pic-none{width:100%; max-width:420px; aspect-ratio:4 / 3; display:grid; place-items:center; font-size:5rem; background:var(--ad-card)}
+.ea-pic:focus-visible{outline:3px solid #fff; outline-offset:3px}
+
+/* ---------- words ---------- */
+.ea-body{padding-bottom:40px}
+.ea-tags{display:flex; flex-wrap:wrap; gap:6px}
+.ea-pill{display:inline-flex; align-items:center; height:26px; padding:0 11px; border-radius:13px; background:rgba(255,255,255,.08); color:var(--ad-soft); font-size:12px; font-weight:700}
+.ea-pill-on{background:rgba(59,156,255,.16); color:#8CC4FF}
+.ea-pill-free{background:rgba(74,222,128,.14); color:#6EE7A0}
+.ea-pill-end{background:rgba(240,49,63,.16); color:#FF8A94}
+body.ev-app .ea-title{margin:10px 0 0; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:clamp(26px,6.4vw,38px); line-height:1.08; letter-spacing:-.02em; color:#fff}
+
+.ea-facts{list-style:none; margin:16px 0 0; padding:0; display:grid; gap:10px}
+.ea-facts li{display:flex; align-items:center; gap:12px; min-width:0}
+.ea-ic{flex:none; width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:rgba(240,49,63,.14); color:#FF6B76}
+.ea-facts li > span:nth-child(2){flex:1; min-width:0; display:grid; gap:1px}
+.ea-facts b{font-size:14.5px; font-weight:700; color:#fff}
+.ea-facts small{font-size:12.5px; color:var(--ad-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ea-dir{flex:none; height:34px; padding:0 13px; border-radius:17px; background:rgba(255,255,255,.08); color:#fff; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center}
+.ea-dir:hover{background:rgba(255,255,255,.14); color:#fff}
+
+.ea-org{display:flex; align-items:center; gap:12px; margin-top:16px; padding:12px; border-radius:16px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line)}
+.ea-av{flex:none; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; background:#2A1D20; color:#FFB4B4; font:700 14px 'Outfit',sans-serif; box-shadow:0 0 0 2px var(--ad-red)}
+.ea-org-tx{flex:1; min-width:0; display:grid}
+.ea-org-tx small{font-size:11.5px; color:var(--ad-mute)}
+.ea-org-tx b{font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ea-org-tx a{color:#fff}
+.ea-org-tx a:hover{text-decoration:underline; color:#fff}
+.ea-ver{display:inline-grid; place-items:center; width:15px; height:15px; border-radius:50%; background:#3B9CFF; color:#fff; vertical-align:-2px}
+.ea-follow{flex:none; height:36px; padding:0 18px; border:0; border-radius:18px; background:var(--ad-red); color:#fff; font:800 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:background .2s, box-shadow .2s}
+.ea-follow:hover{background:#D72634}
+.ea-follow[aria-pressed="true"]{background:rgba(255,255,255,.1); box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.ea-follow:focus-visible,.ea-dir:focus-visible,.ea-more:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+.ea-sec{margin-top:26px}
+.ea-h{margin:0 0 12px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:19px; color:#fff}
+.ea-about{position:relative; display:grid; gap:10px; color:var(--ad-soft); font-size:14.5px; line-height:1.65}
+.ea-about p{margin:0}
+.ea-about.is-folded{max-height:150px; overflow:hidden}
+.ea-about.is-folded::after{content:""; position:absolute; left:0; right:0; bottom:0; height:60px; background:linear-gradient(0deg, var(--ad-bg), rgba(11,7,8,0))}
+.ea-more{margin-top:6px; padding:0; border:0; background:none; color:#FF8A94; font:700 13.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+
+/* ---------- ticket options: the shared ticket form, dark and inline (never a pop-up sheet here) ---------- */
+body.ev-app .ea .buy-panel{position:static !important; transform:none !important; max-height:none; overflow:visible; opacity:1 !important; transition:none !important;
+  border:0; border-radius:0; background:transparent; box-shadow:none; color:#fff}
+body.ev-app .ea .sheet-handle,body.ev-app .ea .sheet-close,body.ev-app .ea .ev-stub-top{display:none !important}
+body.ev-app .ea .alert{margin:0 0 12px !important}
+body.ev-app .ea .poster-tiers{display:grid; gap:10px; padding:0}
+body.ev-app .ea .tier{margin:0; padding:14px 16px; border:0; border-radius:16px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); transition:box-shadow .2s, background .2s}
+body.ev-app .ea .tier.is-picked,body.ev-app .ea .tier:has(.qty-input:not([value="0"])){background:#21171A; box-shadow:inset 0 0 0 1.5px var(--ad-red)}
+body.ev-app .ea .tier-row{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+body.ev-app .ea .tn{font-size:15px; font-weight:800; color:#fff}
+body.ev-app .ea .td{margin-top:2px; font-size:12.5px; color:var(--ad-mute)}
+body.ev-app .ea .tlim{margin-top:2px; font-size:12px; color:var(--ad-mute)}
+body.ev-app .ea .tp{flex:none; font:800 15px 'Plus Jakarta Sans',sans-serif; color:#fff}
+body.ev-app .ea .tier-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--ad-line)}
+body.ev-app .ea .tier-foot small{font-size:12.5px; color:var(--ad-mute)}
+body.ev-app .ea .qty{display:flex; align-items:center; gap:4px; padding:3px; border-radius:22px; background:rgba(255,255,255,.06); border:0}
+body.ev-app .ea .qty button{width:36px; height:36px; border:0; border-radius:50%; background:rgba(255,255,255,.1); color:#fff; font-size:18px; font-weight:700; cursor:pointer; display:grid; place-items:center}
+body.ev-app .ea .qty button:hover{background:var(--ad-red)}
+body.ev-app .ea .qty .n{min-width:28px; text-align:center; font-weight:800; color:#fff}
+body.ev-app .ea .waitlist-box{display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:var(--ad-soft)}
+body.ev-app .ea .waitlist-btn{border-radius:16px}
+body.ev-app .ea .poster-summary{margin-top:14px; padding:14px 16px; border-radius:16px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); display:grid; gap:8px; border-top:0}
+body.ev-app .ea .poster-summary .r{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; color:var(--ad-soft)}
+body.ev-app .ea .poster-summary .r.total{padding-top:8px; border-top:1px solid var(--ad-line); color:#fff; font-weight:800; font-size:15px}
+body.ev-app .ea .poster-summary .mono,body.ev-app .ea .buy-bar .mono{font-family:'Plus Jakarta Sans',sans-serif}
+body.ev-app .ea .buy-bar{display:flex; align-items:center; gap:12px; margin-top:14px; padding:0; background:transparent; border:0; box-shadow:none; position:static}
+body.ev-app .ea .buy-bar-tot{flex:none; display:grid}
+body.ev-app .ea .buy-bar-tot small{font-size:11.5px; color:var(--ad-mute)}
+body.ev-app .ea .buy-bar-tot b{font-size:17px; color:#fff}
+body.ev-app .ea #buySubmit{flex:1; height:52px; border:0; border-radius:14px; background:var(--ad-red); color:#fff; font:800 15px 'Plus Jakarta Sans',sans-serif; letter-spacing:.06em; text-transform:uppercase;
+  box-shadow:0 16px 32px -16px rgba(240,49,63,.95); transition:background .2s, transform .15s}
+body.ev-app .ea #buySubmit:hover{background:#D72634}
+body.ev-app .ea #buySubmit:active{transform:scale(.985)}
+body.ev-app .ea #buySubmit:disabled{background:#3A2A2D; color:#9C8E90; box-shadow:none}
+body.ev-app .ea .poster-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px; padding:0; border:0; color:var(--ad-mute); font-size:12px}
+body.ev-app .ea .secure-note{color:var(--ad-mute)}
+body.ev-app .ea .pay-badge{background:#fff; border-radius:8px}
+body.ev-app .ea .ended-panel{padding:22px; border-radius:18px; background:var(--ad-card); color:#fff; text-align:center; border:0; box-shadow:inset 0 0 0 1px var(--ad-line)}
+body.ev-app .ea .ended-panel h3{color:#fff}
+body.ev-app .ea .ended-panel p{color:var(--ad-soft)}
+body.ev-app .ea .ended-panel-link{color:#FF8A94}
+
+/* ---------- phones: a bottom Buy bar (it steps aside while the ticket options are on screen) ---------- */
+.ea-bar{display:none}
+@media (max-width:900px){
+  body.ev-app .ev{padding-bottom:calc(86px + env(safe-area-inset-bottom, 0px))}
+  .ea-bar{position:fixed; z-index:60; left:0; right:0; bottom:0; display:flex; align-items:center; gap:12px; padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background:rgba(11,7,8,.92); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-top:1px solid rgba(255,255,255,.08); transition:transform .3s ease, opacity .3s ease}
+  .ea-bar.is-away{transform:translateY(110%); opacity:0}
+  .ea-bar-p{flex:none; display:grid}
+  .ea-bar-p small{font-size:11.5px; color:var(--ad-mute)}
+  .ea-bar-p b{font-size:16px; color:#fff}
+  .ea-bar-btn{flex:1; height:50px; border-radius:14px; background:var(--ad-red); color:#fff; display:grid; place-items:center; font:800 15px 'Plus Jakarta Sans',sans-serif; letter-spacing:.06em; text-transform:uppercase; box-shadow:0 16px 32px -16px rgba(240,49,63,.95)}
+  .ea-bar-btn:hover{color:#fff; background:#D72634}
+}
+
+/* ---------- below: videos, gallery, community, reviews on the dark page ---------- */
+body.ev-app .wl-extra-wrap{color:#fff}
+body.ev-app .ev-section h2,body.ev-app .ev-section h3{color:#fff}
+body.ev-app .ev-section p{color:var(--ad-soft)}
+
+@media (min-width:901px){
+  .ea-hero{padding-bottom:28px}
+  .ea-pic{width:min(100%, calc(64vh * var(--fly-n, .8)))}
+  .ea-body{max-width:760px}
+}
+@media (prefers-reduced-motion:reduce){ .ea-bar,.ea-follow,.ea .tier,#buySubmit{transition:none} }
+/* links on the dark page keep white text (the site's link colour is dark) */
+body.ev-app .ea a.ad-icon,body.ev-app .ea a.ea-dir,body.ev-app .ea a.ea-bar-btn{color:#fff}
+body.ev-app .ea .poster-summary,body.ev-app .ea .buy-bar,body.ev-app .ea .poster-foot{margin-left:0; margin-right:0}
+body.ev-app .ea .poster-summary{margin-top:14px}
+/* countdown, reaction bar and activity numbers on the dark page */
+body.ev-app .ea-live b{color:#6EE7A0}
+body.ev-app .ea-actions{margin-top:14px; display:flex; flex-wrap:wrap; gap:10px}
+body.ev-app .ea-actions .ev-btn{background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); color:#fff}
+body.ev-app .ea-actions .ev-btn.is-on{border-color:var(--ad-red); background:rgba(240,49,63,.16)}
+body.ev-app .ea-actions #evEventReactSum{color:var(--ad-soft)}
+body.ev-app .ea-pulse{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; margin-top:14px; padding:12px 6px; border-radius:16px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); border:0}
+body.ev-app .ea-pulse .ev-pulse-item{display:grid; justify-items:center; gap:1px; text-align:center}
+body.ev-app .ea-pulse .ev-pulse-item + .ev-pulse-item{border-left:1px solid var(--ad-line)}
+body.ev-app .ea-pulse b{color:#fff; font-size:16px}
+body.ev-app .ea-pulse span{color:var(--ad-mute); font-size:11.5px}
+/* when the countdown is drawn as tiles under the title, its text line in the facts steps aside */
+body.ev-app .ea-facts li.has-tiles{display:none}

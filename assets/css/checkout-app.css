@@ -1,0 +1,33 @@
+/* ==========================================================================
+   Checkout in the dark app look (owner's mockup, Phase 2, 11/18). public/checkout.php with body.ck-app, on top of
+   checkout-night.css (the dark checkout) and app-dark.css. Payment logic is untouched: the phone number decides
+   MTN or Airtel; the method rows only show which one it is.
+   ========================================================================== */
+body.ck-app .ck-top{gap:12px}
+.ck-top-t{flex:1; text-align:center; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:18px; color:#fff}
+.ck-top-gap{flex:none; width:42px}
+body.ck-app a.ad-icon{color:#fff}
+body.ck-app .cn-head{padding-top:6px}
+body.ck-app .cn-head h1{display:none}            /* the top row says Checkout */
+body.ck-app .cn-sub{color:var(--ad-mute)}
+body.ck-app .cn-card{background:var(--ad-card); border:0; border-radius:20px; box-shadow:inset 0 0 0 1px var(--ad-line)}
+body.ck-app .cn-card h2{color:#fff; letter-spacing:.02em; text-transform:none; font-size:16px}
+body.ck-app .cn-order .thumb{border-radius:12px}
+
+.ck-methods{display:grid; gap:10px; margin-bottom:16px}
+.ck-methods-h{margin:0; font-size:14px; font-weight:800; color:#fff}
+.ck-method{display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:8px 14px; border:0; border-radius:14px; background:#fff; color:#18181B; cursor:pointer; text-align:left;
+  box-shadow:inset 0 0 0 2px transparent; transition:box-shadow .2s, transform .15s}
+.ck-method:hover{transform:translateY(-1px)}
+.ck-method[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--ad-red), 0 10px 24px -14px rgba(240,49,63,.9)}
+.ck-logo{flex:none; width:58px; height:34px; display:grid; place-items:center}
+.ck-logo img{max-width:100%; max-height:100%; object-fit:contain}
+.ck-method b{flex:1; font-size:14.5px; font-weight:800}
+.ck-method i{flex:none; width:22px; height:22px; border-radius:50%; box-shadow:inset 0 0 0 2px #D4D4D8}
+.ck-method[aria-pressed="true"] i{box-shadow:inset 0 0 0 6px var(--ad-red)}
+.ck-method:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+body.ck-app .cn-cta{border-radius:14px; background:var(--ad-red); letter-spacing:.02em; box-shadow:0 16px 32px -16px rgba(240,49,63,.95)}
+body.ck-app .cn-cta:hover:not(:disabled){background:#D72634}
+body.ck-app .cn-logos{display:none}              /* the method rows show both logos */
+@media (prefers-reduced-motion:reduce){ .ck-method{transition:none} }

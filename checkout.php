@@ -54,7 +54,9 @@ try {
 }
 
 $pageTitle = 'Checkout — obitickets';
-$bodyClass = 'classic-page ck-night'; // light "Red Carpet" colours come from rc.css; add ev-night back for the dark look
+// The dark app look (owner's mockup, Phase 2, 11/18): ev-night switches rc.css's light colours off and checkout-night.css on;
+// checkout-app.css brings it to the mockup (back arrow, payment methods). Drop "ev-night app-dark ck-app" for the light one.
+$bodyClass = 'classic-page ck-night ev-night app-dark ck-app';
 $hideWhatsApp = true; // keep the pay button and totals uncluttered
 include __DIR__ . '/includes/header.php';
 ?>
@@ -64,7 +66,14 @@ $ckWhere = event_is_online_only($event) ? (event_online_label($event) ?: 'Online
 $ckWhen = format_event_date_range($event['starts_at'], $event['ends_at']);
 $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'; };
 ?>
+<link rel="stylesheet" href="/assets/css/app-dark.css?v=<?= @filemtime(__DIR__ . '/assets/css/app-dark.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/checkout-app.css?v=<?= @filemtime(__DIR__ . '/assets/css/checkout-app.css') ?: time() ?>">
 <div class="wrap">
+  <div class="ad-top ck-top">
+    <a class="ad-icon" href="/event.php?slug=<?= urlencode((string) $event['slug']) ?>" data-back aria-label="Back to the event"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <span class="ck-top-t">Checkout</span>
+    <span class="ck-top-gap" aria-hidden="true"></span>
+  </div>
   <div class="cn-head">
     <ol class="cn-crumbs" aria-label="Checkout progress">
       <li class="done"><?= $ckTick() ?>Tickets</li>
@@ -110,6 +119,11 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
       </div>
       <?php else: ?>
       <div data-state="phone">
+        <div class="ck-methods" role="group" aria-label="Payment method">
+          <p class="ck-methods-h">Choose payment method</p>
+          <button type="button" class="ck-method" data-method="MTN MoMo" data-hint="077" aria-pressed="false"><span class="ck-logo"><img src="/assets/images/brands/mtn-momo-logo.png" alt=""></span><b>MTN Mobile Money</b><i aria-hidden="true"></i></button>
+          <button type="button" class="ck-method" data-method="Airtel Money" data-hint="075" aria-pressed="false"><span class="ck-logo"><img src="/assets/images/brands/airtel-money-logo.png" alt=""></span><b>Airtel Money</b><i aria-hidden="true"></i></button>
+        </div>
         <div class="cn-field">
           <label for="phone">Mobile money phone number</label>
           <div class="cn-box">
@@ -166,13 +180,22 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
       var d = digits(input.value), pv = provider(d);
       chip.classList.toggle('on', !!pv);
       txt.textContent = pv;
+      document.querySelectorAll('.ck-method').forEach(function (m) { m.setAttribute('aria-pressed', m.getAttribute('data-method') === pv ? 'true' : 'false'); });
       btn.disabled = !/^0\d{9}$/.test(d);
     };
     ['input', 'change', 'blur', 'keyup'].forEach(function (ev) { input.addEventListener(ev, upd); });
+    // tapping a method puts the cursor in the number box (the number itself tells MTN from Airtel)
+    document.querySelectorAll('.ck-method').forEach(function (m) {
+      m.addEventListener('click', function () {
+        if (!input.value) { input.placeholder = m.getAttribute('data-hint') + 'X XXX XXX'; }
+        input.focus();
+      });
+    });
     upd();
     setTimeout(upd, 500); /* phones that autofill the number after load */
   }
 })();
 </script>
+<script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script>
 <script src="/assets/js/payment.js?v=<?= @filemtime(__DIR__ . '/assets/js/payment.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var isFreeCart = ticketCount > 0 && total === 0;
     if (totalAmount) totalAmount.textContent = isFreeCart ? 'Free' : currency + ' ' + formatAmount(total);
     var submit = document.getElementById('buySubmit');
-    if (submit) submit.textContent = isFreeCart ? 'Get free ticket' : (submit.getAttribute('data-paid-label') || 'Get Tickets');
+    if (submit) submit.textContent = isFreeCart ? (submit.getAttribute('data-free-label') || 'Get free ticket') : (submit.getAttribute('data-paid-label') || 'Get Tickets');
   }
 
   document.querySelectorAll('.qty').forEach(function (qty) {

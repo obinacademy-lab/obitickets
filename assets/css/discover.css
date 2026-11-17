@@ -1,0 +1,88 @@
+/* ==========================================================================
+   Discover (public/discover.php), the owner's dark app mockup (Phase 2, 11/18). Loaded after app-dark.css.
+   ========================================================================== */
+.dv{padding-bottom:28px}
+
+.dv-search{display:flex; align-items:center; gap:10px; height:48px; margin-top:6px; padding:0 16px; border-radius:24px; background:var(--ad-card2); color:var(--ad-mute);
+  box-shadow:inset 0 0 0 1px var(--ad-line); transition:box-shadow .2s}
+.dv-search:focus-within{box-shadow:inset 0 0 0 1.5px var(--ad-red), 0 0 0 4px rgba(240,49,63,.15)}
+.dv-search svg{flex:none}
+.dv-search input{flex:1; min-width:0; height:100%; border:0 !important; outline:0; padding:0; background:transparent; border-radius:0 !important; box-shadow:none !important; font:500 15px 'Plus Jakarta Sans',sans-serif; color:#fff}
+.dv-search input::placeholder{color:#8E8284}
+
+/* category circles */
+.dv-cats{display:flex; gap:14px; margin:20px -18px 0; padding:2px 18px 4px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; position:relative}
+.dv-cats::-webkit-scrollbar{display:none}
+.dv-cats a{flex:none; width:64px; display:grid; justify-items:center; gap:7px; color:var(--ad-soft); font-size:12px; font-weight:600; text-align:center}
+.dv-cats a:hover{color:#fff}
+.dv-cats i{width:54px; height:54px; border-radius:50%; display:grid; place-items:center; color:#fff;
+  background:radial-gradient(circle at 30% 25%, #FF5A66, #E11D2E 55%, #9F1022); box-shadow:0 10px 22px -12px rgba(240,49,63,.9), inset 0 1px 0 rgba(255,255,255,.25); transition:transform .2s}
+.dv-cats a:hover i{transform:translateY(-2px)}
+.dv-cats span{max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dv-cats a:focus-visible{outline:3px solid #fff; outline-offset:3px; border-radius:12px}
+
+/* quick picks */
+.dv-when{display:flex; gap:8px; margin:16px -18px 0; padding:0 18px; overflow-x:auto; scrollbar-width:none; position:relative}
+.dv-when::-webkit-scrollbar{display:none}
+.dv-chip{flex:none; display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:0; border-radius:18px; background:var(--ad-card2); color:var(--ad-soft);
+  font:700 13px 'Plus Jakarta Sans',sans-serif; white-space:nowrap; cursor:pointer; box-shadow:inset 0 0 0 1px var(--ad-line); transition:background .2s, color .2s}
+.dv-chip:hover{background:#2A2124; color:#fff}
+.dv-near{background:rgba(240,49,63,.16); color:#FF8A94; box-shadow:inset 0 0 0 1px rgba(240,49,63,.35)}
+.dv-chip:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.dv-chip.busy{opacity:.6; cursor:progress}
+.dv-msg{margin:10px 0 0; padding:10px 14px; border-radius:12px; background:var(--ad-card); color:var(--ad-soft); font-size:13px}
+
+/* sideways rails */
+.dv-rail{display:flex; gap:12px; margin:0 -18px; padding:2px 18px 6px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; position:relative}
+.dv-rail::-webkit-scrollbar{display:none}
+.dv-rail > *{scroll-snap-align:start}
+
+/* trending event cards: poster with the title over its foot */
+.dv-card{position:relative; flex:none; width:150px; aspect-ratio:3 / 4; border-radius:16px; overflow:hidden; background:var(--ad-card); color:#fff; isolation:isolate}
+.dv-card img,.dv-card .dv-noimg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; transition:transform .5s ease}
+.dv-card:hover img{transform:scale(1.05)}
+.dv-card::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg, rgba(5,3,4,.92) 0%, rgba(5,3,4,.35) 45%, rgba(5,3,4,0) 70%)}
+.dv-card-tx{position:absolute; left:10px; right:10px; bottom:10px; display:grid; gap:2px}
+.dv-card-tx b{font-size:14px; line-height:1.2; font-weight:800; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.dv-card-tx small{font-size:11.5px; color:var(--ad-soft)}
+.dv-card-tx em{justify-self:start; display:inline-flex; align-items:center; gap:4px; margin-top:4px; padding:3px 8px; border-radius:10px; background:rgba(0,0,0,.45); font-style:normal; font-size:11px; font-weight:700}
+.dv-noimg{display:grid; place-items:center; font-size:2.4rem}
+
+/* trending video tiles (9:16) */
+.dv-vid{position:relative; flex:none; width:118px; aspect-ratio:9 / 16; border-radius:14px; overflow:hidden; background:var(--ad-card); color:#fff; isolation:isolate}
+.dv-vid img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2}
+.dv-vid::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(0deg, rgba(5,3,4,.85), rgba(5,3,4,0) 50%)}
+.dv-vid-tx{position:absolute; left:8px; right:8px; bottom:8px; display:grid; gap:2px}
+.dv-vid-tx b{font-size:12px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dv-vid-tx small{display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:var(--ad-soft)}
+
+/* popular organizers */
+.dv-org{flex:none; width:104px; display:grid; justify-items:center; gap:6px; padding:14px 8px 12px; border-radius:16px; background:var(--ad-card); color:#fff; text-align:center; box-shadow:inset 0 0 0 1px var(--ad-line); transition:background .2s}
+.dv-org:hover{background:var(--ad-card2); color:#fff}
+.dv-org-av{width:56px; height:56px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:#2A1D20; color:#FFB4B4; font:700 16px 'Outfit',sans-serif; box-shadow:0 0 0 2px var(--ad-red)}
+.dv-org-av img{width:100%; height:100%; object-fit:cover}
+.dv-org b{max-width:100%; font-size:12.5px; line-height:1.25; font-weight:700; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.dv-org small{font-size:11px; color:var(--ad-mute)}
+.dv-ver{display:inline-grid; place-items:center; width:13px; height:13px; border-radius:50%; background:#3B9CFF; color:#fff; vertical-align:-1px}
+
+/* events around you: rows */
+.dv-rows{display:grid; gap:10px}
+.dv-row{display:flex; align-items:center; gap:12px; padding:10px; border-radius:16px; background:var(--ad-card); color:#fff; box-shadow:inset 0 0 0 1px var(--ad-line); transition:background .2s}
+.dv-row:hover{background:var(--ad-card2); color:#fff}
+.dv-row img,.dv-row .dv-noimg{flex:none; width:64px; height:64px; border-radius:12px; object-fit:cover; font-size:1.6rem}
+.dv-row-tx{flex:1; min-width:0; display:grid; gap:2px}
+.dv-row-tx b{font-size:14.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dv-row-tx small{font-size:12px; color:var(--ad-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dv-row-tx em{font-style:normal; font-size:12px; font-weight:800; color:#FF8A94}
+.dv-row-tx em.free{color:#4ADE80}
+.dv-go{flex:none; color:var(--ad-mute)}
+.dv-card:focus-visible,.dv-vid:focus-visible,.dv-org:focus-visible,.dv-row:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+@media (min-width:901px){
+  .dv{padding-top:18px; max-width:1040px}
+  .dv-cats,.dv-when,.dv-rail{margin-left:0; margin-right:0; padding-left:0; padding-right:0}
+  .dv-card{width:190px}
+  .dv-vid{width:140px}
+  .dv-rows{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){ .dv-card img,.dv-cats i,.dv-row,.dv-org,.dv-chip{transition:none} }

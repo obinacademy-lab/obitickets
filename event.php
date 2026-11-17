@@ -244,8 +244,11 @@ if ($openMoment && $momentsReady) {
     }
 }
 $showCommunityUi = event_community_ui(); // Moments, feed, reactions and activity numbers: off unless config/community-ui.on exists
-$bodyClass = 'event-page ev-wallet ev-bento'; // Bento tiles. Drop ev-bento for the Wallet look (and ev-wallet too for the plain light one).
+// The dark app layout (owner's mockup, Phase 2, 11/18). Older looks stay available: 'event-page ev-wallet ev-bento' (Bento).
+$bodyClass = 'event-page app-dark ev-app';
+$isApp = str_contains($bodyClass, 'ev-app');
 $isBento = str_contains($bodyClass, 'ev-bento');
+$hideWhatsApp = $isApp;
 include __DIR__ . '/includes/header.php';
 ?>
 
@@ -261,6 +264,10 @@ $evOrgInitials = initials_from_name($orgName);
 $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
 ?>
 <link rel="stylesheet" href="/assets/css/moments.css?v=<?= @filemtime(__DIR__ . '/assets/css/moments.css') ?: time() ?>">
+<?php if ($isApp): ?>
+<link rel="stylesheet" href="/assets/css/app-dark.css?v=<?= @filemtime(__DIR__ . '/assets/css/app-dark.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/event-app.css?v=<?= @filemtime(__DIR__ . '/assets/css/event-app.css') ?: time() ?>">
+<?php endif; ?>
 <div class="ev" id="evRoot"<?= $communityReady && !$currentUser ? ' data-login="' . htmlspecialchars('/login.php?next=' . urlencode('/event.php?slug=' . $event['slug'] . '#community'), ENT_QUOTES) . '"' : '' ?> data-event-id="<?= (int) $event['id'] ?>" data-event-url="<?= htmlspecialchars($eventUrl, ENT_QUOTES) ?>">
 
 <div class="lightbox-overlay" id="heroLightbox">
@@ -272,7 +279,7 @@ $evOrgVerified = (int) ($event['organizer_verified'] ?? 0) === 1;
   <div class="lightbox-counter" id="lightboxCounter"></div>
 </div>
 
-<?php if ($minPrice !== null && !$eventHasEnded): ?>
+<?php if ($minPrice !== null && !$eventHasEnded && !$isApp): ?>
 <a class="mobile-buy-bar" href="#buyPanel">
   <span>
     <span class="lbl"><?= $eventIsFree ? 'Entry' : 'From' ?></span>
@@ -436,7 +443,130 @@ ob_start(); ?>
     <?php endif; ?>
 <?php $buyHtml = ob_get_clean(); ?>
 
-<?php if ($isBento): ?>
+<?php if ($isApp):
+// "App" layout (owner's dark mockup, Phase 2, 11/18): the flyer whole at the top with back and share over it, the
+// title, when and where, the organizer with Follow, About, then Ticket options (the same ticket form every layout uses,
+// so checkout is unchanged). Videos, gallery, community and reviews follow below as before.
+$eaImg = (string) ($event['banner_image'] ?? '');
+$eaRatio = '';
+if ($eaImg !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $eaImg) && !str_contains($eaImg, '..')) {
+    $eaSize = @getimagesize(__DIR__ . $eaImg);
+    if ($eaSize && $eaSize[0] > 0 && $eaSize[1] > 0) {
+        $eaRatio = (int) $eaSize[0] . ' / ' . (int) $eaSize[1];
+        $eaRatioN = round($eaSize[0] / $eaSize[1], 4);
+    }
+}
+$eaSameDay = date('Y-m-d', $wlStart) === date('Y-m-d', $wlEnd);
+$eaWhen = $eaSameDay ? date('D, j M Y', $wlStart) : format_event_date_range($event['starts_at'], $event['ends_at']);
+$eaTime = date('g:i A', $wlStart) . ' – ' . ($eaSameDay ? date('g:i A', $wlEnd) : date('D j M, g:i A', $wlEnd)) . ' EAT';
+$eaPlace = $isOnlineOnly ? ($onlineLabel ?: 'Online event') : (string) $event['venue_name'];
+$eaPlaceSub = $isOnlineOnly ? 'The link arrives with your ticket' : trim((string) ($event['venue_address'] ?? '') . ($isOnline ? ' · also online' : ''), ' ·');
+$eaOwn = $currentUser && (int) $currentUser['id'] === (int) $event['organizer_id'];
+$eaFollowOn = !empty($followingOrganizer);
+$eaBuy = str_replace(['id="buySubmit">', '>Get Tickets</button>', '>Get free ticket</button>'], ['id="buySubmit" data-paid-label="Buy tickets" data-free-label="Get free pass">', '>Buy tickets</button>', '>Get free pass</button>'], $buyHtml);
+?>
+<div class="ea">
+  <section class="ea-hero"<?= $eaImg !== '' ? ' style="--ea-art:url(' . htmlspecialchars(str_replace(['"', "'", '(', ')', ' ', '\\'], '', $eaImg), ENT_QUOTES) . ')"' : '' ?>>
+    <div class="ea-amb" aria-hidden="true"></div>
+    <div class="wrap ea-top">
+      <a class="ad-icon" href="/discover.php" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <span class="ea-top-gap"></span>
+      <?= $shareBlock ?>
+    </div>
+    <div class="wrap ea-pic-wrap">
+      <?php if ($eaImg !== ''): ?>
+        <div class="ea-pic ev-cover" id="heroImgWrap" data-lightbox-src="<?= htmlspecialchars($eaImg) ?>" role="button" tabindex="0" aria-label="View the flyer full size"<?= $eaRatio !== '' ? ' style="--fly:' . $eaRatio . '; --fly-n:' . $eaRatioN . '"' : '' ?>>
+          <img src="<?= htmlspecialchars($eaImg) ?>" alt="" fetchpriority="high">
+        </div>
+      <?php else: ?>
+        <div class="ea-pic ea-pic-none" aria-hidden="true"><?= htmlspecialchars((string) $event['banner_emoji']) ?></div>
+      <?php endif; ?>
+    </div>
+  </section>
+
+  <div class="wrap ea-body">
+    <div class="ea-tags">
+      <span class="ea-pill"><?= htmlspecialchars((string) $event['category']) ?></span>
+      <?php if ($isOnline): ?><span class="ea-pill ea-pill-on"><?= $isOnlineOnly ? 'Online event' : 'In person + online' ?></span><?php endif; ?>
+      <?php if ($hasFreeTier): ?><span class="ea-pill ea-pill-free"><?= $eventIsFree ? 'Free' : 'Free tickets available' ?></span><?php endif; ?>
+      <?php if ($eventHasEnded): ?><span class="ea-pill ea-pill-end">Event ended</span><?php endif; ?>
+    </div>
+    <h1 class="ev-title ea-title"><?= htmlspecialchars($event['title']) ?></h1>
+
+    <ul class="ea-facts">
+      <li><span class="ea-ic"><?= $wlIc('cal') ?></span><span><b><?= htmlspecialchars($eaWhen) ?></b><small><?= htmlspecialchars($eaTime) ?></small></span></li>
+      <li><span class="ea-ic"><?= $wlIc($isOnlineOnly ? 'scr' : 'pin') ?></span><span><b><?= htmlspecialchars($eaPlace) ?></b><?php if ($eaPlaceSub !== ''): ?><small><?= htmlspecialchars($eaPlaceSub) ?></small><?php endif; ?></span>
+        <?php if (!$isOnlineOnly): ?><a class="ea-dir" href="https://www.google.com/maps/search/?api=1&amp;query=<?= urlencode($event['venue_name'] . ' ' . (string) $event['venue_address']) ?>" target="_blank" rel="noopener">Directions</a><?php endif; ?></li>
+      <?php if ($showLeft && !$eventHasEnded && $wlLeft > 0): ?><li><span class="ea-ic"><?= $wlIc('tk') ?></span><span><b><?= number_format($wlLeft) ?> tickets left</b></span></li><?php endif; ?>
+      <?php if (!$eventHasEnded): ?>
+        <?php if ($wlStart <= time()): ?>
+          <li class="ea-live"><span class="ea-ic"><?= $wlIc('clk') ?></span><span><b>Happening now</b></span></li>
+        <?php else: ?>
+          <li data-countdown-target="<?= htmlspecialchars((string) $event['starts_at']) ?>"><span class="ea-ic"><?= $wlIc('clk') ?></span><span><b>Starts in <span id="cd-text">--</span></b></span></li>
+        <?php endif; ?>
+      <?php endif; ?>
+    </ul>
+
+    <div class="ea-org">
+      <span class="ea-av" aria-hidden="true"><?= htmlspecialchars($evOrgInitials) ?></span>
+      <span class="ea-org-tx">
+        <small>Organized by</small>
+        <b><?php if ($organizerSlug): ?><a href="/organizer.php?slug=<?= urlencode($organizerSlug) ?>"><?= htmlspecialchars($orgName) ?></a><?php else: ?><?= htmlspecialchars($orgName) ?><?php endif; ?><?php if ($evOrgVerified): ?> <span class="ea-ver" title="Verified organizer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span class="sr-only">Verified organizer</span></span><?php endif; ?></b>
+      </span>
+      <?php if ($communityReady && !$eaOwn): ?>
+        <button type="button" class="ea-follow" data-ev-follow="organizer" data-id="<?= (int) $event['organizer_id'] ?>" aria-pressed="<?= $eaFollowOn ? 'true' : 'false' ?>"><span class="ev-follow-label"><?= $eaFollowOn ? 'Following' : 'Follow' ?></span></button>
+      <?php endif; ?>
+    </div>
+
+    <?php if ($communityReady && $showCommunityUi && $eventReactions !== null): $myEventReaction = $eventReactions['mine']; ?>
+    <div class="ev-actions ea-actions">
+      <div class="ev-event-react">
+        <div class="ev-react-wrap">
+          <button type="button" class="ev-btn ev-btn-outline ev-react-btn<?= $myEventReaction ? ' is-on' : '' ?>" id="evEventReactBtn" data-act="react-open" data-my="<?= htmlspecialchars((string) $myEventReaction) ?>" aria-haspopup="true">
+            <span class="ev-react-ico"><?= $myEventReaction && isset(REACTION_TYPES[$myEventReaction]) ? REACTION_TYPES[$myEventReaction] : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.6 3.9 4.5 7.2 4.5c1.9 0 3.6 1 4.8 2.6 1.2-1.6 2.9-2.6 4.8-2.6 3.3 0 5.7 3.1 4.5 6.6-1.8 4.8-9.3 9.4-9.3 9.4z"/></svg>' ?></span>
+            <span class="ev-react-label"><?= $myEventReaction ? htmlspecialchars(ucfirst(strtolower($myEventReaction))) : 'React to this event' ?></span>
+          </button>
+          <?= community_reaction_picker_html() ?>
+        </div>
+        <span id="evEventReactSum"><?= community_reaction_summary_html($eventReactions['breakdown'], $eventReactions['total']) ?></span>
+      </div>
+    </div>
+    <?php endif; ?>
+    <?php if ($communityReady && $showCommunityUi): ?>
+    <div class="ev-pulse ea-pulse" aria-label="Event activity">
+      <div class="ev-pulse-item"><b id="pulseGoing"><?= number_format($social['going']) ?></b><span><?= $eventHasEnded ? 'went' : 'going' ?></span></div>
+      <div class="ev-pulse-item"><b id="pulseFollowing"><?= number_format($social['following']) ?></b><span>following</span></div>
+      <div class="ev-pulse-item"><b id="pulseReactions"><?= number_format($social['reactions'] + ($eventReactions['total'] ?? 0)) ?></b><span>reactions</span></div>
+      <div class="ev-pulse-item"><b><?= number_format($social['comments']) ?></b><span>comments</span></div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (trim((string) ($event['description'] ?? '')) !== ''): ?>
+    <section id="about" class="ea-sec">
+      <h2 class="ea-h">About this event</h2>
+      <div class="ea-about" id="eaAbout">
+        <?php foreach (explode("\n\n", (string) $event['description']) as $paragraph): ?>
+          <p><?= nl2br(htmlspecialchars($paragraph)) ?></p>
+        <?php endforeach; ?>
+      </div>
+      <button type="button" class="ea-more" id="eaMore" hidden>Read more</button>
+    </section>
+    <?php endif; ?>
+
+    <section id="tickets" class="ea-sec ea-tickets">
+      <h2 class="ea-h"><?= $eventHasEnded ? 'Tickets' : 'Ticket options' ?></h2>
+      <?= $eaBuy ?>
+    </section>
+  </div>
+
+  <?php if (!$eventHasEnded && $minPrice !== null): ?>
+  <div class="ea-bar" id="eaBar">
+    <span class="ea-bar-p"><small><?= $eventIsFree ? 'Entry' : 'From' ?></small><b><?= $eventIsFree ? 'Free' : htmlspecialchars(format_money($minPrice, $currency)) ?></b></span>
+    <a class="ea-bar-btn" href="#tickets"><?= $eventIsFree ? 'Get free pass' : 'Buy tickets' ?></a>
+  </div>
+  <?php endif; ?>
+</div>
+<?php elseif ($isBento): ?>
 <?php
 $bnCap = 0;
 foreach ($tiers as $bnT) { $bnCap += max(0, (int) $bnT['quantity_total']); }
@@ -1065,6 +1195,7 @@ if ($bnFlyPath !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $bnFlyPath
 </script>
 <script src="/assets/js/join-card.js?v=<?= @filemtime(__DIR__ . '/assets/js/join-card.js') ?: time() ?>"></script>
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
+<?php if ($isApp): ?><script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script><?php endif; ?>
 <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
 <script src="/assets/js/moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/moments.js') ?: time() ?>"></script>
 <script src="/assets/js/event-motion.js?v=<?= @filemtime(__DIR__ . '/assets/js/event-motion.js') ?: time() ?>"></script>
