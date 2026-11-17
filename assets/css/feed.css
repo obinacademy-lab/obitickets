@@ -262,3 +262,48 @@ body.so-v3 .so-toast.on{transform:translate(-50%, 0)}
   .fd-heart.go,.fd-hint svg,.fd-sound.is-muted::after{animation:none}
   .fd-spin{animation-duration:2s}
 }
+
+/* ==========================================================================
+   11/18 b: date, place and sound one per line (icons in one column); "Buy tickets" with running lights;
+   Boost (our repost) appears beside Like once a video is liked.
+   ========================================================================== */
+.fd-facts{list-style:none; margin:0; padding:0; display:grid; gap:5px}
+.fd-facts li{display:grid; grid-template-columns:16px minmax(0,1fr); align-items:center; column-gap:8px; min-width:0; font-size:12.5px; line-height:1.3; font-weight:600; color:rgba(255,255,255,.93)}
+.fd-facts li svg{justify-self:center; opacity:.9}
+.fd-facts li span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fd-facts .fd-track{font-weight:500; color:rgba(255,255,255,.8)}
+
+/* Buy tickets: a ring of light runs around the button, a shine sweeps across it, and it glows softly */
+@property --fd-spin{syntax:'<angle>'; inherits:false; initial-value:0deg}
+.fd-cta{isolation:isolate; overflow:visible; animation:fdGlow 2.2s ease-in-out infinite}
+.fd-cta::before{content:""; position:absolute; inset:-2px; z-index:-1; border-radius:16px; padding:2px; pointer-events:none;
+  background:conic-gradient(from var(--fd-spin), rgba(255,255,255,0) 0deg, #fff 28deg, #FFD54A 52deg, rgba(255,255,255,0) 86deg,
+    rgba(255,255,255,0) 180deg, #fff 208deg, #FF8A94 232deg, rgba(255,255,255,0) 266deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:fdRing 2.4s linear infinite}
+.fd-cta::after{content:""; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+  background:linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,255,255,.38) 50%, rgba(255,255,255,0) 65%) no-repeat;
+  background-size:240% 100%; animation:fdShine 3.2s ease-in-out infinite}
+.fd-cta-l{position:relative; z-index:1}
+.fd-cta.is-ended{animation:none}
+.fd-cta.is-ended::before,.fd-cta.is-ended::after{display:none}
+@keyframes fdRing{to{--fd-spin:360deg}}
+@keyframes fdShine{0%{background-position:160% 0} 55%,100%{background-position:-60% 0}}
+@keyframes fdGlow{0%,100%{box-shadow:0 14px 30px -16px rgba(240,49,63,.95), 0 0 0 0 rgba(240,49,63,0)} 50%{box-shadow:0 14px 30px -16px rgba(240,49,63,.95), 0 0 24px 3px rgba(240,49,63,.55)}}
+
+/* Boost pops in when you like a video */
+.fd-rail{gap:10px}
+.fd-boost.pop .fd-ic{animation:fdPop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes fdPop{0%{transform:scale(.2) translateY(10px); opacity:0} 100%{transform:none; opacity:1}}
+
+@media (prefers-reduced-motion:reduce){
+  .fd-cta,.fd-cta::before,.fd-cta::after,.fd-boost.pop .fd-ic{animation:none}
+}
+/* brighter running lights (owner: "shiny blinking lights around the button") */
+.fd-cta::before{inset:-3px; border-radius:17px; padding:3px; filter:drop-shadow(0 0 5px rgba(255,214,90,.95)) drop-shadow(0 0 10px rgba(255,90,100,.7));
+  background:conic-gradient(from var(--fd-spin), rgba(255,255,255,0) 0deg, #FFF6D6 22deg, #FFD54A 44deg, rgba(255,213,74,0) 80deg,
+    rgba(255,255,255,0) 120deg, #fff 150deg, #FF8A94 170deg, rgba(255,138,148,0) 200deg,
+    rgba(255,255,255,0) 240deg, #FFF6D6 262deg, #FFD54A 284deg, rgba(255,213,74,0) 320deg);
+  animation:fdRing 2.2s linear infinite, fdBlink 1.1s ease-in-out infinite}
+@keyframes fdBlink{0%,100%{opacity:1} 50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){ .fd-cta::before{animation:none} }

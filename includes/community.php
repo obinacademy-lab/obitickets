@@ -644,6 +644,56 @@ function set_post_save(int $postId, int $userId, bool $save): array
 }
 
 // =====================================================================
+// Boost (our "repost", migration 033): anyone except the video's own organizer can push it to more people
+// =====================================================================
+
+/** True once migration 033 (post_boosts) has run. */
+function post_boosts_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW TABLES LIKE 'post_boosts'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** Boost or un-boost a published post. @return array{ok:bool, error?:string, boosted?:bool, boost_count?:int} */
+function set_post_boost(int $postId, int $userId, bool $boost): array
+{
+    if (!post_boosts_ready()) {
+        return ['ok' => false, 'error' => 'Boosting is not available yet.'];
+    }
+    $post = get_post($postId);
+    if (!$post || $post['status'] !== 'PUBLISHED') {
+        return ['ok' => false, 'error' => 'Post not found.'];
+    }
+    $event = get_event_for_post($post);
+    if ((int) $post['author_id'] === $userId || (int) ($event['organizer_id'] ?? 0) === $userId) {
+        return ['ok' => false, 'error' => 'You cannot boost your own video.'];
+    }
+    if ($boost) {
+        $ins = db()->prepare('INSERT IGNORE INTO post_boosts (post_id, user_id) VALUES (?, ?)');
+        $ins->execute([$postId, $userId]);
+        // tell the organizer once, the first time this person boosts it
+        if ($ins->rowCount() > 0 && function_exists('create_notification') && !empty($event['organizer_id'])) {
+            $who = db()->prepare('SELECT name FROM users WHERE id = ?');
+            $who->execute([$userId]);
+            $name = community_display_name((string) $who->fetchColumn());
+            create_notification((int) $event['organizer_id'], 'like', $name . ' boosted your video', (string) ($event['title'] ?? ''), '/socials.php?v=' . $postId);
+        }
+    } else {
+        db()->prepare('DELETE FROM post_boosts WHERE post_id = ? AND user_id = ?')->execute([$postId, $userId]);
+    }
+    $count = db()->prepare('SELECT COUNT(*) FROM post_boosts WHERE post_id = ?');
+    $count->execute([$postId]);
+    return ['ok' => true, 'boosted' => $boost, 'boost_count' => (int) $count->fetchColumn()];
+}
+
+// =====================================================================
 // Reactions
 // =====================================================================
 

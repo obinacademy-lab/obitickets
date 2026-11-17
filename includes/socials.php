@@ -369,14 +369,16 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
         // People the viewer blocked never show up in their feed.
         $where .= ' AND x.author_id NOT IN (SELECT b.blocked_id FROM user_blocks b WHERE b.blocker_id = ' . (int) $viewer . ')';
     }
+    // boosts push a video to more people (migration 033)
+    $boostSql = function_exists('post_boosts_ready') && post_boosts_ready() ? '(SELECT COUNT(*) FROM post_boosts pb WHERE pb.post_id = x.id)' : '0';
     if ($tab === 'trending') {
         // Trending: the posts people engaged with most in the last 14 days, without the freshness pull of For You.
         $where .= ' AND x.created_at >= NOW() - INTERVAL 14 DAY';
-        $order = '(x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 5000) / 10) DESC, x.id DESC';
+        $order = '(x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + ' . $boostSql . ' * 6 + LEAST(x.view_count, 5000) / 10) DESC, x.id DESC';
     } elseif ($tab === 'following' || $organizerId) {
         $order = 'x.id DESC';
     } else {
-        $order = '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + LEAST(x.view_count, 600) / 20 + 4)
+        $order = '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + ' . $boostSql . ' * 6 + LEAST(x.view_count, 600) / 20 + 4)
               * IF(e.ends_at >= NOW(), 1, 0.45)
               / POW(TIMESTAMPDIFF(HOUR, x.created_at, NOW()) + 6, 1.15)) DESC, x.id DESC';
     }
@@ -389,7 +391,9 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
                COALESCE(NULLIF(op.org_name, ""), ou.name) AS org_name, op.slug AS org_slug, (op.verification_status = "VERIFIED") AS org_verified,
                (SELECT MIN(t.price) FROM ticket_types t WHERE t.event_id = e.id) AS min_price,
                (SELECT COUNT(*) FROM organizer_follows f2 WHERE f2.organizer_user_id = e.organizer_id AND f2.user_id = ' . (int) $viewer . ') AS i_follow' . ($viewer && function_exists('post_saves_ready') && post_saves_ready() ? ',
-               (SELECT COUNT(*) FROM post_saves ps WHERE ps.post_id = x.id AND ps.user_id = ' . (int) $viewer . ') AS i_saved' : '') . '
+               (SELECT COUNT(*) FROM post_saves ps WHERE ps.post_id = x.id AND ps.user_id = ' . (int) $viewer . ') AS i_saved' : '') . (function_exists('post_boosts_ready') && post_boosts_ready() ? ',
+               ' . $boostSql . ' AS boost_count' . ($viewer ? ',
+               (SELECT COUNT(*) FROM post_boosts pb3 WHERE pb3.post_id = x.id AND pb3.user_id = ' . (int) $viewer . ') AS i_boosted' : '') : '') . '
         FROM (' . moment_select_sql() . ') x
         JOIN events e ON e.id = x.event_id
         JOIN users ou ON ou.id = e.organizer_id
@@ -461,6 +465,8 @@ function socials_item_public(array $row): array
     $item['share'] = rtrim(APP_URL, '/') . '/socials.php?v=' . (int) $row['id'];
     $item['likes'] = moment_compact((int) $row['reaction_count']);
     $item['saved'] = (int) ($row['i_saved'] ?? 0) > 0;
+    $item['boosts'] = (int) ($row['boost_count'] ?? 0);
+    $item['boosted'] = (int) ($row['i_boosted'] ?? 0) > 0;
     // The picture's own shape (width / height) so the player can show it whole from the first frame: the image, the
     // first slide, or a video's cover. Null when it cannot be measured here; the player then measures it itself.
     $shapeOf = $item['type'] === 'video' ? (string) ($item['poster'] ?? '') : ($item['type'] === 'slideshow' ? (string) ($item['slides'][0] ?? '') : (string) $item['src']);

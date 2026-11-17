@@ -252,6 +252,7 @@ include __DIR__ . '/includes/header.php';
     'me' => $uid,
     'stickers' => SOCIALS_STICKERS,
     'canSave' => function_exists('post_saves_ready') && post_saves_ready(),
+    'canBoost' => function_exists('post_boosts_ready') && post_boosts_ready(),
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>

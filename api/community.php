@@ -41,6 +41,10 @@ try {
             $r = set_organizer_follow($intOf($body['organizer_id'] ?? 0), $uid, !empty($body['follow']));
             json_response($r, $r['ok'] ? 200 : 400);
 
+        case 'boost_post':
+            $r = set_post_boost($intOf($body['id'] ?? 0), $uid, !empty($body['boost']));
+            json_response($r, $r['ok'] ? 200 : 400);
+
         case 'save_post':
             $r = set_post_save($intOf($body['id'] ?? 0), $uid, !empty($body['save']));
             json_response($r, $r['ok'] ? 200 : 400);

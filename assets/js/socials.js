@@ -53,6 +53,8 @@
     pin: ['M12 21s7-6.200 7-11.500A7 7 0 0 0 5 9.500C5 14.800 12 21 12 21z', 'M12 12a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z'],
     up: ['M6 15l6-6 6 6'],
     down: ['M6 9l6 6 6-6'],
+    // Boost: an arrow going up with two speed lines under it (filled, like the other buttons)
+    boost: ['M12 2.500 20 11h-4.500v5h-7v-5H4z', 'M8.500 17.500h7v1.800h-7z', 'M8.500 20.600h7v1.400h-7z'],
     check: ['M5 12.500l4.500 4.500L19 7.500']
   };
 
@@ -201,9 +203,23 @@
     if (d.saved) { save.classList.add('is-on'); }
     save.setAttribute('aria-pressed', d.saved ? 'true' : 'false');
     if (!D.canSave) { save.hidden = true; }
-    rail.appendChild(like); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
+    // Boost (our "repost"): shows up once you like a video, like TikTok, and pushes it to more people.
+    // Not on the organizer's own videos.
+    var canBoost = !!D.canBoost && !(D.me && D.me === d.org.id);
+    var boostLabel = function () { return d.boosts > 0 ? compact(d.boosts) : (d.boosted ? 'Boosted' : 'Boost'); };
+    var boost = railButton(d.boosted ? 'Boosted' : 'Boost this video to more people', IC.boost, boostLabel(), true, 'fd-boost');
+    if (d.boosted) { boost.classList.add('is-on'); }
+    boost.setAttribute('aria-pressed', d.boosted ? 'true' : 'false');
+    boost.hidden = !canBoost || !(it.liked || d.boosted);
+    rail.appendChild(like); rail.appendChild(boost); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
     a.appendChild(rail);
     it.rail = rail;
+    function revealBoost() {
+      if (!canBoost || !boost.hidden) { return; }
+      boost.hidden = false;
+      if (!reduce) { boost.classList.remove('pop'); void boost.offsetWidth; boost.classList.add('pop'); }
+      measure(it);
+    }
 
     // words (the mockup): organizer picture, @handle and tick, the event under it, Follow; caption; when and where; sound
     var info = el('div', 'fd-info');
@@ -235,25 +251,24 @@
       cap.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
       info.appendChild(cap);
     }
-    var meta = el('div', 'fd-meta');
-    var when = el('span', 'fd-when'); when.appendChild(svg(IC.cal, 14)); when.appendChild(document.createTextNode(d.event.when));
-    var where = el('span', 'fd-where'); where.appendChild(svg(IC.pin, 14)); where.appendChild(el('b', null, d.event.where));
-    meta.appendChild(when); meta.appendChild(where);
-    info.appendChild(meta);
-    var track = el('div', 'fd-track'); track.appendChild(svg(IC.note, 14, true));
-    track.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio'));
-    info.appendChild(track);
+    // date, place and sound: one per line, icons lined up in one column
+    var facts = el('ul', 'fd-facts');
+    var fact = function (cls, icon, filled, text) {
+      var li = el('li', cls); li.appendChild(svg(icon, 15, filled)); li.appendChild(el('span', null, text)); facts.appendChild(li);
+    };
+    fact('fd-when', IC.cal, false, d.event.when);
+    fact('fd-where', IC.pin, false, d.event.where);
+    fact('fd-track', IC.note, true, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio');
+    info.appendChild(facts);
     a.appendChild(info);
 
-    // one clear action: book (free events: get a pass; ended: see the event)
+    // one clear action: Buy tickets (free events: get a pass; ended: see the event). No price on the button.
     var free = d.event.price === 'Free';
-    var label = d.event.ended ? 'See this event' : (free ? 'Get a free pass' : 'Book ticket');
+    var label = d.event.ended ? 'See this event' : (free ? 'Get a free pass' : 'Buy tickets');
     var cta = el('a', 'fd-cta' + (d.event.ended ? ' is-ended' : ''));
     cta.href = d.event.url + (d.event.ended ? '' : '#tickets');
     cta.appendChild(el('span', 'fd-cta-l', label));
-    var priceTxt = (!d.event.ended && d.event.price && !free) ? String(d.event.price).replace(/^From\s+/i, '') : '';
-    if (priceTxt) { cta.appendChild(el('span', 'fd-cta-p', priceTxt)); }
-    cta.setAttribute('aria-label', label + (priceTxt ? ', ' + d.event.price : '') + ', ' + d.event.title);
+    cta.setAttribute('aria-label', label + ', ' + d.event.title);
     a.appendChild(cta);
 
     if (it.video) {
@@ -272,6 +287,7 @@
       if (now - lastTap < 320) {           // double tap: like
         clearTimeout(tapTimer); lastTap = 0;
         if (!it.liked) { toggleLike(true); }
+        if (it.liked) { revealBoost(); }
         burst();
         return;
       }
@@ -296,7 +312,25 @@
         else if (r && r._status === 401) { window.location.href = D.loginUrl; }
       });
     }
-    like.addEventListener('click', function () { var was = it.liked; toggleLike(false); if (!was && it.liked) { burst(); } });
+    like.addEventListener('click', function () { var was = it.liked; toggleLike(false); if (!was && it.liked) { burst(); revealBoost(); } });
+    boost.addEventListener('click', function () {
+      if (needLogin()) { return; }
+      var on = !d.boosted;
+      var paint = function (v, count) {
+        d.boosted = v;
+        if (typeof count === 'number') { d.boosts = count; } else { d.boosts = Math.max(0, d.boosts + (v ? 1 : -1)); }
+        boost.classList.toggle('is-on', v); boost.setAttribute('aria-pressed', v ? 'true' : 'false');
+        boost.setAttribute('aria-label', v ? 'Boosted' : 'Boost this video to more people');
+        boost._count.textContent = boostLabel();
+      };
+      paint(on);
+      api('/api/community.php', { action: 'boost_post', id: d.id, boost: on }).then(function (r) {
+        if (r && r._status === 401) { window.location.href = D.loginUrl; return; }
+        if (!r || !r.ok) { paint(!on); toast((r && r.error) || 'Could not boost. Try again.'); return; }
+        paint(on, r.boost_count);
+        toast(on ? 'Boosted: more people will see this video' : 'Boost removed');
+      }, function () { paint(!on); toast('Could not boost. Try again.'); });
+    });
     com.addEventListener('click', function () { openComments(it, com); });
     sh.addEventListener('click', function () { openShare(it, sh); });
     save.addEventListener('click', function () {
