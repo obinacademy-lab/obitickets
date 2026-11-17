@@ -151,6 +151,160 @@ function remove_user_avatar(int $userId): void
     delete_avatar_file($old);
 }
 
+// =====================================================================
+// Cover photos (11/18): the wide picture at the top of a profile. users.cover_url (migration 035), a public path
+// like /uploads/covers/<32 hex>.jpg, or null. Same checks as profile pictures; stored as a 1500 x 600 JPEG.
+// =====================================================================
+const COVER_MAX_BYTES = 8 * 1024 * 1024;   // 8MB
+const COVER_W = 1500;
+const COVER_H = 600;
+const COVER_PATH_PATTERN = '#^/uploads/covers/[a-f0-9]{32}\.jpg$#';
+
+/** True once migration 035 is in (cover photos, organizer headline and location). */
+function profile_covers_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM users LIKE 'cover_url'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+function user_cover_url(int $userId): ?string
+{
+    if (!profile_covers_ready()) {
+        return null;
+    }
+    $stmt = db()->prepare('SELECT cover_url FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $v = $stmt->fetchColumn();
+    return (is_string($v) && preg_match(COVER_PATH_PATTERN, $v)) ? $v : null;
+}
+
+/** @return array{0:bool,1:?string,2:?string} [ok, publicPath, error] */
+function handle_cover_upload(array $file): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return [false, null, 'Choose a picture first.'];
+    }
+    if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE || ($file['size'] ?? 0) > COVER_MAX_BYTES) {
+        return [false, null, 'That picture is too large. Please use one under 8MB.'];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
+        return [false, null, 'There was a problem uploading that picture. Please try again.'];
+    }
+    if (!function_exists('imagecreatefromstring')) {
+        return [false, null, 'Pictures cannot be processed on this server right now.'];
+    }
+    $info = @getimagesize($file['tmp_name']);
+    if ($info === false || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP, IMAGETYPE_GIF], true)) {
+        return [false, null, 'Please upload a JPG, PNG, WEBP or GIF picture.'];
+    }
+    if ($info[0] * $info[1] > AVATAR_MAX_PIXELS) {
+        return [false, null, 'That picture has too many pixels. Please use a smaller one.'];
+    }
+    if ($info[0] < 600 || $info[1] < 200) {
+        return [false, null, 'That picture is too small for a cover. Please use one at least 600 pixels wide.'];
+    }
+    $src = @imagecreatefromstring((string) file_get_contents($file['tmp_name']));
+    if (!$src) {
+        return [false, null, "That file doesn't look like a valid picture."];
+    }
+    if ($info[2] === IMAGETYPE_JPEG && function_exists('exif_read_data')) {
+        $exif = @exif_read_data($file['tmp_name']);
+        $rotate = [3 => 180, 6 => -90, 8 => 90][(int) ($exif['Orientation'] ?? 1)] ?? 0;
+        if ($rotate !== 0 && ($r = imagerotate($src, $rotate, 0))) {
+            imagedestroy($src);
+            $src = $r;
+        }
+    }
+    // centre crop to 5:2, then scale
+    $w = imagesx($src);
+    $h = imagesy($src);
+    $want = COVER_W / COVER_H;
+    if ($w / $h > $want) { $cw = (int) round($h * $want); $ch = $h; } else { $cw = $w; $ch = (int) round($w / $want); }
+    $dst = imagecreatetruecolor(COVER_W, COVER_H);
+    imagefill($dst, 0, 0, imagecolorallocate($dst, 11, 7, 8));
+    imagecopyresampled($dst, $src, 0, 0, intdiv($w - $cw, 2), intdiv($h - $ch, 2), COVER_W, COVER_H, $cw, $ch);
+    imagedestroy($src);
+    $dir = __DIR__ . '/../uploads/covers';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        imagedestroy($dst);
+        return [false, null, 'Could not prepare storage for the picture. Please try again.'];
+    }
+    $name = bin2hex(random_bytes(16)) . '.jpg';
+    $ok = imagejpeg($dst, $dir . '/' . $name, 84);
+    imagedestroy($dst);
+    return $ok ? [true, '/uploads/covers/' . $name, null] : [false, null, 'Could not save the picture. Please try again.'];
+}
+
+function delete_cover_file(?string $publicPath): void
+{
+    if ($publicPath !== null && preg_match(COVER_PATH_PATTERN, $publicPath)) {
+        $full = __DIR__ . '/../public' . $publicPath;
+        if (is_file($full)) {
+            @unlink($full);
+        }
+    }
+}
+
+/** @return array{0:bool,1:?string} [ok, error] */
+function set_user_cover(int $userId, array $file): array
+{
+    if (!profile_covers_ready()) {
+        return [false, 'Cover photos are not switched on yet.'];
+    }
+    [$ok, $path, $err] = handle_cover_upload($file);
+    if (!$ok) {
+        return [false, $err];
+    }
+    $old = user_cover_url($userId);
+    db()->prepare('UPDATE users SET cover_url = ? WHERE id = ?')->execute([$path, $userId]);
+    delete_cover_file($old);
+    return [true, null];
+}
+
+function remove_user_cover(int $userId): void
+{
+    if (!profile_covers_ready()) {
+        return;
+    }
+    $old = user_cover_url($userId);
+    db()->prepare('UPDATE users SET cover_url = NULL WHERE id = ?')->execute([$userId]);
+    delete_cover_file($old);
+}
+
+/** An organizer's short line under their name: what they are, and where. @return array{headline:string,location:string} */
+function organizer_tagline(int $userId): array
+{
+    $out = ['headline' => '', 'location' => ''];
+    if (!profile_covers_ready()) {
+        return $out;
+    }
+    $stmt = db()->prepare('SELECT headline, location FROM organizer_profiles WHERE user_id = ?');
+    $stmt->execute([$userId]);
+    $r = $stmt->fetch();
+    if ($r) {
+        $out['headline'] = trim((string) ($r['headline'] ?? ''));
+        $out['location'] = trim((string) ($r['location'] ?? ''));
+    }
+    return $out;
+}
+
+/** Saves the short line (each part up to 60 characters, plain text). */
+function set_organizer_tagline(int $userId, string $headline, string $location): void
+{
+    if (!profile_covers_ready()) {
+        return;
+    }
+    $clean = static fn (string $v): ?string => ($v = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F<>]+/u', '', $v) ?? ''), 0, 60)) !== '' ? $v : null;
+    db()->prepare('UPDATE organizer_profiles SET headline = ?, location = ? WHERE user_id = ?')->execute([$clean($headline), $clean($location), $userId]);
+}
+
 /**
  * Checks the editable details. Name 2 to 80 characters; phone optional, 9 to 15 digits (a leading + and spaces,
  * dashes and brackets are allowed and tidied).

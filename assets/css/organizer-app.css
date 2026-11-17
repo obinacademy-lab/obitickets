@@ -1,74 +1,91 @@
 /* ==========================================================================
-   Organizer profile in the dark app look (owner's mockup, Phase 3, 11/18). public/organizer.php, body.op-app,
-   on top of socials.css (the op-* profile parts) and app-dark.css. A soft cover from their newest flyer, the
-   picture, name and tick, Followers / Following / Likes / Events, a big Follow, then Videos and Events.
-   Drop "app-dark op-app" from $bodyClass for the light profile.
+   Organizer profile, to the owner's mockup (11/18). public/organizer.php, body.op-app, on top of socials.css
+   (op-* parts) and app-dark.css. A sharp cover photo with back / menu over it, the round picture overlapping it
+   (red dot = has upcoming events), name + tick, "what · where", Videos / Followers / Following, a red Follow with
+   a share button, the bio, then Events (rows) / Videos / Liked (grids).
    ========================================================================== */
-html.rc body.op-app{background:var(--ad-bg, #0B0708); color:#fff}
-body.op-app .ev,body.op-app .ev-profile{background:transparent; position:relative}
+html.rc body.op-app{background:#0B0708; color:#fff}
+body.op-app .ev,body.op-app .ev-profile{background:transparent}
 body.op-app .op-page{--op-red:#F0313F}
 
-/* the cover: their newest flyer, soft and dark, fading into the page */
-.op-cover{position:absolute; z-index:0; left:0; right:0; top:0; height:300px; overflow:hidden; pointer-events:none;
-  background:radial-gradient(120% 90% at 50% 0%, rgba(240,49,63,.28), rgba(11,7,8,0) 70%)}
-.op-cover::before{content:""; position:absolute; inset:-30px; background-image:var(--op-cover, none); background-size:cover; background-position:center;
-  filter:blur(22px) saturate(1.25) brightness(.5); transform:scale(1.15)}
-.op-cover::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,7,8,.2) 0%, rgba(11,7,8,.55) 55%, #0B0708 100%)}
-body.op-app .op-top,body.op-app .op-hero,body.op-app .op-tabs,body.op-app .ev-profile-body{position:relative; z-index:1}
+/* ---------- cover + picture ---------- */
+.op-head{position:relative; height:calc(210px + env(safe-area-inset-top, 0px)); margin-bottom:58px}
+.op-cover{position:absolute; inset:0; background:#1E181A center/cover no-repeat;
+  background-image:radial-gradient(120% 100% at 50% 0%, #4A1A22 0%, #1E181A 70%)}
+.op-cover::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,7,8,.55) 0%, rgba(11,7,8,0) 30%, rgba(11,7,8,0) 55%, rgba(11,7,8,.85) 92%, #0B0708 100%)}
+.op-top{position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+.op-tbtn{width:40px; height:40px; border:0; border-radius:50%; background:transparent; color:#fff; display:grid; place-items:center; cursor:pointer; filter:drop-shadow(0 1px 6px rgba(0,0,0,.6))}
+body.op-app a.op-tbtn{color:#fff}
+.op-tbtn:hover{background:rgba(0,0,0,.25); color:#fff}
+.op-tbtn:focus-visible{outline:3px solid #fff; outline-offset:2px}
+body.op-app .op-avatar{position:absolute; z-index:2; left:50%; bottom:-54px; transform:translateX(-50%); width:112px; height:112px; border-radius:50%; overflow:visible;
+  background:#0B0708; box-shadow:0 0 0 3px #fff, 0 18px 40px -16px rgba(0,0,0,.9); display:block}
+body.op-app .op-avatar img,body.op-app .op-avatar b{width:100%; height:100%; border-radius:50%; object-fit:cover; display:grid; place-items:center}
+body.op-app .op-avatar b{background:linear-gradient(135deg,#F0313F,#9F101B); color:#fff; font:800 2.1rem 'Outfit','Plus Jakarta Sans',sans-serif}
+body.op-app .op-avatar i{position:absolute; right:8px; bottom:6px; width:16px; height:16px; border-radius:50%; background:var(--op-red); border:3px solid #0B0708}
 
-.op-top{justify-content:space-between}
-.op-top .ad-icon{background:rgba(11,7,8,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
-.op-top-t{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-body.op-app a.ad-icon{color:#fff}
+/* ---------- name, line, numbers ---------- */
+body.op-app .op-hero{padding-top:0; gap:4px}
+body.op-app .op-name{margin-top:0; gap:7px}
+body.op-app .op-name h1{color:#fff; font-size:1.55rem}
+body.op-app .op-ver{width:20px; height:20px; background:#3B9CFF}
+.op-line{margin:0; color:#B3A7A7; font-size:.9rem; font-weight:600}
+body.op-app .op-stats{grid-template-columns:repeat(3,minmax(0,1fr)); width:min(360px,100%); margin-top:14px; background:transparent; border-radius:0}
+body.op-app .op-stats div{padding:4px 6px}
+body.op-app .op-stats div + div{border-left:0}
+body.op-app .op-stats b{color:#fff; font-size:1.25rem}
+body.op-app .op-stats span{color:#B3A7A7; font-size:.8rem}
 
-body.op-app .op-hero{padding-top:6px}
-body.op-app .op-avatar{width:104px; height:104px; background:linear-gradient(135deg,#F0313F,#B5121F); box-shadow:0 0 0 3px #0B0708, 0 0 0 5px var(--op-red), 0 20px 40px -16px rgba(240,49,63,.7)}
-body.op-app .op-name h1{color:#fff}
-body.op-app .op-handle{color:var(--ad-mute)}
-body.op-app .op-stats{width:min(460px,100%); background:transparent; border-radius:0}
-body.op-app .op-stats div + div{border-left:1px solid var(--ad-line)}
-body.op-app .op-stats b{color:#fff; font-size:1.3rem}
-body.op-app .op-stats span{color:var(--ad-mute)}
-body.op-app .op-actions{width:min(460px,100%); justify-content:center; margin-top:10px}
-body.op-app .op-follow{flex:1; max-width:320px; height:48px; border-radius:14px; background:var(--op-red); box-shadow:0 16px 32px -16px rgba(240,49,63,.95)}
-body.op-app .op-follow:hover{background:#D72634}
-body.op-app .op-follow[aria-pressed="true"]{background:rgba(255,255,255,.1); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
-body.op-app a.op-edit,.op-edit{flex:1; max-width:220px; height:46px; border-radius:14px; background:rgba(255,255,255,.1); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); color:#fff; display:grid; place-items:center; font-weight:800; font-size:14.5px}
-body.op-app a.op-edit:hover{background:rgba(255,255,255,.16); color:#fff}
-body.op-app .op-follow:focus-visible,body.op-app .op-tabs button:focus-visible,body.op-app .op-tile:focus-visible,.op-edit:focus-visible{outline:3px solid #fff; outline-offset:3px}
-body.op-app .op-bio{color:#EEE6E6; font-size:14.5px; line-height:1.6}
-body.op-app .op-sub{color:var(--ad-mute)}
+/* ---------- Follow + share ---------- */
+body.op-app .op-actions{width:min(460px,100%); gap:10px; margin-top:14px}
+body.op-app .op-follow{flex:1; min-width:0; height:48px; border-radius:12px; background:linear-gradient(180deg,#F23A47,#D9202E); color:#fff; font:800 1rem 'Plus Jakarta Sans',system-ui,sans-serif;
+  box-shadow:0 14px 30px -14px rgba(240,49,63,.95); display:grid; place-items:center}
+body.op-app .op-follow:hover{background:#D72634; color:#fff}
+body.op-app .op-follow[aria-pressed="true"],body.op-app a.op-follow.op-edit{background:rgba(255,255,255,.1); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.op-send{flex:none; width:64px; height:48px; border:0; border-radius:12px; background:transparent; color:#fff; box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35); display:grid; place-items:center; cursor:pointer}
+.op-send:hover{background:rgba(255,255,255,.08)}
+body.op-app .op-follow:focus-visible,.op-send:focus-visible,body.op-app .op-tabs button:focus-visible,body.op-app .op-tile:focus-visible,.op-row:focus-visible{outline:3px solid #fff; outline-offset:3px}
+body.op-app .op-bio{max-width:44ch; margin-top:14px; color:#EEE6E6; font-size:.92rem; line-height:1.55}
+body.op-app .op-links{margin-top:10px}
 body.op-app .op-links .ev-pill{background:rgba(255,255,255,.08); color:#fff; border:0}
 
-/* tabs */
-body.op-app .op-tabs{max-width:none; margin-top:18px; border-bottom:1px solid var(--ad-line); background:#0B0708; position:sticky; top:0; z-index:5}
-body.op-app .op-tabs button{display:flex; align-items:center; justify-content:center; gap:8px; color:var(--ad-mute)}
-body.op-app .op-tabs button small{font-size:12px; font-weight:700; color:inherit; opacity:.8}
+/* ---------- tabs ---------- */
+body.op-app .op-tabs{grid-template-columns:repeat(3,1fr); max-width:none; margin-top:22px; border-bottom:1px solid rgba(255,255,255,.1); background:#0B0708; position:sticky; top:0; z-index:5}
+body.op-app .op-tabs button{height:48px; color:#B3A7A7; font-size:.95rem}
 body.op-app .op-tabs button[aria-selected="true"]{color:#fff}
-body.op-app .op-tabs button[aria-selected="true"]::after{left:25%; right:25%; background:var(--op-red)}
+body.op-app .op-tabs button[aria-selected="true"]::after{left:22%; right:22%; height:3px; background:var(--op-red)}
 
-/* video grid */
+/* ---------- Events: rows ---------- */
 body.op-app .ev-profile-body{padding-top:0; padding-bottom:28px}
-body.op-app .op-panel{padding-top:10px}
+body.op-app .op-panel{padding-top:16px}
+.op-h{margin:4px 0 12px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.1rem; color:#fff}
+.op-h + .op-rows{margin-bottom:22px}
+.op-rows{display:grid; gap:10px}
+.op-row{display:flex; align-items:center; gap:14px; padding:10px; border-radius:14px; background:#171214; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); color:#fff; transition:background .2s}
+.op-row:hover{background:#201A1C; color:#fff}
+.op-row-art{flex:none; width:84px; height:60px; border-radius:10px; overflow:hidden; background:#2A2224; display:grid; place-items:center}
+.op-row-art img{width:100%; height:100%; object-fit:cover}
+.op-row-art i{font-style:normal; font-size:1.6rem}
+.op-row-tx{flex:1; min-width:0; display:grid; gap:4px}
+.op-row-tx b{font-size:1rem; font-weight:800; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.op-row-tx small{font-size:.82rem; color:#B3A7A7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.op-row-pill{flex:none; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.08); color:#B3A7A7; font-style:normal; font-size:.72rem; font-weight:700}
+.op-row-go{flex:none; color:#D9CFCF}
+
+/* ---------- Videos / Liked: grids ---------- */
 body.op-app .op-grid{gap:3px}
 body.op-app .op-tile{border-radius:8px; background:#1E181A}
-@media (min-width:900px){ body.op-app .op-grid{gap:8px} body.op-app .op-tile{border-radius:12px} }
-
-/* events */
-body.op-app .ev-h2{color:#fff}
-body.op-app .ev-h2-count{background:rgba(255,255,255,.1); color:#fff}
-body.op-app .ev-section-note{color:var(--ad-mute)}
-body.op-app .ev-ecard-art{background:#1E181A; box-shadow:none}
-body.op-app .ev-ecard-title{color:#fff}
-body.op-app .ev-ecard-sub,body.op-app .ev-ecard-foot{color:var(--ad-mute)}
-body.op-app .ev-ecard-foot b{color:#fff}
-body.op-app .ev-empty{background:var(--ad-card); color:var(--ad-mute); border:0}
+body.op-app .ev-empty{display:grid; gap:4px; padding:26px 18px; border-radius:16px; background:#171214; color:#B3A7A7; text-align:center; border:0}
 body.op-app .ev-empty b{color:#fff}
-@media (max-width:700px){
-  body.op-app .ev-egrid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px}
-  body.op-app .ev-ecard-title{font-size:14.5px; margin-top:10px}
-  body.op-app .ev-ecard-sub,body.op-app .ev-ecard-foot{font-size:12.5px}
-  body.op-app .ev-ecard-date{top:8px; left:8px; padding:4px 8px; border-radius:10px}
-  body.op-app .ev-ecard-date b{font-size:16px}
+
+@media (min-width:900px){
+  .op-head{height:300px; max-width:1100px; margin-left:auto; margin-right:auto; margin-top:12px}
+  .op-cover{border-radius:22px; overflow:hidden}
+  body.op-app .op-grid{gap:8px}
+  body.op-app .op-tile{border-radius:12px}
 }
 @media (max-width:900px){ html.rc body.op-app .site-nav{display:none} }
+
+/* links inside the page keep their light text (the light page colours links dark) */
+body.op-app a.op-row,body.op-app a.op-row:hover,body.op-app .op-row-tx b{color:#fff}
+body.op-app .op-row-tx small{color:#B3A7A7}
