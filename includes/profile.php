@@ -305,6 +305,79 @@ function set_organizer_tagline(int $userId, string $headline, string $location):
     db()->prepare('UPDATE organizer_profiles SET headline = ?, location = ? WHERE user_id = ?')->execute([$clean($headline), $clean($location), $userId]);
 }
 
+// =====================================================================
+// @username and bio (Phase 4, 11/18; migration 036). Usernames: 3-24 characters, lowercase letters, numbers,
+// dots and underscores, unique, not a reserved word.
+// =====================================================================
+const USERNAME_RESERVED = ['admin', 'administrator', 'obitickets', 'support', 'help', 'root', 'system', 'staff', 'moderator', 'official', 'null', 'me', 'settings', 'login', 'signup'];
+
+function profile_about_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM users LIKE 'username'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** @return array{username:string,bio:string} */
+function user_about(int $userId): array
+{
+    if (!profile_about_ready()) {
+        return ['username' => '', 'bio' => ''];
+    }
+    $st = db()->prepare('SELECT username, bio FROM users WHERE id = ?');
+    $st->execute([$userId]);
+    $r = $st->fetch() ?: [];
+    return ['username' => (string) ($r['username'] ?? ''), 'bio' => (string) ($r['bio'] ?? '')];
+}
+
+/**
+ * Checks and saves the @username and bio. An empty username clears it.
+ * @return array<string,string> errors by field (empty when saved)
+ */
+function set_user_about(int $userId, string $username, string $bio): array
+{
+    if (!profile_about_ready()) {
+        return ['username' => 'Usernames are not switched on yet.'];
+    }
+    $errors = [];
+    $username = strtolower(trim(ltrim(trim($username), '@')));
+    if ($username !== '') {
+        if (!preg_match('/^[a-z0-9._]{3,24}$/', $username)) {
+            $errors['username'] = 'Use 3 to 24 letters, numbers, dots or underscores (no spaces).';
+        } elseif (str_starts_with($username, '.') || str_ends_with($username, '.') || str_contains($username, '..')) {
+            $errors['username'] = 'A username cannot start or end with a dot, or have two dots together.';
+        } elseif (in_array($username, USERNAME_RESERVED, true)) {
+            $errors['username'] = 'That username is reserved. Please choose another.';
+        } else {
+            $st = db()->prepare('SELECT 1 FROM users WHERE username = ? AND id <> ?');
+            $st->execute([$username, $userId]);
+            if ($st->fetchColumn()) {
+                $errors['username'] = 'That username is taken. Please choose another.';
+            }
+        }
+    }
+    $bio = trim(preg_replace('/[\x00-\x09\x0B-\x1F\x7F<>]+/u', '', $bio) ?? '');   // single quotes: PCRE reads the escapes
+    $bio = preg_replace("/\n{3,}/", "\n\n", str_replace("\r", '', $bio)) ?? '';
+    if (mb_strlen($bio) > 160) {
+        $errors['bio'] = 'Your bio can be at most 160 characters.';
+    }
+    if ($errors) {
+        return $errors;
+    }
+    try {
+        db()->prepare('UPDATE users SET username = ?, bio = ? WHERE id = ?')->execute([$username !== '' ? $username : null, $bio !== '' ? $bio : null, $userId]);
+    } catch (PDOException $e) {
+        return ['username' => 'That username is taken. Please choose another.'];   // a race on the unique index
+    }
+    return [];
+}
+
 /**
  * Checks the editable details. Name 2 to 80 characters; phone optional, 9 to 15 digits (a leading + and spaces,
  * dashes and brackets are allowed and tidied).

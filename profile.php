@@ -17,6 +17,8 @@ $errors = [];
 $passwordError = null;
 $photoError = null;
 $coverError = null;
+$aboutErrors = [];
+$aboutForm = null;
 $form = ['name' => (string) $row['name'], 'phone' => (string) ($row['phone'] ?? '')];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -41,6 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         remove_user_avatar($userId);
         header('Location: /profile.php?saved=removed#photo');
         exit;
+    } elseif ($action === 'about') {
+        $aboutForm = ['username' => (string) ($_POST['username'] ?? ''), 'bio' => (string) ($_POST['bio'] ?? '')];
+        $aboutErrors = set_user_about($userId, $aboutForm['username'], $aboutForm['bio']);
+        if (!$aboutErrors) {
+            header('Location: /profile.php?saved=about#about');
+            exit;
+        }
     } elseif ($action === 'cover') {
         [$ok, $coverError] = set_user_cover($userId, $_FILES['cover'] ?? []);
         if ($ok) {
@@ -67,6 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $avatar = user_avatar_url($userId);
 $cover = user_cover_url($userId);
+$aboutReady = profile_about_ready();
+$about = $aboutForm ?? user_about($userId);
 $coversReady = profile_covers_ready();
 $isOrganizer = $row['role'] === 'ORGANIZER';
 $tagline = $isOrganizer ? organizer_tagline($userId) : ['headline' => '', 'location' => ''];
@@ -79,6 +90,7 @@ $savedText = [
     'cover' => 'Your new cover photo is on.',
     'cover_removed' => 'Your cover photo was removed.',
     'tagline' => 'Your profile line is saved.',
+    'about' => 'Your username and bio are saved.',
 ][$saved] ?? null;
 $roleLabel = ['ATTENDEE' => 'Attendee', 'ORGANIZER' => 'Organizer', 'ADMIN' => 'Admin'][$row['role']] ?? 'Member';
 
@@ -155,6 +167,29 @@ include __DIR__ . '/includes/header.php';
   </section>
   <?php endif; ?>
 
+  <?php if ($aboutReady): ?>
+  <section class="pf-card" id="about" aria-labelledby="pf-h-about">
+    <h2 id="pf-h-about">Username and bio</h2>
+    <p class="pf-sub">Shown on your profile. Your username is how people find and mention you.</p>
+    <form method="post" novalidate>
+      <?= csrf_field() ?><input type="hidden" name="action" value="about">
+      <div class="field">
+        <label for="username">Username</label>
+        <div class="pf-at"><span aria-hidden="true">@</span><input id="username" name="username" type="text" maxlength="25" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="yourname" value="<?= htmlspecialchars($about['username']) ?>"<?= isset($aboutErrors['username']) ? ' aria-invalid="true" aria-describedby="username-err"' : '' ?>></div>
+        <?php if (isset($aboutErrors['username'])): ?><div class="pf-err" id="username-err"><?= htmlspecialchars($aboutErrors['username']) ?></div><?php endif; ?>
+        <div class="pf-hint">3 to 24 letters, numbers, dots or underscores.</div>
+      </div>
+      <div class="field">
+        <label for="bio">Bio <span class="pf-opt">(optional)</span></label>
+        <textarea id="bio" name="bio" rows="3" maxlength="160" placeholder="Music lover. Kampala. Always at the front row."<?= isset($aboutErrors['bio']) ? ' aria-invalid="true" aria-describedby="bio-err"' : '' ?>><?= htmlspecialchars($about['bio']) ?></textarea>
+        <?php if (isset($aboutErrors['bio'])): ?><div class="pf-err" id="bio-err"><?= htmlspecialchars($aboutErrors['bio']) ?></div><?php endif; ?>
+        <div class="pf-hint">Up to 160 characters.</div>
+      </div>
+      <button class="btn btn-purple" type="submit" style="margin-top:18px">Save username and bio</button>
+    </form>
+  </section>
+  <?php endif; ?>
+
   <section class="pf-card" id="details" aria-labelledby="pf-h-details">
     <h2 id="pf-h-details">Your details</h2>
     <form method="post" novalidate>
@@ -205,6 +240,10 @@ include __DIR__ . '/includes/header.php';
 </div>
 <style>
   .pf-cover{height:140px; margin:4px 0 14px; border-radius:16px; background:#1E181A center/cover no-repeat; display:grid; place-items:center; color:#8F8385; font-size:.85rem; font-weight:600; box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+  .pf-at{display:flex; align-items:center; gap:0; border:1px solid var(--line, #E5DEDD); border-radius:12px; overflow:hidden; background:#fff}
+  .pf-at span{padding:0 4px 0 14px; color:#8A7F7F; font-weight:700}
+  .pf-at input{border:0 !important; box-shadow:none !important; flex:1; min-width:0}
+  #bio{width:100%; resize:vertical}
   .pf-cover-form{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
   .pf-tagline{margin-top:22px; padding-top:18px; border-top:1px solid rgba(0,0,0,.08)}
   .pf-tagline h3{margin:0 0 4px; font-size:1rem}

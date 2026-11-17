@@ -1,0 +1,69 @@
+/* ==========================================================================
+   The ticket wallet in the dark app look (owner's mockup, Phase 4, 11/18). public/my-tickets.php, body.tw-page,
+   on top of app-dark.css. Ticket cards: flyer + details, a perforated cut, then Show ticket.
+   ========================================================================== */
+.tw{max-width:640px; padding-bottom:28px}
+.tw .ad-top h1{font-size:24px}
+
+.tw-seg{display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin:6px 0 16px; border-radius:14px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line)}
+.tw-seg button{height:42px; border:0; border-radius:11px; background:transparent; color:var(--ad-mute); font:700 14.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.tw-seg button small{margin-left:4px; font-size:12px; opacity:.8}
+.tw-seg button[aria-selected="true"]{background:#fff; color:#0B0708}
+.tw-seg button:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.tw-panel[hidden]{display:none}
+
+/* ---------- ticket card ---------- */
+.tw-card{position:relative; margin-bottom:16px; border-radius:20px; background:linear-gradient(160deg,#1C1517,#141012); box-shadow:inset 0 0 0 1px var(--ad-line), 0 22px 44px -26px rgba(0,0,0,.9)}
+.tw-card.is-pending{opacity:.92}
+.tw-main{display:flex; gap:14px; padding:14px}
+body.tw-page a.tw-art{flex:none; width:96px; aspect-ratio:3/4; border-radius:14px; overflow:hidden; background:#2A2224; display:grid; place-items:center; color:#fff}
+.tw-art img{width:100%; height:100%; object-fit:cover}
+.tw-art span{display:grid; text-align:center; font-weight:800; font-size:12px; color:#FF8A94}
+.tw-art span b{font-size:26px; color:#fff}
+.tw-info{flex:1; min-width:0; display:grid; align-content:start; gap:3px}
+.tw-when{justify-self:start; margin-bottom:4px; padding:3px 9px; border-radius:999px; background:rgba(240,49,63,.16); color:#FF7A85; font-size:11.5px; font-weight:800; letter-spacing:.02em}
+.tw-info h2{margin:0 0 3px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:17px; line-height:1.25; color:#fff}
+.tw-info p{margin:0; font-size:13px; color:var(--ad-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tw-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.tw-chip{padding:3px 9px; border-radius:999px; background:rgba(255,255,255,.08); color:#fff; font-size:11.5px; font-weight:700}
+.tw-chip.g{background:rgba(34,197,94,.16); color:#4ADE80}
+.tw-chip.b{background:rgba(59,130,246,.18); color:#93C5FD}
+.tw-chip.y{background:rgba(245,158,11,.18); color:#FCD34D}
+
+/* the perforated cut between the ticket and its stub */
+.tw-cut{position:relative; height:0; margin:0 18px; border-top:2px dashed rgba(255,255,255,.14)}
+.tw-cut::before,.tw-cut::after{content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--ad-bg, #0B0708)}
+.tw-cut::before{left:-30px}
+.tw-cut::after{right:-30px}
+
+.tw-act{display:flex; align-items:center; gap:10px; padding:14px}
+body.tw-page a.tw-btn{flex:1; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px; background:rgba(255,255,255,.08); color:#fff; font-weight:800; font-size:14.5px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+body.tw-page a.tw-btn:hover{background:rgba(255,255,255,.14); color:#fff}
+body.tw-page a.tw-red{background:var(--ad-red); box-shadow:0 14px 28px -14px rgba(240,49,63,.95)}
+body.tw-page a.tw-red:hover{background:#D72634}
+.tw-btn:focus-visible,.tw-row:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.tw-no{flex:none; font-size:11.5px; color:var(--ad-mute)}
+
+/* ---------- past ---------- */
+.tw-rows{display:grid; gap:8px}
+body.tw-page a.tw-row{display:flex; align-items:center; gap:12px; padding:10px; border-radius:14px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); color:#fff}
+body.tw-page a.tw-row:hover{background:#1E181A; color:#fff}
+.tw-row-art{flex:none; width:52px; height:52px; border-radius:10px; overflow:hidden; background:#2A2224}
+.tw-row-art img{width:100%; height:100%; object-fit:cover; filter:grayscale(.35)}
+.tw-row-tx{flex:1; min-width:0; display:grid; gap:2px}
+.tw-row-tx b{font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tw-row-tx small{font-size:12.5px; color:var(--ad-mute)}
+.tw-row svg{flex:none; color:var(--ad-mute)}
+
+/* ---------- empty + links ---------- */
+.tw-empty{margin-top:20px; padding:34px 20px; border-radius:22px; background:var(--ad-card); text-align:center}
+.tw-empty-sm{margin-top:4px; padding:26px 18px}
+.tw-empty i{width:64px; height:64px; margin:0 auto 12px; border-radius:50%; background:rgba(240,49,63,.14); color:#FF6B76; display:grid; place-items:center}
+.tw-empty h2{margin:0 0 6px; color:#fff; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-size:19px}
+.tw-empty p{margin:0 auto 16px; max-width:320px; color:var(--ad-mute); font-size:14px}
+body.tw-page a.tw-cta{display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:14px; background:var(--ad-red); color:#fff; font-weight:800}
+body.tw-page a.tw-cta:hover{background:#D72634; color:#fff}
+.tw-links{display:flex; justify-content:center; gap:22px; margin-top:22px}
+body.tw-page .tw-links a{color:var(--ad-soft); font-weight:700; font-size:14px}
+body.tw-page .tw-links a:hover{color:#fff}
+@media (max-width:360px){ body.tw-page a.tw-art{width:80px} .tw-no{display:none} }
