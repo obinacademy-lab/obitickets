@@ -311,8 +311,27 @@ function revoke_team_member(int $organizerId, int $actorId, int $memberId): void
 // Notifications
 // =====================================================================
 
-function create_notification(int $userId, string $type, string $title, ?string $body = null, ?string $link = null): void
+/** True once migration 034 has added notifications.actor_id (who did it). */
+function notifications_have_actor(): bool
 {
+    static $has = null;
+    if ($has === null) {
+        try {
+            $has = (bool) db()->query("SHOW COLUMNS FROM notifications LIKE 'actor_id'")->fetch();
+        } catch (Throwable $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+function create_notification(int $userId, string $type, string $title, ?string $body = null, ?string $link = null, ?int $actorId = null): void
+{
+    if ($actorId !== null && notifications_have_actor()) {
+        db()->prepare('INSERT INTO notifications (user_id, actor_id, type, title, body, link) VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([$userId, $actorId, $type, $title, $body, $link]);
+        return;
+    }
     db()->prepare('INSERT INTO notifications (user_id, type, title, body, link) VALUES (?, ?, ?, ?, ?)')
         ->execute([$userId, $type, $title, $body, $link]);
 }

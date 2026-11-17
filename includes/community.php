@@ -352,7 +352,11 @@ function set_organizer_follow(int $organizerUserId, int $userId, bool $follow): 
         return ['ok' => false, 'error' => 'This organizer is not available.'];
     }
     if ($follow) {
-        db()->prepare('INSERT IGNORE INTO organizer_follows (organizer_user_id, user_id) VALUES (?, ?)')->execute([$organizerUserId, $userId]);
+        $ins = db()->prepare('INSERT IGNORE INTO organizer_follows (organizer_user_id, user_id) VALUES (?, ?)');
+        $ins->execute([$organizerUserId, $userId]);
+        if ($ins->rowCount() > 0) {
+            community_notify($organizerUserId, $userId, 'follow', community_user_name($userId) . ' started following you', null, '/org-social.php', true);
+        }
     } else {
         db()->prepare('DELETE FROM organizer_follows WHERE organizer_user_id = ? AND user_id = ?')->execute([$organizerUserId, $userId]);
     }
@@ -679,11 +683,9 @@ function set_post_boost(int $postId, int $userId, bool $boost): array
         $ins = db()->prepare('INSERT IGNORE INTO post_boosts (post_id, user_id) VALUES (?, ?)');
         $ins->execute([$postId, $userId]);
         // tell the organizer once, the first time this person boosts it
-        if ($ins->rowCount() > 0 && function_exists('create_notification') && !empty($event['organizer_id'])) {
-            $who = db()->prepare('SELECT name FROM users WHERE id = ?');
-            $who->execute([$userId]);
-            $name = community_display_name((string) $who->fetchColumn());
-            create_notification((int) $event['organizer_id'], 'like', $name . ' boosted your video', (string) ($event['title'] ?? ''), '/socials.php?v=' . $postId);
+        if ($ins->rowCount() > 0 && !empty($event['organizer_id'])) {
+            community_notify((int) $event['organizer_id'], $userId, 'boost', community_user_name($userId) . ' boosted your video',
+                (string) ($event['title'] ?? ''), '/socials.php?v=' . $postId, true);
         }
     } else {
         db()->prepare('DELETE FROM post_boosts WHERE post_id = ? AND user_id = ?')->execute([$postId, $userId]);
@@ -691,6 +693,51 @@ function set_post_boost(int $postId, int $userId, bool $boost): array
     $count = db()->prepare('SELECT COUNT(*) FROM post_boosts WHERE post_id = ?');
     $count->execute([$postId]);
     return ['ok' => true, 'boosted' => $boost, 'boost_count' => (int) $count->fetchColumn()];
+}
+
+// =====================================================================
+// Social notifications (Phase 3, 11/18): likes, comment likes, follows, comments, replies, boosts
+// =====================================================================
+
+/** Where a post lives: organizer videos (Moments) open in the home feed, other posts on their event page. */
+function community_post_link(array $post, ?int $commentId = null): string
+{
+    if (($post['post_type'] ?? '') === 'MOMENT') {
+        return '/socials.php?v=' . (int) $post['id'];   // the same link the Share button gives
+    }
+    return '/event.php?slug=' . urlencode((string) ($post['event_slug'] ?? '')) . ($commentId ? '#comment-' . $commentId : '#post-' . (int) $post['id']);
+}
+
+function community_user_name(int $userId): string
+{
+    $s = db()->prepare('SELECT name FROM users WHERE id = ?');
+    $s->execute([$userId]);
+    return community_display_name((string) $s->fetchColumn());
+}
+
+/**
+ * Tell someone what another person did. Never tells people about themselves. With $once, the same
+ * person doing the same thing to the same item again within a week (like, unlike, like) is not repeated.
+ */
+function community_notify(int $toUserId, int $actorId, string $type, string $title, ?string $body, string $link, bool $once = false): void
+{
+    if ($toUserId <= 0 || $toUserId === $actorId || !function_exists('create_notification')) {
+        return;
+    }
+    try {
+        if ($once) {
+            // the same person (by id once migration 034 is in; by name before that) doing the same thing again
+            $byWho = function_exists('notifications_have_actor') && notifications_have_actor() ? 'actor_id = ?' : 'title = ?';
+            $dup = db()->prepare('SELECT 1 FROM notifications WHERE user_id = ? AND type = ? AND ' . $byWho . ' AND link = ? AND created_at > (NOW() - INTERVAL 7 DAY) LIMIT 1');
+            $dup->execute([$toUserId, $type, $byWho === 'actor_id = ?' ? $actorId : $title, $link]);
+            if ($dup->fetchColumn()) {
+                return;
+            }
+        }
+        create_notification($toUserId, $type, $title, $body, $link, $actorId);
+    } catch (Throwable $e) {
+        error_log('[community] ' . $type . ' notification failed: ' . $e->getMessage());
+    }
 }
 
 // =====================================================================
@@ -710,8 +757,14 @@ function set_post_reaction(int $postId, int $userId, ?string $reaction): array
     if ($reaction === null) {
         db()->prepare('DELETE FROM post_reactions WHERE post_id = ? AND user_id = ?')->execute([$postId, $userId]);
     } else {
-        db()->prepare('INSERT INTO post_reactions (post_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)')
-            ->execute([$postId, $userId, $reaction]);
+        $ins = db()->prepare('INSERT INTO post_reactions (post_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)');
+        $ins->execute([$postId, $userId, $reaction]);
+        if ($ins->rowCount() === 1) {   // a new like (1), not a changed reaction (2) or the same again (0)
+            $isMoment = ($post['post_type'] ?? '') === 'MOMENT';
+            community_notify((int) $post['author_id'], $userId, 'like',
+                community_user_name($userId) . ' liked your ' . ($isMoment ? 'video' : 'post'),
+                (string) ($post['event_title'] ?? ''), community_post_link($post), true);
+        }
     }
     $count = db()->prepare('SELECT COUNT(*) FROM post_reactions WHERE post_id = ?');
     $count->execute([$postId]);
@@ -735,16 +788,22 @@ function set_comment_reaction(int $commentId, int $userId, ?string $reaction): a
     if ($reaction !== null && !isset(REACTION_TYPES[$reaction])) {
         return ['ok' => false, 'error' => 'Unknown reaction.'];
     }
-    $stmt = db()->prepare("SELECT c.id FROM post_comments c JOIN event_posts p ON p.id = c.post_id WHERE c.id = ? AND c.status = 'PUBLISHED' AND p.status = 'PUBLISHED'");
+    $stmt = db()->prepare("SELECT c.id, c.user_id, c.body, c.post_id FROM post_comments c JOIN event_posts p ON p.id = c.post_id WHERE c.id = ? AND c.status = 'PUBLISHED' AND p.status = 'PUBLISHED'");
     $stmt->execute([$commentId]);
-    if (!$stmt->fetchColumn()) {
+    $cm = $stmt->fetch();
+    if (!$cm) {
         return ['ok' => false, 'error' => 'Comment not found.'];
     }
     if ($reaction === null) {
         db()->prepare('DELETE FROM comment_reactions WHERE comment_id = ? AND user_id = ?')->execute([$commentId, $userId]);
     } else {
-        db()->prepare('INSERT INTO comment_reactions (comment_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)')
-            ->execute([$commentId, $userId, $reaction]);
+        $ins = db()->prepare('INSERT INTO comment_reactions (comment_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction)');
+        $ins->execute([$commentId, $userId, $reaction]);
+        if ($ins->rowCount() === 1 && ($cpost = get_post((int) $cm['post_id']))) {
+            community_notify((int) $cm['user_id'], $userId, 'comment_like',
+                community_user_name($userId) . ' liked your comment', mb_substr((string) $cm['body'], 0, 150),
+                community_post_link($cpost, $commentId), true);
+        }
     }
     $count = db()->prepare('SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ?');
     $count->execute([$commentId]);
@@ -837,27 +896,17 @@ function add_comment(array $user, int $postId, string $body, ?int $parentId = nu
 
     // Tell the person who was answered (the post's author already hears about every comment below).
     if ($replyToAuthor !== null && $replyToAuthor !== (int) $user['id'] && $replyToAuthor !== (int) $post['author_id']) {
-        try {
-            create_notification($replyToAuthor, 'comment_reply',
-                community_display_name((string) $user['name']) . ' replied to your comment',
-                mb_substr($body, 0, 150),
-                '/event.php?slug=' . urlencode($post['event_slug']) . (($post['post_type'] ?? '') === 'MOMENT' ? '&moment=' . $postId : '#comment-' . $commentId));
-        } catch (Throwable $e) {
-            error_log('[community] reply notification failed: ' . $e->getMessage());
-        }
+        community_notify($replyToAuthor, (int) $user['id'], 'comment_reply',
+            community_display_name((string) $user['name']) . ' replied to your comment',
+            mb_substr($body, 0, 150), community_post_link($post, $commentId));
     }
 
     // Tell the post's author (not for their own comment) — one row per comment, never grouped silently away.
     if ((int) $post['author_id'] !== (int) $user['id']) {
-        try {
-            $isMoment = ($post['post_type'] ?? '') === 'MOMENT';
-            create_notification((int) $post['author_id'], 'post_comment',
-                community_display_name((string) $user['name']) . ' commented on your ' . ($isMoment ? 'moment' : 'post'),
-                mb_substr($body, 0, 150),
-                '/event.php?slug=' . urlencode($post['event_slug']) . ($isMoment ? '&moment=' . $postId : '#post-' . $postId));
-        } catch (Throwable $e) {
-            error_log('[community] comment notification failed: ' . $e->getMessage());
-        }
+        $isMoment = ($post['post_type'] ?? '') === 'MOMENT';
+        community_notify((int) $post['author_id'], (int) $user['id'], 'post_comment',
+            community_display_name((string) $user['name']) . ' commented on your ' . ($isMoment ? 'video' : 'post'),
+            mb_substr($body, 0, 150), community_post_link($post, $commentId));
     }
     return ['ok' => true, 'id' => $commentId, 'parent_id' => $parentId];
 }

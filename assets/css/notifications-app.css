@@ -1,0 +1,46 @@
+/* ==========================================================================
+   Notifications in the dark app look (owner's mockup, Phase 3, 11/18). public/notifications.php, body.nt-page,
+   on top of app-dark.css. Who did it (picture or initials, with a small coloured badge for the kind), what they
+   did, when, and the event's picture on the right.
+   ========================================================================== */
+.nt{max-width:680px; padding-bottom:28px}
+.nt .ad-top h1{font-size:22px}
+.nt-all{margin:0}
+.nt-all-btn{height:36px; padding:0 14px; border:0; border-radius:999px; background:rgba(255,255,255,.08); color:#fff; font:700 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.nt-all-btn:hover{background:rgba(255,255,255,.14)}
+.nt-sub{margin:2px 0 14px 52px; color:var(--ad-mute); font-size:13px}
+
+.nt-tabs{display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin:0 -16px 6px; padding:0 16px 4px}
+.nt-tabs::-webkit-scrollbar{display:none}
+.nt-tabs a{flex:none; height:36px; padding:0 16px; border-radius:999px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); color:var(--ad-soft); display:inline-flex; align-items:center; font-size:13.5px; font-weight:700}
+.nt-tabs a:hover{color:#fff}
+.nt-tabs a.on{background:#fff; color:#0B0708; box-shadow:none}
+
+.nt-h{margin:20px 0 8px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:16px; color:#fff}
+.nt-list{display:grid; gap:2px}
+.nt-row{position:relative; display:flex; align-items:center; gap:12px; padding:10px 10px; margin:0 -10px; border-radius:16px; color:#fff; transition:background .2s}
+.nt-row:hover{background:rgba(255,255,255,.05); color:#fff}
+.nt-row.is-new{background:rgba(240,49,63,.08)}
+.nt-row:focus-visible{outline:3px solid #fff; outline-offset:-3px}
+
+.nt-who{position:relative; flex:none; width:48px; height:48px}
+.nt-who > img,.nt-who > b{width:48px; height:48px; border-radius:50%; display:grid; place-items:center; object-fit:cover}
+.nt-who > b{background:linear-gradient(135deg,#3A1F25,#1E1517); box-shadow:inset 0 0 0 2px rgba(240,49,63,.6); color:#FFB4B4; font:800 15px 'Plus Jakarta Sans',sans-serif}
+.nt-who > b.nt-plain{background:var(--ad-card2); box-shadow:inset 0 0 0 1px var(--ad-line); color:#fff}
+.nt-who > i{position:absolute; right:-3px; bottom:-3px; width:22px; height:22px; border-radius:50%; background:var(--c); color:#fff; display:grid; place-items:center; border:2.5px solid var(--ad-bg)}
+
+.nt-tx{flex:1; min-width:0; display:grid; gap:2px}
+.nt-tx b{font-size:14px; font-weight:700; line-height:1.35; color:#fff}
+.nt-tx span{font-size:13px; color:var(--ad-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.nt-tx small{font-size:12px; color:var(--ad-mute)}
+.nt-thumb{flex:none; width:46px; height:58px; border-radius:10px; object-fit:cover; background:var(--ad-card)}
+.nt-dot{flex:none; width:9px; height:9px; border-radius:50%; background:var(--ad-red)}
+
+.nt-empty{margin-top:30px; padding:36px 20px; border-radius:22px; background:var(--ad-card); text-align:center; color:var(--ad-mute)}
+.nt-empty i{width:62px; height:62px; margin:0 auto 12px; border-radius:50%; background:rgba(240,49,63,.12); color:#FF6B76; display:grid; place-items:center}
+.nt-empty h2{margin:0 0 6px; color:#fff; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-size:19px}
+.nt-empty p{margin:0 auto 18px; max-width:320px; font-size:14px}
+.nt-cta{display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:14px; background:var(--ad-red); color:#fff; font-weight:800}
+.nt-cta:hover{color:#fff; background:#D72634}
+@media (min-width:901px){ .nt{padding-top:16px} }
+@media (prefers-reduced-motion:reduce){ .nt-row{transition:none} }

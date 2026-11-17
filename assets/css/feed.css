@@ -197,6 +197,13 @@ body.so-v3 .so-search:hover{background:rgba(255,255,255,.1)}
 body.so-v3 .so-shade{background:rgba(0,0,0,.6)}
 body.so-v3 .so-sheet{background:#141012; color:#fff; border-top:1px solid rgba(255,255,255,.07); box-shadow:0 -24px 60px -20px rgba(0,0,0,.85)}
 body.so-v3 .so-sheet h2{color:#fff}
+/* Phase 3 (11/18): the comments sheet as in the mockup: a grab handle, the title centred, a taller sheet */
+body.so-v3 .so-sheet{border-radius:22px 22px 0 0}
+body.so-v3 .so-sheet::before{content:""; display:block; flex:none; width:40px; height:4px; margin:8px auto 0; border-radius:4px; background:rgba(255,255,255,.22)}
+body.so-v3 .so-sheet header{position:relative; justify-content:center; padding:8px 56px 12px; border-bottom:1px solid rgba(255,255,255,.07)}
+body.so-v3 .so-sheet header h2{font-size:15px; text-align:center}
+body.so-v3 .so-sheet header .so-x{position:absolute; right:12px; top:50%; transform:translateY(-50%); width:34px; height:34px}
+body.so-v3 #soComments{height:62vh; max-height:78vh}
 body.so-v3 .so-x{background:rgba(255,255,255,.08); color:#fff}
 body.so-v3 .so-x:hover{background:rgba(255,255,255,.14)}
 body.so-v3 .so-cm .so-av{background:#2A1D20; color:#FFB4B4}

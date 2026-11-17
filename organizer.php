@@ -64,10 +64,26 @@ try {
     $soPosts = [];
 }
 $profileUrl = rtrim(APP_URL, '/') . '/organizer.php?slug=' . urlencode($organizer['slug']);
+// Phase 3 (11/18): the dark profile from the owner's mockup also shows likes on their videos and a soft cover
+$opLikes = 0;
+try {
+    $lk = db()->prepare("SELECT COUNT(*) FROM post_reactions r JOIN event_posts p ON p.id = r.post_id JOIN events e ON e.id = p.event_id
+                         WHERE e.organizer_id = ? AND p.post_type = 'MOMENT' AND p.status = 'PUBLISHED'");
+    $lk->execute([$uid]);
+    $opLikes = (int) $lk->fetchColumn();
+} catch (Throwable $e) {
+    $opLikes = 0;
+}
+$opCover = '';
+foreach (array_merge($events['upcoming'], $events['past']) as $ce) {
+    if (preg_match('#^/(uploads|assets)/[A-Za-z0-9/_.\-]+$#', (string) ($ce['banner_image'] ?? ''))) { $opCover = (string) $ce['banner_image']; break; }
+}
+$opCompact = static fn (int $n): string => $n >= 1000000 ? rtrim(rtrim(number_format($n / 1000000, 1), '0'), '.') . 'M' : ($n >= 10000 ? rtrim(rtrim(number_format($n / 1000, 1), '0'), '.') . 'K' : number_format($n));
 
 $pageTitle = $orgName . ' — obitickets';
 $pageDescription = ($organizer['bio'] ?: ('Events by ' . $orgName . ' on obitickets.'));
-$bodyClass = 'ev-page';
+$bodyClass = 'ev-page app-dark op-app';
+$hideWhatsApp = true;
 include __DIR__ . '/includes/header.php';
 
 /** One event card for the profile grids. */
@@ -107,6 +123,13 @@ function render_profile_event_card(array $e, bool $past, array $going, array $re
 
 <div class="ev ev-profile op-page" id="evRoot"<?= $communityReady && !$viewer ? ' data-login="' . htmlspecialchars('/login.php?next=' . urlencode('/organizer.php?slug=' . $organizer['slug']), ENT_QUOTES) . '"' : '' ?> data-event-url="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>">
 
+  <div class="op-cover" aria-hidden="true"<?= $opCover !== '' ? ' style="--op-cover:url(\'' . htmlspecialchars($opCover, ENT_QUOTES) . '\')"' : '' ?>></div>
+  <div class="ev-wrap ad-top op-top">
+    <a class="ad-icon" href="/discover.php" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <span class="op-top-t">@<?= htmlspecialchars((string) $organizer['slug']) ?></span>
+    <button type="button" class="ad-icon" data-ev-copy="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>" aria-label="Share this profile"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+  </div>
+
   <section class="ev-wrap op-hero">
     <?php $opAvatar = function_exists('user_avatar_url') ? user_avatar_url($uid) : null; ?>
     <span class="op-avatar" aria-hidden="true"><?php if ($opAvatar): ?><img src="<?= htmlspecialchars($opAvatar) ?>" alt=""><?php else: ?><?= htmlspecialchars(initials_from_name($orgName)) ?><?php endif; ?></span>
@@ -119,19 +142,22 @@ function render_profile_event_card(array $e, bool $past, array $going, array $re
     <p class="op-handle">@<?= htmlspecialchars((string) $organizer['slug']) ?></p>
 
     <div class="op-stats">
-      <div><b><?= number_format($soCounts['posts']) ?></b><span><?= $soCounts['posts'] === 1 ? 'Video' : 'Videos' ?></span></div>
       <?php if ($communityReady): ?>
         <div><b id="orgFollowers"><?= number_format($followers) ?></b><span><?= $followers === 1 ? 'Follower' : 'Followers' ?></span></div>
         <div><b><?= number_format($soCounts['following']) ?></b><span>Following</span></div>
       <?php endif; ?>
-      <div><b><?= number_format($stats['events']) ?></b><span>Events hosted</span></div>
+      <div><b><?= htmlspecialchars($opCompact($opLikes)) ?></b><span><?= $opLikes === 1 ? 'Like' : 'Likes' ?></span></div>
+      <div><b><?= number_format($stats['events']) ?></b><span>Events</span></div>
     </div>
 
     <div class="op-actions">
       <?php if ($communityReady && !$isOwnProfile): ?>
         <button type="button" class="op-follow" data-ev-follow="organizer" data-id="<?= $uid ?>" aria-pressed="<?= $following ? 'true' : 'false' ?>"><?= $following ? 'Following' : 'Follow' ?></button>
       <?php endif; ?>
-      <button type="button" class="op-icon" data-ev-copy="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>" aria-label="Share this profile"><svg width="18" height="18"><use href="#ic-share"/></svg></button>
+      <?php if ($isOwnProfile): ?>
+        <a class="op-edit" href="/org-settings.php">Edit profile</a>
+        <a class="op-edit" href="/org-socials.php">Post a video</a>
+      <?php endif; ?>
     </div>
 
     <?php if ($organizer['bio']): ?><p class="op-bio"><?= nl2br(htmlspecialchars($organizer['bio'])) ?></p><?php endif; ?>
@@ -152,8 +178,8 @@ function render_profile_event_card(array $e, bool $past, array $going, array $re
 
   <?php $opStart = $soPosts ? 'videos' : 'events'; ?>
   <div class="ev-wrap op-tabs" role="tablist" aria-label="Profile">
-    <button type="button" role="tab" id="opTabVideos" aria-controls="opVideos" aria-selected="<?= $opStart === 'videos' ? 'true' : 'false' ?>"<?= $opStart === 'videos' ? '' : ' tabindex="-1"' ?>>Videos</button>
-    <button type="button" role="tab" id="opTabEvents" aria-controls="opEvents" aria-selected="<?= $opStart === 'events' ? 'true' : 'false' ?>"<?= $opStart === 'events' ? '' : ' tabindex="-1"' ?>>Events</button>
+    <button type="button" role="tab" id="opTabVideos" aria-controls="opVideos" aria-selected="<?= $opStart === 'videos' ? 'true' : 'false' ?>"<?= $opStart === 'videos' ? '' : ' tabindex="-1"' ?>><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Videos <small><?= number_format($soCounts['posts']) ?></small></button>
+    <button type="button" role="tab" id="opTabEvents" aria-controls="opEvents" aria-selected="<?= $opStart === 'events' ? 'true' : 'false' ?>"<?= $opStart === 'events' ? '' : ' tabindex="-1"' ?>><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Events <small><?= count($events['upcoming']) + count($events['past']) ?></small></button>
   </div>
 
   <div class="ev-wrap ev-profile-body">
@@ -210,6 +236,9 @@ function render_profile_event_card(array $e, bool $past, array $going, array $re
 </div>
 
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/app-dark.css?v=<?= @filemtime(__DIR__ . '/assets/css/app-dark.css') ?: time() ?>">
+<link rel="stylesheet" href="/assets/css/organizer-app.css?v=<?= @filemtime(__DIR__ . '/assets/css/organizer-app.css') ?: time() ?>">
+<script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.op-tabs [role="tab"]');

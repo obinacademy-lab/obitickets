@@ -1,0 +1,74 @@
+/* ==========================================================================
+   Organizer profile in the dark app look (owner's mockup, Phase 3, 11/18). public/organizer.php, body.op-app,
+   on top of socials.css (the op-* profile parts) and app-dark.css. A soft cover from their newest flyer, the
+   picture, name and tick, Followers / Following / Likes / Events, a big Follow, then Videos and Events.
+   Drop "app-dark op-app" from $bodyClass for the light profile.
+   ========================================================================== */
+html.rc body.op-app{background:var(--ad-bg, #0B0708); color:#fff}
+body.op-app .ev,body.op-app .ev-profile{background:transparent; position:relative}
+body.op-app .op-page{--op-red:#F0313F}
+
+/* the cover: their newest flyer, soft and dark, fading into the page */
+.op-cover{position:absolute; z-index:0; left:0; right:0; top:0; height:300px; overflow:hidden; pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, rgba(240,49,63,.28), rgba(11,7,8,0) 70%)}
+.op-cover::before{content:""; position:absolute; inset:-30px; background-image:var(--op-cover, none); background-size:cover; background-position:center;
+  filter:blur(22px) saturate(1.25) brightness(.5); transform:scale(1.15)}
+.op-cover::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(11,7,8,.2) 0%, rgba(11,7,8,.55) 55%, #0B0708 100%)}
+body.op-app .op-top,body.op-app .op-hero,body.op-app .op-tabs,body.op-app .ev-profile-body{position:relative; z-index:1}
+
+.op-top{justify-content:space-between}
+.op-top .ad-icon{background:rgba(11,7,8,.45); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
+.op-top-t{flex:1; min-width:0; text-align:center; font-weight:800; font-size:15px; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+body.op-app a.ad-icon{color:#fff}
+
+body.op-app .op-hero{padding-top:6px}
+body.op-app .op-avatar{width:104px; height:104px; background:linear-gradient(135deg,#F0313F,#B5121F); box-shadow:0 0 0 3px #0B0708, 0 0 0 5px var(--op-red), 0 20px 40px -16px rgba(240,49,63,.7)}
+body.op-app .op-name h1{color:#fff}
+body.op-app .op-handle{color:var(--ad-mute)}
+body.op-app .op-stats{width:min(460px,100%); background:transparent; border-radius:0}
+body.op-app .op-stats div + div{border-left:1px solid var(--ad-line)}
+body.op-app .op-stats b{color:#fff; font-size:1.3rem}
+body.op-app .op-stats span{color:var(--ad-mute)}
+body.op-app .op-actions{width:min(460px,100%); justify-content:center; margin-top:10px}
+body.op-app .op-follow{flex:1; max-width:320px; height:48px; border-radius:14px; background:var(--op-red); box-shadow:0 16px 32px -16px rgba(240,49,63,.95)}
+body.op-app .op-follow:hover{background:#D72634}
+body.op-app .op-follow[aria-pressed="true"]{background:rgba(255,255,255,.1); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+body.op-app a.op-edit,.op-edit{flex:1; max-width:220px; height:46px; border-radius:14px; background:rgba(255,255,255,.1); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); color:#fff; display:grid; place-items:center; font-weight:800; font-size:14.5px}
+body.op-app a.op-edit:hover{background:rgba(255,255,255,.16); color:#fff}
+body.op-app .op-follow:focus-visible,body.op-app .op-tabs button:focus-visible,body.op-app .op-tile:focus-visible,.op-edit:focus-visible{outline:3px solid #fff; outline-offset:3px}
+body.op-app .op-bio{color:#EEE6E6; font-size:14.5px; line-height:1.6}
+body.op-app .op-sub{color:var(--ad-mute)}
+body.op-app .op-links .ev-pill{background:rgba(255,255,255,.08); color:#fff; border:0}
+
+/* tabs */
+body.op-app .op-tabs{max-width:none; margin-top:18px; border-bottom:1px solid var(--ad-line); background:#0B0708; position:sticky; top:0; z-index:5}
+body.op-app .op-tabs button{display:flex; align-items:center; justify-content:center; gap:8px; color:var(--ad-mute)}
+body.op-app .op-tabs button small{font-size:12px; font-weight:700; color:inherit; opacity:.8}
+body.op-app .op-tabs button[aria-selected="true"]{color:#fff}
+body.op-app .op-tabs button[aria-selected="true"]::after{left:25%; right:25%; background:var(--op-red)}
+
+/* video grid */
+body.op-app .ev-profile-body{padding-top:0; padding-bottom:28px}
+body.op-app .op-panel{padding-top:10px}
+body.op-app .op-grid{gap:3px}
+body.op-app .op-tile{border-radius:8px; background:#1E181A}
+@media (min-width:900px){ body.op-app .op-grid{gap:8px} body.op-app .op-tile{border-radius:12px} }
+
+/* events */
+body.op-app .ev-h2{color:#fff}
+body.op-app .ev-h2-count{background:rgba(255,255,255,.1); color:#fff}
+body.op-app .ev-section-note{color:var(--ad-mute)}
+body.op-app .ev-ecard-art{background:#1E181A; box-shadow:none}
+body.op-app .ev-ecard-title{color:#fff}
+body.op-app .ev-ecard-sub,body.op-app .ev-ecard-foot{color:var(--ad-mute)}
+body.op-app .ev-ecard-foot b{color:#fff}
+body.op-app .ev-empty{background:var(--ad-card); color:var(--ad-mute); border:0}
+body.op-app .ev-empty b{color:#fff}
+@media (max-width:700px){
+  body.op-app .ev-egrid{grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px}
+  body.op-app .ev-ecard-title{font-size:14.5px; margin-top:10px}
+  body.op-app .ev-ecard-sub,body.op-app .ev-ecard-foot{font-size:12.5px}
+  body.op-app .ev-ecard-date{top:8px; left:8px; padding:4px 8px; border-radius:10px}
+  body.op-app .ev-ecard-date b{font-size:16px}
+}
+@media (max-width:900px){ html.rc body.op-app .site-nav{display:none} }
