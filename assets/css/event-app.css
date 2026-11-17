@@ -60,6 +60,9 @@ body.ev-app .ea-title{margin:10px 0 0; font-family:'Outfit','Plus Jakarta Sans',
 .ea-h{margin:0 0 12px; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:19px; color:#fff}
 .ea-about{position:relative; display:grid; gap:10px; color:var(--ad-soft); font-size:14.5px; line-height:1.65}
 .ea-about p{margin:0}
+/* the light page's grey paragraph colour must not reach the dark page: every part of the description reads clearly */
+body.ev-app .ea-about,body.ev-app .ea-about p,body.ev-app .ea-about li,body.ev-app .ea-about span,body.ev-app .ea-about strong,body.ev-app .ea-about b,body.ev-app .ea-about em,body.ev-app .ea-about h3,body.ev-app .ea-about h4{color:#EEE6E6 !important}
+body.ev-app .ea-about a{color:#FF8A94 !important}
 .ea-about.is-folded{max-height:150px; overflow:hidden}
 .ea-about.is-folded::after{content:""; position:absolute; left:0; right:0; bottom:0; height:60px; background:linear-gradient(0deg, var(--ad-bg), rgba(11,7,8,0))}
 .ea-more{margin-top:6px; padding:0; border:0; background:none; color:#FF8A94; font:700 13.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
@@ -98,7 +101,10 @@ body.ev-app .ea #buySubmit{flex:1; height:52px; border:0; border-radius:14px; ba
 body.ev-app .ea #buySubmit:hover{background:#D72634}
 body.ev-app .ea #buySubmit:active{transform:scale(.985)}
 body.ev-app .ea #buySubmit:disabled{background:#3A2A2D; color:#9C8E90; box-shadow:none}
-body.ev-app .ea .poster-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px; padding:0; border:0; color:var(--ad-mute); font-size:12px}
+body.ev-app .ea .poster-foot{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; margin-top:14px; padding:0; border:0; color:var(--ad-mute); font-size:12px; text-align:center}
+body.ev-app .ea .poster-foot .secure-note{justify-content:center}
+body.ev-app .ea .poster-foot .pay-icons{display:flex; justify-content:center; gap:10px}
+body.ev-app .ea .poster-foot .pay-icons[hidden]{display:none}
 body.ev-app .ea .secure-note{color:var(--ad-mute)}
 body.ev-app .ea .pay-badge{background:#fff; border-radius:8px}
 body.ev-app .ea .ended-panel{padding:22px; border-radius:18px; background:var(--ad-card); color:#fff; text-align:center; border:0; box-shadow:inset 0 0 0 1px var(--ad-line)}
@@ -151,3 +157,10 @@ body.ev-app .ea-pulse b{color:#fff; font-size:16px}
 body.ev-app .ea-pulse span{color:var(--ad-mute); font-size:11.5px}
 /* when the countdown is drawn as tiles under the title, its text line in the facts steps aside */
 body.ev-app .ea-facts li.has-tiles{display:none}
+
+/* countdown tiles: one dark look (they came from the light page: white tiles + a near-black seconds tile on a black page) */
+body.ev-app .ev-cd-u{background:var(--ad-card) !important; color:#fff !important; border:0 !important; box-shadow:inset 0 0 0 1px var(--ad-line) !important}
+body.ev-app .ev-cd-u *{color:inherit !important}
+body.ev-app .ev-cd-u small{color:var(--ad-mute) !important}
+body.ev-app .ev-cd-u.is-sec{background:rgba(240,49,63,.14) !important; box-shadow:inset 0 0 0 1px rgba(240,49,63,.5) !important}
+body.ev-app .ev-cd-u.is-sec b,body.ev-app .ev-cd-u.is-sec b span{color:#FF6B76 !important}
