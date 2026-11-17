@@ -78,6 +78,7 @@ $soUnread = $user ? count_unread_notifications((int) $user['id']) : 0;
 include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
+<?php if ($view === 'player'): ?><link rel="stylesheet" href="/assets/css/feed.css?v=<?= @filemtime(__DIR__ . '/assets/css/feed.css') ?: time() ?>"><?php endif; ?>
 
 <main class="so-app" id="soApp">
   <?php if ($view === 'list'):

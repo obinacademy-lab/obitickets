@@ -461,6 +461,17 @@ function socials_item_public(array $row): array
     $item['share'] = rtrim(APP_URL, '/') . '/socials.php?v=' . (int) $row['id'];
     $item['likes'] = moment_compact((int) $row['reaction_count']);
     $item['saved'] = (int) ($row['i_saved'] ?? 0) > 0;
+    // The picture's own shape (width / height) so the player can show it whole from the first frame: the image, the
+    // first slide, or a video's cover. Null when it cannot be measured here; the player then measures it itself.
+    $shapeOf = $item['type'] === 'video' ? (string) ($item['poster'] ?? '') : ($item['type'] === 'slideshow' ? (string) ($item['slides'][0] ?? '') : (string) $item['src']);
+    $ratio = function_exists('flyer_ratio') ? flyer_ratio($shapeOf) : '';
+    $item['ar'] = null;
+    if ($ratio !== '' && preg_match('#^(\d+) / (\d+)$#', $ratio, $rm) && (int) $rm[2] > 0) {
+        $item['ar'] = round((int) $rm[1] / (int) $rm[2], 4);
+    }
+    // the event's own picture, for the soft background behind a video that has no cover
+    $banner = (string) ($row['event_banner'] ?? '');
+    $item['event']['banner'] = preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $banner) ? $banner : null;
     return $item;
 }
 

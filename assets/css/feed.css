@@ -1,0 +1,264 @@
+/* ==========================================================================
+   The home video feed, v4 (11/18). Owner: "very clean, premium, organized, like TikTok; videos seen clearly;
+   photos never partly off the screen".
+   Every picture and video is shown whole. Its frame takes its own shape (--ar = width / height, set by socials.js)
+   and sits on a soft, blurred copy of itself:
+     .is-tall   stories and 9:16 videos fill the screen, words over the bottom like TikTok
+     .is-short  portrait and square pictures sit above the words; the buttons keep their own column on the right
+     .is-wide   landscape pictures use the full width and sit above the buttons
+   Nothing is cut, and on short / wide posts nothing covers the picture. Tapping a picture hides the words.
+   Loaded after socials.css on the player only (public/socials.php, body.so-v3). The fd-* parts are built by socials.js.
+   ========================================================================== */
+
+body.so-v3 .so-app{--fd-red:#F0313F; --fd-ink:#050304; background:var(--fd-ink)}
+
+/* ---------- top: bell, For You / Following, search ---------- */
+body.so-v3 .so-top{height:calc(56px + env(safe-area-inset-top, 0px)); padding:env(safe-area-inset-top, 0px) 8px 0;
+  background:linear-gradient(180deg, rgba(5,3,4,.7) 0%, rgba(5,3,4,.3) 60%, rgba(5,3,4,0) 100%)}
+body.so-v3 .so-tabs{gap:26px; font-family:'Outfit','Plus Jakarta Sans',system-ui,sans-serif; font-weight:700; font-size:17px; letter-spacing:-.01em}
+body.so-v3 .so-tabs a{padding:10px 0; color:rgba(255,255,255,.6); text-shadow:0 1px 10px rgba(0,0,0,.5); transition:color .2s}
+body.so-v3 .so-tabs a:hover{color:rgba(255,255,255,.9)}
+body.so-v3 .so-tabs a.on{color:#fff}
+body.so-v3 .so-tabs a.on::after{left:22%; right:22%; bottom:3px; height:3px; border-radius:3px; background:var(--fd-red)}
+body.so-v3 .so-search{transition:background .2s}
+body.so-v3 .so-search:hover{background:rgba(255,255,255,.1)}
+
+/* ---------- one post ---------- */
+.fd-item{
+  --fd-tabs:calc(64px + env(safe-area-inset-bottom, 0px));     /* the app's tab bar (phones) */
+  --fd-top:calc(56px + env(safe-area-inset-top, 0px));          /* For You / Following */
+  --fd-cta-h:50px;
+  --fd-cta-b:calc(var(--fd-tabs) + 12px);
+  --fd-info-b:calc(var(--fd-cta-b) + var(--fd-cta-h) + 14px);
+  --fd-gut:68px;                                                  /* the buttons' own column */
+  position:relative; height:100%; overflow:hidden; isolation:isolate; background:var(--fd-ink, #050304); color:#fff;
+  scroll-snap-align:start; scroll-snap-stop:always; font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+
+/* soft background: the picture itself, blurred and darkened. Drawn small and scaled up, so the blur stays light. */
+.fd-amb{position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; background:#0B0708}
+.fd-amb i{position:absolute; left:37.5%; top:37.5%; width:25%; height:25%; background-position:center; background-size:cover; background-repeat:no-repeat;
+  transform:scale(4.8); filter:blur(6px) saturate(1.3) brightness(.55)}
+.fd-amb::after{content:""; position:absolute; inset:0;
+  background:radial-gradient(130% 78% at 50% 36%, rgba(5,3,4,0) 0%, rgba(5,3,4,.42) 62%, rgba(5,3,4,.85) 100%),
+             linear-gradient(0deg, rgba(5,3,4,.85) 0%, rgba(5,3,4,0) 50%)}
+
+/* the picture, in a frame of its own shape (whole, never cropped) */
+.fd-stage{position:absolute; z-index:1; top:0; left:0; right:0; bottom:var(--fd-tabs); display:grid; place-items:center; pointer-events:none}
+.fd-pic{position:relative; width:100%; height:100%; overflow:hidden}
+@supports (width:1cqw){
+  .fd-stage{container-type:size}
+  .fd-pic{width:min(100cqw, calc(100cqh * var(--ar, .5625))); height:auto; aspect-ratio:var(--ar, .5625)}
+}
+.fd-pic > img,.fd-pic > video{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block}
+.fd-pic > video{background:#000}
+.fd-slide{opacity:0; transition:opacity .6s ease}
+.fd-slide.on{opacity:1}
+
+/* portrait and square pictures: above the words, clear of the buttons' column */
+.fd-item.is-short .fd-stage,.fd-item.is-wide .fd-stage{top:calc(var(--fd-top) + 6px); left:12px; right:var(--fd-gut); bottom:calc(var(--fd-info-b) + var(--fd-ih, 132px) + 16px)}
+/* landscape pictures: the full width, above the buttons */
+.fd-item.is-wide .fd-stage{right:12px; bottom:calc(var(--fd-info-b) + var(--fd-rh, 230px) + 14px)}
+.fd-item.is-wide.has-sound .fd-stage{top:calc(var(--fd-top) + 56px)}
+/* the picture sits right above its words, so picture and words read as one post */
+.fd-item.is-short .fd-stage,.fd-item.is-wide .fd-stage{place-items:end center}
+.fd-item.is-short .fd-pic,.fd-item.is-wide .fd-pic{border-radius:18px; box-shadow:0 28px 60px -28px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.08)}
+
+/* words over a tall video stay readable */
+.fd-item::after{content:""; position:absolute; z-index:2; left:0; right:0; bottom:0; height:56%; pointer-events:none; opacity:0;
+  background:linear-gradient(0deg, rgba(5,3,4,.9) 0%, rgba(5,3,4,.58) 34%, rgba(5,3,4,0) 100%); transition:opacity .25s ease, height .25s ease}
+.fd-item.is-tall::after{opacity:1}
+.fd-item.is-tall.is-reading::after{height:76%}
+
+/* slideshow: one bar per picture */
+.fd-bars{position:absolute; z-index:2; top:10px; left:10px; right:10px; display:flex; gap:4px}
+.fd-item.is-tall .fd-bars{top:max(10px, calc(var(--fd-top) - 2px))}
+.fd-bars i{flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.35)}
+.fd-bars i.on{background:#fff}
+
+/* tap: play / pause a video, show / hide the words on a picture; double tap likes */
+.fd-tap{position:absolute; inset:0; z-index:3; padding:0; border:0; background:transparent; cursor:pointer; -webkit-tap-highlight-color:transparent}
+.fd-tap:focus-visible{outline:3px solid rgba(255,255,255,.9); outline-offset:-8px; border-radius:22px}
+.fd-paused{position:absolute; z-index:4; left:50%; top:46%; width:76px; height:76px; margin:-38px 0 0 -38px; border-radius:50%; background:rgba(5,3,4,.45);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); display:grid; place-items:center; color:#fff; opacity:0; transform:scale(.85); transition:opacity .2s, transform .2s; pointer-events:none}
+.fd-paused svg{margin-left:4px}
+.fd-item.is-paused .fd-paused{opacity:1; transform:none}
+.fd-heart{position:absolute; z-index:4; left:50%; top:44%; width:110px; height:110px; margin:-55px 0 0 -55px; color:var(--fd-red); opacity:0; pointer-events:none; filter:drop-shadow(0 12px 26px rgba(240,49,63,.55))}
+.fd-heart svg{width:100%; height:100%}
+.fd-heart.go{animation:fdHeart .8s ease-out}
+@keyframes fdHeart{0%{opacity:0; transform:scale(.4) rotate(-12deg)} 25%{opacity:1; transform:scale(1.12) rotate(0)} 60%{opacity:1; transform:scale(1)} 100%{opacity:0; transform:scale(1.25) translateY(-36px)}}
+
+/* video: loading, cannot play, progress */
+.fd-spin{position:absolute; z-index:3; left:50%; top:50%; width:42px; height:42px; margin:-21px 0 0 -21px; border-radius:50%; border:3px solid rgba(255,255,255,.22); border-top-color:#fff; opacity:0; transition:opacity .2s; animation:fdSpin .8s linear infinite; pointer-events:none}
+.fd-item.is-loading .fd-spin{opacity:1}
+@keyframes fdSpin{to{transform:rotate(360deg)}}
+.fd-err{position:absolute; z-index:3; left:16px; right:16px; top:50%; transform:translateY(-50%); margin:0; padding:12px 16px; border-radius:14px; background:rgba(5,3,4,.78); text-align:center; font-weight:600; font-size:.88rem; display:none}
+.fd-item.is-broken .fd-err{display:block}
+.fd-prog{position:absolute; z-index:5; left:0; right:0; bottom:var(--fd-tabs); height:2px; background:rgba(255,255,255,.16); pointer-events:none}
+.fd-prog i{display:block; height:100%; background:rgba(255,255,255,.92); transform:scaleX(0); transform-origin:left center; transition:transform .26s linear}
+
+/* sound on / off (posts with sound only) */
+.fd-sound{position:absolute; z-index:5; top:calc(var(--fd-top) + 8px); right:14px; width:40px; height:40px; padding:0; border:0; border-radius:50%; background:rgba(12,8,10,.5);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:#fff; display:grid; place-items:center; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); transition:opacity .25s ease, background .2s}
+.fd-sound:hover{background:rgba(12,8,10,.72)}
+.fd-sound svg{grid-area:1 / 1}
+.fd-sound svg:last-child{display:none}
+.fd-sound:not(.is-muted) svg:first-child{display:none}
+.fd-sound:not(.is-muted) svg:last-child{display:block}
+.fd-sound.is-muted::after{content:""; position:absolute; inset:-5px; border-radius:50%; border:2px solid rgba(255,255,255,.5); animation:fdPulse 2s ease-out infinite; pointer-events:none}
+@keyframes fdPulse{0%{opacity:.9; transform:scale(.92)} 100%{opacity:0; transform:scale(1.25)}}
+.fd-sound:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+/* buttons: like, comments, share, save */
+.fd-rail{position:absolute; z-index:5; right:7px; bottom:var(--fd-info-b); width:54px; display:grid; gap:12px; justify-items:center; transition:opacity .25s ease}
+.fd-act{display:grid; justify-items:center; gap:2px; width:54px; padding:0; border:0; background:none; color:#fff; cursor:pointer; font:700 12px/15px 'Plus Jakarta Sans',system-ui,sans-serif; -webkit-tap-highlight-color:transparent}
+.fd-act[hidden]{display:none}
+.fd-ic{width:46px; height:40px; display:grid; place-items:center; transition:transform .18s ease, color .2s, background .2s}
+.fd-ic svg{width:30px; height:30px; filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.fd-act:active .fd-ic{transform:scale(.86)}
+.fd-act.is-on .fd-ic{color:var(--fd-red)}
+.fd-n{white-space:nowrap; text-shadow:0 1px 6px rgba(0,0,0,.65)}
+.fd-act:focus-visible{outline:3px solid #fff; outline-offset:2px; border-radius:14px}
+
+/* words: organizer, caption, when and where, sound */
+.fd-info{position:absolute; z-index:5; left:14px; right:calc(var(--fd-gut) + 4px); bottom:var(--fd-info-b); display:grid; gap:7px; text-shadow:0 1px 10px rgba(0,0,0,.45); transition:opacity .25s ease}
+.fd-who{display:flex; align-items:center; gap:10px; min-width:0}
+.fd-av{flex:none; width:40px; height:40px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:#2A1D20; color:#fff; font:700 13px 'Outfit','Plus Jakarta Sans',sans-serif; box-shadow:0 0 0 2px rgba(255,255,255,.95); text-shadow:none}
+.fd-av:hover{color:#fff}
+.fd-av img{width:100%; height:100%; object-fit:cover; display:block}
+.fd-who-tx{flex:0 1 auto; min-width:0; display:grid; gap:1px}
+.fd-handle{display:flex; align-items:center; gap:5px; min-width:0; font-weight:800; font-size:15px; line-height:1.2; letter-spacing:-.01em}
+.fd-handle > a,.fd-handle > span:first-child{min-width:0; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fd-handle > a:hover{color:#fff; text-decoration:underline}
+.fd-ver{flex:none; width:16px; height:16px; border-radius:50%; background:#3B9CFF; color:#fff; display:grid; place-items:center}
+.fd-ev{font-size:12.5px; line-height:1.25; font-weight:500; color:rgba(255,255,255,.78); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fd-ev:hover{color:#fff; text-decoration:underline}
+.fd-follow{flex:none; margin-left:2px; height:30px; padding:0 14px; border:0; border-radius:999px; background:var(--fd-red); color:#fff; font:800 12.5px 'Plus Jakarta Sans',system-ui,sans-serif; cursor:pointer; text-shadow:none; transition:background .2s, box-shadow .2s}
+.fd-follow:hover{background:#D72634}
+.fd-follow.is-on{background:rgba(255,255,255,.14); box-shadow:inset 0 0 0 1px rgba(255,255,255,.42)}
+.fd-follow[hidden]{display:none}
+.fd-follow:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.fd-cap{font-size:14px; line-height:1.45; color:#fff; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; cursor:pointer}
+.fd-cap.open{display:block; -webkit-line-clamp:unset; max-height:32vh; overflow-y:auto; overscroll-behavior:contain}
+.fd-cap:focus-visible{outline:3px solid #fff; outline-offset:2px; border-radius:6px}
+.fd-meta{display:flex; align-items:center; gap:12px; min-width:0; font-size:12.5px; font-weight:600; color:rgba(255,255,255,.9)}
+.fd-meta svg{flex:none; opacity:.85}
+.fd-when{flex:none; display:inline-flex; align-items:center; gap:5px; white-space:nowrap}
+.fd-where{display:flex; align-items:center; gap:5px; min-width:0}
+.fd-where b{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fd-track{display:flex; align-items:center; gap:7px; min-width:0; font-size:12.5px; color:rgba(255,255,255,.82)}
+.fd-track svg{flex:none}
+.fd-track span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+/* one clear action */
+.fd-cta{position:absolute; z-index:5; left:14px; right:14px; bottom:var(--fd-cta-b); height:var(--fd-cta-h); padding:0 14px; border-radius:14px; background:var(--fd-red); color:#fff; text-decoration:none;
+  display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 16px 32px -16px rgba(240,49,63,.95), inset 0 1px 0 rgba(255,255,255,.2); transition:background .2s, transform .15s, opacity .25s ease}
+.fd-cta:hover{background:#DD2533; color:#fff}
+.fd-cta:active{transform:scale(.985)}
+.fd-cta-l{font:800 15px 'Plus Jakarta Sans',system-ui,sans-serif; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap}
+.fd-cta-p{flex:none; padding:5px 10px; border-radius:999px; background:rgba(0,0,0,.2); font:700 12.5px 'Plus Jakarta Sans',system-ui,sans-serif; white-space:nowrap}
+.fd-cta.is-ended{background:rgba(255,255,255,.12); box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.fd-cta:focus-visible{outline:3px solid #fff; outline-offset:3px}
+@media (max-width:340px){ .fd-cta-p{display:none} }
+
+/* short screens (small phones): landscape pictures sit beside the buttons like portrait ones, and the words get shorter,
+   so the picture keeps a good size */
+@media (max-width:900px) and (max-height:700px){
+  .fd-item.is-wide .fd-stage{right:var(--fd-gut); bottom:calc(var(--fd-info-b) + var(--fd-ih, 110px) + 14px)}
+  .fd-rail{gap:8px}
+  .fd-ic{height:36px}
+  .fd-ic svg{width:27px; height:27px}
+}
+@media (max-width:900px) and (max-height:640px){
+  .fd-track{display:none}
+  .fd-cap{-webkit-line-clamp:1}
+  .fd-info{gap:6px}
+}
+
+/* tap a picture: the words step aside so the whole picture shows */
+.fd-item.is-clear .fd-info,.fd-item.is-clear .fd-rail,.fd-item.is-clear .fd-cta,.fd-item.is-clear .fd-sound,.fd-item.is-clear::after{opacity:0; pointer-events:none}
+
+/* first visit: how to move on */
+.fd-hint{position:absolute; z-index:9; left:50%; top:46%; transform:translate(-50%,-50%); display:grid; justify-items:center; gap:6px; padding:16px 22px; border-radius:22px; background:rgba(12,8,10,.62);
+  -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); color:#fff; font:700 14px 'Plus Jakarta Sans',system-ui,sans-serif; text-align:center; pointer-events:none; transition:opacity .45s ease}
+.fd-hint svg{animation:fdNudge 1.3s ease-in-out infinite}
+.fd-hint.out{opacity:0}
+@keyframes fdNudge{0%,100%{transform:translateY(5px)} 50%{transform:translateY(-6px)}}
+.fd-nav{display:none}
+
+/* ---------- comments, share and report sheets: dark, like the mockup ---------- */
+body.so-v3 .so-shade{background:rgba(0,0,0,.6)}
+body.so-v3 .so-sheet{background:#141012; color:#fff; border-top:1px solid rgba(255,255,255,.07); box-shadow:0 -24px 60px -20px rgba(0,0,0,.85)}
+body.so-v3 .so-sheet h2{color:#fff}
+body.so-v3 .so-x{background:rgba(255,255,255,.08); color:#fff}
+body.so-v3 .so-x:hover{background:rgba(255,255,255,.14)}
+body.so-v3 .so-cm .so-av{background:#2A1D20; color:#FFB4B4}
+body.so-v3 .so-cm b{color:#fff}
+body.so-v3 .so-cm b em{background:rgba(240,49,63,.18); color:#FF9A9A}
+body.so-v3 .so-cm p{color:#EDE3E3}
+body.so-v3 .so-cm p i{color:#FF8A8A}
+body.so-v3 .so-cm small,body.so-v3 .so-cm small button{color:#A99C9C}
+body.so-v3 .so-cm small button:hover{color:#fff}
+body.so-v3 .so-cm-like{color:#A99C9C}
+body.so-v3 .so-cm-like.is-on{color:var(--fd-red, #F0313F)}
+body.so-v3 .so-cm-none{color:#A99C9C}
+body.so-v3 .so-cm-foot{border-top-color:rgba(255,255,255,.08)}
+body.so-v3 .so-replying{background:rgba(255,255,255,.06); color:#C9BCBC}
+body.so-v3 .so-replying button{color:#C9BCBC}
+body.so-v3 .so-emojis button:hover{background:rgba(255,255,255,.08)}
+body.so-v3 .so-cm-form input{background:#1F181A; border-color:rgba(255,255,255,.12); color:#fff}
+body.so-v3 .so-cm-form input::placeholder{color:#8F8385}
+body.so-v3 .so-cm-form input:focus{border-color:#F0313F; box-shadow:0 0 0 4px rgba(240,49,63,.18)}
+body.so-v3 .so-cm-form button{background:#F0313F}
+body.so-v3 .so-cm-form button:disabled{background:#2A2224; color:#776B6D}
+body.so-v3 .so-share-grid a,body.so-v3 .so-share-grid button{color:#EDE3E3}
+body.so-v3 .so-share-grid i{background:rgba(255,255,255,.08); color:#fff}
+body.so-v3 .so-reasons button{background:rgba(255,255,255,.06); color:#fff}
+body.so-v3 .so-reasons button:hover{background:rgba(255,255,255,.12)}
+body.so-v3 .so-stickers button{background:rgba(255,255,255,.06)}
+body.so-v3 .so-stickers button:hover{background:rgba(255,255,255,.12)}
+body.so-v3 .so-st-toggle[aria-expanded="true"]{background:rgba(255,255,255,.12) !important}
+body.so-v3 .so-toast{top:calc(70px + env(safe-area-inset-top, 0px)); bottom:auto; transform:translate(-50%, -12px); background:rgba(255,255,255,.96); color:#140D0E; box-shadow:0 18px 40px -18px rgba(0,0,0,.8)}
+body.so-v3 .so-toast.on{transform:translate(-50%, 0)}
+
+/* ---------- computers: a phone-shaped column, buttons beside it, previous / next on the right ---------- */
+@media (min-width:901px){
+  html.rc body.so-v3 main.so-app{padding-bottom:0}   /* the feed fills its window (pages get 40px at the bottom since the footer went) */
+  .fd-item{--fd-tabs:0px; --fd-top:56px; --fd-cta-b:18px; --fd-gut:14px;
+    width:420px; height:calc(100% - 28px); margin:14px auto; scroll-margin-top:14px; border-radius:26px; overflow:visible;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06)}
+  .fd-amb{border-radius:26px}
+  .fd-item.is-tall .fd-stage{border-radius:26px; overflow:hidden}
+  .fd-item::after{border-radius:0 0 26px 26px}
+  .fd-item.is-wide .fd-stage{bottom:calc(var(--fd-info-b) + var(--fd-ih, 132px) + 16px)}
+  .fd-rail{right:-82px; bottom:var(--fd-cta-b); width:62px; gap:14px}
+  .fd-act{width:62px}
+  .fd-ic{width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,.09)}
+  .fd-act:hover .fd-ic{background:rgba(255,255,255,.16)}
+  .fd-ic svg{width:24px; height:24px; filter:none}
+  .fd-n{color:rgba(255,255,255,.85); text-shadow:none}
+  .fd-info{right:14px}
+  .fd-prog{left:22px; right:22px; bottom:7px; border-radius:2px; overflow:hidden}
+  .fd-nav{position:absolute; z-index:8; right:clamp(16px, 4vw, 48px); top:50%; transform:translateY(-50%); display:grid; gap:12px}
+  .fd-nav button{width:48px; height:48px; padding:0; border:0; border-radius:50%; background:rgba(255,255,255,.1); color:#fff; display:grid; place-items:center; cursor:pointer; transition:background .2s}
+  .fd-nav button:hover{background:rgba(255,255,255,.2)}
+  .fd-nav button:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  .fd-hint{top:50%}
+  body.so-v3 .so-top{top:14px; width:420px; margin-left:-210px; padding:0 10px; border-radius:26px 26px 0 0}
+  /* the site's top bar goes dark with the feed */
+  html.rc body.so-v3 .site-nav{background:#0B0708; border-bottom:1px solid rgba(255,255,255,.07); -webkit-backdrop-filter:none; backdrop-filter:none}
+  html.rc body.so-v3 .site-nav .logo{color:#fff}
+  html.rc body.so-v3 .site-nav .nv-links a{color:rgba(255,255,255,.82)}
+  html.rc body.so-v3 .site-nav .nv-links a:hover,html.rc body.so-v3 .site-nav .nv-links a.hot,html.rc body.so-v3 .site-nav .nv-links a.current{background:rgba(255,255,255,.08); color:#fff}
+  html.rc body.so-v3 .site-nav .nv-auth a.ghost{color:#fff}
+  html.rc body.so-v3 .site-nav .nv-auth a.ghost:hover{background:rgba(255,255,255,.08)}
+  html.rc body.so-v3 .site-nav .nav-toggle{background:rgba(255,255,255,.1)}
+  html.rc body.so-v3 .site-nav .nav-toggle:hover{background:rgba(255,255,255,.18)}
+  html.rc body.so-v3 .site-nav .nav-burger span{background:#fff}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .fd-slide,.fd-paused,.fd-ic,.fd-follow,.fd-cta,.fd-info,.fd-rail,.fd-sound,.fd-item::after,.fd-prog i,.fd-hint{transition:none}
+  .fd-heart.go,.fd-hint svg,.fd-sound.is-muted::after{animation:none}
+  .fd-spin{animation-duration:2s}
+}

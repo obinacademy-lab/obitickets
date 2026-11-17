@@ -47,6 +47,12 @@
     note: ['M9 18V5l11-2v13', 'M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z', 'M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'],
     ticket: ['M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z'],
     save: ['M6 3h12a1 1 0 0 1 1 1v17l-7-4.500L5 21V4a1 1 0 0 1 1-1z'],
+    mute: ['M11 5 6 9H3v6h3l5 4z', 'M22 9l-6 6', 'M16 9l6 6'],
+    vol: ['M11 5 6 9H3v6h3l5 4z', 'M15.500 8.500a5 5 0 0 1 0 7', 'M18.500 5.500a9 9 0 0 1 0 13'],
+    cal: ['M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z', 'M4 10h16', 'M8 2v4', 'M16 2v4'],
+    pin: ['M12 21s7-6.200 7-11.500A7 7 0 0 0 5 9.500C5 14.800 12 21 12 21z', 'M12 12a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z'],
+    up: ['M6 15l6-6 6 6'],
+    down: ['M6 9l6 6 6-6'],
     check: ['M5 12.500l4.500 4.500L19 7.500']
   };
 
@@ -75,131 +81,206 @@
     return String(n);
   }
 
-  // ---------------------------------------------------------------- one post
-  function railButton(label, paths, count, fill) {
-    var b = el('button'); b.type = 'button'; b.setAttribute('aria-label', label);
-    var ic = el('span', 'so-ic'); ic.appendChild(svg(paths, 24, fill)); b.appendChild(ic);
-    var c = el('span', 'so-n', count); b.appendChild(c);
+  // ---------------------------------------------------------------- one post (v4, 11/18)
+  // Every picture and video is shown whole, never cut: it sits in a frame shaped like itself (--ar = width / height)
+  // on a soft, blurred copy of itself. Tall media (stories, 9:16 videos) fill the screen like TikTok; anything shorter
+  // sits above the caption, with the buttons in their own column, so nothing ever covers it.
+  var TALL = 1.7;     // height / width at or above this fills the screen
+  var WIDE = 1.1;     // width / height at or above this is a landscape picture (full width, above the buttons)
+  function setShape(it, ar) {
+    if (!(ar > 0.2 && ar < 5)) { return; }
+    it.ar = ar;
+    it.el.style.setProperty('--ar', String(Math.round(ar * 10000) / 10000));
+    var shape = (1 / ar) >= TALL ? 'tall' : (ar >= WIDE ? 'wide' : 'short');
+    ['tall', 'short', 'wide'].forEach(function (k) { it.el.classList.toggle('is-' + k, k === shape); });
+  }
+  // how tall the words under a short picture are, so the picture ends just above them
+  function measure(it) {
+    if (it.info && it.info.offsetHeight) { it.el.style.setProperty('--fd-ih', it.info.offsetHeight + 'px'); }
+    if (it.rail && it.rail.offsetHeight) { it.el.style.setProperty('--fd-rh', it.rail.offsetHeight + 'px'); }
+  }
+  function cssUrl(u) { return 'url("' + String(u).replace(/["\\\n\r]/g, '') + '")'; }
+  // the blurred background is painted only for posts on or next to the screen (keeps phones light)
+  function warm(it) {
+    if (!it || it.ambOn || !it.ambSrc) { return; }
+    it.ambOn = true;
+    it.amb.style.backgroundImage = cssUrl(it.ambSrc);
+  }
+  function paintSound() {
+    items.forEach(function (x) {
+      if (!x.soundBtn) { return; }
+      x.soundBtn.classList.toggle('is-muted', muted);
+      x.soundBtn.setAttribute('aria-pressed', muted ? 'false' : 'true');
+      x.soundBtn.setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off');
+    });
+  }
+  function railButton(label, paths, count, fill, cls) {
+    var b = el('button', 'fd-act' + (cls ? ' ' + cls : '')); b.type = 'button'; b.setAttribute('aria-label', label);
+    var ic = el('span', 'fd-ic'); ic.appendChild(svg(paths, 30, fill)); b.appendChild(ic);
+    var c = el('span', 'fd-n', count); b.appendChild(c);
     b._count = c;
     return b;
   }
 
   function build(d) {
-    var it = { data: d, video: null, audio: null, slides: [], timer: null, viewed: false, liked: !!d.mine };
-    var a = el('article', 'so-item' + (d.fit === 'fit' ? ' is-fit' : ''));
+    var it = { data: d, video: null, audio: null, slides: [], bars: [], timer: null, viewed: false, liked: !!d.mine };
+    var a = el('article', 'fd-item');
     a.setAttribute('data-id', d.id);
     a.setAttribute('aria-label', d.event.title + ', by ' + d.org.name);
     it.el = a;
 
-    var media = el('div', 'so-media');
+    // soft background: the picture itself, blurred (a video's cover, or the event's own picture)
+    var ambBox = el('div', 'fd-amb'); ambBox.setAttribute('aria-hidden', 'true');
+    it.amb = el('i'); ambBox.appendChild(it.amb); a.appendChild(ambBox);
+    it.ambSrc = d.type === 'video' ? (d.poster || (d.event && d.event.banner) || '') : (d.type === 'slideshow' ? (d.slides[0] || '') : d.src);
+
+    // the picture, in a frame of its own shape
+    var stage = el('div', 'fd-stage'), pic = el('div', 'fd-pic');
+    stage.appendChild(pic); a.appendChild(stage);
     if (d.type === 'video') {
       var v = document.createElement('video');
       v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
       v.loop = true; v.muted = true; v.preload = 'none';
       if (d.poster) { v.poster = d.poster; }
       v.setAttribute('data-src', d.src);
-      media.appendChild(v);
+      pic.appendChild(v);
       it.video = v;
-    } else if (d.type === 'slideshow' && d.slides && d.slides.length) {
-      d.slides.forEach(function (src, i) {
-        var s = el('img', 'so-slide' + (i === 0 ? ' on' : '')); s.alt = ''; s.loading = i === 0 ? 'eager' : 'lazy'; s.src = src;
-        media.appendChild(s); it.slides.push(s);
+      v.addEventListener('loadedmetadata', function () { if (v.videoWidth && v.videoHeight) { setShape(it, v.videoWidth / v.videoHeight); measure(it); } });
+      v.addEventListener('waiting', function () { a.classList.add('is-loading'); });
+      v.addEventListener('playing', function () { a.classList.remove('is-loading', 'is-broken'); });
+      v.addEventListener('canplay', function () { a.classList.remove('is-loading'); });
+      v.addEventListener('error', function () { a.classList.remove('is-loading'); a.classList.add('is-broken'); });
+      v.addEventListener('timeupdate', function () {
+        if (it.progFill && v.duration) { it.progFill.style.transform = 'scaleX(' + Math.min(1, v.currentTime / v.duration).toFixed(4) + ')'; }
       });
+      var spin = el('span', 'fd-spin'); spin.setAttribute('aria-hidden', 'true'); pic.appendChild(spin);
+      pic.appendChild(el('p', 'fd-err', 'This video cannot play right now.'));
+    } else if (d.type === 'slideshow' && d.slides && d.slides.length) {
+      var bars = el('div', 'fd-bars'); bars.setAttribute('aria-hidden', 'true');
+      d.slides.forEach(function (src, i) {
+        var s = el('img', 'fd-slide' + (i === 0 ? ' on' : '')); s.alt = ''; s.decoding = 'async'; s.loading = i === 0 ? 'eager' : 'lazy'; s.src = src;
+        if (i === 0) { s.addEventListener('load', function () { if (!d.ar && s.naturalWidth) { setShape(it, s.naturalWidth / s.naturalHeight); } }); }
+        pic.appendChild(s); it.slides.push(s);
+        var bar = el('i', i === 0 ? 'on' : null); bars.appendChild(bar); it.bars.push(bar);
+      });
+      if (d.slides.length > 1) { pic.appendChild(bars); }
     } else {
-      var img = el('img'); img.alt = ''; img.loading = 'lazy'; img.src = d.src;
-      media.appendChild(img);
+      var img = el('img'); img.alt = ''; img.decoding = 'async'; img.loading = 'lazy'; img.src = d.src;
+      img.addEventListener('load', function () { if (!d.ar && img.naturalWidth) { setShape(it, img.naturalWidth / img.naturalHeight); } });
+      pic.appendChild(img);
     }
-    if (d.fit === 'fit') {
-      var bg = el('div', 'so-bg'); bg.style.backgroundImage = 'url("' + String(d.poster || d.src).replace(/["\\\n]/g, '') + '")';
-      media.insertBefore(bg, media.firstChild);
-    }
-    if (d.sound && d.sound.src && d.type !== 'video') {
-      it.audio = new Audio(); it.audio.preload = 'none'; it.audio.loop = true; it.audio.setAttribute('data-src', d.sound.src);
-    } else if (d.sound && d.sound.src && d.type === 'video') {
-      // a video with a chosen sound: the sound plays alongside it (the video's own audio is kept quiet)
+    setShape(it, d.ar || (d.type === 'video' ? 9 / 16 : 4 / 5));
+    if (d.sound && d.sound.src) {
+      // a chosen sound plays with the post (a video's own audio is then kept quiet)
       it.audio = new Audio(); it.audio.preload = 'none'; it.audio.loop = true; it.audio.setAttribute('data-src', d.sound.src);
     }
-    a.appendChild(media);
 
-    var tap = el('button', 'so-tap'); tap.type = 'button'; tap.setAttribute('aria-label', 'Pause or play. Double tap to like.');
+    var tap = el('button', 'fd-tap'); tap.type = 'button';
+    tap.setAttribute('aria-label', it.video ? 'Pause or play. Double tap to like.' : 'Show or hide the details. Double tap to like.');
     a.appendChild(tap);
-    var paused = el('span', 'so-paused'); paused.appendChild(svg(IC.play, 40, true)); a.appendChild(paused);
-    var heart = el('span', 'so-heart', '❤️'); heart.setAttribute('aria-hidden', 'true'); a.appendChild(heart);
+    var paused = el('span', 'fd-paused'); paused.setAttribute('aria-hidden', 'true'); paused.appendChild(svg(IC.play, 34, true)); a.appendChild(paused);
+    var heart = el('span', 'fd-heart'); heart.setAttribute('aria-hidden', 'true'); heart.appendChild(svg(IC.heart, 110, true)); a.appendChild(heart);
 
-    // rail (the mockup): like, comments, share, save
-    var rail = el('div', 'so-rail');
-    var like = railButton('Like', IC.heart, compact(d.reactions), true);
+    if (it.video || it.audio) {
+      a.classList.add('has-sound');
+      var snd = el('button', 'fd-sound is-muted'); snd.type = 'button';
+      snd.appendChild(svg(IC.mute, 20)); snd.appendChild(svg(IC.vol, 20));
+      snd.addEventListener('click', function () { muted = !muted; applyMute(); paintSound(); toast(muted ? 'Sound off' : 'Sound on'); });
+      a.appendChild(snd);
+      it.soundBtn = snd;
+    }
+
+    // buttons (the mockup): like, comments, share, save
+    var rail = el('div', 'fd-rail');
+    var like = railButton('Like', IC.heart, compact(d.reactions), true, 'fd-like');
     if (it.liked) { like.classList.add('is-on'); }
     like.setAttribute('aria-pressed', it.liked ? 'true' : 'false');
     var com = railButton('Comments', IC.chat, compact(d.comments), true);
     var sh = railButton('Share', IC.share, compact(d.shares), true);
-    var save = railButton(d.saved ? 'Saved' : 'Save', IC.save, d.saved ? 'Saved' : 'Save', true);
-    save.classList.add('so-save'); if (d.saved) { save.classList.add('is-on'); }
+    var save = railButton(d.saved ? 'Saved' : 'Save', IC.save, d.saved ? 'Saved' : 'Save', true, 'fd-save');
+    if (d.saved) { save.classList.add('is-on'); }
     save.setAttribute('aria-pressed', d.saved ? 'true' : 'false');
     if (!D.canSave) { save.hidden = true; }
-    like.classList.add('so-glyph'); com.classList.add('so-glyph'); sh.classList.add('so-glyph'); save.classList.add('so-glyph');
     rail.appendChild(like); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
     a.appendChild(rail);
+    it.rail = rail;
 
-    // info (the mockup): organizer picture, @handle with the verified tick, the event under it, a Follow pill;
-    // then the caption, when and where, and the sound line
-    var info = el('div', 'so-info');
-    var who = el('div', 'so-who');
-    var av = d.org.url ? el('a', 'so-av') : el('span', 'so-av');
+    // words (the mockup): organizer picture, @handle and tick, the event under it, Follow; caption; when and where; sound
+    var info = el('div', 'fd-info');
+    it.info = info;
+    var who = el('div', 'fd-who');
+    var av = d.org.url ? el('a', 'fd-av') : el('span', 'fd-av');
     if (d.org.url) { av.href = d.org.url; av.setAttribute('aria-label', d.org.name + ' profile'); }
     if (d.org.avatar) { var ai = el('img'); ai.alt = ''; ai.src = d.org.avatar; av.appendChild(ai); } else { av.textContent = d.org.initials; }
     who.appendChild(av);
-    var whoTx = el('div', 'so-who-tx');
-    var handle = el('div', 'so-handle');
+    var whoTx = el('div', 'fd-who-tx');
+    var handle = el('div', 'fd-handle');
     var hl = d.org.url ? el('a', null, d.org.handle || d.org.name) : el('span', null, d.org.handle || d.org.name);
     if (d.org.url) { hl.href = d.org.url; }
     handle.appendChild(hl);
-    if (d.org.verified) { var ver = el('span', 'so-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 12)); handle.appendChild(ver); }
+    if (d.org.verified) { var ver = el('span', 'fd-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 10)); handle.appendChild(ver); }
     whoTx.appendChild(handle);
-    var evl = el('a', 'so-evname', d.event.title); evl.href = d.event.url; whoTx.appendChild(evl);
+    var evl = el('a', 'fd-ev', d.event.title); evl.href = d.event.url; whoTx.appendChild(evl);
     who.appendChild(whoTx);
-    var fol = el('button', 'so-follow' + (d.org.following ? ' is-on' : ''), d.org.following ? 'Following' : 'Follow');
+    var fol = el('button', 'fd-follow' + (d.org.following ? ' is-on' : ''), d.org.following ? 'Following' : 'Follow');
     fol.type = 'button'; fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
     if (D.me && D.me === d.org.id) { fol.hidden = true; }
     who.appendChild(fol);
     info.appendChild(who);
     if (d.caption) {
-      var cap = el('div', 'so-cap', d.caption);
+      var cap = el('div', 'fd-cap', d.caption);
       cap.setAttribute('role', 'button'); cap.setAttribute('tabindex', '0'); cap.setAttribute('aria-label', 'Caption. Tap to read more or less.');
-      var flip = function () { cap.classList.toggle('open'); };
+      var flip = function () { var open = cap.classList.toggle('open'); a.classList.toggle('is-reading', open); };
       cap.addEventListener('click', flip);
       cap.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
       info.appendChild(cap);
     }
-    info.appendChild(el('div', 'so-meta', d.event.when + ' · ' + d.event.where));
-    // the sound line: the chosen track, or "Original Audio" like the mockup
-    var snd = el('div', 'so-snd'); snd.appendChild(svg(IC.note, 15, true));
-    snd.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio'));
-    info.appendChild(snd);
+    var meta = el('div', 'fd-meta');
+    var when = el('span', 'fd-when'); when.appendChild(svg(IC.cal, 14)); when.appendChild(document.createTextNode(d.event.when));
+    var where = el('span', 'fd-where'); where.appendChild(svg(IC.pin, 14)); where.appendChild(el('b', null, d.event.where));
+    meta.appendChild(when); meta.appendChild(where);
+    info.appendChild(meta);
+    var track = el('div', 'fd-track'); track.appendChild(svg(IC.note, 14, true));
+    track.appendChild(el('span', null, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio'));
+    info.appendChild(track);
     a.appendChild(info);
 
-    var cta = el('a', 'so-cta' + (d.event.ended ? ' is-ended' : ''));
+    // one clear action: book (free events: get a pass; ended: see the event)
+    var free = d.event.price === 'Free';
+    var label = d.event.ended ? 'See this event' : (free ? 'Get a free pass' : 'Book ticket');
+    var cta = el('a', 'fd-cta' + (d.event.ended ? ' is-ended' : ''));
     cta.href = d.event.url + (d.event.ended ? '' : '#tickets');
-    if (!d.event.ended && d.event.price) { cta.setAttribute('aria-label', 'Book ticket, ' + d.event.price); }
-    cta.appendChild(el('span', null, d.event.ended ? 'See this event' : 'Book Ticket'));
+    cta.appendChild(el('span', 'fd-cta-l', label));
+    var priceTxt = (!d.event.ended && d.event.price && !free) ? String(d.event.price).replace(/^From\s+/i, '') : '';
+    if (priceTxt) { cta.appendChild(el('span', 'fd-cta-p', priceTxt)); }
+    cta.setAttribute('aria-label', label + (priceTxt ? ', ' + d.event.price : '') + ', ' + d.event.title);
     a.appendChild(cta);
 
+    if (it.video) {
+      var prog = el('div', 'fd-prog'); prog.setAttribute('aria-hidden', 'true');
+      it.progFill = el('i'); prog.appendChild(it.progFill); a.appendChild(prog);
+    }
+
     // ---- behaviour
+    function burst() {
+      if (reduce) { return; }
+      heart.classList.remove('go'); void heart.offsetWidth; heart.classList.add('go');
+    }
     var lastTap = 0, tapTimer = null;
     tap.addEventListener('click', function () {
       var now = Date.now();
       if (now - lastTap < 320) {           // double tap: like
         clearTimeout(tapTimer); lastTap = 0;
         if (!it.liked) { toggleLike(true); }
-        if (!reduce) { heart.classList.remove('go'); void heart.offsetWidth; heart.classList.add('go'); }
+        burst();
         return;
       }
       lastTap = now;
       tapTimer = setTimeout(function () {
-        // Phones start videos silent. The first tap on a post with sound turns the sound on (for every post after it);
-        // after that a tap pauses and plays.
-        if (muted && (it.video || it.audio)) { muted = false; applyMute(); toast('Sound on'); return; }
-        togglePause(it);
+        // Phones start silent: the first tap on a post with sound turns the sound on (for every post after it).
+        if (muted && (it.video || it.audio)) { muted = false; applyMute(); paintSound(); toast('Sound on'); return; }
+        if (it.video) { togglePause(it); }
+        else { a.classList.toggle('is-clear'); }   // pictures: hide the words to see the whole picture
       }, 330);
     });
 
@@ -215,7 +296,7 @@
         else if (r && r._status === 401) { window.location.href = D.loginUrl; }
       });
     }
-    like.addEventListener('click', function () { toggleLike(false); });
+    like.addEventListener('click', function () { var was = it.liked; toggleLike(false); if (!was && it.liked) { burst(); } });
     com.addEventListener('click', function () { openComments(it, com); });
     sh.addEventListener('click', function () { openShare(it, sh); });
     save.addEventListener('click', function () {
@@ -266,18 +347,23 @@
     if (current) { stop(current); }
     current = it;
     it.el.classList.remove('is-paused');
+    warm(it);
     if (it.video) {
       if (!it.video.src) { it.video.src = it.video.getAttribute('data-src'); }
+      if (it.video.readyState < 3) { it.el.classList.add('is-loading'); }
       it.video.muted = muted || !!it.audio;       // with a chosen sound, the sound is the audio
       var p = it.video.play();
       if (p && p.catch) { p.catch(function () { it.video.muted = true; it.video.play().catch(function () { it.el.classList.add('is-paused'); }); }); }
     }
     if (it.audio && !muted) { playAudio(it); }
     if (it.slides.length > 1 && !reduce) {
-      var i = 0, every = 2600;
+      var i = it.slideAt || 0, every = 2600;
       if (it.data.sound && it.data.sound.bpm > 0) { every = Math.max(900, Math.round((60000 / it.data.sound.bpm) * (it.data.beats || 2))); }
       it.timer = setInterval(function () {
-        it.slides[i].classList.remove('on'); i = (i + 1) % it.slides.length; it.slides[i].classList.add('on');
+        it.slides[i].classList.remove('on'); if (it.bars[i]) { it.bars[i].classList.remove('on'); }
+        i = (i + 1) % it.slides.length;
+        it.slides[i].classList.add('on'); if (it.bars[i]) { it.bars[i].classList.add('on'); }
+        it.slideAt = i;
       }, every);
     }
     if (!it.viewed) {
@@ -285,6 +371,7 @@
     }
     var idx = items.indexOf(it);
     if (hasMore && !loading && idx >= items.length - 3) { loadMore(); }
+    warm(items[idx - 1]); warm(items[idx + 1]); warm(items[idx + 2]);
     // warm up the next video so the swipe feels instant
     var next = items[idx + 1];
     if (next && next.video && !next.video.src) { next.video.preload = 'metadata'; next.video.src = next.video.getAttribute('data-src'); }
@@ -301,6 +388,7 @@
     if (it.audio) { it.audio.pause(); }
     if (it.timer) { clearInterval(it.timer); it.timer = null; }
     clearTimeout(it.viewTimer);
+    it.el.classList.remove('is-clear');
   }
   function togglePause(it) {
     if (it !== current) { return; }
@@ -330,7 +418,10 @@
       if (items.some(function (x) { return x.data.id === d.id; })) { return; }
       var it = build(d);
       items.push(it); feed.appendChild(it.el); io.observe(it.el);
+      measure(it);
     });
+    warm(items[0]); warm(items[1]);
+    paintSound();
   }
   function loadMore() {
     loading = true;
@@ -342,11 +433,50 @@
     }, function () { loading = false; });
   }
 
-  feed.addEventListener('keydown', function (e) {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') { return; }
-    var idx = items.indexOf(current) + (e.key === 'ArrowDown' ? 1 : -1);
-    if (items[idx]) { e.preventDefault(); items[idx].el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  // ---------------------------------------------------------------- moving between posts
+  function go(step) {
+    var idx = items.indexOf(current) + step;
+    if (items[idx]) { items[idx].el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); }
+  }
+  // keyboard: up / down (and Page Up / Down) move, space pauses a video, M turns the sound on or off
+  document.addEventListener('keydown', function (e) {
+    if (openSheet || e.altKey || e.ctrlKey || e.metaKey) { return; }
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) { return; }
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+    else if ((e.key === 'm' || e.key === 'M') && current && (current.video || current.audio)) { muted = !muted; applyMute(); paintSound(); }
+    else if (e.key === ' ' && current && current.video && (t === document.body || t === feed)) { e.preventDefault(); togglePause(current); }
   });
+  // computers: previous / next buttons beside the feed
+  var app = document.getElementById('soApp');
+  if (app) {
+    var nav = el('div', 'fd-nav');
+    var up = el('button'); up.type = 'button'; up.setAttribute('aria-label', 'Previous post'); up.appendChild(svg(IC.up, 22));
+    var dn = el('button'); dn.type = 'button'; dn.setAttribute('aria-label', 'Next post'); dn.appendChild(svg(IC.down, 22));
+    up.addEventListener('click', function () { go(-1); });
+    dn.addEventListener('click', function () { go(1); });
+    nav.appendChild(up); nav.appendChild(dn); app.appendChild(nav);
+  }
+  // a one-time hint for first-time visitors: how to move on
+  function maybeHint() {
+    if (!app || items.length < 2) { return; }
+    try { if (localStorage.getItem('ot-feed-hint')) { return; } localStorage.setItem('ot-feed-hint', '1'); } catch (e) { return; }
+    var wide = window.matchMedia && window.matchMedia('(min-width: 901px)').matches;
+    var h = el('div', 'fd-hint'); h.setAttribute('aria-hidden', 'true');
+    h.appendChild(svg(IC.up, 24)); h.appendChild(el('span', null, wide ? 'Scroll or press the down arrow for more' : 'Swipe up for more'));
+    app.appendChild(h);
+    var done = function () {
+      feed.removeEventListener('scroll', done);
+      h.classList.add('out'); setTimeout(function () { if (h.parentNode) { h.parentNode.removeChild(h); } }, 450);
+    };
+    feed.addEventListener('scroll', done, { passive: true });
+    setTimeout(done, 4500);
+  }
+  // keep each short picture sitting just above its words when the screen size or the font changes
+  var sizeTimer = null;
+  window.addEventListener('resize', function () { clearTimeout(sizeTimer); sizeTimer = setTimeout(function () { items.forEach(measure); }, 150); });
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(function () { items.forEach(measure); }); }
   document.addEventListener('visibilitychange', function () {
     if (!current) { return; }
     if (document.hidden) { stop(current); } else if (!current.el.classList.contains('is-paused')) { var c = current; current = null; start(c); }
@@ -567,6 +697,7 @@
   // ---------------------------------------------------------------- go
   add(D.items);
   applyMute();
+  maybeHint();
   // opened from a small picture on an organizer card: start on that post (it may not be the first)
   if (D.org && D.start) {
     for (var si = 0; si < items.length; si++) {
