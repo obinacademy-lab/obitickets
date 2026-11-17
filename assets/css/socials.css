@@ -609,3 +609,5 @@ body.so-v3 .so-cta span{flex:none; margin:0; text-align:center}
   body.so-v3 .so-rail{bottom:158px}
 }
 @media (prefers-reduced-motion: reduce){ .so-info .so-follow{transition:none} }
+/* a hidden rail button stays hidden (Save, until migration 032 has run) */
+.so-rail [hidden]{display:none !important}
