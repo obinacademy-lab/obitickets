@@ -57,13 +57,34 @@
     });
     if (stick) { toBottom(); }
   }
+  // "Sent" / "Seen" under your latest message (only while it is the newest message in the chat)
+  var lastSeen = 0;
   function showSeen(seenId) {
+    if (typeof seenId === 'number') { lastSeen = Math.max(lastSeen, seenId); }
     if (seenEl) { seenEl.remove(); seenEl = null; }
-    var mine = body.querySelectorAll('.cx-msg.me:not(.pending)');
-    var last = mine[mine.length - 1];
-    if (last && seenId >= +last.getAttribute('data-id') && last === body.querySelector('.cx-msg:last-of-type')) {
-      seenEl = el('div', 'cx-seen', 'Seen'); body.appendChild(seenEl);
+    var all = body.querySelectorAll('.cx-msg:not(.pending):not(.cx-typing)');
+    var last = all[all.length - 1];
+    if (!last || !last.classList.contains('me')) { return; }
+    var seen = lastSeen >= +last.getAttribute('data-id');
+    seenEl = el('div', 'cx-seen' + (seen ? ' is-seen' : ''), seen ? 'Seen' : 'Sent');
+    last.after(seenEl);
+  }
+
+  // "typing..." from the other person: a bubble at the bottom and a line under their name
+  var typingEl = null, whoSub = document.querySelector('.cx-who small'), whoSubText = whoSub ? whoSub.textContent : '';
+  function showTyping(on) {
+    if (on && !typingEl) {
+      var stick = nearBottom();
+      typingEl = el('div', 'cx-msg them cx-typing');
+      var b = el('div', 'cx-bub'); b.setAttribute('aria-label', 'typing');
+      b.appendChild(el('i')); b.appendChild(el('i')); b.appendChild(el('i'));
+      typingEl.appendChild(b); body.appendChild(typingEl);
+      if (stick) { toBottom(); }
+    } else if (!on && typingEl) {
+      typingEl.remove(); typingEl = null;
     }
+    if (typingEl) { body.appendChild(typingEl); }   // keep it last
+    if (whoSub) { whoSub.textContent = on ? 'typing…' : whoSubText; whoSub.classList.toggle('is-typing', !!on); }
   }
 
   // ---- first draw (+ a button for older messages)
@@ -93,8 +114,9 @@
     if (document.hidden || busy) { return; }
     api({ action: 'poll', conversation_id: D.id, after: lastId }).then(function (j) {
       if (!j.ok) { return; }
-      if (j.messages.length) { append(j.messages); }
+      if (j.messages.length) { showTyping(false); append(j.messages); }
       showSeen(j.seen);
+      showTyping(!!j.typing);
       if (j.accepted) { var p = document.getElementById('cxPending'); if (p) { p.remove(); } }
     }).catch(function () {});
   }
@@ -112,6 +134,18 @@
   }
   if (form) {
     text.addEventListener('input', sync);
+    // tell the other side "typing..." (at most every 3 seconds), and stop when the box is emptied or left
+    var typingSentAt = 0, typingOn = false;
+    function typing(on) {
+      var now = Date.now();
+      if (on && typingOn && now - typingSentAt < 3000) { return; }
+      if (!on && !typingOn) { return; }
+      typingOn = on; typingSentAt = now;
+      api({ action: 'typing', conversation_id: D.id, typing: on }).catch(function () {});
+    }
+    text.addEventListener('input', function () { typing(text.value.trim() !== ''); });
+    text.addEventListener('blur', function () { typing(false); });
+    window.addEventListener('pagehide', function () { if (typingOn) { typing(false); } });
     text.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer:fine)').matches) { e.preventDefault(); form.requestSubmit(); }
     });
@@ -124,7 +158,7 @@
       temp.classList.add('pending'); body.appendChild(temp); toBottom();
       var payload = { action: 'send', conversation_id: D.id, body: msg };
       if (eventId) { payload.event_id = eventId; }
-      text.value = ''; sync();
+      text.value = ''; sync(); typingOn = false;   // the server clears "typing" when a message is sent
       api(payload).then(function (j) {
         busy = false;
         temp.remove();
@@ -135,6 +169,7 @@
         }
         if (eventId) { eventId = null; var a = document.getElementById('cxAttach'); if (a) { a.remove(); } }
         append([j.message]);
+        showSeen();
         var r = document.getElementById('cxReq'); if (r) { r.remove(); }
         toBottom(); sync();
       }).catch(function () {

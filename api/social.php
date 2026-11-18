@@ -40,7 +40,11 @@ try {
             if ($msgs) {
                 dm_mark_read($uid, $cid, (int) end($msgs)['id']);
             }
-            json_response(['ok' => true, 'messages' => $msgs, 'seen' => dm_other_read_id($c), 'accepted' => $c['accepted_at'] !== null]);
+            json_response(['ok' => true, 'messages' => $msgs, 'seen' => dm_other_read_id($c), 'accepted' => $c['accepted_at'] !== null,
+                           'typing' => !social_blocked_between($uid, $c['other_id']) && dm_other_typing($c)]);
+
+        case 'typing':
+            json_response(['ok' => dm_set_typing($uid, $int('conversation_id'), !empty($body['typing']))]);
 
         case 'older':
             $msgs = dm_messages($uid, $int('conversation_id'), 0, 40, max(1, $int('before')));

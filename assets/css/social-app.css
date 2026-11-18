@@ -109,3 +109,14 @@ html.rc body.sx-chat-page .rc-tabs{display:none}
 .sx-toast.on{opacity:1; transform:translate(-50%,0)}
 
 html.rc body.sx-chat-page{padding-bottom:0 !important}
+
+/* Sent / Seen and "typing..." (11/18) */
+.cx-seen{margin-top:-2px}
+.cx-seen.is-seen{color:#fff; font-weight:700}
+.cx-typing .cx-bub{display:flex; align-items:center; gap:5px; padding:13px 16px}
+.cx-typing i{width:7px; height:7px; border-radius:50%; background:#B3A7A7; animation:cxDot 1.2s infinite ease-in-out}
+.cx-typing i:nth-child(2){animation-delay:.15s}
+.cx-typing i:nth-child(3){animation-delay:.3s}
+@keyframes cxDot{0%,60%,100%{transform:translateY(0); opacity:.5} 30%{transform:translateY(-4px); opacity:1}}
+.cx-who small.is-typing{color:#4ADE80; font-weight:700}
+@media (prefers-reduced-motion:reduce){ .cx-typing i{animation:none} }

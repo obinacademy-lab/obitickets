@@ -297,7 +297,8 @@ function dm_send(int $viewerId, int $convId, string $body, ?int $eventId = null)
     db()->prepare('INSERT INTO dm_messages (conversation_id, sender_id, body, event_id) VALUES (?, ?, ?, ?)')->execute([$convId, $viewerId, $body, $eventId]);
     $mid = (int) db()->lastInsertId();
     $readCol = $c['me'] === 'low' ? 'low_read_id' : 'high_read_id';
-    db()->prepare("UPDATE dm_conversations SET last_message_at = NOW(), $readCol = ? WHERE id = ?")->execute([$mid, $convId]);
+    $typingCol = $c['me'] === 'low' ? 'low_typing_at' : 'high_typing_at';
+    db()->prepare("UPDATE dm_conversations SET last_message_at = NOW(), $readCol = ?" . (dm_typing_ready() ? ", $typingCol = NULL" : '') . ' WHERE id = ?')->execute([$mid, $convId]);
     $msgs = dm_messages($viewerId, $convId, $mid - 1, 1);
     return ['ok' => true, 'message' => $msgs[0] ?? null];
 }
@@ -428,6 +429,50 @@ function dm_unread_counts(int $viewerId): array
         if ($c['unread'] > 0) { $chats++; }
     }
     return ['chats' => $chats, 'requests' => count(dm_inbox($viewerId, 'requests'))];
+}
+
+// ---- "typing..." (migration 038; quietly off without it)
+const DM_TYPING_SECONDS = 6;   // how long one "I'm typing" signal lasts
+
+function dm_typing_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM dm_conversations LIKE 'low_typing_at'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** The viewer is typing (true) or stopped / sent (false). */
+function dm_set_typing(int $viewerId, int $convId, bool $typing): bool
+{
+    if (!dm_typing_ready()) {
+        return false;
+    }
+    $c = dm_conversation($convId, $viewerId);
+    if (!$c || social_blocked_between($viewerId, $c['other_id'])) {
+        return false;
+    }
+    $col = $c['me'] === 'low' ? 'low_typing_at' : 'high_typing_at';
+    db()->prepare("UPDATE dm_conversations SET $col = " . ($typing ? 'NOW()' : 'NULL') . ' WHERE id = ?')->execute([$convId]);
+    return true;
+}
+
+/** Is the other person typing right now? */
+function dm_other_typing(array $c): bool
+{
+    if (!dm_typing_ready()) {
+        return false;
+    }
+    // compared inside the database, so its clock and time zone are the only ones involved
+    $col = $c['me'] === 'low' ? 'high_typing_at' : 'low_typing_at';
+    $st = db()->prepare("SELECT $col >= (NOW() - INTERVAL " . DM_TYPING_SECONDS . ' SECOND) FROM dm_conversations WHERE id = ?');
+    $st->execute([(int) $c['id']]);
+    return (int) $st->fetchColumn() === 1;
 }
 
 /** One quick query for the tab bar dot: is any message from someone else unread (and not blocked)? */
