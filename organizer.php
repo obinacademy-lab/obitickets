@@ -76,19 +76,9 @@ if ($opCover === '') {
 $opLine = function_exists('organizer_tagline') ? organizer_tagline($uid) : ['headline' => '', 'location' => ''];
 $opLineText = implode(' · ', array_filter([$opLine['headline'] !== '' ? $opLine['headline'] : 'Event Organizer', $opLine['location']]));
 $opCompact = static fn (int $n): string => $n >= 1000000 ? rtrim(rtrim(number_format($n / 1000000, 1), '0'), '.') . 'M' : ($n >= 1000 ? rtrim(rtrim(number_format($n / 1000, 1), '0'), '.') . 'K' : (string) $n);
-// videos this organizer liked (the Liked tab)
-$opLiked = [];
-try {
-    if (function_exists('moment_select_sql')) {
-        $lq = db()->prepare('SELECT x.* FROM (' . moment_select_sql() . ') x JOIN post_reactions r ON r.post_id = x.id AND r.user_id = ?
-                             WHERE x.status = "PUBLISHED" AND COALESCE(x.is_draft, 0) = 0 ORDER BY r.created_at DESC LIMIT 30');
-        $lq->execute([$uid]);
-        $opLiked = $lq->fetchAll();
-    }
-} catch (Throwable $e) {
-    error_log('[organizer] liked videos: ' . $e->getMessage());
-    $opLiked = [];
-}
+// videos this organizer liked and boosted (the Liked and Boosts tabs)
+$opLiked = function_exists('profile_video_list') ? profile_video_list('post_reactions', $uid) : [];
+$opBoosted = function_exists('user_boosted_videos') ? user_boosted_videos($uid) : [];
 
 $pageTitle = $orgName . ' — obitickets';
 $pageDescription = ($organizer['bio'] ?: ('Events by ' . $orgName . ' on obitickets.'));
@@ -185,6 +175,7 @@ $opLive = (bool) $events['upcoming'];
     <button type="button" role="tab" id="opTabEvents" aria-controls="opEvents" aria-selected="true">Events</button>
     <button type="button" role="tab" id="opTabVideos" aria-controls="opVideos" aria-selected="false" tabindex="-1">Videos</button>
     <button type="button" role="tab" id="opTabLiked" aria-controls="opLiked" aria-selected="false" tabindex="-1">Liked</button>
+    <button type="button" role="tab" id="opTabBoosts" aria-controls="opBoosts" aria-selected="false" tabindex="-1">Boosts</button>
   </div>
 
   <div class="ev-wrap ev-profile-body">
@@ -215,6 +206,14 @@ $opLive = (bool) $events['upcoming'];
         <div class="op-grid"><?php foreach ($opLiked as $p) render_profile_tile($p); ?></div>
       <?php else: ?>
         <div class="ev-empty"><b>No liked videos yet</b><span>Videos <?= htmlspecialchars($orgName) ?> likes will show up here.</span></div>
+      <?php endif; ?>
+    </section>
+
+    <section class="op-panel" id="opBoosts" role="tabpanel" aria-labelledby="opTabBoosts" hidden>
+      <?php if ($opBoosted): ?>
+        <div class="op-grid"><?php foreach ($opBoosted as $p) render_profile_tile($p); ?></div>
+      <?php else: ?>
+        <div class="ev-empty"><b>No boosts yet</b><span>Videos <?= htmlspecialchars($orgName) ?> boosts will show up here.</span></div>
       <?php endif; ?>
     </section>
   </div>

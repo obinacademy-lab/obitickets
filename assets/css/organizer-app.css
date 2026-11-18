@@ -50,7 +50,7 @@ body.op-app .op-links{margin-top:10px}
 body.op-app .op-links .ev-pill{background:rgba(255,255,255,.08); color:#fff; border:0}
 
 /* ---------- tabs ---------- */
-body.op-app .op-tabs{grid-template-columns:repeat(3,1fr); max-width:none; margin-top:22px; border-bottom:1px solid rgba(255,255,255,.1); background:#0B0708; position:sticky; top:0; z-index:5}
+body.op-app .op-tabs{grid-template-columns:repeat(4,1fr); max-width:none; margin-top:22px; border-bottom:1px solid rgba(255,255,255,.1); background:#0B0708; position:sticky; top:0; z-index:5}
 body.op-app .op-tabs button{height:48px; color:#B3A7A7; font-size:.95rem}
 body.op-app .op-tabs button[aria-selected="true"]{color:#fff}
 body.op-app .op-tabs button[aria-selected="true"]::after{left:22%; right:22%; height:3px; background:var(--op-red)}

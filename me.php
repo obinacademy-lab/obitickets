@@ -38,19 +38,10 @@ $mine = [];
 if ($isOrganizer && function_exists('socials_feed')) {
     try { $mine = socials_feed($uid, 'profile', 0, 30, null, $uid); } catch (Throwable $e) { $mine = []; }
 }
-$videos = static function (string $join) use ($uid): array {
-    if (!function_exists('moment_select_sql')) { return []; }
-    try {
-        $q = db()->prepare('SELECT x.* FROM (' . moment_select_sql() . ') x ' . $join . ' WHERE x.status = "PUBLISHED" AND COALESCE(x.is_draft, 0) = 0 ORDER BY t.created_at DESC LIMIT 30');
-        $q->execute([$uid]);
-        return $q->fetchAll();
-    } catch (Throwable $e) {
-        error_log('[me] videos: ' . $e->getMessage());
-        return [];
-    }
-};
-$saved = function_exists('post_saves_ready') && post_saves_ready() ? $videos('JOIN post_saves t ON t.post_id = x.id AND t.user_id = ?') : [];
-$liked = $videos('JOIN post_reactions t ON t.post_id = x.id AND t.user_id = ?');
+// saved, liked and boosted videos (includes/community.php profile_video_list)
+$saved = function_exists('post_saves_ready') && post_saves_ready() ? profile_video_list('post_saves', $uid) : [];
+$liked = profile_video_list('post_reactions', $uid);
+$boosted = user_boosted_videos($uid);
 
 $compact = static fn (int $n): string => $n >= 1000000 ? rtrim(rtrim(number_format($n / 1000000, 1), '0'), '.') . 'M' : ($n >= 1000 ? rtrim(rtrim(number_format($n / 1000, 1), '0'), '.') . 'K' : (string) $n);
 $tile = static function (array $p) use ($compact): void {
@@ -114,6 +105,7 @@ include __DIR__ . '/includes/header.php';
     <button type="button" role="tab" id="mpTabVideos" aria-controls="mpVideos" aria-selected="true">Videos</button>
     <button type="button" role="tab" id="mpTabSaved" aria-controls="mpSaved" aria-selected="false" tabindex="-1">Saved</button>
     <button type="button" role="tab" id="mpTabLiked" aria-controls="mpLiked" aria-selected="false" tabindex="-1">Liked</button>
+    <button type="button" role="tab" id="mpTabBoosts" aria-controls="mpBoosts" aria-selected="false" tabindex="-1">Boosts</button>
   </div>
 
   <section class="mp-panel" id="mpVideos" role="tabpanel" aria-labelledby="mpTabVideos">
@@ -128,6 +120,10 @@ include __DIR__ . '/includes/header.php';
   <section class="mp-panel" id="mpLiked" role="tabpanel" aria-labelledby="mpTabLiked" hidden>
     <?php if ($liked): ?><div class="mp-grid"><?php foreach ($liked as $p) { $tile($p); } ?></div>
     <?php else: ?><div class="mp-empty"><b>No liked videos yet</b><span>Videos you like show up here.</span></div><?php endif; ?>
+  </section>
+  <section class="mp-panel" id="mpBoosts" role="tabpanel" aria-labelledby="mpTabBoosts" hidden>
+    <?php if ($boosted): ?><p class="mp-note">Videos you boosted. Everyone who visits your profile can see them.</p><div class="mp-grid"><?php foreach ($boosted as $p) { $tile($p); } ?></div>
+    <?php else: ?><div class="mp-empty"><b>No boosts yet</b><span>Like a video, then tap Boost to share it with more people. Your boosts show up here.</span></div><?php endif; ?>
   </section>
 </div>
 <script>

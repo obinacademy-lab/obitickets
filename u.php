@@ -29,6 +29,7 @@ $iBlocked = $vid ? social_i_blocked($vid, $id) : false;
 $about = function_exists('user_about') ? user_about($id) : ['username' => '', 'bio' => ''];
 $cover = function_exists('user_cover_url') ? (string) (user_cover_url($id) ?? '') : '';
 $counts = social_counts($id);
+$boosted = $iBlocked || !function_exists('user_boosted_videos') ? [] : user_boosted_videos($id);
 $following = $vid ? social_is_following($vid, $id) : false;
 $followsYou = $vid ? social_is_following($id, $vid) : false;
 $compact = static fn (int $n): string => $n >= 1000000 ? rtrim(rtrim(number_format($n / 1000000, 1), '0'), '.') . 'M' : ($n >= 1000 ? rtrim(rtrim(number_format($n / 1000, 1), '0'), '.') . 'K' : (string) $n);
@@ -79,6 +80,27 @@ include __DIR__ . '/includes/header.php';
     <?php endif; ?>
     <?php if ($about['bio'] !== ''): ?><p class="mp-bio"><?= nl2br(htmlspecialchars($about['bio'])) ?></p><?php endif; ?>
   </div>
+
+  <?php if (!$iBlocked): ?>
+  <div class="mp-tabs" style="grid-template-columns:1fr" role="presentation"><button type="button" aria-selected="true" tabindex="-1">Boosts</button></div>
+  <section class="mp-panel" aria-label="Boosts">
+    <?php if ($boosted): ?>
+      <div class="mp-grid">
+        <?php foreach ($boosted as $p):
+            $thumb = (string) ($p['media_type'] === 'VIDEO' ? ($p['poster_path'] ?: '') : $p['media_path']);
+            $thumb = preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $thumb) ? $thumb : '';
+            $views = (int) $p['view_count']; ?>
+          <a class="mp-tile" href="/socials.php?v=<?= (int) $p['id'] ?>" aria-label="Boosted <?= $p['media_type'] === 'VIDEO' ? 'video' : 'post' ?>">
+            <?php if ($thumb !== ''): ?><img src="<?= htmlspecialchars($thumb) ?>" alt="" loading="lazy"><?php else: ?><video src="<?= htmlspecialchars((string) $p['media_path']) ?>#t=0.5" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video><?php endif; ?>
+            <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><?= htmlspecialchars($compact($views)) ?></span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php else: ?>
+      <div class="mp-empty"><b>No boosts yet</b><span>Videos <?= htmlspecialchars($person['name']) ?> boosts will show up here.</span></div>
+    <?php endif; ?>
+  </section>
+  <?php endif; ?>
 </div>
 <style>
   body.sx-page a.mp-stat-link{display:grid; gap:3px; color:#fff}

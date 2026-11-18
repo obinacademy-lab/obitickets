@@ -665,6 +665,43 @@ function post_boosts_ready(): bool
     return $ready;
 }
 
+/**
+ * The videos someone boosted, newest boost first (the Boosts tab on profiles, 11/18). Boosts are public, like
+ * reposts: only published, non-draft videos of published events are listed.
+ */
+function user_boosted_videos(int $userId, int $limit = 30): array
+{
+    if (!post_boosts_ready() || !function_exists('moment_select_sql')) {
+        return [];
+    }
+    return profile_video_list('post_boosts', $userId, $limit);
+}
+
+/**
+ * Videos a person boosted, saved or liked ($table = post_boosts | post_saves | post_reactions), newest first.
+ * moment_select_sql() already keeps only published, non-draft videos and uses the named :viewer parameter, so
+ * everything here is named too (PDO refuses a mix of named and ? placeholders).
+ */
+function profile_video_list(string $table, int $userId, int $limit = 30): array
+{
+    if (!in_array($table, ['post_boosts', 'post_saves', 'post_reactions'], true) || !function_exists('moment_select_sql')) {
+        return [];
+    }
+    try {
+        $st = db()->prepare('SELECT x.* FROM (' . moment_select_sql() . ') x
+            JOIN ' . $table . ' t ON t.post_id = x.id AND t.user_id = :uid
+            JOIN events e ON e.id = x.event_id AND e.status = \'PUBLISHED\'
+            ORDER BY t.created_at DESC LIMIT ' . max(1, min(60, $limit)));
+        $st->bindValue(':viewer', $userId, PDO::PARAM_INT);
+        $st->bindValue(':uid', $userId, PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll();
+    } catch (Throwable $e) {
+        error_log('[community] boosted videos: ' . $e->getMessage());
+        return [];
+    }
+}
+
 /** Boost or un-boost a published post. @return array{ok:bool, error?:string, boosted?:bool, boost_count?:int} */
 function set_post_boost(int $postId, int $userId, bool $boost): array
 {
