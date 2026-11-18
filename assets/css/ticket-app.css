@@ -8,8 +8,8 @@ body.tk-page a.ad-icon{color:#fff}
 
 body.tk-page a.tk-event{display:flex; gap:14px; align-items:center; padding:12px; margin:6px 0 14px; border-radius:18px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); color:#fff}
 body.tk-page a.tk-event:hover{background:#1E181A; color:#fff}
-.tk-event-art{flex:none; width:70px; aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#2A2224}
-.tk-event-art img{width:100%; height:100%; object-fit:cover}
+.tk-event-art{flex:none; align-self:flex-start; width:78px; min-height:60px; border-radius:12px; overflow:hidden; background:#2A2224; display:grid; place-items:center}
+.tk-event-art img{display:block; width:100%; height:auto; max-height:150px; object-fit:contain}   /* the whole flyer, never cropped */
 .tk-event-tx{min-width:0; display:grid; gap:3px}
 .tk-event-tx b{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:17px; line-height:1.25}
 .tk-event-tx small{font-size:13px; color:var(--ad-soft)}
