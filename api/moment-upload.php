@@ -52,18 +52,42 @@ try {
     if (isset($_POST['buy_bar'])) {
         $opts['buy_bar'] = !empty($_POST['buy_bar']);
     }
+    // a big video sent in pieces first (/api/moment-chunk.php): use the joined file instead of $_FILES['file']
+    $chunkId = (string) ($_POST['chunk_id'] ?? '');
+    $media = $_FILES['file'] ?? [];
+    $isUpload = true;
+    $chunkDir = null;
+    if ($chunkId !== '') {
+        $joined = moment_chunk_file((int) $user['id'], $chunkId);
+        if (!$joined['ok']) {
+            json_response(['error' => $joined['error']], 400);
+        }
+        $media = $joined['file'];
+        $isUpload = false;
+        $chunkDir = $joined['dir'];
+        // the save step now skips its own "really uploaded" check, so do it here for the other files in this form
+        foreach (['poster', 'own_audio'] as $k) {
+            if (!empty($_FILES[$k]['tmp_name']) && !is_uploaded_file((string) $_FILES[$k]['tmp_name'])) {
+                json_response(['error' => "That upload couldn't be verified. Please try again."], 400);
+            }
+        }
+        $opts['photos'] = null;   // a video in pieces is never a slideshow
+    }
     $result = create_moment(
         $event,
         $user,
-        $_FILES['file'] ?? [],
+        $media,
         $_FILES['poster'] ?? null,
         (string) ($_POST['caption'] ?? ''),
         (int) ($_POST['focus_x'] ?? 50),
         ($_POST['fit'] ?? '') === 'FIT' ? 'FIT' : 'FILL',
         $duration,
-        true,
+        $isUpload,
         $opts
     );
+    if ($chunkDir !== null) {
+        moment_chunk_remove($chunkDir);   // the video was moved out (or refused): the pieces are no longer needed
+    }
     if (!$result['ok']) {
         json_response(['error' => $result['error']], 400);
     }

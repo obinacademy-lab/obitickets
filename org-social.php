@@ -234,7 +234,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
       <?php else: ?>
       <?php $euSounds = array_merge($libSounds, $mySounds); ?>
       <div class="eu" id="eu" data-upload="/api/moment-upload.php" data-finish="/api/moment-finish.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
-           data-max-video="<?= moment_video_max_bytes() ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
+           data-max-video="<?= moment_video_max_bytes() ?>" data-max-total="<?= MOMENT_VIDEO_CAP_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
            data-draft-ready="<?= $draftsReady ? '1' : '0' ?>" data-can-buy="<?= $canBuy ? '1' : '0' ?>" data-when="<?= htmlspecialchars(date('D j M', strtotime($event['starts_at']))) ?>"
            data-event-url="<?= htmlspecialchars(rtrim(APP_URL, '/') . '/event.php?slug=' . urlencode($event['slug']), ENT_QUOTES) ?>"
            data-sounds="<?= htmlspecialchars(json_encode($euSounds, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>"
@@ -266,7 +266,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
 
       <details class="eu-adv" id="euAdvanced"><summary>Advanced upload <span>cropping, your own sounds, a cover frame</span></summary>
       <div class="mu" id="mu" data-endpoint="/api/moment-upload.php" data-event-id="<?= (int) $event['id'] ?>" data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
-           data-max-video="<?= moment_video_max_bytes() ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
+           data-max-video="<?= moment_video_max_bytes() ?>" data-max-total="<?= MOMENT_VIDEO_CAP_BYTES ?>" data-max-image="<?= MOMENT_MAX_IMAGE_BYTES ?>" data-max-seconds="<?= MOMENT_MAX_SECONDS ?>" data-max-slides="<?= MOMENT_MAX_SLIDES ?>"
            data-max-sound="<?= SOUND_MAX_BYTES ?>" data-sounds-on="<?= $soundsReady ? '1' : '0' ?>"
            data-sounds="<?= htmlspecialchars(json_encode(['library' => $libSounds, 'mine' => $mySounds], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>">
         <div>
@@ -284,7 +284,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
           <div id="muSingleBox">
             <div class="mu-row" style="margin-top:0">
               <label class="btn btn-line" for="muFile" style="display:inline-flex; width:auto; margin:0; cursor:pointer">Choose video or photo</label>
-              <input type="file" id="muFile" accept="video/mp4,video/webm,image/jpeg,image/png,image/webp" hidden>
+              <input type="file" id="muFile" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp" hidden>
               <span class="muted" style="font-size:0.84rem; margin-left:8px">MP4 or WebM up to <?= (int) round(moment_video_max_bytes() / 1048576) ?> MB and <?= MOMENT_MAX_SECONDS ?> seconds &middot; JPG, PNG or WebP up to 5 MB</span>
             </div>
             <div class="mu-facts" id="muFacts" style="margin-top:12px"></div>
@@ -412,6 +412,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
       <?php endif; ?>
       <script src="/assets/js/beat.js?v=<?= @filemtime(__DIR__ . '/assets/js/beat.js') ?: time() ?>"></script>
       <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
+      <script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
       <script src="/assets/js/easy-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/easy-upload.js') ?: time() ?>"></script>
       <script src="/assets/js/org-moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-moments.js') ?: time() ?>"></script>
       <?php endif; ?>

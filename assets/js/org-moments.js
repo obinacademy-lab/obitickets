@@ -73,9 +73,9 @@
   function chooseSingle(file) {
     stopPreview();
     resetSingle();
-    var isVideo = /^video\/(mp4|webm)$/.test(file.type);
+    var isVideo = /^video\/(mp4|quicktime|webm)$/.test(file.type);   // quicktime = iPhone .mov
     var isImage = /^image\/(jpeg|png|webp)$/.test(file.type);
-    if (!isVideo && !isImage) { say('Please choose an MP4 or WebM video, or a JPG, PNG or WebP photo.', true); paintFrame(); refreshAll(); return; }
+    if (!isVideo && !isImage) { say('Please choose an MP4, MOV (iPhone) or WebM video, or a JPG, PNG or WebP photo.', true); paintFrame(); refreshAll(); return; }
     S.file = file; S.kind = isVideo ? 'video' : 'image'; S.url = URL.createObjectURL(file);
     fact(facts, mb(file.size));
     paintFrame();

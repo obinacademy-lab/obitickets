@@ -9,8 +9,13 @@ const MOMENT_CAPTION_MAX = 300;
 const MOMENT_MAX_VIDEOS = 30;
 const MOMENT_MAX_PHOTOS = 60;
 const MOMENT_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const MOMENT_VIDEO_CAP_BYTES = 50 * 1024 * 1024;
-const MOMENT_MAX_SECONDS = 90;
+// 11/18 owner: videos up to 10 minutes and 1 GB. Big videos are sent in pieces (see "Uploads in pieces" below), so
+// the hosting server's own per-request limit no longer caps them.
+const MOMENT_VIDEO_CAP_BYTES = 1024 * 1024 * 1024;
+const MOMENT_MAX_SECONDS = 600;
+const MOMENT_CHUNK_BYTES = 5 * 1024 * 1024;      // one piece (kept under the server's per-request limit)
+const MOMENT_CHUNK_MAX_OPEN = 3;                 // unfinished uploads one person may have at a time
+const MOMENT_CHUNK_TTL_HOURS = 6;                // unfinished pieces are thrown away after this
 const MOMENT_POSTER_MAX_BYTES = 600 * 1024;
 const MOMENT_RATE_LIMIT = 20; // uploads per hour per person
 const MOMENT_MAX_SLIDES = 10;
@@ -19,7 +24,8 @@ const MOMENT_SLIDE_BEATS = [1, 2, 4, 8];
 const MOMENT_SLIDE_FX = ['CUT', 'FADE', 'ZOOM', 'FLASH'];
 
 const MOMENT_IMAGE_EXTENSIONS = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
-const MOMENT_VIDEO_EXTENSIONS = ['video/mp4' => 'mp4', 'video/webm' => 'webm'];
+// iPhone videos are .mov (QuickTime): the same kind of file as an MP4 inside, so they are kept with an .mp4 name and play like one (11/18)
+const MOMENT_VIDEO_EXTENSIONS = ['video/mp4' => 'mp4', 'video/quicktime' => 'mp4', 'video/webm' => 'webm'];
 
 /** php.ini sizes ("40M", "2G", "512K") as bytes; 0 or empty means no limit. */
 function moment_ini_bytes(string $key): int
@@ -38,13 +44,181 @@ function moment_ini_bytes(string $key): int
 }
 
 /**
- * The biggest video this server will actually accept: our own 50 MB cap, held under
- * both php.ini limits (a request over post_max_size is dropped before PHP sees it).
+ * The biggest video one ordinary request can carry: our cap, held under both php.ini limits (a request over
+ * post_max_size is dropped before PHP sees it). Bigger videos go up in pieces instead (moment_chunk_*).
  */
 function moment_video_max_bytes(): int
 {
     $limit = min(MOMENT_VIDEO_CAP_BYTES, moment_ini_bytes('upload_max_filesize'), moment_ini_bytes('post_max_size') - 2 * 1024 * 1024);
     return max(1024 * 1024, $limit);
+}
+
+// =====================================================================
+// Uploads in pieces (11/18): videos up to MOMENT_VIDEO_CAP_BYTES whatever the server's per-request limit.
+// The browser asks for an upload id, sends the file in order in MOMENT_CHUNK_BYTES pieces, then posts the
+// moment as usual with the id instead of the file. Pieces live in private-uploads/chunks (never reachable by
+// URL); the finished file then goes through moment_store_media's normal checks (real type from the bytes, size).
+// =====================================================================
+
+/** The size of one piece this server can take. */
+function moment_chunk_bytes(): int
+{
+    $limit = min(MOMENT_CHUNK_BYTES, moment_ini_bytes('upload_max_filesize'), moment_ini_bytes('post_max_size') - 512 * 1024);
+    return max(256 * 1024, $limit);
+}
+
+function moment_chunk_root(): ?string
+{
+    $base = __DIR__ . '/../private-uploads';
+    $dir = $base . '/chunks';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        return null;
+    }
+    // on the live site the project root is also the web root: make sure nothing here can be fetched by URL
+    if (!is_file($base . '/.htaccess')) {
+        @file_put_contents($base . '/.htaccess', "# Private uploads in progress: never fetched by URL.\nRequire all denied\n");
+    }
+    return $dir;
+}
+
+/** The folder of one upload, only if it belongs to this person. */
+function moment_chunk_dir(int $userId, string $id): ?string
+{
+    $root = moment_chunk_root();
+    if ($root === null || !preg_match('/^[a-f0-9]{32}$/', $id)) {
+        return null;
+    }
+    $dir = $root . '/' . $userId . '-' . $id;
+    return is_dir($dir) ? $dir : null;
+}
+
+function moment_chunk_meta(string $dir): ?array
+{
+    $m = json_decode((string) @file_get_contents($dir . '/meta.json'), true);
+    return is_array($m) ? $m : null;
+}
+
+function moment_chunk_remove(string $dir): void
+{
+    foreach (['data', 'meta.json', 'lock'] as $f) {
+        if (is_file($dir . '/' . $f)) {
+            @unlink($dir . '/' . $f);
+        }
+    }
+    @rmdir($dir);
+}
+
+/** Throws away pieces older than MOMENT_CHUNK_TTL_HOURS (everyone's), so abandoned uploads don't fill the disk. */
+function moment_chunk_purge(): void
+{
+    $root = moment_chunk_root();
+    if ($root === null) {
+        return;
+    }
+    foreach (glob($root . '/*-*', GLOB_ONLYDIR) ?: [] as $dir) {
+        if (filemtime($dir . '/meta.json') < time() - MOMENT_CHUNK_TTL_HOURS * 3600) {
+            moment_chunk_remove($dir);
+        }
+    }
+}
+
+/** @return array{ok:bool, id?:string, chunk?:int, error?:string} */
+function moment_chunk_start(int $userId, int $size, string $mime): array
+{
+    if ($size <= 0) {
+        return ['ok' => false, 'error' => 'Choose a video first.'];
+    }
+    if ($size > MOMENT_VIDEO_CAP_BYTES) {
+        return ['ok' => false, 'error' => 'Videos can be up to ' . round(MOMENT_VIDEO_CAP_BYTES / 1073741824, 1) . ' GB.'];
+    }
+    if (!isset(MOMENT_VIDEO_EXTENSIONS[$mime])) {   // the same types moment_store_media accepts, so nobody uploads 1 GB for nothing
+        return ['ok' => false, 'error' => 'Please use an MP4, MOV (iPhone) or WebM video.'];
+    }
+    $root = moment_chunk_root();
+    if ($root === null) {
+        return ['ok' => false, 'error' => "We couldn't prepare storage. Please try again."];
+    }
+    moment_chunk_purge();
+    if (count(glob($root . '/' . $userId . '-*', GLOB_ONLYDIR) ?: []) >= MOMENT_CHUNK_MAX_OPEN) {
+        return ['ok' => false, 'error' => 'You have other videos still uploading. Wait for them to finish, then try again.'];
+    }
+    $id = bin2hex(random_bytes(16));
+    $dir = $root . '/' . $userId . '-' . $id;
+    if (!@mkdir($dir, 0750) || file_put_contents($dir . '/meta.json', json_encode(['size' => $size, 'received' => 0])) === false) {
+        return ['ok' => false, 'error' => "We couldn't prepare storage. Please try again."];
+    }
+    touch($dir . '/data');
+    return ['ok' => true, 'id' => $id, 'chunk' => moment_chunk_bytes()];
+}
+
+/**
+ * Adds the next piece. Pieces must arrive in order ($offset = what we already have); a repeated piece (a retry
+ * after a dropped connection) is accepted without being written twice.
+ * @return array{ok:bool, received?:int, error?:string}
+ */
+function moment_chunk_add(int $userId, string $id, int $offset, string $tmpFile, int $len, bool $isUpload = true): array
+{
+    $dir = moment_chunk_dir($userId, $id);
+    if ($dir === null) {
+        return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
+    }
+    if ($isUpload && !is_uploaded_file($tmpFile)) {
+        return ['ok' => false, 'error' => "That upload couldn't be verified. Please try again."];
+    }
+    $lock = fopen($dir . '/lock', 'c');   // a separate lock file: Windows locks are strict, so the progress file itself stays readable
+    if (!$lock || !flock($lock, LOCK_EX)) {
+        return ['ok' => false, 'error' => 'Please try again.'];
+    }
+    try {
+        $meta = moment_chunk_meta($dir);
+        if (!$meta) {
+            return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
+        }
+        $have = (int) $meta['received'];
+        if ($offset + $len <= $have) {
+            return ['ok' => true, 'received' => $have];   // already have this piece
+        }
+        if ($offset !== $have) {
+            return ['ok' => false, 'error' => 'Pieces arrived out of order.', 'received' => $have];
+        }
+        if ($len <= 0 || $len > moment_chunk_bytes() || $have + $len > (int) $meta['size']) {
+            return ['ok' => false, 'error' => 'That piece is the wrong size.'];
+        }
+        $in = fopen($tmpFile, 'rb');
+        $out = fopen($dir . '/data', 'ab');
+        $copied = ($in && $out) ? stream_copy_to_stream($in, $out) : false;
+        if ($in) { fclose($in); }
+        if ($out) { fclose($out); }
+        if ($copied !== $len) {
+            return ['ok' => false, 'error' => "We couldn't save that piece. Please try again."];
+        }
+        $meta['received'] = $have + $len;
+        if (file_put_contents($dir . '/meta.json', json_encode($meta)) === false) {
+            return ['ok' => false, 'error' => "We couldn't save that piece. Please try again."];
+        }
+        return ['ok' => true, 'received' => $meta['received']];
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+/**
+ * The finished file as a $_FILES-style entry for create_moment(..., $isUpload = false), or an error.
+ * @return array{ok:bool, file?:array, dir?:string, error?:string}
+ */
+function moment_chunk_file(int $userId, string $id): array
+{
+    $dir = moment_chunk_dir($userId, $id);
+    $meta = $dir ? moment_chunk_meta($dir) : null;
+    if (!$dir || !$meta) {
+        return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
+    }
+    clearstatcache(true, $dir . '/data');
+    if ((int) $meta['received'] !== (int) $meta['size'] || filesize($dir . '/data') !== (int) $meta['size']) {
+        return ['ok' => false, 'error' => 'The video did not finish uploading. Please try again.'];
+    }
+    return ['ok' => true, 'dir' => $dir, 'file' => ['name' => 'video', 'tmp_name' => $dir . '/data', 'size' => (int) $meta['size'], 'error' => UPLOAD_ERR_OK]];
 }
 
 /** True once migration 017 has been run (the event page falls back to the old gallery without it). */
@@ -261,10 +435,11 @@ function moment_store_media(array $file, bool $isUpload = true): array
         finfo_close($finfo);
         $ext = MOMENT_VIDEO_EXTENSIONS[$mime] ?? null;
         if ($ext === null) {
-            return ['ok' => false, 'error' => 'Please use an MP4 or WebM video, or a JPG, PNG or WEBP photo.'];
+            return ['ok' => false, 'error' => 'Please use an MP4, MOV (iPhone) or WebM video, or a JPG, PNG or WEBP photo.'];
         }
-        if ($size > moment_video_max_bytes()) {
-            return ['ok' => false, 'error' => 'Videos must be under ' . round(moment_video_max_bytes() / 1048576) . ' MB.'];
+        $videoLimit = $isUpload ? moment_video_max_bytes() : MOMENT_VIDEO_CAP_BYTES;   // pieces join into one file first
+        if ($size > $videoLimit) {
+            return ['ok' => false, 'error' => 'Videos must be under ' . ($videoLimit >= 1073741824 ? round($videoLimit / 1073741824, 1) . ' GB' : round($videoLimit / 1048576) . ' MB') . '.'];
         }
         $type = 'VIDEO';
     }
@@ -463,7 +638,7 @@ function create_moment(array $event, array $user, array $file, ?array $poster, s
     }
     if ($duration !== null && $duration > MOMENT_MAX_SECONDS && $isVideo) {
         $cleanup();
-        return ['ok' => false, 'error' => 'Videos can be up to ' . MOMENT_MAX_SECONDS . ' seconds long.'];
+        return ['ok' => false, 'error' => 'Videos can be up to ' . (MOMENT_MAX_SECONDS % 60 === 0 ? (MOMENT_MAX_SECONDS / 60) . ' minutes' : MOMENT_MAX_SECONDS . ' seconds') . ' long.'];
     }
     $posterPath = $isVideo ? moment_store_poster($poster, $isUpload) : null;
     if ($posterPath) {

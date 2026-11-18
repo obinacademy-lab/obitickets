@@ -130,7 +130,7 @@ $canPost = $status['can_post'] && $events;
 
     <!-- upload -->
     <section class="sp-card sp-up" id="spUp" aria-labelledby="spUpH"
-      data-upload="/api/moment-upload.php" data-csrf="<?= $h(csrf_token()) ?>" data-max="<?= (int) moment_video_max_bytes() ?>" data-cap="<?= (int) MOMENT_CAPTION_MAX ?>">
+      data-upload="/api/moment-upload.php" data-csrf="<?= $h(csrf_token()) ?>" data-max="<?= (int) moment_video_max_bytes() ?>" data-max-total="<?= (int) MOMENT_VIDEO_CAP_BYTES ?>" data-max-seconds="<?= (int) MOMENT_MAX_SECONDS ?>" data-cap="<?= (int) MOMENT_CAPTION_MAX ?>">
       <h2 id="spUpH">Upload Event Video</h2>
       <?php if (!$status['can_post']): ?>
         <div class="sp-lock"><b>Posting is locked</b><span><?= $status['state'] === 'none' ? 'Start your free month to post.' : 'Renew your plan to post new videos.' ?> Your posts stay up either way.</span></div>
@@ -292,6 +292,7 @@ $canPost = $status['can_post'] && $events;
   }
 })();
 </script>
+<script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
 <script src="/assets/js/org-socials-pro.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-socials-pro.js') ?: time() ?>"></script>
 <?php endif; ?>
 

@@ -25,12 +25,17 @@
   var evSel = $('spEvent'), evTh = $('spEvTh'), cap = $('spCap'), capN = $('spCapN');
   var tagWrap = $('spTags'), tagIn = $('spTag'), prog = $('spProg'), bar = $('spBar'), progT = $('spProgT');
   var msg = $('spMsg'), pub = $('spPub');
-  var maxBytes = parseInt(box.getAttribute('data-max'), 10) || 0;
+  // 11/18: videos up to 10 minutes and 1 GB; anything over one request's limit goes up in pieces (chunk-upload.js)
+  var maxBytes = parseInt(box.getAttribute('data-max-total'), 10) || parseInt(box.getAttribute('data-max'), 10) || 0;
+  var maxSingle = parseInt(box.getAttribute('data-max'), 10) || 0;
+  var maxSeconds = parseInt(box.getAttribute('data-max-seconds'), 10) || 600;
+  var PIECES_FROM = 8 * 1024 * 1024;   // videos bigger than this go up in pieces (more reliable on weak signal too)
   var capMax = parseInt(box.getAttribute('data-cap'), 10) || 300;
   var file = null, duration = null, poster = null, tags = [], busy = false;
 
   function say(text, ok) { msg.textContent = text || ''; msg.hidden = !text; msg.classList.toggle('ok', !!ok); }
-  function mb(n) { return n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function mins(s) { return Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2); }
+  function mb(n) { if (n >= 1073741824) { return (n / 1073741824).toFixed(n >= 10737418240 ? 0 : 1) + ' GB'; } return n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
 
   /* ---- event picture beside the picker ---- */
   function paintEvent() {
@@ -88,7 +93,7 @@
     var isVideo = /^video\//.test(f.type), isImage = /^image\/(jpeg|png|webp)$/.test(f.type);
     if (!isVideo && !isImage) { say('Choose a video (MP4 or MOV) or a photo (JPG, PNG or WebP).'); return; }
     if (isVideo && maxBytes && f.size > maxBytes) {
-      say('This video is ' + mb(f.size) + '. Videos can be up to ' + mb(maxBytes) + ' here. Use "Upload and manage" below: it makes big videos smaller before sending.');
+      say('This video is ' + mb(f.size) + '. Videos can be up to ' + mb(maxBytes) + '. Trim it or save it at a lower quality, then try again.');
       return;
     }
     file = f; duration = null; poster = null;
@@ -102,6 +107,11 @@
     th.appendChild(v);
     v.addEventListener('loadedmetadata', function () {
       duration = isFinite(v.duration) ? v.duration : null;
+      if (duration != null && duration > maxSeconds + 0.5) {
+        clearFile();
+        say('This video is ' + mins(duration) + ' long. Videos can be up to ' + Math.round(maxSeconds / 60) + ' minutes. Trim it first, then try again.');
+        return;
+      }
       try { v.currentTime = Math.min(0.5, (v.duration || 1) / 2); } catch (e) { /* the picture stays on the first frame */ }
     });
     v.addEventListener('seeked', function () {
@@ -134,10 +144,25 @@
     fd.append('csrf_token', box.getAttribute('data-csrf'));
     fd.append('event_id', evSel.value);
     fd.append('caption', fullCaption());
-    fd.append('file', file, file.name);
+    var inPieces = /^video\//.test(file.type) && window.obiChunkUpload && (file.size > PIECES_FROM || (maxSingle && file.size > maxSingle));
+    if (!inPieces) { fd.append('file', file, file.name); }
     if (duration != null) { fd.append('duration', String(Math.round(duration))); }
     if (poster) { fd.append('poster', poster, 'cover.jpg'); }
     busy = true; pub.disabled = true; say(''); prog.hidden = false; bar.style.width = '0%'; progT.textContent = 'Uploading… 0%';
+    function failed(text) { busy = false; pub.disabled = false; prog.hidden = true; say(text || 'The upload did not finish. Please try again.'); }
+    if (inPieces) {
+      window.obiChunkUpload(file, {
+        csrf: box.getAttribute('data-csrf'), eventId: evSel.value, duration: duration != null ? Math.round(duration) : null,
+        onProgress: function (p) { var n = Math.min(99, Math.round(p * 100)); bar.style.width = n + '%'; progT.textContent = 'Uploading… ' + n + '% of ' + mb(file.size); }
+      }).then(function (id) {
+        fd.append('chunk_id', id);
+        progT.textContent = 'Finishing…';
+        send();
+      }).catch(function (err) { failed(err && err.message); });
+      return;
+    }
+    send();
+    function send() {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', box.getAttribute('data-upload'));
     xhr.upload.addEventListener('progress', function (ev) {
@@ -158,5 +183,6 @@
     };
     xhr.onerror = function () { busy = false; pub.disabled = false; prog.hidden = true; say('We could not reach the server. Check your connection and try again.'); };
     xhr.send(fd);
+    }
   });
 })();

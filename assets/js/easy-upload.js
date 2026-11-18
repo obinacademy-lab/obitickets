@@ -10,7 +10,7 @@
   function attr(n) { return box.getAttribute('data-' + n); }
   var cfg = {
     upload: attr('upload'), finish: attr('finish'), eventId: attr('event-id'), csrf: attr('csrf'),
-    maxVideo: parseInt(attr('max-video'), 10), maxSeconds: parseInt(attr('max-seconds'), 10) || 90, maxSlides: parseInt(attr('max-slides'), 10) || 10,
+    maxVideo: parseInt(attr('max-video'), 10), maxTotal: parseInt(attr('max-total'), 10) || parseInt(attr('max-video'), 10), maxSeconds: parseInt(attr('max-seconds'), 10) || 600, maxSlides: parseInt(attr('max-slides'), 10) || 10,
     draftReady: attr('draft-ready') === '1', canBuy: attr('can-buy') === '1', eventUrl: attr('event-url'), when: attr('when') || ''
   };
   var sounds = [], drafts = [];
@@ -18,9 +18,11 @@
   try { drafts = JSON.parse(attr('drafts') || '[]'); } catch (e) { /* none */ }
 
   function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
-  function mb(n) { return (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB'; }
+  function mb(n) { if (n >= 1073741824) return (n / 1073741824).toFixed(n >= 10737418240 ? 0 : 1).replace(/\.0$/, '') + ' GB'; return (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + ' MB'; }
   var canShrink = !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream);
-  var SOFT_VIDEO_BYTES = 12 * 1024 * 1024; // above this a video is re-encoded at 720 x 1280 before it uploads
+  var SOFT_VIDEO_BYTES = 12 * 1024 * 1024; // above this a short video is re-encoded at 720 x 1280 before it uploads
+  var SHRINK_MAX_SECONDS = 120;            // re-encoding takes as long as the video, so only short ones are made lighter
+  var PIECES_FROM = 8 * 1024 * 1024;       // 11/18: bigger videos go up in pieces (chunk-upload.js), up to 1 GB
 
   /* ---------- entry points: the button, the whole page as a drop target, the round + on phones ---------- */
   var fileInput = document.getElementById('euFile');
@@ -86,7 +88,7 @@
   var sheetEl = null, S = null, sample = null;
 
   function closeSheet() {
-    if (S) { S.dead = true; if (S.xhr) try { S.xhr.abort(); } catch (e) { /* ignore */ } if (S.shrinker) S.shrinker.cancel(); if (S.cycle) clearInterval(S.cycle); (S.urls || []).forEach(function (u) { URL.revokeObjectURL(u); }); }
+    if (S) { S.dead = true; if (S.chunkSignal) S.chunkSignal.cancelled = true; if (S.xhr) try { S.xhr.abort(); } catch (e) { /* ignore */ } if (S.shrinker) S.shrinker.cancel(); if (S.cycle) clearInterval(S.cycle); (S.urls || []).forEach(function (u) { URL.revokeObjectURL(u); }); }
     if (sample) { sample.pause(); sample = null; }
     if (sheetEl) { sheetEl.remove(); sheetEl = null; }
     document.body.classList.remove('eu-open');
@@ -266,14 +268,14 @@
       v.addEventListener('loadedmetadata', function () {
         if (settled || S.dead) return; settled = true;
         S.duration = v.duration || 0;
-        var tooBig = file.size > cfg.maxVideo, tooLong = S.duration > cfg.maxSeconds + 0.5;
-        // Heavy phone videos are made lighter even when they fit the limit, so they load fast for people on mobile data.
-        var heavy = canShrink && file.size > SOFT_VIDEO_BYTES;
-        S.needsPrep = tooBig || tooLong || heavy;
-        if (tooLong) notice('This video is ' + Math.floor(S.duration / 60) + ':' + ('0' + Math.round(S.duration % 60)).slice(-2) + ' and moments can be up to ' + Math.floor(cfg.maxSeconds / 60) + ':' + ('0' + (cfg.maxSeconds % 60)).slice(-2) + '. We use the first ' + cfg.maxSeconds + ' seconds.');
-        else if (tooBig) notice('This video is ' + mb(file.size) + '. We shrink it so it uploads fast. It takes about as long as the video.');
-        else if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones. It takes about as long as the video.');
-        if (S.needsPrep && !canShrink) { showError('This video is ' + mb(file.size) + ' (limit ' + mb(cfg.maxVideo) + ') and this browser can’t shrink it. Use Chrome on a computer or Android phone, or trim it in your gallery first.'); return; }
+        var tooLong = S.duration > cfg.maxSeconds + 0.5, tooBig = file.size > cfg.maxTotal;
+        if (tooLong) { showError('This video is ' + Math.floor(S.duration / 60) + ':' + ('0' + Math.floor(S.duration % 60)).slice(-2) + ' long. Videos can be up to ' + Math.round(cfg.maxSeconds / 60) + ' minutes. Trim it in your gallery first, then try again.'); return; }
+        if (tooBig) { showError('This video is ' + mb(file.size) + '. Videos can be up to ' + mb(cfg.maxTotal) + '. Save it at a lower quality or trim it, then try again.'); return; }
+        // Heavy SHORT phone videos are made lighter, so they load fast for people on mobile data. Long ones go up as they are.
+        var heavy = canShrink && file.size > SOFT_VIDEO_BYTES && S.duration <= SHRINK_MAX_SECONDS;
+        S.needsPrep = heavy;
+        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones. It takes about as long as the video.');
+        else if (file.size > PIECES_FROM) notice('This video is ' + mb(file.size) + '. It uploads in parts, so keep this page open until it says ready.');
         paintStatus();
         if (S.needsPrep) {
           S.shrinker = shrinkVideo(url, Math.min(S.duration, cfg.maxSeconds), function (p) { S.prep = Math.round(p * 100); paintStatus(); });
@@ -304,13 +306,26 @@
 
     /* ---- upload (as a draft when the server supports it) ---- */
     function sendFiles(parts, posterBlob, duration) {
+      var big = parts.length === 1 && parts[0][0] === 'file' && window.obiChunkUpload && parts[0][1].size > PIECES_FROM;
+      if (!big) { sendFilesNow(parts, posterBlob, duration, null); return; }
+      var blob = parts[0][1];
+      var asFile = blob instanceof File ? blob : new File([blob], parts[0][2], { type: blob.type || 'video/mp4' });
+      S.chunkSignal = { cancelled: false }; S.up = 0; paintStatus();
+      window.obiChunkUpload(asFile, {
+        csrf: cfg.csrf, eventId: cfg.eventId, duration: duration != null ? Math.round(duration) : null, signal: S.chunkSignal,
+        onProgress: function (p) { if (!S.dead) { S.up = Math.min(99, Math.round(p * 100)); paintStatus(); } }
+      }).then(function (id) { if (!S.dead) sendFilesNow([], posterBlob, duration, id); },
+              function (err) { if (!S.dead) showError(err && err.message ? err.message : 'The upload failed. Please try again.'); });
+    }
+    function sendFilesNow(parts, posterBlob, duration, chunkId) {
       var fd = new FormData();
       fd.append('csrf_token', cfg.csrf); fd.append('event_id', cfg.eventId);
       if (cfg.draftReady) fd.append('draft', '1');
       if (duration != null) fd.append('duration', String(Math.round(duration)));
       parts.forEach(function (p) { fd.append(p[0], p[1], p[2]); });
+      if (chunkId) fd.append('chunk_id', chunkId);
       if (posterBlob) fd.append('poster', posterBlob, 'cover.jpg');
-      S.pending = { parts: parts, poster: posterBlob, duration: duration };
+      S.pending = { parts: parts, poster: posterBlob, duration: duration, chunkId: chunkId };
       if (!cfg.draftReady) { S.ready = true; S.up = 100; paintStatus(); return; } // without drafts the upload happens when Post is pressed
       var xhr = new XMLHttpRequest(); S.xhr = xhr;
       xhr.open('POST', cfg.upload); xhr.setRequestHeader('Accept', 'application/json');
@@ -341,6 +356,7 @@
         fd.append('csrf_token', cfg.csrf); fd.append('event_id', cfg.eventId); fd.append('caption', S.caption);
         if (S.pending.duration != null) fd.append('duration', String(Math.round(S.pending.duration)));
         S.pending.parts.forEach(function (p) { fd.append(p[0], p[1], p[2]); });
+        if (S.pending.chunkId) fd.append('chunk_id', S.pending.chunkId);
         if (S.pending.poster) fd.append('poster', S.pending.poster, 'cover.jpg');
         fd.append('buy_bar', common.buy_bar ? '1' : '0');
         if (sound) { fd.append('sound_id', String(sound.id)); fd.append('sound_start', String(common.sound_start)); fd.append('sound_mix', String(common.sound_mix)); fd.append('slide_beats', '2'); fd.append('slide_fx', 'ZOOM'); }
