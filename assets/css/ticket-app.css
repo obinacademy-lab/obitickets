@@ -1,0 +1,64 @@
+/* ==========================================================================
+   The ticket page (public/order.php, body.tk-page) in the dark app look (11/18), on top of app-dark.css.
+   The QR stays black on a white square: gate scanners read it reliably.
+   ========================================================================== */
+.tk{max-width:520px; padding-bottom:28px}
+.tk .ad-top h1{font-size:22px}
+body.tk-page a.ad-icon{color:#fff}
+
+body.tk-page a.tk-event{display:flex; gap:14px; align-items:center; padding:12px; margin:6px 0 14px; border-radius:18px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line); color:#fff}
+body.tk-page a.tk-event:hover{background:#1E181A; color:#fff}
+.tk-event-art{flex:none; width:70px; aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:#2A2224}
+.tk-event-art img{width:100%; height:100%; object-fit:cover}
+.tk-event-tx{min-width:0; display:grid; gap:3px}
+.tk-event-tx b{font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:17px; line-height:1.25}
+.tk-event-tx small{font-size:13px; color:var(--ad-soft)}
+
+.tk-note{margin:0 0 14px; padding:12px 14px; border-radius:14px; font-size:14px; line-height:1.5}
+.tk-ok{background:rgba(34,197,94,.14); color:#BBF7D0; box-shadow:inset 0 0 0 1px rgba(34,197,94,.35)}
+.tk-warn{background:rgba(245,158,11,.13); color:#FDE68A; box-shadow:inset 0 0 0 1px rgba(245,158,11,.35)}
+.tk-error{background:rgba(240,49,63,.13); color:#FECACA; box-shadow:inset 0 0 0 1px rgba(240,49,63,.4)}
+.tk-note strong{color:#fff}
+.tk-join{margin-bottom:14px}
+.tk-form{margin:0 0 12px}
+
+.tk-btn{display:flex; width:100%; height:48px; margin-top:12px; border:0; border-radius:14px; align-items:center; justify-content:center; background:rgba(255,255,255,.08); color:#fff; font:800 15px 'Plus Jakarta Sans',sans-serif; cursor:pointer; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+body.tk-page a.tk-btn{color:#fff}
+.tk-btn:hover{background:rgba(255,255,255,.14); color:#fff}
+.tk-red{background:var(--ad-red); box-shadow:0 14px 28px -14px rgba(240,49,63,.95)}
+.tk-red:hover{background:#D72634}
+.tk-btn:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+/* one ticket */
+.tk-list{display:grid; gap:16px; margin-top:4px}
+.tk-ticket{position:relative; padding:16px 16px 18px; border-radius:22px; background:linear-gradient(160deg,#1C1517,#141012); box-shadow:inset 0 0 0 1px var(--ad-line), 0 22px 44px -26px rgba(0,0,0,.9); text-align:center}
+.tk-ticket-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; text-align:left}
+.tk-tier{display:block; font-family:'Outfit','Plus Jakarta Sans',sans-serif; font-weight:700; font-size:18px; color:#fff}
+.tk-ticket-top small{font-size:12.5px; color:var(--ad-mute)}
+.tk-cut{position:relative; height:0; margin:14px 2px 18px; border-top:2px dashed rgba(255,255,255,.14)}
+.tk-cut::before,.tk-cut::after{content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--ad-bg, #0B0708)}
+.tk-cut::before{left:-30px}
+.tk-cut::after{right:-30px}
+.tk-qr{display:inline-grid; place-items:center; padding:14px; border-radius:18px; background:#fff}
+/* qrcode.js draws a canvas and an img and shows one of them itself (never force display here); both are sized to
+   the box, and the white square around it is the quiet zone scanners need */
+.tk-qr .ticket-issued-qr{display:block; width:200px; height:200px; margin:0; padding:0; background:#fff; border-radius:0; box-shadow:none; overflow:hidden}
+.tk-qr .ticket-issued-qr canvas,.tk-qr .ticket-issued-qr img{width:200px !important; height:200px !important; margin:0}
+.tk-code{margin-top:12px; font-size:15px; font-weight:700; letter-spacing:.12em; color:#fff}
+.tk-hint{margin-top:6px; font-size:13px; color:var(--ad-mute)}
+
+.tk-pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800; letter-spacing:.03em}
+.tk-g{background:rgba(34,197,94,.16); color:#4ADE80}
+.tk-y{background:rgba(245,158,11,.18); color:#FCD34D}
+.tk-r{background:rgba(240,49,63,.16); color:#FF7A85}
+.tk-n{background:rgba(255,255,255,.1); color:#D9CFCF}
+
+/* the order */
+.tk-sum{margin-top:18px; padding:6px 16px; border-radius:18px; background:var(--ad-card); box-shadow:inset 0 0 0 1px var(--ad-line)}
+.tk-sum > div{display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:44px; font-size:14px}
+.tk-sum > div + div{border-top:1px solid var(--ad-line)}
+.tk-sum span{color:var(--ad-mute)}
+.tk-sum b{color:#fff; font-weight:700}
+.tk-sum b span{color:inherit}
+.tk-total b{font-size:16px; font-weight:800}
+@media (max-width:360px){ .tk-qr .ticket-issued-qr,.tk-qr .ticket-issued-qr img{width:170px !important; height:170px !important} }
