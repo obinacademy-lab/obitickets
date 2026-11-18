@@ -21,7 +21,15 @@ $unread = function_exists('count_unread_notifications') ? count_unread_notificat
 // numbers: your videos (organizers post them), people following you (organizers), organizers you follow
 $counts = function_exists('socials_profile_counts') ? socials_profile_counts($uid) : ['posts' => 0, 'following' => 0];
 $followers = 0;
-if ($isOrganizer) {
+$dmUnread = 0;
+if (function_exists('social_ready') && social_ready()) {
+    // everyone can follow everyone (migration 037): organizer follows and member follows together
+    $sc = social_counts($uid);
+    $followers = $sc['followers'];
+    $counts['following'] = $sc['following'];
+    $du = dm_unread_counts($uid);
+    $dmUnread = $du['chats'] + $du['requests'];
+} elseif ($isOrganizer) {
     try { $followers = count_organizer_followers($uid); } catch (Throwable $e) { $followers = 0; }
 }
 
@@ -71,7 +79,11 @@ include __DIR__ . '/includes/header.php';
 
   <div class="wrap mp-in">
     <div class="mp-top">
-      <span class="mp-gap" aria-hidden="true"></span>
+      <span class="mp-gap">
+        <?php if (function_exists('social_ready') && social_ready()): ?>
+        <a class="mp-ic" href="/inbox.php" aria-label="Messages<?= $dmUnread ? ', ' . (int) $dmUnread . ' unread' : '' ?>"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg><?php if ($dmUnread): ?><i></i><?php endif; ?></a>
+        <?php endif; ?>
+      </span>
       <h1>My Profile</h1>
       <a class="mp-ic" href="/notifications.php" aria-label="Notifications<?= $unread ? ', ' . (int) $unread . ' unread' : '' ?>"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><?php if ($unread): ?><i></i><?php endif; ?></a>
       <button type="button" class="mp-ic" data-open-menu aria-label="Open menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -82,8 +94,8 @@ include __DIR__ . '/includes/header.php';
 
     <div class="mp-stats">
       <div><b><?= htmlspecialchars($compact((int) $counts['posts'])) ?></b><span><?= (int) $counts['posts'] === 1 ? 'Video' : 'Videos' ?></span></div>
-      <div><b><?= htmlspecialchars($compact($followers)) ?></b><span><?= $followers === 1 ? 'Follower' : 'Followers' ?></span></div>
-      <div><b><?= htmlspecialchars($compact((int) $counts['following'])) ?></b><span>Following</span></div>
+      <a class="mp-stat" href="/follows.php?id=<?= $uid ?>&amp;tab=followers"><b><?= htmlspecialchars($compact($followers)) ?></b><span><?= $followers === 1 ? 'Follower' : 'Followers' ?></span></a>
+      <a class="mp-stat" href="/follows.php?id=<?= $uid ?>&amp;tab=following"><b><?= htmlspecialchars($compact((int) $counts['following'])) ?></b><span>Following</span></a>
     </div>
 
     <div class="mp-actions">

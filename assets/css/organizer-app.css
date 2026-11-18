@@ -89,3 +89,10 @@ body.op-app .ev-empty b{color:#fff}
 /* links inside the page keep their light text (the light page colours links dark) */
 body.op-app a.op-row,body.op-app a.op-row:hover,body.op-app .op-row-tx b{color:#fff}
 body.op-app .op-row-tx small{color:#B3A7A7}
+
+/* Followers / Following open their lists (11/18) */
+body.op-app a.op-stat{display:grid; gap:2px; padding:4px 6px; border-radius:12px; color:#fff}
+body.op-app a.op-stat:hover{color:#fff; background:rgba(255,255,255,.05)}
+body.op-app a.op-stat b{color:#fff; font-family:"Outfit","Plus Jakarta Sans",sans-serif; font-weight:700; font-size:1.25rem}
+body.op-app a.op-stat span{color:#B3A7A7; font-size:.8rem}
+body.op-app a.op-stat:focus-visible{outline:3px solid #fff; outline-offset:2px}

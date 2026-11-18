@@ -135,7 +135,7 @@ $opLive = (bool) $events['upcoming'];
     <div class="op-cover"<?= $opCover !== '' ? ' style="background-image:url(\'' . htmlspecialchars($opCover, ENT_QUOTES) . '\')"' : '' ?> aria-hidden="true"></div>
     <div class="ev-wrap op-top">
       <a class="op-tbtn" href="/discover.php" data-back aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
-      <button type="button" class="op-tbtn" data-open-menu aria-label="Open menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+      <button type="button" class="op-tbtn" data-ev-copy="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>" aria-label="Share this profile"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
     </div>
     <span class="op-avatar<?= $opLive ? ' is-live' : '' ?>"><?php if ($opAvatar): ?><img src="<?= htmlspecialchars($opAvatar) ?>" alt=""><?php else: ?><b aria-hidden="true"><?= htmlspecialchars(initials_from_name($orgName)) ?></b><?php endif; ?><?php if ($opLive): ?><i title="Has upcoming events"></i><?php endif; ?></span>
   </header>
@@ -152,8 +152,9 @@ $opLive = (bool) $events['upcoming'];
     <div class="op-stats">
       <div><b><?= htmlspecialchars($opCompact((int) $soCounts['posts'])) ?></b><span><?= (int) $soCounts['posts'] === 1 ? 'Video' : 'Videos' ?></span></div>
       <?php if ($communityReady): ?>
-        <div><b id="orgFollowers"><?= htmlspecialchars($opCompact($followers)) ?></b><span><?= $followers === 1 ? 'Follower' : 'Followers' ?></span></div>
-        <div><b><?= htmlspecialchars($opCompact((int) $soCounts['following'])) ?></b><span>Following</span></div>
+        <?php $opSocial = function_exists('social_ready') && social_ready(); $opFollowing = $opSocial ? social_counts($uid)['following'] : (int) $soCounts['following']; ?>
+        <a class="op-stat" href="/follows.php?id=<?= $uid ?>&amp;tab=followers"><b id="orgFollowers"><?= htmlspecialchars($opCompact($followers)) ?></b><span><?= $followers === 1 ? 'Follower' : 'Followers' ?></span></a>
+        <a class="op-stat" href="/follows.php?id=<?= $uid ?>&amp;tab=following"><b><?= htmlspecialchars($opCompact($opFollowing)) ?></b><span>Following</span></a>
       <?php endif; ?>
     </div>
 
@@ -163,7 +164,11 @@ $opLive = (bool) $events['upcoming'];
       <?php elseif ($communityReady): ?>
         <button type="button" class="op-follow" data-ev-follow="organizer" data-id="<?= $uid ?>" aria-pressed="<?= $following ? 'true' : 'false' ?>"><?= $following ? 'Following' : 'Follow' ?></button>
       <?php endif; ?>
-      <button type="button" class="op-send" data-ev-copy="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>" aria-label="Share this profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></button>
+      <?php if (!$isOwnProfile && function_exists('social_ready') && social_ready()): ?>
+      <button type="button" class="op-send" data-message-user="<?= $uid ?>" aria-label="Message <?= htmlspecialchars($orgName) ?>">
+      <?php else: ?>
+      <button type="button" class="op-send" data-ev-copy="<?= htmlspecialchars($profileUrl, ENT_QUOTES) ?>" aria-label="Share this profile">
+      <?php endif; ?><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></button>
     </div>
 
     <?php if ($organizer['bio']): ?><p class="op-bio"><?= nl2br(htmlspecialchars($organizer['bio'])) ?></p><?php endif; ?>
@@ -243,5 +248,6 @@ $opLive = (bool) $events['upcoming'];
   });
 })();
 </script>
+<script src="/assets/js/social.js?v=<?= @filemtime(__DIR__ . '/assets/js/social.js') ?: time() ?>" defer></script>
 <script src="/assets/js/community.js?v=<?= @filemtime(__DIR__ . '/assets/js/community.js') ?: time() ?>"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

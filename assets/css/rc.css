@@ -394,3 +394,6 @@ html.rc{background:#fff}
   html.rc body.so-v3 .rc-tab.on{color:#FF4D4D}
   html.rc body.so-v3 .rc-tab::before{display:none}
 }
+
+/* unread messages on the Profile tab (11/18) */
+.rc-tab .rc-dot{position:absolute; top:6px; left:calc(50% + 6px); width:9px; height:9px; border-radius:50%; background:#F0313F; box-shadow:0 0 0 2px #0B0708}

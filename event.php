@@ -471,6 +471,9 @@ $eaBuy = str_replace(['id="buySubmit">', '>Get Tickets</button>', '>Get free tic
     <div class="wrap ea-top">
       <a class="ad-icon" href="/discover.php" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
       <span class="ea-top-gap"></span>
+      <?php if (function_exists('social_ready') && social_ready() && !$eventHasEnded): ?>
+        <a class="ad-icon ea-send" href="/inbox.php?event=<?= (int) $event['id'] ?>" aria-label="Send this event to a friend in chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></a>
+      <?php endif; ?>
       <?= $shareBlock ?>
     </div>
     <div class="wrap ea-pic-wrap">

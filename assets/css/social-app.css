@@ -1,0 +1,111 @@
+/* ==========================================================================
+   People and messages in the dark app look (11/18): Followers / Following lists (follows.php), member profiles
+   (u.php), the inbox (inbox.php) and a chat (chat.php). On top of app-dark.css.
+   ========================================================================== */
+.sx{max-width:620px; padding-bottom:24px}
+.sx .ad-top h1{font-size:20px; text-align:center}
+body.sx-page a.ad-icon{color:#fff}
+.sx-av{flex:none; border-radius:50%; object-fit:cover; display:grid; place-items:center; background:linear-gradient(135deg,#3A2A2D,#1E1517); color:#fff; font-weight:800; font-family:'Outfit','Plus Jakarta Sans',sans-serif}
+
+/* tabs (Followers / Following, Chats / Requests) */
+.sx-tabs{display:grid; grid-template-columns:1fr 1fr; margin:0 -16px 8px; border-bottom:1px solid var(--ad-line)}
+body.sx-page .sx-tabs a{position:relative; display:flex; align-items:center; justify-content:center; gap:6px; height:46px; color:var(--ad-mute); font-weight:700; font-size:15px}
+body.sx-page .sx-tabs a.on{color:#fff}
+.sx-tabs a.on::after{content:""; position:absolute; left:28%; right:28%; bottom:-1px; height:3px; border-radius:3px; background:var(--ad-red)}
+.sx-tabs b{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--ad-red); color:#fff; font-size:11.5px; display:inline-grid; place-items:center}
+
+/* a person row */
+.sx-list{display:grid}
+.sx-row{display:flex; align-items:center; gap:12px; padding:10px 0}
+.sx-row + .sx-row{border-top:1px solid rgba(255,255,255,.05)}
+body.sx-page a.sx-who{flex:1; min-width:0; display:flex; align-items:center; gap:12px; color:#fff}
+.sx-who span{min-width:0; display:grid; gap:2px}
+.sx-who b{font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sx-who small{font-size:13px; color:var(--ad-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sx-tick{display:inline-grid; place-items:center; width:16px; height:16px; margin-left:4px; border-radius:50%; background:#3B9CFF; vertical-align:-2px}
+.sx-btn{flex:none; height:36px; padding:0 16px; border:0; border-radius:10px; background:var(--ad-red); color:#fff; font:800 13.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.sx-btn[aria-pressed="true"],.sx-btn.sx-soft{background:rgba(255,255,255,.1); color:#fff; box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.sx-btn:disabled{opacity:.6}
+.sx-btn:focus-visible,.sx-icon-btn:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.sx-icon-btn{flex:none; width:36px; height:36px; border:0; border-radius:10px; background:rgba(255,255,255,.1); color:#fff; display:grid; place-items:center; cursor:pointer}
+.sx-empty{margin-top:24px; padding:30px 18px; border-radius:18px; background:var(--ad-card); text-align:center; color:var(--ad-mute); display:grid; justify-items:center; gap:6px}
+.sx-empty b{color:#fff; font-size:16px}
+body.sx-page .sx-empty a{margin-top:8px; padding:10px 18px; border-radius:12px; background:var(--ad-red); color:#fff; font-weight:800}
+
+/* inbox rows */
+body.sx-page a.sx-chat{display:flex; align-items:center; gap:12px; padding:10px 8px; margin:0 -8px; border-radius:14px; color:#fff}
+body.sx-page a.sx-chat:hover{background:rgba(255,255,255,.04); color:#fff}
+.sx-chat-tx{flex:1; min-width:0; display:grid; gap:3px}
+.sx-chat-tx b{font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sx-chat-tx small{font-size:13.5px; color:var(--ad-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sx-chat.is-unread .sx-chat-tx small{color:#fff; font-weight:700}
+.sx-chat-end{flex:none; display:grid; justify-items:end; gap:6px; font-size:12px; color:var(--ad-mute)}
+.sx-chat-end i{min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--ad-red); color:#fff; font-style:normal; font-size:11.5px; font-weight:800; display:grid; place-items:center}
+.sx-note{margin:6px 0 4px; font-size:13px; color:var(--ad-mute); text-align:center}
+
+/* ---------- chat ---------- */
+body.sx-chat-page main,body.sx-chat-page .page{padding-bottom:0}
+.cx{display:flex; flex-direction:column; height:100dvh; max-width:680px; margin:0 auto}
+.cx-top{flex:none; display:flex; align-items:center; gap:10px; padding:calc(8px + env(safe-area-inset-top, 0px)) 12px 8px; border-bottom:1px solid var(--ad-line); background:#0B0708}
+body.sx-page a.cx-who{flex:1; min-width:0; display:flex; align-items:center; gap:10px; color:#fff}
+.cx-who span{min-width:0; display:grid}
+.cx-who b{font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cx-who small{font-size:12.5px; color:var(--ad-mute)}
+.cx-menu{position:relative}
+.cx-menu-list{position:absolute; right:0; top:46px; z-index:20; min-width:200px; padding:6px; border-radius:14px; background:#1E181A; box-shadow:0 20px 40px -12px rgba(0,0,0,.9), inset 0 0 0 1px var(--ad-line)}
+.cx-menu-list[hidden]{display:none}
+.cx-menu-list button,.cx-menu-list a{display:block; width:100%; padding:11px 12px; border:0; border-radius:10px; background:none; color:#fff; text-align:left; font:600 14.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.cx-menu-list button:hover,.cx-menu-list a:hover{background:rgba(255,255,255,.07); color:#fff}
+.cx-menu-list .danger{color:#FF7A85}
+
+.cx-body{flex:1; overflow-y:auto; overscroll-behavior:contain; padding:14px 12px 6px; display:flex; flex-direction:column; gap:4px}
+.cx-older{align-self:center; margin-bottom:8px; padding:7px 14px; border:0; border-radius:999px; background:rgba(255,255,255,.08); color:#fff; font:700 12.5px 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.cx-intro{display:grid; justify-items:center; gap:6px; padding:18px 10px 22px; text-align:center; color:var(--ad-mute); font-size:13px}
+.cx-intro b{color:#fff; font-size:17px}
+.cx-day{align-self:center; margin:10px 0 6px; font-size:11.5px; font-weight:700; color:var(--ad-mute)}
+.cx-msg{max-width:78%; display:grid; gap:2px}
+.cx-msg.me{align-self:flex-end; justify-items:end}
+.cx-msg.them{align-self:flex-start}
+.cx-bub{padding:9px 13px; border-radius:18px; font-size:15px; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word}
+.cx-msg.me .cx-bub{background:var(--ad-red); color:#fff; border-bottom-right-radius:6px}
+.cx-msg.them .cx-bub{background:#26201F; color:#fff; border-bottom-left-radius:6px}
+.cx-time{font-size:11px; color:var(--ad-mute); padding:0 4px}
+.cx-msg.pending .cx-bub{opacity:.6}
+.cx-msg.failed .cx-bub{box-shadow:inset 0 0 0 2px #F59E0B}
+body.sx-page a.cx-event{display:block; width:240px; max-width:100%; border-radius:16px; overflow:hidden; background:#1E181A; box-shadow:inset 0 0 0 1px var(--ad-line); color:#fff}
+.cx-event img{display:block; width:100%; max-height:300px; object-fit:contain; background:#0B0708}
+.cx-event span{display:grid; gap:2px; padding:10px 12px}
+.cx-event b{font-size:14.5px}
+.cx-event small{font-size:12.5px; color:var(--ad-soft)}
+.cx-event em{margin-top:6px; padding:8px; border-radius:10px; background:var(--ad-red); color:#fff; font-style:normal; font-weight:800; font-size:13px; text-align:center}
+.cx-seen{align-self:flex-end; font-size:11.5px; color:var(--ad-mute); padding:2px 4px}
+
+.cx-req{flex:none; padding:12px; border-top:1px solid var(--ad-line); text-align:center; color:var(--ad-soft); font-size:13.5px}
+.cx-req div{display:flex; gap:8px; margin-top:10px}
+.cx-req button{flex:1}
+.cx-share{flex:none; display:flex; align-items:center; gap:10px; margin:0 12px; padding:8px; border-radius:12px; background:#1E181A; box-shadow:inset 0 0 0 1px var(--ad-line); font-size:13px}
+.cx-share img{width:40px; height:40px; border-radius:8px; object-fit:cover}
+.cx-share span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cx-form{flex:none; display:flex; align-items:flex-end; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background:#0B0708}
+.cx-form textarea{flex:1; min-height:44px; max-height:140px; padding:11px 16px; border:0; border-radius:22px; background:#1E181A; color:#fff; font:15px 'Plus Jakarta Sans',sans-serif; resize:none; box-shadow:inset 0 0 0 1px var(--ad-line)}
+.cx-form textarea::placeholder{color:#8F8385}
+.cx-form textarea:focus{outline:none; box-shadow:inset 0 0 0 2px var(--ad-red)}
+.cx-send{flex:none; width:44px; height:44px; border:0; border-radius:50%; background:var(--ad-red); color:#fff; display:grid; place-items:center; cursor:pointer}
+.cx-send:disabled{background:#2A2224; color:#776B6D}
+.cx-closed{flex:none; padding:16px; text-align:center; color:var(--ad-mute); font-size:14px; border-top:1px solid var(--ad-line)}
+html.rc body.sx-chat-page .rc-tabs{display:none}
+@media (min-width:901px){ .cx{height:calc(100dvh - 70px)} }
+
+/* report sheet */
+.cx-sheet{position:fixed; inset:0; z-index:200; display:grid; align-items:end; background:rgba(0,0,0,.6)}
+.cx-sheet[hidden]{display:none}
+.cx-sheet form{max-width:520px; width:100%; margin:0 auto; padding:18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius:22px 22px 0 0; background:#141012; display:grid; gap:8px}
+.cx-sheet h2{margin:0 0 6px; color:#fff; font-size:17px}
+.cx-sheet label{display:flex; align-items:center; gap:10px; padding:12px; border-radius:12px; background:rgba(255,255,255,.06); color:#fff; font-size:14.5px; cursor:pointer}
+.cx-sheet .cx-sheet-btns{display:flex; gap:8px; margin-top:6px}
+.cx-sheet .cx-sheet-btns button{flex:1; height:46px}
+
+.sx-toast{position:fixed; z-index:300; left:50%; top:calc(70px + env(safe-area-inset-top, 0px)); transform:translate(-50%,-12px); max-width:90vw; padding:11px 18px; border-radius:14px; background:#fff; color:#140D0E; font:700 14px 'Plus Jakarta Sans',sans-serif; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; box-shadow:0 18px 40px -18px rgba(0,0,0,.8)}
+.sx-toast.on{opacity:1; transform:translate(-50%,0)}
+
+html.rc body.sx-chat-page{padding-bottom:0 !important}
