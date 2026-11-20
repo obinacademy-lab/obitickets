@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/../includes/bootstrap.php';
 
 // Where to send the new account afterwards — a buyer who came here from the
 // checkout login wall must land back in checkout (the cart survives in the
@@ -63,24 +63,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Sign up — obitickets';
 $bodyClass = 'classic-page auth-ep';
-include __DIR__ . '/includes/header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/auth-event.css?v=<?= @filemtime(__DIR__ . '/assets/css/auth-event.css') ?: time() ?>">
 
 <div class="ae ae-up">
   <div class="ae-hero">
-    <img class="ae-photo" src="/assets/images/about/dancers.jpg" alt="" fetchpriority="high">
+    <div class="ae-wall" aria-hidden="true">
+      <div class="ae-col"><img src="/assets/images/about/dancers.jpg" alt="" fetchpriority="high"><img src="/assets/images/about/about-friends.jpg" alt=""></div>
+      <div class="ae-col"><img src="/assets/images/about/crowd.jpg" alt=""><img src="/assets/images/about/about-conference.jpg" alt=""></div>
+      <div class="ae-col"><img src="/assets/images/about/about-rugby.jpg" alt=""><img src="/assets/images/about/about-party.jpg" alt=""></div>
+    </div>
     <a class="ae-logo" href="/" aria-label="obitickets home">
       <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
       obitickets
     </a>
-    <div class="ae-head">
-      <p class="ae-tag">Join the crowd.</p>
-      <h1 id="aeH">Create your account</h1>
-    </div>
   </div>
 
   <section class="ae-sheet" aria-labelledby="aeH">
+    <h1 id="aeH">Create your account</h1>
 
     <?php foreach ($errors as $e): ?>
       <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>
@@ -119,12 +120,14 @@ include __DIR__ . '/includes/header.php';
       </div>
       <p class="ae-hint" id="pwHint">At least 8 characters.</p>
 
-      <button class="ae-btn" type="submit">Create account</button>
+      <div class="ae-go">
+        <button class="ae-btn" type="submit">Create account</button>
+        <?php render_google_button('signup', $next, $role); ?>
+      </div>
     </form>
 
     <div class="ae-alt">
       <?php render_human_check(); ?>
-      <?php render_google_button('signup', $next, $role); ?>
     </div>
 
     <p class="ae-switch">Have an account? <a href="/login.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Log in</a></p>
@@ -148,4 +151,4 @@ include __DIR__ . '/includes/header.php';
 })();
 </script>
 <script src="/assets/js/cinematic.js"></script>
-<?php include __DIR__ . '/includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
