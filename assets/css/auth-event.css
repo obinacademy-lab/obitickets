@@ -1,87 +1,104 @@
 /* ==========================================================================
-   Log in and Sign up, "Event Photo" (owner pick 11/14 from five mockups).
-   Phones: a real event photo across the top with the logo and a short line, and a white sheet sliding up over it
-   with the form. Computers: the photo fills the left half, the form sits on the right.
+   Log in and Sign up, "Night Feed" (owner pick 11/20 from five round-2 mockups; replaces Event Photo).
+   Phones: a full-screen dark app page. An event photo across the top fades into black, the title sits on it,
+   and the form is on the black below. Computers: photo fills the left half, dark form on the right.
    Only login.php and signup.php load this (body.auth-ep); it is linked after rc.css so it wins.
    ========================================================================== */
-body.auth-ep{background:#fff}
-.ae{--ae-ink:#18181B; --ae-mute:#52525B; --ae-line:#E4E4E7; --ae-field:#F4F4F5; --ae-red:#DC2626; --ae-red-d:#B91C1C;
-  position:relative; font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--ae-ink)}
+body.auth-ep{background:#0B0708}
+.ae{--ae-bg:#0B0708; --ae-ink:#fff; --ae-soft:#D9CFCF; --ae-mute:#A99C9C; --ae-line:#2E2527; --ae-line2:#3A3033; --ae-field:#161113;
+  --ae-red:#F0313F; --ae-red-d:#D61F2C; --ae-link:#FF6B75;
+  position:relative; background:var(--ae-bg); font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--ae-ink)}
 
-/* the photo */
-.ae-hero{position:relative; height:380px; overflow:hidden; color:#fff; isolation:isolate}
-.ae-up .ae-hero{height:210px}
+/* the photo, fading into the black page */
+.ae-hero{position:relative; height:430px; overflow:hidden; color:#fff; isolation:isolate}
+.ae-up .ae-hero{height:230px}
 .ae-photo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 35%; z-index:-2}
-.ae-hero::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(11,7,8,.3) 0%, rgba(11,7,8,.08) 38%, rgba(11,7,8,.78) 100%)}
-.ae-logo{position:absolute; left:22px; top:20px; display:inline-flex; align-items:center; gap:9px; color:#fff; font:800 1.2rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; text-decoration:none}
+.ae-up .ae-photo{object-position:center 30%}
+.ae-hero::after{content:""; position:absolute; inset:0; z-index:-1;
+  background:linear-gradient(180deg, rgba(11,7,8,.4) 0%, rgba(11,7,8,0) 30%, rgba(11,7,8,.62) 70%, #0B0708 100%)}
+.ae-up .ae-hero::after{background:linear-gradient(180deg, rgba(11,7,8,.35) 0%, rgba(11,7,8,.55) 60%, #0B0708 100%)}
+.ae-logo{position:absolute; left:24px; top:22px; display:inline-flex; align-items:center; gap:9px; color:#fff; font:800 1.25rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; text-decoration:none}
 .ae-logo .logo-mark{width:32px; height:32px}
 .ae-logo:hover{color:#fff}
-.ae .ae-tag{position:absolute; left:22px; right:22px; bottom:62px; margin:0; color:#fff; opacity:1; font-size:1.9rem; line-height:1.05; font-weight:800; letter-spacing:-.035em; text-shadow:0 2px 18px rgba(0,0,0,.35)}
-.ae-up .ae .ae-tag,.ae.ae-up .ae-tag{bottom:56px; font-size:1.55rem}
+.ae-skip{position:absolute; right:22px; top:22px; padding:8px 14px; border-radius:999px; background:rgba(0,0,0,.45); color:#fff; font-size:.82rem; font-weight:600; text-decoration:none}
+.ae-skip:hover{background:rgba(0,0,0,.65); color:#fff}
+.ae-head{position:absolute; left:24px; right:24px; bottom:16px}
+.ae-head h1{margin:0; color:#fff; font:800 2.4rem/1.02 'Plus Jakarta Sans',sans-serif; letter-spacing:-.035em}
+.ae-up .ae-head h1{font-size:2rem}
+.ae .ae-tag{margin:8px 0 0; color:var(--ae-soft); opacity:1; font-size:.95rem; font-weight:500; line-height:1.4}
+.ae-up .ae .ae-tag,.ae.ae-up .ae-tag{margin:0 0 4px; color:var(--ae-link); font-size:.8rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase}
 
-/* the white sheet with the form */
-.ae-sheet{position:relative; margin-top:-36px; padding:26px 22px 30px; border-radius:28px 28px 0 0; background:#fff; min-height:calc(100vh - 344px)}
-.ae-up .ae-sheet{min-height:calc(100vh - 174px)}
-.ae-sheet h1{margin:0; font:800 1.55rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.03em; color:var(--ae-ink)}
-.ae-sheet .alert{margin:14px 0 0}
+/* the form, on the black */
+.ae-sheet{position:relative; padding:8px 24px 30px; background:var(--ae-bg)}
+.ae-sheet .alert{margin:12px 0 0}
 .ae-sheet form{margin:0}
 .ae .field{margin:14px 0 0}
-.ae .field label{display:block; margin:0 0 7px; font-size:.82rem; font-weight:700; color:var(--ae-ink)}
-.ae .ae-opt{color:#A1A1AA; font-weight:600}
-.ae .field input{width:100%; box-sizing:border-box; height:50px; padding:0 15px; border:1.5px solid transparent; border-radius:14px; background:var(--ae-field);
-  font:500 .95rem 'Plus Jakarta Sans',sans-serif; color:var(--ae-ink); box-shadow:none; transition:border-color .2s, background .2s}
-.ae .field input::placeholder{color:#A1A1AA}
-.ae .field input:focus{outline:0; border-color:var(--ae-red); background:#fff; box-shadow:0 0 0 4px rgba(220,38,38,.1)}
-.ae-forgot{margin-top:10px; text-align:right}
-.ae-forgot a,.ae-switch a,.ae-terms a{color:var(--ae-red); font-weight:700; text-decoration:none}
-.ae-forgot a{font-size:.8rem}
-.ae-forgot a:hover,.ae-switch a:hover,.ae-terms a:hover{color:var(--ae-red-d); text-decoration:underline}
-.ae-btn{width:100%; height:52px; margin-top:16px; border:0; border-radius:14px; background:var(--ae-red); color:#fff; font:700 1rem 'Plus Jakarta Sans',sans-serif; cursor:pointer;
-  box-shadow:0 14px 26px -16px rgba(220,38,38,.9); transition:background .2s, transform .2s}
+.ae .field label{display:block; margin:0 0 6px; font-size:.82rem; font-weight:600; color:var(--ae-soft)}
+.ae .ae-opt{color:var(--ae-mute); font-weight:500}
+.ae .field input{width:100%; box-sizing:border-box; height:52px; padding:0 16px; border:1px solid var(--ae-line); border-radius:14px; background:var(--ae-field);
+  font:500 .95rem 'Plus Jakarta Sans',sans-serif; color:#fff; box-shadow:none; transition:border-color .2s, box-shadow .2s}
+.ae .field input::placeholder{color:#7d7072}
+.ae .field input:focus{outline:0; border-color:var(--ae-red); background:var(--ae-field); box-shadow:0 0 0 4px rgba(240,49,63,.18)}
+.ae .field input:-webkit-autofill{-webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 40px var(--ae-field) inset; caret-color:#fff}
+.ae-forgot{margin-top:12px; text-align:right}
+.ae-forgot a,.ae-switch a,.ae-terms a{color:var(--ae-link); font-weight:700; text-decoration:none}
+.ae-forgot a{font-size:.82rem; font-weight:600}
+.ae-forgot a:hover,.ae-switch a:hover,.ae-terms a:hover{color:#ff9aa1; text-decoration:underline}
+.ae-btn{width:100%; height:54px; margin-top:16px; border:0; border-radius:999px; background:var(--ae-red); color:#fff; font:700 1rem 'Plus Jakarta Sans',sans-serif; cursor:pointer;
+  box-shadow:0 16px 30px -18px rgba(240,49,63,.95); transition:background .2s, transform .2s}
 .ae-btn:hover{background:var(--ae-red-d)}
 .ae-btn:active{transform:scale(.99)}
 
-/* Google, after the form, without the "or" line the helper prints */
-.ae-alt{margin-top:10px}
+/* Google after the form: log in shows the "or" line, sign up goes straight to the button */
+.ae-alt{margin-top:14px}
 .ae-alt .auth-or{display:none}
-.ae-alt .btn-google{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; height:50px; margin:0; padding:0 18px; border-radius:14px;
-  border:1px solid var(--ae-line); background:#fff; color:var(--ae-ink); font:700 .92rem 'Plus Jakarta Sans',sans-serif; box-shadow:none; text-decoration:none; transform:none}
-.ae-alt .btn-google:hover{border-color:var(--ae-ink); background:#fff; color:var(--ae-ink); transform:none}
-.ae-alt .cf-turnstile{margin-bottom:10px}
+.ae-or{display:flex; align-items:center; gap:12px; margin:16px 0 0; color:var(--ae-mute); font-size:.78rem}
+.ae-or::before,.ae-or::after{content:""; flex:1; height:1px; background:var(--ae-line)}
+.ae-alt .btn-google{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; height:52px; margin:0; padding:0 18px; border-radius:999px;
+  border:1px solid var(--ae-line2); background:transparent; color:#fff; font:600 .95rem 'Plus Jakarta Sans',sans-serif; box-shadow:none; text-decoration:none; transform:none}
+.ae-alt .btn-google svg{background:#fff; border-radius:50%; padding:3px; box-sizing:content-box}
+.ae-alt .btn-google:hover{border-color:#fff; background:rgba(255,255,255,.04); color:#fff; transform:none}
+.ae-alt .cf-turnstile{margin-bottom:12px}
 
-.ae-switch{margin:18px 0 0; text-align:center; color:var(--ae-mute); font-size:.9rem}
-.ae-terms{margin:10px 0 0; text-align:center; color:#71717A; font-size:.74rem; line-height:1.5}
+.ae-switch{margin:20px 0 0; text-align:center; color:var(--ae-mute); font-size:.9rem}
+.ae-terms{margin:10px 0 0; text-align:center; color:var(--ae-mute); font-size:.75rem; line-height:1.5}
 
-/* sign up: who you are, then two short fields side by side */
-.ae-role{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:14px}
+/* sign up: who you are as a red pill switch, then two short fields side by side */
+.ae-role{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; margin-top:12px; padding:4px; border-radius:999px; background:var(--ae-field); border:1px solid var(--ae-line)}
 .ae-role label{position:relative; cursor:pointer}
 .ae-role input{position:absolute; opacity:0; width:1px; height:1px}
-.ae-role span{display:grid; place-items:center; height:44px; border-radius:12px; border:1.5px solid var(--ae-line); color:var(--ae-mute); font-weight:600; font-size:.88rem; transition:all .2s}
-.ae-role input:checked + span{border-color:var(--ae-red); background:#FEF2F2; color:var(--ae-red-d); font-weight:700}
-.ae-role input:focus-visible + span{outline:3px solid var(--ae-red); outline-offset:2px}
+.ae-role span{display:grid; place-items:center; height:42px; border-radius:999px; color:var(--ae-soft); font-weight:600; font-size:.88rem; transition:background .2s, color .2s}
+.ae-role input:checked + span{background:var(--ae-red); color:#fff; font-weight:700}
+.ae-role input:focus-visible + span{outline:3px solid #fff; outline-offset:2px}
 .ae-pair{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
-.ae-hint{margin:6px 0 0; color:#71717A; font-size:.74rem}
+.ae-hint{margin:6px 0 0; color:var(--ae-mute); font-size:.75rem}
 
-.ae a:focus-visible,.ae button:focus-visible{outline:3px solid var(--ae-red); outline-offset:2px}
+.ae a:focus-visible,.ae button:focus-visible{outline:3px solid #fff; outline-offset:2px}
 
 /* phones: a full-screen app page (the logo is in the photo, so the site bars step aside) */
 @media (max-width:900px){
   body.auth-ep .site-nav,body.auth-ep .rc-tabs,body.auth-ep #site-footer,body.auth-ep .wa-float{display:none !important}
   body.auth-ep main,body.auth-ep .page{padding:0}
-  html:has(body.auth-ep){background:#fff}
+  html:has(body.auth-ep){background:#0B0708}
   .ae{display:flex; flex-direction:column; min-height:100vh; min-height:100dvh}
   .ae-hero{flex:none}
-  .ae-sheet,.ae-up .ae-sheet{flex:1 0 auto; min-height:0}
+  .ae-sheet{flex:1 0 auto}
+}
+@media (max-width:900px) and (max-height:700px){
+  .ae-in .ae-hero{height:330px}
 }
 
-/* computers: photo on the left, form on the right */
+/* computers: photo on the left, dark form on the right */
 @media (min-width:901px){
-  .ae{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); min-height:calc(100vh - 80px); background:#fff}
-  .ae-hero,.ae-up .ae-hero{height:auto; min-height:620px}
+  .ae{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); min-height:calc(100vh - 80px)}
+  .ae-hero,.ae-up .ae-hero{height:auto; min-height:640px}
+  .ae-hero::after,.ae-up .ae-hero::after{background:linear-gradient(180deg, rgba(11,7,8,.35) 0%, rgba(11,7,8,0) 35%, rgba(11,7,8,.75) 100%)}
+  .ae-skip{display:none}
   .ae-logo{left:44px; top:36px}
-  .ae .ae-tag,.ae.ae-up .ae-tag{left:44px; right:44px; bottom:48px; font-size:3rem}
-  .ae-sheet,.ae-up .ae-sheet{margin:0; min-height:0; border-radius:0; display:flex; flex-direction:column; justify-content:center; padding:56px clamp(40px,6vw,96px)}
+  .ae-head{left:44px; right:44px; bottom:48px}
+  .ae-head h1,.ae-up .ae-head h1{font-size:3.2rem}
+  .ae .ae-tag{font-size:1.1rem}
+  .ae-sheet{display:flex; flex-direction:column; justify-content:center; padding:56px clamp(40px,6vw,96px)}
   .ae-sheet > *{width:100%; max-width:440px}
-  .ae-sheet h1{font-size:2rem}
 }
 @media (prefers-reduced-motion:reduce){ .ae-btn,.ae .field input,.ae-role span{transition:none} }

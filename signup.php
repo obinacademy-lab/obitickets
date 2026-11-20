@@ -69,16 +69,18 @@ include __DIR__ . '/includes/header.php';
 
 <div class="ae ae-up">
   <div class="ae-hero">
-    <img class="ae-photo" src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high">
+    <img class="ae-photo" src="/assets/images/about/dancers.jpg" alt="" fetchpriority="high">
     <a class="ae-logo" href="/" aria-label="obitickets home">
       <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
       obitickets
     </a>
-    <p class="ae-tag">Join the crowd.</p>
+    <div class="ae-head">
+      <p class="ae-tag">Join the crowd.</p>
+      <h1 id="aeH">Create your account</h1>
+    </div>
   </div>
 
   <section class="ae-sheet" aria-labelledby="aeH">
-    <h1 id="aeH">Create your account</h1>
 
     <?php foreach ($errors as $e): ?>
       <div class="alert alert-error"><?= htmlspecialchars($e) ?></div>

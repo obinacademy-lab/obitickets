@@ -54,18 +54,21 @@ include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/auth-event.css?v=<?= @filemtime(__DIR__ . '/assets/css/auth-event.css') ?: time() ?>">
 
-<div class="ae">
+<div class="ae ae-in">
   <div class="ae-hero">
     <img class="ae-photo" src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high">
     <a class="ae-logo" href="/" aria-label="obitickets home">
       <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
       obitickets
     </a>
-    <p class="ae-tag">Uganda's events.<br>One destination.</p>
+    <a class="ae-skip" href="/">Skip</a>
+    <div class="ae-head">
+      <h1 id="aeH">Welcome back</h1>
+      <p class="ae-tag">Your tickets and videos are waiting.</p>
+    </div>
   </div>
 
   <section class="ae-sheet" aria-labelledby="aeH">
-    <h1 id="aeH">Log in</h1>
 
     <?php if ($googleNotice): ?>
       <div class="alert alert-success"><?= htmlspecialchars($googleNotice) ?></div>
@@ -89,6 +92,7 @@ include __DIR__ . '/includes/header.php';
       <button class="ae-btn" type="submit">Log in</button>
     </form>
 
+    <?php if (google_login_enabled()): ?><div class="ae-or"><span>or</span></div><?php endif; ?>
     <div class="ae-alt">
       <?php if (google_login_enabled()) { render_human_check(); } ?>
       <?php render_google_button('login', $next); ?>
