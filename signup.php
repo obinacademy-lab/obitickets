@@ -69,15 +69,12 @@ include __DIR__ . '/includes/header.php';
 
 <div class="ae ae-up">
   <div class="ae-hero">
-    <div class="ae-wall" aria-hidden="true">
-      <div class="ae-col"><img src="/assets/images/about/dancers.jpg" alt="" fetchpriority="high"><img src="/assets/images/about/about-friends.jpg" alt=""></div>
-      <div class="ae-col"><img src="/assets/images/about/crowd.jpg" alt=""><img src="/assets/images/about/about-conference.jpg" alt=""></div>
-      <div class="ae-col"><img src="/assets/images/about/about-rugby.jpg" alt=""><img src="/assets/images/about/about-party.jpg" alt=""></div>
-    </div>
+    <img class="ae-photo" src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high">
     <a class="ae-logo" href="/" aria-label="obitickets home">
       <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
       obitickets
     </a>
+    <p class="ae-tag">Join the crowd.</p>
   </div>
 
   <section class="ae-sheet" aria-labelledby="aeH">
@@ -120,14 +117,12 @@ include __DIR__ . '/includes/header.php';
       </div>
       <p class="ae-hint" id="pwHint">At least 8 characters.</p>
 
-      <div class="ae-go">
-        <button class="ae-btn" type="submit">Create account</button>
-        <?php render_google_button('signup', $next, $role); ?>
-      </div>
+      <button class="ae-btn" type="submit">Create account</button>
     </form>
 
     <div class="ae-alt">
       <?php render_human_check(); ?>
+      <?php render_google_button('signup', $next, $role); ?>
     </div>
 
     <p class="ae-switch">Have an account? <a href="/login.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Log in</a></p>

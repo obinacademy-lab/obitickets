@@ -1,108 +1,87 @@
 /* ==========================================================================
-   Log in and Sign up, "Flyer Wall" (owner pick 11/20 from five round-2 mockups; replaced Night Feed the same day).
-   Phones: a wall of event photos across the top with the logo in a pill, and a dark sheet sliding up over it
-   with the form. Log in / Create account sits beside a square Google button.
-   Computers: the photo wall fills the left half, the dark form sits on the right.
+   Log in and Sign up, "Event Photo" (owner pick 11/14 from five mockups).
+   Phones: a real event photo across the top with the logo and a short line, and a white sheet sliding up over it
+   with the form. Computers: the photo fills the left half, the form sits on the right.
    Only login.php and signup.php load this (body.auth-ep); it is linked after rc.css so it wins.
    ========================================================================== */
-body.auth-ep{background:#0B0708}
-.ae{--ae-bg:#0B0708; --ae-ink:#fff; --ae-soft:#D9CFCF; --ae-mute:#A99C9C; --ae-line:#2E2527; --ae-line2:#3A3033; --ae-field:#161113;
-  --ae-red:#F0313F; --ae-red-d:#D61F2C; --ae-link:#FF6B75;
-  position:relative; background:var(--ae-bg); font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--ae-ink)}
+body.auth-ep{background:#fff}
+.ae{--ae-ink:#18181B; --ae-mute:#52525B; --ae-line:#E4E4E7; --ae-field:#F4F4F5; --ae-red:#DC2626; --ae-red-d:#B91C1C;
+  position:relative; font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--ae-ink)}
 
-/* the photo wall: three columns, staggered, cut off at the top */
-.ae-hero{position:relative; height:400px; overflow:hidden; isolation:isolate}
-.ae-up .ae-hero{height:180px}
-.ae-wall{position:absolute; inset:0; padding:0 10px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; z-index:-1}
-.ae-col{display:flex; flex-direction:column; gap:8px}
-.ae-col:nth-child(1){margin-top:-40px}
-.ae-col:nth-child(3){margin-top:-70px}
-.ae-col img{display:block; width:100%; border-radius:14px; object-fit:cover; background:#1E181A}
-.ae-col:nth-child(1) img:nth-child(1){height:200px} .ae-col:nth-child(1) img:nth-child(2){height:230px}
-.ae-col:nth-child(2) img:nth-child(1){height:160px} .ae-col:nth-child(2) img:nth-child(2){height:210px}
-.ae-col:nth-child(3) img:nth-child(1){height:240px} .ae-col:nth-child(3) img:nth-child(2){height:210px}
-.ae-up .ae-col img:nth-child(1){height:190px !important}
-.ae-up .ae-col:nth-child(2){margin-top:-10px}
-.ae-logo{position:absolute; left:50%; top:20px; transform:translateX(-50%); display:inline-flex; align-items:center; gap:8px; padding:7px 16px 7px 8px; border-radius:999px;
-  background:var(--ae-bg); color:#fff; font:800 1.1rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; text-decoration:none; white-space:nowrap}
-.ae-logo .logo-mark{width:28px; height:28px}
+/* the photo */
+.ae-hero{position:relative; height:380px; overflow:hidden; color:#fff; isolation:isolate}
+.ae-up .ae-hero{height:210px}
+.ae-photo{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 35%; z-index:-2}
+.ae-hero::after{content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(11,7,8,.3) 0%, rgba(11,7,8,.08) 38%, rgba(11,7,8,.78) 100%)}
+.ae-logo{position:absolute; left:22px; top:20px; display:inline-flex; align-items:center; gap:9px; color:#fff; font:800 1.2rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.02em; text-decoration:none}
+.ae-logo .logo-mark{width:32px; height:32px}
 .ae-logo:hover{color:#fff}
+.ae .ae-tag{position:absolute; left:22px; right:22px; bottom:62px; margin:0; color:#fff; opacity:1; font-size:1.9rem; line-height:1.05; font-weight:800; letter-spacing:-.035em; text-shadow:0 2px 18px rgba(0,0,0,.35)}
+.ae-up .ae .ae-tag,.ae.ae-up .ae-tag{bottom:56px; font-size:1.55rem}
 
-/* the dark sheet with the form */
-.ae-sheet{position:relative; margin-top:-44px; padding:28px 24px 28px; border-radius:30px 30px 0 0; background:var(--ae-bg)}
-.ae-up .ae-sheet{margin-top:-40px}
-.ae-sheet::before{content:""; position:absolute; top:10px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:2px; background:var(--ae-line2)}
-.ae-sheet h1{margin:0; color:#fff; font:800 1.85rem/1.1 'Plus Jakarta Sans',sans-serif; letter-spacing:-.03em}
-.ae-sheet .alert{margin:12px 0 0}
+/* the white sheet with the form */
+.ae-sheet{position:relative; margin-top:-36px; padding:26px 22px 30px; border-radius:28px 28px 0 0; background:#fff; min-height:calc(100vh - 344px)}
+.ae-up .ae-sheet{min-height:calc(100vh - 174px)}
+.ae-sheet h1{margin:0; font:800 1.55rem 'Plus Jakarta Sans',sans-serif; letter-spacing:-.03em; color:var(--ae-ink)}
+.ae-sheet .alert{margin:14px 0 0}
 .ae-sheet form{margin:0}
-.ae .field{margin:13px 0 0}
-.ae .field label{display:block; margin:0 0 6px; font-size:.82rem; font-weight:600; color:var(--ae-soft)}
-.ae .ae-opt{color:var(--ae-mute); font-weight:500}
-.ae .field input{width:100%; box-sizing:border-box; height:50px; padding:0 16px; border:1px solid var(--ae-line); border-radius:14px; background:var(--ae-field);
-  font:500 .95rem 'Plus Jakarta Sans',sans-serif; color:#fff; box-shadow:none; transition:border-color .2s, box-shadow .2s}
-.ae .field input::placeholder{color:#7d7072}
-.ae .field input:focus{outline:0; border-color:var(--ae-red); background:var(--ae-field); box-shadow:0 0 0 4px rgba(240,49,63,.18)}
-.ae .field input:-webkit-autofill{-webkit-text-fill-color:#fff; -webkit-box-shadow:0 0 0 40px var(--ae-field) inset; caret-color:#fff}
-.ae-forgot{margin-top:12px; text-align:right}
-.ae-forgot a,.ae-switch a,.ae-terms a{color:var(--ae-link); font-weight:700; text-decoration:none}
-.ae-forgot a{font-size:.82rem; font-weight:600}
-.ae-forgot a:hover,.ae-switch a:hover,.ae-terms a:hover{color:#ff9aa1; text-decoration:underline}
-
-/* the main button with a square Google button beside it */
-.ae-go{display:flex; gap:10px; margin-top:16px}
-.ae-btn{flex:1; min-width:0; height:54px; margin:0; border:0; border-radius:16px; background:var(--ae-red); color:#fff; font:700 1rem 'Plus Jakarta Sans',sans-serif; cursor:pointer;
-  box-shadow:0 16px 30px -18px rgba(240,49,63,.95); transition:background .2s, transform .2s}
+.ae .field{margin:14px 0 0}
+.ae .field label{display:block; margin:0 0 7px; font-size:.82rem; font-weight:700; color:var(--ae-ink)}
+.ae .ae-opt{color:#A1A1AA; font-weight:600}
+.ae .field input{width:100%; box-sizing:border-box; height:50px; padding:0 15px; border:1.5px solid transparent; border-radius:14px; background:var(--ae-field);
+  font:500 .95rem 'Plus Jakarta Sans',sans-serif; color:var(--ae-ink); box-shadow:none; transition:border-color .2s, background .2s}
+.ae .field input::placeholder{color:#A1A1AA}
+.ae .field input:focus{outline:0; border-color:var(--ae-red); background:#fff; box-shadow:0 0 0 4px rgba(220,38,38,.1)}
+.ae-forgot{margin-top:10px; text-align:right}
+.ae-forgot a,.ae-switch a,.ae-terms a{color:var(--ae-red); font-weight:700; text-decoration:none}
+.ae-forgot a{font-size:.8rem}
+.ae-forgot a:hover,.ae-switch a:hover,.ae-terms a:hover{color:var(--ae-red-d); text-decoration:underline}
+.ae-btn{width:100%; height:52px; margin-top:16px; border:0; border-radius:14px; background:var(--ae-red); color:#fff; font:700 1rem 'Plus Jakarta Sans',sans-serif; cursor:pointer;
+  box-shadow:0 14px 26px -16px rgba(220,38,38,.9); transition:background .2s, transform .2s}
 .ae-btn:hover{background:var(--ae-red-d)}
 .ae-btn:active{transform:scale(.99)}
-.ae-go .auth-or{display:none}
-.ae-go .btn-google{flex:none; display:grid; place-items:center; width:54px; height:54px; margin:0; padding:0; border:0; border-radius:16px; background:#fff;
-  font-size:0; line-height:0; color:transparent; box-shadow:none; text-decoration:none; transform:none}
-.ae-go .btn-google svg{width:24px; height:24px}
-.ae-go .btn-google:hover{background:#F4EEEE; transform:none}
-.ae-alt:empty{display:none}
-.ae-alt .cf-turnstile{margin:12px 0 0 !important}
 
-.ae-switch{margin:20px 0 0; text-align:center; color:var(--ae-mute); font-size:.9rem}
-.ae-terms{margin:12px 0 0; text-align:center; color:var(--ae-mute); font-size:.75rem; line-height:1.5}
+/* Google, after the form, without the "or" line the helper prints */
+.ae-alt{margin-top:10px}
+.ae-alt .auth-or{display:none}
+.ae-alt .btn-google{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; box-sizing:border-box; height:50px; margin:0; padding:0 18px; border-radius:14px;
+  border:1px solid var(--ae-line); background:#fff; color:var(--ae-ink); font:700 .92rem 'Plus Jakarta Sans',sans-serif; box-shadow:none; text-decoration:none; transform:none}
+.ae-alt .btn-google:hover{border-color:var(--ae-ink); background:#fff; color:var(--ae-ink); transform:none}
+.ae-alt .cf-turnstile{margin-bottom:10px}
 
-/* sign up: who you are as two pills, then two short fields side by side */
-.ae-role{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
+.ae-switch{margin:18px 0 0; text-align:center; color:var(--ae-mute); font-size:.9rem}
+.ae-terms{margin:10px 0 0; text-align:center; color:#71717A; font-size:.74rem; line-height:1.5}
+
+/* sign up: who you are, then two short fields side by side */
+.ae-role{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:14px}
 .ae-role label{position:relative; cursor:pointer}
 .ae-role input{position:absolute; opacity:0; width:1px; height:1px}
-.ae-role span{display:flex; align-items:center; height:40px; padding:0 16px; border-radius:999px; border:1px solid var(--ae-line2); color:var(--ae-soft); font-weight:600; font-size:.88rem; transition:background .2s, color .2s}
-.ae-role input:checked + span{background:#fff; border-color:#fff; color:var(--ae-bg); font-weight:700}
+.ae-role span{display:grid; place-items:center; height:44px; border-radius:12px; border:1.5px solid var(--ae-line); color:var(--ae-mute); font-weight:600; font-size:.88rem; transition:all .2s}
+.ae-role input:checked + span{border-color:var(--ae-red); background:#FEF2F2; color:var(--ae-red-d); font-weight:700}
 .ae-role input:focus-visible + span{outline:3px solid var(--ae-red); outline-offset:2px}
 .ae-pair{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
-.ae-hint{margin:6px 0 0; color:var(--ae-mute); font-size:.75rem}
+.ae-hint{margin:6px 0 0; color:#71717A; font-size:.74rem}
 
-.ae a:focus-visible,.ae button:focus-visible{outline:3px solid #fff; outline-offset:2px}
+.ae a:focus-visible,.ae button:focus-visible{outline:3px solid var(--ae-red); outline-offset:2px}
 
-/* phones: a full-screen app page (the logo is on the wall, so the site bars step aside) */
+/* phones: a full-screen app page (the logo is in the photo, so the site bars step aside) */
 @media (max-width:900px){
   body.auth-ep .site-nav,body.auth-ep .rc-tabs,body.auth-ep #site-footer,body.auth-ep .wa-float{display:none !important}
   body.auth-ep main,body.auth-ep .page{padding:0}
-  html:has(body.auth-ep){background:#0B0708}
+  html:has(body.auth-ep){background:#fff}
   .ae{display:flex; flex-direction:column; min-height:100vh; min-height:100dvh}
   .ae-hero{flex:none}
-  .ae-sheet{flex:1 0 auto}
-}
-@media (max-width:900px) and (max-height:700px){
-  .ae-in .ae-hero{height:300px}
+  .ae-sheet,.ae-up .ae-sheet{flex:1 0 auto; min-height:0}
 }
 
-/* computers: the photo wall on the left, dark form on the right */
+/* computers: photo on the left, form on the right */
 @media (min-width:901px){
-  .ae{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); min-height:calc(100vh - 80px)}
-  .ae-hero,.ae-up .ae-hero{height:auto; min-height:640px}
-  .ae-wall{padding:0 14px; gap:12px}
-  .ae-col{gap:12px}
-  .ae-col img,.ae-up .ae-col img{height:auto !important; flex:1 1 0; min-height:0}
-  .ae-col:nth-child(1){margin:-40px 0 -10px} .ae-col:nth-child(2){margin:20px 0 -60px} .ae-col:nth-child(3){margin:-80px 0 20px}
-  .ae-col:nth-child(1) img:nth-child(1),.ae-col:nth-child(3) img:nth-child(2){flex-grow:.8}
-  .ae-logo{top:32px}
-  .ae-sheet,.ae-up .ae-sheet{margin:0; border-radius:0; display:flex; flex-direction:column; justify-content:center; padding:56px clamp(40px,6vw,96px)}
-  .ae-sheet::before{display:none}
+  .ae{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); min-height:calc(100vh - 80px); background:#fff}
+  .ae-hero,.ae-up .ae-hero{height:auto; min-height:620px}
+  .ae-logo{left:44px; top:36px}
+  .ae .ae-tag,.ae.ae-up .ae-tag{left:44px; right:44px; bottom:48px; font-size:3rem}
+  .ae-sheet,.ae-up .ae-sheet{margin:0; min-height:0; border-radius:0; display:flex; flex-direction:column; justify-content:center; padding:56px clamp(40px,6vw,96px)}
   .ae-sheet > *{width:100%; max-width:440px}
-  .ae-sheet h1{font-size:2.3rem}
+  .ae-sheet h1{font-size:2rem}
 }
 @media (prefers-reduced-motion:reduce){ .ae-btn,.ae .field input,.ae-role span{transition:none} }

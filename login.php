@@ -54,21 +54,18 @@ include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/auth-event.css?v=<?= @filemtime(__DIR__ . '/assets/css/auth-event.css') ?: time() ?>">
 
-<div class="ae ae-in">
+<div class="ae">
   <div class="ae-hero">
-    <div class="ae-wall" aria-hidden="true">
-      <div class="ae-col"><img src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high"><img src="/assets/images/about/about-friends.jpg" alt=""></div>
-      <div class="ae-col"><img src="/assets/images/about/about-party.jpg" alt=""><img src="/assets/images/about/about-rugby.jpg" alt=""></div>
-      <div class="ae-col"><img src="/assets/images/about/dancers.jpg" alt=""><img src="/assets/images/about/about-conference.jpg" alt=""></div>
-    </div>
+    <img class="ae-photo" src="/assets/images/about/crowd.jpg" alt="" fetchpriority="high">
     <a class="ae-logo" href="/" aria-label="obitickets home">
       <svg class="logo-mark" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="10" fill="#DC2626"/><circle cx="17" cy="17" r="8" fill="none" stroke="#fff" stroke-width="2.4"/><circle cx="17" cy="9.6" r="2" fill="#DC2626" stroke="#fff" stroke-width="1.6"/></svg>
       obitickets
     </a>
+    <p class="ae-tag">Uganda's events.<br>One destination.</p>
   </div>
 
   <section class="ae-sheet" aria-labelledby="aeH">
-    <h1 id="aeH">See what's on. Log in.</h1>
+    <h1 id="aeH">Log in</h1>
 
     <?php if ($googleNotice): ?>
       <div class="alert alert-success"><?= htmlspecialchars($googleNotice) ?></div>
@@ -89,14 +86,12 @@ include __DIR__ . '/includes/header.php';
         <input id="password" name="password" type="password" autocomplete="current-password" required>
       </div>
       <div class="ae-forgot"><a href="/forgot-password.php">Forgot password?</a></div>
-      <div class="ae-go">
-        <button class="ae-btn" type="submit">Log in</button>
-        <?php render_google_button('login', $next); ?>
-      </div>
+      <button class="ae-btn" type="submit">Log in</button>
     </form>
 
     <div class="ae-alt">
       <?php if (google_login_enabled()) { render_human_check(); } ?>
+      <?php render_google_button('login', $next); ?>
     </div>
 
     <p class="ae-switch">New here? <a href="/signup.php<?= $next !== '/dashboard.php' ? '?next=' . urlencode($next) : '' ?>">Create an account</a></p>
