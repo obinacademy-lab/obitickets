@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/bootstrap.php';
+require_once __DIR__ . '/includes/bootstrap.php';
 
 // Where to send the new account afterwards — a buyer who came here from the
 // checkout login wall must land back in checkout (the cart survives in the
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Sign up — obitickets';
 $bodyClass = 'classic-page auth-ep';
-include __DIR__ . '/../includes/header.php';
+include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/auth-event.css?v=<?= @filemtime(__DIR__ . '/assets/css/auth-event.css') ?: time() ?>">
 
@@ -151,4 +151,4 @@ include __DIR__ . '/../includes/header.php';
 })();
 </script>
 <script src="/assets/js/cinematic.js"></script>
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>
