@@ -422,6 +422,90 @@ function socials_feed_count(): int
 }
 
 /** The shape the feed script uses for one post: the moment itself plus its event and organizer. */
+/** The link people share for one video: https://obitickets.site/watch/22 (watch/.htaccess sends it to socials.php?v=22). */
+function socials_watch_url(int $id): string
+{
+    return rtrim(APP_URL, '/') . '/watch/' . $id;
+}
+
+/**
+ * The link-preview picture for a shared post (WhatsApp, Facebook, X...): a 1200x630 JPEG made once from the cover,
+ * the whole cover in the middle on a blurred, darkened copy of itself, with a play button for videos.
+ * WhatsApp drops preview pictures over a few hundred KB, and covers are often 1-2 MB PNGs, so this stays ~100 KB.
+ * Returns the public path (/uploads/og/...) or null when there is no usable cover or GD is missing.
+ */
+function socials_share_image(int $id, string $src, bool $isVideo): ?string
+{
+    if (!function_exists('imagecreatetruecolor') || !preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $src) || str_contains($src, '..')) {
+        return null;
+    }
+    $root = dirname(__DIR__) . '/public';
+    if (!is_dir($root . '/uploads')) {
+        $root = dirname(__DIR__);                     // flat deploy layout: uploads/ sits next to includes/
+    }
+    $file = $root . $src;
+    if (!is_file($file)) {
+        return null;
+    }
+    $rel = '/uploads/og/v' . $id . '-' . substr(md5($src . '|' . (int) @filemtime($file) . '|' . ($isVideo ? 1 : 0) . '|3'), 0, 12) . '.jpg';
+    if (is_file($root . $rel)) {
+        return $rel;
+    }
+    $info = @getimagesize($file);
+    if (!$info || $info[0] < 16 || $info[1] < 16 || $info[0] * $info[1] > 40000000) {
+        return null;
+    }
+    $im = match ($info[2]) {
+        IMAGETYPE_JPEG => @imagecreatefromjpeg($file),
+        IMAGETYPE_PNG => @imagecreatefrompng($file),
+        IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($file) : false,
+        IMAGETYPE_GIF => @imagecreatefromgif($file),
+        default => false,
+    };
+    if (!$im) {
+        return null;
+    }
+    [$sw, $sh] = [imagesx($im), imagesy($im)];
+    $W = 1200;
+    $H = 630;
+    $out = imagecreatetruecolor($W, $H);
+
+    // background: the cover filling the frame, blurred cheaply (shrink hard, then stretch back) and darkened
+    $scale = max($W / $sw, $H / $sh);
+    $cw = (int) round($W / $scale);
+    $ch = (int) round($H / $scale);
+    $tiny = imagecreatetruecolor(120, 63);
+    imagecopyresampled($tiny, $im, 0, 0, (int) (($sw - $cw) / 2), (int) (($sh - $ch) / 2), 120, 63, $cw, $ch);
+    for ($i = 0; $i < 8; $i++) {
+        imagefilter($tiny, IMG_FILTER_GAUSSIAN_BLUR);
+    }
+    imagecopyresampled($out, $tiny, 0, 0, 0, 0, $W, $H, 120, 63);
+    imagedestroy($tiny);
+    imagefilledrectangle($out, 0, 0, $W, $H, imagecolorallocatealpha($out, 11, 7, 8, 50));
+
+    // the whole cover, as tall as the frame (or as wide, for landscape covers)
+    $fit = min($W / $sw, $H / $sh);
+    $fw = (int) round($sw * $fit);
+    $fh = (int) round($sh * $fit);
+    imagecopyresampled($out, $im, (int) (($W - $fw) / 2), (int) (($H - $fh) / 2), 0, 0, $fw, $fh, $sw, $sh);
+    imagedestroy($im);
+
+    if ($isVideo) {
+        $cx = (int) ($W / 2);
+        $cy = (int) ($H / 2);
+        imagefilledellipse($out, $cx, $cy, 132, 132, imagecolorallocatealpha($out, 0, 0, 0, 60));
+        imagefilledellipse($out, $cx, $cy, 116, 116, imagecolorallocatealpha($out, 240, 49, 63, 10));
+        imagefilledpolygon($out, [$cx - 16, $cy - 26, $cx - 16, $cy + 26, $cx + 28, $cy], imagecolorallocate($out, 255, 255, 255));
+    }
+
+    if (!is_dir($root . '/uploads/og')) {
+        @mkdir($root . '/uploads/og', 0755, true);
+    }
+    $ok = @imagejpeg($out, $root . $rel, 82);
+    imagedestroy($out);
+    return $ok ? $rel : null;
+}
+
 function socials_item_public(array $row): array
 {
     $item = moment_public($row);
@@ -462,7 +546,7 @@ function socials_item_public(array $row): array
         'url' => !empty($row['org_slug']) ? '/organizer.php?slug=' . rawurlencode((string) $row['org_slug']) : null,
         'following' => (int) ($row['i_follow'] ?? 0) > 0,
     ];
-    $item['share'] = rtrim(APP_URL, '/') . '/socials.php?v=' . (int) $row['id'];
+    $item['share'] = socials_watch_url((int) $row['id']);
     $item['likes'] = moment_compact((int) $row['reaction_count']);
     $item['saved'] = (int) ($row['i_saved'] ?? 0) > 0;
     $item['boosts'] = (int) ($row['boost_count'] ?? 0);

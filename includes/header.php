@@ -15,7 +15,7 @@ if (!isset($ogImage)) {
 }
 if (!isset($ogImageW)) { $ogImageW = 1200; $ogImageH = 630; } // the default picture is 1200x630
 $ogImageAlt = $ogImageAlt ?? 'obitickets';
-$ogUrl = rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
+$ogUrl = $ogUrl ?? rtrim(APP_URL, '/') . ($_SERVER['REQUEST_URI'] ?? '/');
 ?><!DOCTYPE html>
 <html lang="en" class="rc">
 <head>

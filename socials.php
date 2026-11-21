@@ -60,11 +60,22 @@ foreach ($rows as $r) {
 }
 if ($startRow) {
     $first = $startRow;
-    $pageTitle = $first['event_title'] . ' on obitickets Socials';
+    // Shared links read "Watch: <event>" with the video's cover (play button on it) as the preview picture.
+    $isVideo = ($first['media_type'] ?? '') === 'VIDEO';
+    $pageTitle = 'Watch: ' . $first['event_title'] . ' | obitickets';
     $caption = trim((string) ($first['caption'] ?? ''));
-    $pageDescription = $caption !== '' ? mb_substr($caption, 0, 180) : 'Watch this on obitickets Socials and get your ticket.';
-    $shareImg = (string) ($first['poster_path'] ?: ($first['media_type'] === 'IMAGE' ? $first['media_path'] : ($first['event_banner'] ?? '')));
-    if ($shareImg !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $shareImg)) {
+    $pageDescription = $caption !== '' ? mb_substr($caption, 0, 180) : 'Watch this ' . ($isVideo ? 'video' : 'post') . ' on obitickets and get your ticket.';
+    $ogUrl = socials_watch_url((int) $first['id']);
+    $ogImageAlt = 'Watch: ' . $first['event_title'];
+    $slides = ($first['media_type'] ?? '') === 'SLIDESHOW' && is_array($first['slides'] ?? null) ? $first['slides'] : [];
+    $shareImg = (string) ($first['poster_path'] ?: ($first['media_type'] === 'IMAGE' ? $first['media_path'] : (is_string($slides[0] ?? null) ? $slides[0] : ($first['event_banner'] ?? ''))));
+    $ogPic = $shareImg !== '' ? socials_share_image((int) $first['id'], $shareImg, $isVideo) : null;
+    if ($ogPic) {
+        $ogImage = rtrim(APP_URL, '/') . $ogPic;
+        $ogImageW = 1200;
+        $ogImageH = 630;
+        $ogImageType = 'image/jpeg';
+    } elseif ($shareImg !== '' && preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', $shareImg)) {
         $ogImage = rtrim(APP_URL, '/') . $shareImg;
         $ogImageW = 0;
     }

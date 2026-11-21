@@ -1,0 +1,3 @@
+# /watch/22 -> /watch/index.php?v=22 (the short link people share for a video)
+RewriteEngine On
+RewriteRule ^([0-9]{1,10})/?$ index.php?v=$1 [L,QSA]

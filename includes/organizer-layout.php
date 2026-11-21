@@ -280,6 +280,7 @@ function render_organizer_foot(): void
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 <script src="/assets/js/admin.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin.js') ?: time() ?>"></script>
 <script src="/assets/js/org-shell.js?v=<?= @filemtime(__DIR__ . '/../assets/js/org-shell.js') ?: time() ?>"></script>
+<script src="/assets/js/pull-refresh.js?v=<?= @filemtime(__DIR__ . '/../assets/js/pull-refresh.js') ?: time() ?>" defer></script>
 </body>
 </html>
 <?php

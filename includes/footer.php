@@ -28,5 +28,6 @@ $rcCreate = $rcSignedIn ? '/create.php' : '/login.php?next=' . rawurlencode('/cr
 <script src="/assets/js/main.js?v=<?= @filemtime(__DIR__ . '/../assets/js/main.js') ?: time() ?>"></script>
 <script src="/assets/js/motion.js?v=<?= @filemtime(__DIR__ . '/../assets/js/motion.js') ?: time() ?>"></script>
 <script src="/assets/js/nav.js?v=<?= @filemtime(__DIR__ . '/../assets/js/nav.js') ?: time() ?>"></script>
+<script src="/assets/js/pull-refresh.js?v=<?= @filemtime(__DIR__ . '/../assets/js/pull-refresh.js') ?: time() ?>" defer></script>
 </body>
 </html>
