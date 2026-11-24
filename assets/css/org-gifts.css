@@ -1,0 +1,55 @@
+/* Gifts & Support (OB Gifts, phase 4), organizer dashboard. Only used by /org-gifts.php. */
+.og-note{border-radius:14px; padding:13px 16px; margin-bottom:18px; font-size:.9rem; line-height:1.45}
+.og-note-warn{background:var(--warn-bg,#fff7e6); color:var(--warn,#8a5a00); border:1px solid var(--warn-border,#f3d99b)}
+
+.og-card-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:10px}
+.og-card-head h3{margin:0}
+.og-card-head a{font-size:.82rem; font-weight:700; color:var(--ov-red,#E11D48); text-decoration:none}
+
+.og-line{display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line)}
+.og-line:first-of-type{border-top:none}
+.og-emoji{width:38px; height:38px; flex:none; display:grid; place-items:center; font-size:1.3rem; border-radius:12px; background:var(--line)}
+.og-rankno{width:30px; height:30px; flex:none; display:grid; place-items:center; font-size:.8rem; font-weight:800; border-radius:50%; background:var(--line); color:var(--muted)}
+.og-line-main{flex:1; min-width:0; font-size:.9rem; line-height:1.35}
+.og-line-main small{display:block; color:var(--muted); font-size:.78rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.og-line-amt{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:.85rem; white-space:nowrap}
+.og-line-amt.is-reversed{color:var(--danger,#b42318); font-family:inherit; font-size:.78rem; text-transform:uppercase; letter-spacing:.03em}
+
+.og-filters{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end}
+.og-filters label{display:flex; flex-direction:column; gap:5px; font-size:.74rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+.og-filters select{min-width:140px; padding:9px 12px; border:1px solid var(--line-strong,var(--line)); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:.9rem; text-transform:none; letter-spacing:0; font-weight:600}
+.og-export{margin-left:auto; font-size:.84rem; font-weight:700; color:var(--ov-red,#E11D48); text-decoration:none; padding:9px 4px}
+
+.og-range{display:inline-flex; gap:4px; padding:4px; margin-bottom:18px; border:1px solid var(--line); border-radius:100px; background:var(--surface)}
+.og-range a{padding:8px 15px; border-radius:100px; font-size:.82rem; font-weight:700; color:var(--muted); text-decoration:none; white-space:nowrap}
+.og-range a.is-on{background:var(--ink); color:#fff}
+
+.og-chart{display:block; width:100%; height:170px}
+.og-bar{fill:var(--ov-red,#E11D48); opacity:.9}
+.og-bar:hover{opacity:1}
+.og-axis{stroke:var(--line-strong,var(--line)); stroke-width:1; vector-effect:non-scaling-stroke}
+.og-chart-foot{display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size:.76rem; color:var(--muted)}
+
+.og-delta{font-weight:800}
+.og-delta.is-up{color:var(--success,#067647)}
+.og-delta.is-down{color:var(--danger,#b42318)}
+
+.og-rank{padding:8px 0}
+.og-rank-top{display:flex; justify-content:space-between; gap:12px; font-size:.88rem; margin-bottom:6px}
+.og-rank-bar{height:7px; border-radius:7px; background:var(--line); overflow:hidden}
+.og-rank-bar i{display:block; height:100%; border-radius:7px; background:var(--ov-red,#E11D48)}
+
+@media (max-width:640px){
+  .og-filters label{flex:1 1 140px}
+  .og-filters select{width:100%}
+  .og-export{margin-left:0}
+  .og-range{display:flex; width:100%}
+  .og-range a{flex:1; text-align:center; padding:8px 6px}
+}
+
+.og-table td{white-space:nowrap}
+.og-table td.og-wrap{white-space:normal; min-width:150px}
+
+/* grid cards may shrink below their widest line (long one-line text truncates instead of widening the page on phones) */
+.org-shell .admin-grid-2 > .admin-card{min-width:0}
+.org-shell .admin-kpi-grid > .admin-kpi-card{min-width:0}

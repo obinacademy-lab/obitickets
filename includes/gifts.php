@@ -406,7 +406,7 @@ function gift_notify_delivered(int $txId): void
         create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (UGX ' . number_format((int) $t['gross_ugx']) . ') was delivered. Thank you for supporting the organizer.', null);
         $big = (int) $t['gross_ugx'] >= GIFT_BIG_GIFT_UGX;
         create_notification((int) $t['recipient_organizer_id'], 'gift', $big ? 'You received a big gift!' : 'You received a gift',
-            gift_sender_label($t) . ' sent you ' . $label . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', null);
+            gift_sender_label($t) . ' sent you ' . $label . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', '/org-gifts.php?tab=history');
     } catch (Throwable $e) {
         error_log('[gift] notification failed: ' . $e->getMessage());
     }

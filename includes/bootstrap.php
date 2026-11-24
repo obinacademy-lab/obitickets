@@ -86,6 +86,7 @@ require_once __DIR__ . '/referrals.php';
 require_once __DIR__ . '/questions.php';
 require_once __DIR__ . '/payouts.php';
 require_once __DIR__ . '/gifts.php';
+require_once __DIR__ . '/gifts-organizer.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();
