@@ -154,6 +154,9 @@ $opLive = (bool) $events['upcoming'];
       <?php elseif ($communityReady): ?>
         <button type="button" class="op-follow" data-ev-follow="organizer" data-id="<?= $uid ?>" aria-pressed="<?= $following ? 'true' : 'false' ?>"><?= $following ? 'Following' : 'Follow' ?></button>
       <?php endif; ?>
+      <?php $giftsOn = !$isOwnProfile && function_exists('gifts_enabled') && gifts_enabled(); if ($giftsOn): ?>
+      <button type="button" class="op-send op-gift" data-gift-org="<?= $uid ?>" aria-label="Send a gift to <?= htmlspecialchars($orgName) ?>"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.500-5a2.500 2.500 0 0 1 0 5"/></svg></button>
+      <?php endif; ?>
       <?php if (!$isOwnProfile && function_exists('social_ready') && social_ready()): ?>
       <button type="button" class="op-send" data-message-user="<?= $uid ?>" aria-label="Message <?= htmlspecialchars($orgName) ?>">
       <?php else: ?>
@@ -225,6 +228,20 @@ $opLive = (bool) $events['upcoming'];
 <link rel="stylesheet" href="/assets/css/app-dark.css?v=<?= @filemtime(__DIR__ . '/assets/css/app-dark.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/organizer-app.css?v=<?= @filemtime(__DIR__ . '/assets/css/organizer-app.css') ?: time() ?>">
 <script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script>
+<?php if (!empty($giftsOn)): $giftLogin = '/login.php?next=' . rawurlencode('/organizer.php?slug=' . ($organizer['slug'] ?? '')); ?>
+<link rel="stylesheet" href="/assets/css/gifts.css?v=<?= @filemtime(__DIR__ . '/assets/css/gifts.css') ?: time() ?>">
+<script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var b = document.querySelector('[data-gift-org]');
+  if (!b) { return; }
+  b.addEventListener('click', function () {
+    <?php if (!$viewer): ?>window.location.href = <?= json_encode($giftLogin) ?>; return;<?php endif; ?>
+    window.ObGifts.open({ organizerId: <?= (int) $uid ?>, postId: null, fxHost: null, loginUrl: <?= json_encode($giftLogin) ?> });
+  });
+});
+</script>
+<?php endif; ?>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.op-tabs [role="tab"]');

@@ -62,7 +62,10 @@
     // Boost: an arrow going up with two speed lines under it (filled, like the other buttons)
     boost: ['M12 2.500 20 11h-4.500v5h-7v-5H4z', 'M8.500 17.500h7v1.800h-7z', 'M8.500 20.600h7v1.400h-7z'],
     check: ['M5 12.500l4.500 4.500L19 7.500'],
-    plus: ['M12 5v14', 'M5 12h14']
+    plus: ['M12 5v14', 'M5 12h14'],
+    // a gift box with a ribbon (filled, like the other buttons)
+    gift: ['M3 8a1 1 0 0 1 1-1h7v4H4a1 1 0 0 1-1-1z', 'M13 7h7a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-7z', 'M4 12.5h7V21H6a2 2 0 0 1-2-2z', 'M13 12.5h7V19a2 2 0 0 1-2 2h-5z',
+           'M12 7C10.8 3.8 7.2 3.4 6.7 5.5 6.4 6.8 8.4 7 12 7z', 'M12 7c1.2-3.200 4.800-3.600 5.300-1.500.300 1.300-1.700 1.500-5.300 1.500z']
   };
 
   function api(url, body) {
@@ -318,8 +321,19 @@
     fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
     if (D.me && D.me === d.org.id) { fol.hidden = true; }
     fw.appendChild(fol);
+    // OB Gifts: only when Admin switched gifts on, and never on your own videos
+    var gift = null;
+    if (D.canGift && window.ObGifts && !(D.me && D.me === d.org.id)) {
+      gift = railButton('Send a gift', IC.gift, 'Gift', true, 'fd-gift');
+      gift.addEventListener('click', function () {
+        if (needLogin()) { return; }
+        window.ObGifts.open({ organizerId: d.org.id, postId: d.id, fxHost: a, loginUrl: D.loginUrl, onNotice: toast });
+      });
+    }
     rail.appendChild(fw);
-    rail.appendChild(like); rail.appendChild(boost); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
+    rail.appendChild(like); rail.appendChild(boost); rail.appendChild(com); rail.appendChild(sh);
+    if (gift) { rail.appendChild(gift); }
+    rail.appendChild(save);
     a.appendChild(rail);
     it.rail = rail;
     function revealBoost() {
@@ -679,7 +693,7 @@
   }
   // keyboard: up / down (and Page Up / Down) move, space pauses a video, M turns the sound on or off
   document.addEventListener('keydown', function (e) {
-    if (openSheet || e.altKey || e.ctrlKey || e.metaKey) { return; }
+    if (openSheet || e.altKey || e.ctrlKey || e.metaKey || document.body.classList.contains('og-open')) { return; }
     var t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) { return; }
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(1); }

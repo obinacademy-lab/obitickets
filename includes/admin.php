@@ -18,7 +18,9 @@ const ADMIN_ROLES = [
 // added) behaves exactly like SUPER_ADMIN — full access — so nobody is
 // locked out by this migration.
 const ADMIN_PERMISSIONS = [
-    'FINANCE_ADMIN' => ['dashboard.view', 'orders.view', 'orders.refund', 'payouts.view', 'payouts.process', 'promo.view', 'promo.manage', 'settings.view'],
+    // OB Gifts: gifts.view = see it, gifts.manage = edit the catalogue and the master switch. gifts.commission (change the
+    // revenue split) is deliberately NOT here: only the top-level admin (SUPER_ADMIN) has it.
+    'FINANCE_ADMIN' => ['dashboard.view', 'orders.view', 'orders.refund', 'payouts.view', 'payouts.process', 'promo.view', 'promo.manage', 'settings.view', 'gifts.view', 'gifts.manage'],
     'EVENT_MANAGER' => ['dashboard.view', 'events.view', 'events.manage', 'categories.manage', 'organizers.view', 'organizers.verify'],
     'SUPPORT_AGENT' => ['dashboard.view', 'customers.view', 'customers.manage', 'orders.view', 'tickets.view', 'contact.view', 'contact.manage'],
     'MARKETING_MANAGER' => ['dashboard.view', 'promo.view', 'promo.manage', 'events.view'],

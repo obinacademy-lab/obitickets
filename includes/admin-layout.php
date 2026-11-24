@@ -41,6 +41,7 @@ function render_admin_head(string $active): void
         ['label' => 'Finance', 'items' => [
             ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/admin-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $stats['pending_payouts'] ?: null],
             ['key' => 'refunds', 'label' => 'Refunds', 'href' => '/admin-refunds.php', 'icon' => 'ic-x', 'perm' => 'orders.refund', 'badge' => $stats['pending_refund_requests'] ?: null],
+            ['key' => 'gifts', 'label' => 'OB Gifts', 'href' => '/admin-gifts.php', 'icon' => 'ic-heart', 'perm' => 'gifts.view'],
         ]],
         ['label' => 'Marketing', 'items' => [
             ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/admin-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],

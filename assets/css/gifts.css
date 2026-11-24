@@ -1,0 +1,136 @@
+/* OB Gifts (phase 3): the gift sheet and the gift animations. Dark, red and white like the rest of the feed.
+   Everything here is prefixed og- so it cannot touch other screens. */
+:root { --og-bg:#141011; --og-card:#1D1518; --og-card2:#241A1E; --og-line:#2F2327; --og-red:#F0313F; --og-gold:#FBBF24; --og-mute:#A89AA0; --og-ok:#34D399; }
+
+.og-open { overflow: hidden; }
+.og-shade { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.62); opacity:0; transition:opacity .22s ease; }
+.og-shade.on { opacity:1; }
+.og-sheet { position:fixed; z-index:91; left:50%; bottom:0; width:min(520px, 100%); transform:translate(-50%, 100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+  background:var(--og-bg); color:#fff; border-radius:24px 24px 0 0; border:1px solid var(--og-line); border-bottom:0; box-shadow:0 -24px 60px rgba(0,0,0,.6);
+  max-height:88vh; display:flex; flex-direction:column; font:15px/1.45 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; padding-bottom:env(safe-area-inset-bottom, 0px); }
+.og-sheet.on { transform:translate(-50%, 0); }
+.og-sheet *, .og-sheet *::before, .og-sheet *::after { box-sizing:border-box; }
+.og-handle { width:42px; height:5px; border-radius:3px; background:#3a2d32; margin:9px auto 2px; flex:none; }
+.og-head { display:flex; align-items:center; gap:12px; padding:8px 16px 12px; flex:none; }
+.og-av { flex:none; width:42px; height:42px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:#2A1D20; font:700 14px 'Outfit', sans-serif; box-shadow:0 0 0 2px var(--og-red); }
+.og-av img { width:100%; height:100%; object-fit:cover; display:block; }
+.og-head-tx { flex:1; min-width:0; }
+.og-head-tx small { display:block; color:var(--og-red); font-weight:800; letter-spacing:.12em; font-size:11px; }
+.og-head-tx b { display:block; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-x { flex:none; width:36px; height:36px; border:0; border-radius:50%; background:var(--og-card); color:#fff; font-size:20px; line-height:1; cursor:pointer; }
+.og-body { overflow-y:auto; padding:0 16px 16px; flex:1 1 auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+.og-foot { flex:none; padding:12px 16px 16px; border-top:1px solid var(--og-line); background:var(--og-bg); }
+
+.og-grid { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:9px; }
+@media (max-width:340px) { .og-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+.og-tile { position:relative; border:1.5px solid var(--og-line); background:var(--og-card); border-radius:16px; padding:10px 4px 9px; text-align:center; color:#fff; cursor:pointer; font:inherit;
+  display:flex; flex-direction:column; align-items:center; gap:2px; transition:transform .12s, border-color .15s, background .15s; -webkit-tap-highlight-color:transparent; }
+.og-tile:active { transform:scale(.96); }
+.og-tile.on { border-color:var(--og-red); background:#2A171B; box-shadow:0 0 0 1px var(--og-red) inset, 0 8px 22px -10px rgba(240,49,63,.7); }
+.og-art { height:40px; display:grid; place-items:center; font-size:32px; line-height:1; }
+.og-art img { max-height:40px; max-width:46px; display:block; object-fit:contain; }
+.og-tile b { font-size:12px; font-weight:700; max-width:100%; padding:0 2px; line-height:1.15; min-height:2.3em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:normal; text-align:center; align-items:center; }
+.og-tile em { font-style:normal; font-size:11px; font-weight:800; color:var(--og-gold); white-space:nowrap; }
+
+.og-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; }
+.og-qty { display:inline-flex; align-items:center; gap:4px; background:var(--og-card); border:1px solid var(--og-line); border-radius:999px; padding:3px; }
+.og-qty button { width:36px; height:36px; border:0; border-radius:50%; background:var(--og-card2); color:#fff; font-size:20px; line-height:1; cursor:pointer; }
+.og-qty button:disabled { opacity:.35; cursor:default; }
+.og-qty span { min-width:34px; text-align:center; font-weight:800; }
+.og-total { text-align:right; } .og-total small { display:block; color:var(--og-mute); font-size:12px; } .og-total b { font-size:20px; letter-spacing:-.01em; }
+
+.og-btn { display:flex; align-items:center; justify-content:center; width:100%; height:52px; border:0; border-radius:999px; background:var(--og-red); color:#fff; font:800 15px 'Plus Jakarta Sans', system-ui, sans-serif; cursor:pointer; transition:background .15s, opacity .15s; }
+.og-btn:hover { background:#d72634; } .og-btn:disabled { opacity:.45; cursor:default; }
+.og-btn.line { background:transparent; border:1.5px solid var(--og-line); color:#fff; margin-top:9px; } .og-btn.line:hover { background:var(--og-card); }
+.og-link { display:block; margin:12px auto 0; background:none; border:0; color:var(--og-mute); font:600 13px inherit; text-decoration:underline; cursor:pointer; }
+
+.og-sum { display:flex; align-items:center; gap:14px; padding:14px; border-radius:18px; background:var(--og-card); border:1px solid var(--og-line); }
+.og-sum .og-art { height:52px; font-size:42px; } .og-sum .og-art img { max-height:52px; max-width:60px; }
+.og-sum b { display:block; font-size:16px; } .og-sum small { color:var(--og-mute); }
+.og-sum .og-price { margin-left:auto; text-align:right; font-weight:800; color:var(--og-gold); font-size:17px; }
+.og-field { margin-top:14px; } .og-field label { display:block; font-weight:700; font-size:13px; margin-bottom:6px; }
+.og-field input[type=tel], .og-field input[type=text] { width:100%; height:50px; border-radius:14px; border:1.5px solid var(--og-line); background:var(--og-card); color:#fff; padding:0 14px; font:600 17px inherit; letter-spacing:.02em; outline:none; }
+.og-field input:focus { border-color:var(--og-red); }
+.og-methods { display:flex; gap:8px; margin-top:8px; }
+.og-method { flex:1; text-align:center; padding:9px 6px; border-radius:12px; border:1.5px solid var(--og-line); background:var(--og-card); color:var(--og-mute); font-weight:800; font-size:13px; }
+.og-method.on { color:#fff; border-color:var(--og-ok); background:#12231D; } .og-method.on.air { border-color:#FF6B6B; background:#2A1416; }
+.og-note { color:var(--og-mute); font-size:12.5px; margin-top:8px; }
+.og-switch { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding:12px 14px; background:var(--og-card); border:1px solid var(--og-line); border-radius:14px; cursor:pointer; }
+.og-switch b { display:block; font-size:14px; } .og-switch small { color:var(--og-mute); font-size:12px; }
+.og-switch i { flex:none; width:44px; height:26px; border-radius:99px; background:#3a2d32; position:relative; transition:background .2s; }
+.og-switch i::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .2s; }
+.og-switch.on i { background:var(--og-red); } .og-switch.on i::after { transform:translateX(18px); }
+.og-err { color:#FF8A92; font-size:13.5px; font-weight:600; margin-top:10px; min-height:1px; }
+
+.og-state { text-align:center; padding:26px 6px 8px; }
+.og-state .og-art { height:84px; font-size:68px; } .og-state .og-art img { max-height:84px; max-width:110px; }
+.og-state h3 { margin:12px 0 4px; font-size:19px; letter-spacing:-.01em; } .og-state p { margin:0; color:var(--og-mute); }
+.og-spin { width:54px; height:54px; margin:6px auto 4px; border-radius:50%; border:4px solid #3a2d32; border-top-color:var(--og-red); animation:ogSpin 1s linear infinite; }
+.og-ring { width:64px; height:64px; margin:4px auto; border-radius:50%; display:grid; place-items:center; font-size:30px; }
+.og-ring.ok { background:#12231D; color:var(--og-ok); } .og-ring.bad { background:#2A1416; color:#FF6B76; }
+@keyframes ogSpin { to { transform:rotate(360deg); } }
+
+/* ------------------------------------------------------------------ the animation layer (sits on top of the video, never stops it) */
+.og-fx { position:absolute; inset:0; z-index:9; pointer-events:none; overflow:hidden; }
+.og-fx-msg { position:absolute; left:50%; top:16%; transform:translate(-50%, -14px); max-width:86%; padding:9px 16px; border-radius:999px; background:rgba(12,8,10,.78); color:#fff; font:800 14px/1.3 'Plus Jakarta Sans', system-ui, sans-serif; text-align:center; opacity:0;
+  animation:ogMsg 4.4s ease both; box-shadow:0 8px 28px rgba(0,0,0,.45); }
+@keyframes ogMsg { 0% { opacity:0; transform:translate(-50%, -14px); } 10%, 82% { opacity:1; transform:translate(-50%, 0); } 100% { opacity:0; transform:translate(-50%, -8px); } }
+.og-fx .og-big { position:absolute; display:grid; place-items:center; font-size:92px; line-height:1; filter:drop-shadow(0 10px 24px rgba(0,0,0,.5)); }
+.og-fx .og-big img { max-width:150px; max-height:130px; display:block; }
+.og-fx .og-x-qty { position:absolute; right:-8px; bottom:-6px; background:var(--og-red); color:#fff; border-radius:99px; padding:2px 9px; font:800 15px 'Plus Jakarta Sans', sans-serif; }
+
+/* pop: arrives with a bounce */
+.og-a-pop .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.6s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes ogPop { 0% { transform:scale(.1) rotate(-14deg); opacity:0; } 14% { transform:scale(1.25) rotate(6deg); opacity:1; } 24% { transform:scale(1) rotate(0); } 82% { transform:scale(1); opacity:1; } 100% { transform:scale(.8) translateY(-30px); opacity:0; } }
+/* float: many small ones rise */
+.og-a-float .og-bit { position:absolute; bottom:-60px; font-size:36px; opacity:0; animation:ogFloat var(--d, 3s) ease-out var(--t, 0s) both; filter:drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.og-a-float .og-bit img { height:40px; display:block; }
+@keyframes ogFloat { 0% { transform:translate(0, 0) scale(.5); opacity:0; } 12% { opacity:1; } 50% { transform:translate(var(--x, 18px), -42vh) scale(1.05); } 100% { transform:translate(calc(var(--x, 18px) * -1), -86vh) scale(.9); opacity:0; } }
+/* sparkle: sparks fly out around it */
+.og-a-sparkle .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.8s cubic-bezier(.2,1.4,.4,1) both; }
+.og-a-sparkle .og-spark { position:absolute; left:50%; top:42%; font-size:22px; color:#FFE9A8; opacity:0; animation:ogSpark 2.2s ease-out var(--t, 0s) infinite; }
+@keyframes ogSpark { 0% { transform:rotate(var(--a)) translateX(30px) scale(.2); opacity:0; } 30% { opacity:1; } 100% { transform:rotate(var(--a)) translateX(var(--r, 130px)) scale(1.1); opacity:0; } }
+/* glow: drops in with a halo */
+.og-a-glow .og-big { left:50%; top:40%; margin:-46px 0 0 -46px; animation:ogDrop 3.8s cubic-bezier(.2,1.3,.4,1) both; }
+.og-a-glow .og-big::before { content:''; position:absolute; inset:-34px; border-radius:50%; background:radial-gradient(circle, rgba(251,191,36,.7), rgba(251,191,36,0) 68%); animation:ogHalo 1.6s ease-in-out infinite; z-index:-1; }
+@keyframes ogDrop { 0% { transform:translateY(-70vh) scale(.6); opacity:0; } 22% { transform:translateY(0) scale(1.1); opacity:1; } 30% { transform:translateY(0) scale(1); } 84% { opacity:1; } 100% { transform:translateY(-20px) scale(.9); opacity:0; } }
+@keyframes ogHalo { 0%, 100% { transform:scale(.85); opacity:.7; } 50% { transform:scale(1.2); opacity:1; } }
+/* fly: lifts off from bottom left to top right */
+.og-a-fly .og-big { left:6%; bottom:6%; animation:ogFly 3.6s cubic-bezier(.45,.05,.55,.95) both; }
+.og-a-fly .og-trail { position:absolute; left:6%; bottom:6%; width:10px; height:10px; border-radius:50%; background:#FFB36B; opacity:0; animation:ogFlyTrail 3.6s linear var(--t) both; }
+@keyframes ogFly { 0% { transform:translate(0, 0) rotate(0) scale(.7); opacity:0; } 10% { opacity:1; } 100% { transform:translate(78vw, -78vh) rotate(8deg) scale(1.25); opacity:0; } }
+@keyframes ogFlyTrail { 0% { transform:translate(0,0); opacity:0; } 14% { opacity:.9; } 100% { transform:translate(calc(78vw * var(--k, .8)), calc(-78vh * var(--k, .8))); opacity:0; } }
+/* confetti: a pop and a shower */
+.og-a-confetti .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.8s cubic-bezier(.2,1.4,.4,1) both; }
+.og-a-confetti .og-bit { position:absolute; top:-18px; width:9px; height:15px; opacity:0; animation:ogConfetti var(--d, 3s) linear var(--t, 0s) both; }
+@keyframes ogConfetti { 0% { transform:translateY(0) rotate(0); opacity:1; } 100% { transform:translate(var(--x, 0), 108vh) rotate(var(--r, 540deg)); opacity:1; } }
+/* drive: crosses the lower part of the video */
+.og-a-drive .og-big { left:0; bottom:18%; animation:ogDrive 3.6s cubic-bezier(.4,0,.4,1) both; font-size:104px; }
+@keyframes ogDrive { 0% { transform:translateX(-30vw); } 25% { transform:translateX(18vw) translateY(-6px); } 45% { transform:translateX(34vw) translateY(0); } 70% { transform:translateX(56vw) translateY(-5px); } 100% { transform:translateX(120vw); } }
+/* jet: a big fly-by with a contrail */
+.og-a-jet .og-big { left:-20%; bottom:8%; font-size:124px; animation:ogJet 3.4s cubic-bezier(.4,0,.6,1) both; }
+.og-a-jet .og-contrail { position:absolute; left:0; bottom:calc(8% + 56px); height:6px; width:0; border-radius:99px; background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85)); animation:ogContrail 3.4s ease-out both; transform-origin:left; transform:rotate(-24deg); }
+@keyframes ogJet { 0% { transform:translate(0, 0) rotate(-6deg); } 100% { transform:translate(150vw, -62vh) rotate(-6deg) scale(1.3); } }
+@keyframes ogContrail { 0% { width:0; opacity:0; } 20% { opacity:1; } 100% { width:130%; opacity:0; } }
+/* reduced motion: a simple fade, nothing flies */
+.og-fx.og-still .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogFade 3.6s ease both !important; transform:none; }
+@keyframes ogFade { 0% { opacity:0; } 14%, 84% { opacity:1; } 100% { opacity:0; } }
+.og-fx.og-still .og-bit, .og-fx.og-still .og-spark, .og-fx.og-still .og-trail, .og-fx.og-still .og-contrail { display:none; }
+@media (prefers-reduced-motion: reduce) { .og-sheet, .og-shade { transition:none; } .og-spin { animation-duration:3s; } }
+
+.og-toast { position:fixed; z-index:99; left:50%; bottom:calc(88px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); max-width:88%; padding:11px 18px; border-radius:999px; background:rgba(12,8,10,.92); color:#fff; font:700 14px/1.3 'Plus Jakarta Sans', system-ui, sans-serif; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.5); transition:opacity .4s; }
+.og-toast.off { opacity:0; }
+
+/* short phones (about 640px tall or less): with the extra Gift button the right-hand column is tightened so it never slides under the header */
+@media (max-height: 640px) {
+  .fd-rail { gap: 3px; }
+  .fd-ic { height: 30px; }
+  .fd-ic svg { width: 24px; height: 24px; }
+  .fd-act { font-size: 11px; line-height: 13px; }
+  .fd-fw { height: 54px; margin-bottom: 0; }
+  .fd-fw .fd-av { width: 44px; height: 44px; }
+}
+
+/* the Gift button in the feed's right-hand column */
+.fd-gift .fd-ic { color:#fff; }
+.fd-gift:active .fd-ic { transform:scale(.86); }

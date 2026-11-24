@@ -107,6 +107,7 @@ include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/socials.css?v=<?= @filemtime(__DIR__ . '/assets/css/socials.css') ?: time() ?>">
 <?php if ($view === 'player'): ?><link rel="stylesheet" href="/assets/css/feed.css?v=<?= @filemtime(__DIR__ . '/assets/css/feed.css') ?: time() ?>"><?php endif; ?>
+<?php $giftsOn = $view === 'player' && function_exists('gifts_enabled') && gifts_enabled(); if ($giftsOn): ?><link rel="stylesheet" href="/assets/css/gifts.css?v=<?= @filemtime(__DIR__ . '/assets/css/gifts.css') ?: time() ?>"><?php endif; ?>
 
 <main class="so-app" id="soApp">
   <?php if ($view === 'list'):
@@ -289,7 +290,9 @@ include __DIR__ . '/includes/header.php';
     'stickers' => SOCIALS_STICKERS,
     'canSave' => function_exists('post_saves_ready') && post_saves_ready(),
     'canBoost' => function_exists('post_boosts_ready') && post_boosts_ready(),
+    'canGift' => !empty($giftsOn),   // OB Gifts: the Gift button shows only when Admin switched gifts on
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<?php if (!empty($giftsOn)): ?><script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script><?php endif; ?>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 

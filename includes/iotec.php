@@ -111,7 +111,11 @@ function iotec_initiate_collection(float $amount, string $phone, string $referen
     return ['transactionId' => $data['id']];
 }
 
-/** @return array{status: string, statusMessage: ?string} */
+/**
+ * amount and charge are extra, optional fields (null when ioTec does not send them): OB Gifts uses them to check the paid amount
+ * and to record the fee. Tickets and Socials only read status and statusMessage, so nothing changes for them.
+ * @return array{status: string, statusMessage: ?string, amount: ?float, charge: ?float}
+ */
 function iotec_check_collection_status(string $transactionId): array
 {
     $token = iotec_get_access_token();
@@ -129,7 +133,13 @@ function iotec_check_collection_status(string $transactionId): array
     if (empty($data['status'])) {
         throw new IotecException("iotec status response missing status field: $body");
     }
-    return ['status' => $data['status'], 'statusMessage' => $data['statusMessage'] ?? null];
+    $charge = $data['totalTransactionCharge'] ?? (isset($data['transactionCharge']) ? (float) $data['transactionCharge'] + (float) ($data['vendorCharge'] ?? 0) : null);
+    return [
+        'status' => $data['status'],
+        'statusMessage' => $data['statusMessage'] ?? null,
+        'amount' => isset($data['amount']) && is_numeric($data['amount']) ? (float) $data['amount'] : null,
+        'charge' => $charge !== null && is_numeric($charge) ? (float) $charge : null,
+    ];
 }
 
 // ---------------------------------------------------------------------------
