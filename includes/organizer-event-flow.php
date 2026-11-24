@@ -31,6 +31,10 @@ function ef_tier_row(array $tier, bool $onlineReady): void
           <label class="ef-fld"><span class="ef-lbl">Price (UGX)</span><input class="ef-inp" type="number" min="0" step="1" inputmode="numeric" name="tier_price[]" value="<?= htmlspecialchars($price) ?>" placeholder="0"<?= $isFree ? ' readonly' : '' ?>><input type="hidden" name="tier_currency[]" value="UGX"></label>
           <label class="ef-fld"><span class="ef-lbl">Quantity</span><input class="ef-inp" type="number" min="1" step="1" inputmode="numeric" name="tier_quantity[]" value="<?= htmlspecialchars((string) ($tier['quantity_total'] ?? '')) ?>" placeholder="e.g. 100"></label>
           <label class="ef-fld"><span class="ef-lbl">Limit per person</span><input class="ef-inp" type="number" min="1" max="<?= FREE_TICKET_MAX_LIMIT ?>" step="1" inputmode="numeric" name="tier_limit[]" value="<?= htmlspecialchars($limit) ?>" placeholder="<?= $isFree ? FREE_TICKET_DEFAULT_LIMIT : 'No limit' ?>" data-free-placeholder="<?= FREE_TICKET_DEFAULT_LIMIT ?>" data-paid-placeholder="No limit"></label>
+          <?php if (bundles_ready()): ?>
+          <label class="ef-fld"><span class="ef-lbl">People per ticket <small>(group tickets)</small></span><input class="ef-inp" type="number" min="1" max="50" step="1" inputmode="numeric" name="tier_admits[]" value="<?= htmlspecialchars((string) ($tier['admits'] ?? '1')) ?>" placeholder="1"></label>
+          <div class="ef-fld"><span class="ef-lbl">Deal <small>(optional)</small></span><span style="display:flex; align-items:center; gap:8px"><span>Buy</span><input class="ef-inp" type="number" min="2" max="50" step="1" inputmode="numeric" name="tier_deal_buy[]" value="<?= htmlspecialchars((string) ($tier['deal_buy'] ?? '')) ?>" placeholder="5" aria-label="Buy this many" style="min-width:0"><span>pay</span><input class="ef-inp" type="number" min="1" max="49" step="1" inputmode="numeric" name="tier_deal_pay[]" value="<?= htmlspecialchars((string) ($tier['deal_pay'] ?? '')) ?>" placeholder="4" aria-label="Pay for this many" style="min-width:0"></span></div>
+          <?php endif; ?>
         </div>
         <div class="ef-tier-foot">
           <?php if ($onlineReady): ?><label class="ef-sw"><input type="checkbox" class="tier-free"<?= $isFree ? ' checked' : '' ?>><i aria-hidden="true"></i><span>Free ticket</span></label><?php endif; ?>
@@ -185,6 +189,18 @@ function ef_tier_row(array $tier, bool $onlineReady): void
         <?php if (events_left_ready()): ?>
         <label class="ef-sw ef-left"><input type="checkbox" name="show_tickets_left" value="1"<?= !empty($event['show_tickets_left']) ? ' checked' : '' ?>><i aria-hidden="true"></i><span>Show how many tickets are left on the event page<small>Off by default: buyers see only your prices, never how many have sold.</small></span></label>
         <?php endif; ?>
+        <?php if (transfers_ready()): ?>
+        <label class="ef-sw ef-left"><input type="checkbox" name="allow_transfers" value="1"<?= !isset($event['allow_transfers']) || !empty($event['allow_transfers']) ? ' checked' : '' ?>><i aria-hidden="true"></i><span>Let buyers send tickets to friends<small>On by default. A sent ticket gets a new QR code, so screenshots of the old one stop working.</small></span></label>
+        <?php endif; ?>
+        <?php if (referrals_ready()): $refOn = !empty($event['referral_friends']); ?>
+        <label class="ef-sw ef-left"><input type="checkbox" name="referral_on" value="1"<?= $refOn ? ' checked' : '' ?> data-ref-toggle><i aria-hidden="true"></i><span>Reward buyers who bring friends<small>Each buyer gets a personal link. When enough friends buy through it, they get a one-time discount code. The discount comes out of your ticket money.</small></span></label>
+        <div style="display:<?= $refOn ? 'grid' : 'none' ?>; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:4px 0 12px" data-ref-fields>
+          <label class="ef-fld"><span class="ef-lbl">Friends who must buy</span><input class="ef-inp" type="number" min="1" max="50" step="1" inputmode="numeric" name="referral_friends" value="<?= htmlspecialchars((string) ($event['referral_friends'] ?? '3')) ?>"></label>
+          <label class="ef-fld"><span class="ef-lbl">Reward (UGX off)</span><input class="ef-inp" type="number" min="500" step="500" inputmode="numeric" name="referral_reward" value="<?= htmlspecialchars((string) (isset($event['referral_reward']) && $event['referral_reward'] !== null ? (int) $event['referral_reward'] : '2000')) ?>"></label>
+        </div>
+        <script>document.addEventListener('change',function(e){if(e.target.matches('[data-ref-toggle]')){var f=document.querySelector('[data-ref-fields]');if(f){f.hidden=!e.target.checked; if(f.style.gridTemplateColumns){f.style.display=e.target.checked?'grid':'none';}}}});</script>
+        <?php endif; ?>
+        <?php if (questions_ready()) { render_question_fields(question_form_rows(null, $qRows ?? [])); } ?>
         <div class="ef-pot"><div><small>If every ticket sells</small><b id="efPot">UGX 0</b></div><span>Your payout across all ticket types, after the commission.</span></div>
       </div>
       <p class="ef-msg" data-msg role="alert"></p>

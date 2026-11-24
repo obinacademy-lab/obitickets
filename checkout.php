@@ -23,6 +23,20 @@ if (!$pending) {
     exit;
 }
 
+// Promo code box (migration 040): apply or remove a code; the cart below re-checks it every time.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['promo_action'] ?? '', ['apply', 'remove'], true) && discounts_ready()) {
+    verify_csrf();
+    $code = strtoupper(trim((string) ($_POST['promo'] ?? '')));
+    $_SESSION['pending_checkout']['promo'] = $_POST['promo_action'] === 'apply' ? mb_substr($code, 0, 32) : '';
+    header('Location: /checkout.php' . ($_POST['promo_action'] === 'apply' ? '#promo' : ''));
+    exit;
+}
+// A shared link like /checkout.php?promo=SUMMER10 (or event.php?...&promo=) pre-fills the code once.
+if (isset($_GET['promo']) && is_string($_GET['promo']) && discounts_ready()) {
+    $_SESSION['pending_checkout']['promo'] = mb_substr(strtoupper(trim($_GET['promo'])), 0, 32);
+    $pending = $_SESSION['pending_checkout'];
+}
+
 $event = get_event_by_slug($pending['event_slug']);
 if (!$event) {
     unset($_SESSION['pending_checkout']);
@@ -99,16 +113,60 @@ $ckTick = static function (): string { return '<svg class="cn-ic" viewBox="0 0 2
       </div>
       <div class="rows">
         <?php foreach ($lineItems as $item): ?>
-          <div class="ln"><span><?= (int) $item['quantity'] ?> &times; <?= htmlspecialchars($item['name']) ?></span><span class="mono"><?= $item['line_total'] > 0 ? htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) : 'Free' ?></span></div>
+          <div class="ln"><span><?= (int) $item['quantity'] ?> &times; <?= htmlspecialchars($item['name']) ?><?php if ((int) ($item['admits'] ?? 1) > 1): ?> <small class="ln-ppl">(<?= (int) $item['quantity'] * (int) $item['admits'] ?> people)</small><?php endif; ?></span><span class="mono"><?= $item['line_total'] > 0 ? htmlspecialchars($currency . ' ' . number_format($item['line_total'], 0)) : 'Free' ?></span></div>
+        <?php endforeach; ?>
+        <?php foreach (($cart['discounts'] ?? []) as [$dLabel, $dAmount]): ?>
+          <div class="ln ln-disc"><span><?= htmlspecialchars($dLabel) ?></span><span class="mono">&minus; <?= htmlspecialchars($currency . ' ' . number_format($dAmount, 0)) ?></span></div>
         <?php endforeach; ?>
         <div class="ln"><span>Service fee<?= $paidTicketCount > 0 ? ' (UGX ' . number_format(SERVICE_FEE_PER_TICKET) . ' &times; ' . $paidTicketCount . ' paid)' : '' ?></span><span class="mono"><?= $fee > 0 ? htmlspecialchars($currency . ' ' . number_format($fee, 0)) : htmlspecialchars($currency) . ' 0' ?></span></div>
       </div>
+      <?php if (discounts_ready() && ($cart['gross'] ?? 0) > 0): ?>
+        <div class="ck-promo" id="promo">
+          <?php if (!empty($cart['promo'])): ?>
+            <form method="post" action="/checkout.php" class="ck-promo-on">
+              <?= csrf_field() ?><input type="hidden" name="promo_action" value="remove">
+              <span><b><?= htmlspecialchars((string) $cart['promo']['code']) ?></b> applied</span>
+              <button type="submit" class="ck-promo-x">Remove</button>
+            </form>
+          <?php else: ?>
+            <details<?= !empty($cart['promoError']) ? ' open' : '' ?>>
+              <summary>Have a promo code?</summary>
+              <form method="post" action="/checkout.php" class="ck-promo-form">
+                <?= csrf_field() ?><input type="hidden" name="promo_action" value="apply">
+                <label class="sr-only" for="promoCode">Promo code</label>
+                <input id="promoCode" name="promo" type="text" maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter code" value="<?= htmlspecialchars((string) ($cart['promoCode'] ?? '')) ?>" required>
+                <button type="submit">Apply</button>
+              </form>
+              <?php if (!empty($cart['promoError'])): ?><p class="ck-promo-err" role="alert"><?= htmlspecialchars((string) $cart['promoError']) ?></p><?php endif; ?>
+            </details>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
       <div class="tot"><span><?= $isFree ? 'Total' : 'Pay now' ?></span><b class="mono"><?= $isFree ? 'Free' : htmlspecialchars($currency . ' ' . number_format($total, 0)) ?></b></div>
       <?php foreach ($cartNotices as $n): ?><div class="cn-alert"><?= htmlspecialchars($n) ?></div><?php endforeach; ?>
     </section>
 
     <section class="cn-card cn-pay" aria-label="Payment" data-payment-widget data-initiate-url="/api/initiate-payment.php" data-order-url="/order.php?id=" data-free="<?= $isFree ? '1' : '0' ?>">
       <h2><?= $isFree ? 'Confirm' : 'Payment' ?></h2>
+
+      <?php $ckQuestions = event_questions((int) $event['id']); if ($ckQuestions): ?>
+        <div class="ck-qs" data-state-keep>
+          <p class="ck-methods-h">A few questions from the organizer</p>
+          <?php foreach ($ckQuestions as $q): $qid = 'q' . (int) $q['id']; ?>
+            <div class="cn-field">
+              <label for="<?= $qid ?>"><?= htmlspecialchars((string) $q['label']) ?><?= (int) $q['required'] ? ' <span class="ck-req" aria-hidden="true">*</span>' : ' <small>(optional)</small>' ?></label>
+              <?php if ($q['kind'] === 'CHOICE'): ?>
+                <select id="<?= $qid ?>" class="ck-q-in" data-answer="<?= (int) $q['id'] ?>" data-label="<?= htmlspecialchars((string) $q['label']) ?>"<?= (int) $q['required'] ? ' required data-required="1"' : '' ?>>
+                  <option value="">Choose&hellip;</option>
+                  <?php foreach ($q['choices'] as $ch): ?><option><?= htmlspecialchars($ch) ?></option><?php endforeach; ?>
+                </select>
+              <?php else: ?>
+                <input id="<?= $qid ?>" class="ck-q-in" type="text" maxlength="500" autocomplete="off" data-answer="<?= (int) $q['id'] ?>" data-label="<?= htmlspecialchars((string) $q['label']) ?>"<?= (int) $q['required'] ? ' required data-required="1"' : '' ?>>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
 
       <?php if ($isFree): ?>
       <div data-state="phone">

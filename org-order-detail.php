@@ -85,8 +85,18 @@ render_organizer_head('orders', $ctx);
       </div>
     </div>
 
+
+    <?php $odAnswers = answers_for_orders([$orderId])[$orderId] ?? []; if ($odAnswers): ?>
+    <div class="admin-card">
+      <h3 style="margin-bottom:14px">Buyer's answers</h3>
+      <?php foreach ($odAnswers as $qLabel => $qAnswer): ?>
+        <div class="admin-detail-row"><span class="k"><?= htmlspecialchars($qLabel) ?></span><span class="v"><?= htmlspecialchars($qAnswer) ?></span></div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
     <div class="admin-card">
       <h3 style="margin-bottom:14px">Payment</h3>
+      <?php if ((float) ($order['discount_amount'] ?? 0) > 0): ?><div class="admin-detail-row"><span class="k">Discount (<?= htmlspecialchars((string) ($order['discount_note'] ?: 'promo')) ?>)</span><span class="v mono">&minus; <?= htmlspecialchars($order['currency']) ?> <?= number_format((float) $order['discount_amount'], 0) ?></span></div><?php endif; ?>
       <div class="admin-detail-row"><span class="k">Subtotal</span><span class="v mono"><?= htmlspecialchars($order['currency']) ?> <?= number_format((float) $order['subtotal_amount'], 0) ?></span></div>
       <div class="admin-detail-row"><span class="k">Total charged (buyer)</span><span class="v mono" style="color:var(--purple)"><?= htmlspecialchars($order['currency']) ?> <?= number_format((float) $order['total_amount'], 0) ?></span></div>
       <div class="admin-detail-row"><span class="k">Platform commission</span><span class="v mono"><?= htmlspecialchars($order['currency']) ?> <?= number_format((float) $order['commission_amount'], 0) ?></span></div>

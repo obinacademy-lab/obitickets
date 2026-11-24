@@ -880,6 +880,7 @@ function duplicate_event_for_organizer(int $organizerId, int $actorId, int $even
     $tiers = array_map(static fn ($t) => [
         'name' => $t['name'], 'description' => $t['description'] ?? '', 'price' => $t['price'],
         'currency' => $t['currency'], 'quantity_total' => $t['quantity_total'], 'max_per_person' => $t['max_per_person'] ?? null,
+        'admits' => $t['admits'] ?? 1, 'deal_buy' => $t['deal_buy'] ?? null, 'deal_pay' => $t['deal_pay'] ?? null,
     ], get_ticket_types_for_event($eventId));
 
     $newId = create_event($organizerId, [

@@ -23,6 +23,7 @@ if (!$event) {
     exit;
 }
 
+referral_capture($event); // ?ref=CODE: remember who invited this visitor (includes/referrals.php)
 $tiers = get_ticket_types_for_event((int) $event['id']);
 $similarEvents = get_similar_events((int) $event['id'], $event['category'], 4);
 $eventMedia = get_event_media((int) $event['id']);
@@ -393,6 +394,7 @@ ob_start(); ?>
               <div class="tier-row">
                 <div class="tier-info">
                   <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
+                  <?php if ($tBadges = tier_badges($tier)): ?><div class="tbadges"><?php foreach ($tBadges as $tb): ?><span><?= htmlspecialchars($tb) ?></span><?php endforeach; ?></div><?php endif; ?>
                   <?php if ($tier['description']): ?><div class="td"><?= htmlspecialchars($tier['description']) ?></div><?php endif; ?>
                   <?php if ($tierLimit !== null && ticket_is_free($tier)): ?><div class="tlim">Limit <?= $tierLimit ?> per person</div><?php endif; ?>
                 </div>

@@ -244,6 +244,10 @@ function render_ticket_email_html(array $order): string
     $venue = htmlspecialchars($order['venue_name'] . ($order['venue_address'] ? ', ' . $order['venue_address'] : ''));
     $ticketUrl = rtrim(APP_URL, '/') . '/order.php?id=' . (int) $order['id'];
     $cards = render_ticket_cards_html($order);
+    $calEvent = ['id' => (int) $order['event_id'], 'title' => $order['event_title'], 'slug' => $order['event_slug'], 'starts_at' => $order['event_starts_at'],
+        'ends_at' => $order['event_ends_at'], 'venue_name' => $order['venue_name'], 'venue_address' => $order['venue_address'] ?? '', 'attend_mode' => $order['attend_mode'] ?? ''];
+    $calGoogle = htmlspecialchars(calendar_google_url($calEvent));
+    $calIcs = htmlspecialchars(rtrim(APP_URL, '/') . calendar_ics_url($calEvent));
 
     return <<<HTML
         <div style="font-family:sans-serif; max-width:560px; margin:0 auto;">
@@ -254,6 +258,11 @@ function render_ticket_email_html(array $order): string
             <strong>{$eventTitle}</strong><br>
             {$dateRange}<br>
             {$venue}
+          </p>
+          <p style="font-size:14px; margin:0 0 16px;">
+            <strong>Add it to your calendar:</strong>
+            <a href="{$calGoogle}" style="color:#991B1B;">Google Calendar</a> &middot;
+            <a href="{$calIcs}" style="color:#991B1B;">iPhone / Outlook</a>
           </p>
           {$cards}
           <p style="font-size:14px; color:#726C7E;">

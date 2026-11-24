@@ -22,7 +22,7 @@ foreach ($_GET as $getKey => $getValue) {
 // Same for form posts: only these fields are ever arrays (ticket tiers, cart quantities, gallery removals,
 // social links). An array sent to any other field (name[]=x) used to be a fatal error inside trim() on
 // login, signup and every other form, so drop it before the page sees it.
-$arrayPostFields = ['qty', 'tier_id', 'tier_name', 'tier_description', 'tier_price', 'tier_currency', 'tier_quantity', 'tier_limit', 'remove_media', 'link_url', 'link_on'];
+$arrayPostFields = ['qty', 'tier_id', 'tier_name', 'tier_description', 'tier_price', 'tier_currency', 'tier_quantity', 'tier_limit', 'tier_admits', 'tier_deal_buy', 'tier_deal_pay', 'q_id', 'q_label', 'q_kind', 'q_options', 'q_required', 'remove_media', 'link_url', 'link_on'];
 foreach ($_POST as $postKey => $postValue) {
     if (is_array($postValue) && !in_array($postKey, $arrayPostFields, true)) {
         unset($_POST[$postKey]);
@@ -80,6 +80,10 @@ require_once __DIR__ . '/profile.php';
 require_once __DIR__ . '/payguard.php';
 require_once __DIR__ . '/turnstile.php';
 require_once __DIR__ . '/ipguard.php';
+require_once __DIR__ . '/calendar.php';
+require_once __DIR__ . '/transfers.php';
+require_once __DIR__ . '/referrals.php';
+require_once __DIR__ . '/questions.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();

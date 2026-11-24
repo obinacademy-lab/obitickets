@@ -657,6 +657,9 @@ function parse_tier_submission(array $post): array
     $currencies = $post['tier_currency'] ?? [];
     $quantities = $post['tier_quantity'] ?? [];
     $limits = $post['tier_limit'] ?? [];
+    $admits = $post['tier_admits'] ?? [];
+    $dealBuy = $post['tier_deal_buy'] ?? [];
+    $dealPay = $post['tier_deal_pay'] ?? [];
     $ids = $post['tier_id'] ?? [];
 
     $tiers = [];
@@ -673,6 +676,9 @@ function parse_tier_submission(array $post): array
             'currency' => in_array($currencies[$i] ?? '', TICKET_CURRENCIES, true) ? $currencies[$i] : 'UGX',
             'quantity_total' => $quantities[$i] ?? '0',
             'max_per_person' => trim((string) ($limits[$i] ?? '')),
+            'admits' => trim((string) ($admits[$i] ?? '1')),
+            'deal_buy' => trim((string) ($dealBuy[$i] ?? '')),
+            'deal_pay' => trim((string) ($dealPay[$i] ?? '')),
         ];
     }
     return $tiers;
@@ -701,6 +707,27 @@ function validate_tiers(array $tiers): array
         }
         // A free ticket always has a limit so one account cannot take them all; a paid one only if the organizer set it.
         $t['max_per_person'] = $lim !== '' ? (int) $lim : ((float) $t['price'] <= 0 ? FREE_TICKET_DEFAULT_LIMIT : null);
+        // Group size and "Buy X, pay Y" deal (migration 042)
+        $adm = (string) ($t['admits'] ?? '1');
+        if ($adm !== '' && (!ctype_digit($adm) || (int) $adm < 1 || (int) $adm > 50)) {
+            $errors[] = "Ticket \"{$t['name']}\": people per ticket must be a number from 1 to 50.";
+            continue;
+        }
+        $t['admits'] = $adm === '' ? 1 : (int) $adm;
+        $db = (string) ($t['deal_buy'] ?? '');
+        $dp = (string) ($t['deal_pay'] ?? '');
+        if ($db !== '' || $dp !== '') {
+            if (!ctype_digit($db) || !ctype_digit($dp) || (int) $db < 2 || (int) $db > 50 || (int) $dp < 1 || (int) $dp >= (int) $db) {
+                $errors[] = "Ticket \"{$t['name']}\": a deal needs \"Buy\" (2 to 50) and a smaller \"Pay for\" number, like Buy 5, pay for 4. Leave both empty for no deal.";
+                continue;
+            }
+            if ((float) $t['price'] <= 0) {
+                $errors[] = "Ticket \"{$t['name']}\" is free, so it cannot have a Buy X, pay Y deal.";
+                continue;
+            }
+        }
+        $t['deal_buy'] = $db !== '' ? (int) $db : null;
+        $t['deal_pay'] = $dp !== '' ? (int) $dp : null;
         $valid[] = $t;
     }
     if (!$valid) {
@@ -739,9 +766,11 @@ function create_event(int $organizerId, array $fields, array $tiers): int
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ');
             $stmt->execute([$eventId, $tier['name'], $tier['description'], $tier['price'], $tier['currency'], $tier['quantity_total'], $sort++]);
+            $newTierId = (int) $pdo->lastInsertId();
             if (events_online_ready()) {
-                $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, (int) $pdo->lastInsertId()]);
+                $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, $newTierId]);
             }
+            save_tier_bundle($pdo, $newTierId, $tier, $eventId);
         }
 
         $pdo->commit();
@@ -868,12 +897,15 @@ function replace_ticket_types(int $eventId, array $tiers): void
                 if (events_online_ready()) {
                     $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ? AND event_id = ?')->execute([$tier['max_per_person'] ?? null, $tier['id'], $eventId]);
                 }
+                save_tier_bundle($pdo, (int) $tier['id'], $tier, $eventId);
             } else {
                 $stmt = $pdo->prepare('INSERT INTO ticket_types (event_id, name, description, price, currency, quantity_total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
                 $stmt->execute([$eventId, $tier['name'], $tier['description'], $tier['price'], $tier['currency'], $tier['quantity_total'], $sort]);
+                $newTierId = (int) $pdo->lastInsertId();
                 if (events_online_ready()) {
-                    $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, (int) $pdo->lastInsertId()]);
+                    $pdo->prepare('UPDATE ticket_types SET max_per_person = ? WHERE id = ?')->execute([$tier['max_per_person'] ?? null, $newTierId]);
                 }
+                save_tier_bundle($pdo, $newTierId, $tier, $eventId);
             }
             $sort++;
         }
@@ -926,4 +958,72 @@ function set_event_show_tickets_left(int $eventId, bool $on): void
         return;
     }
     db()->prepare('UPDATE events SET show_tickets_left = ? WHERE id = ?')->execute([$on ? 1 : 0, $eventId]);
+}
+
+/** Buyers may send tickets for this event to friends (migration 039; on unless the organizer switched it off). */
+function event_allows_transfers(array $event): bool
+{
+    return !array_key_exists('allow_transfers', $event) || (int) $event['allow_transfers'] === 1;
+}
+
+/** Saves the organizer's choice; does nothing before migration 039. */
+function set_event_allow_transfers(int $eventId, bool $on): void
+{
+    if (!function_exists('transfers_ready') || !transfers_ready()) {
+        return;
+    }
+    db()->prepare('UPDATE events SET allow_transfers = ? WHERE id = ?')->execute([$on ? 1 : 0, $eventId]);
+}
+
+/** Group tickets and quantity deals are switched on by migration 042. */
+function bundles_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM ticket_types LIKE 'admits'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/** How many people one ticket of this type lets in (1 unless it is a group ticket). */
+function tier_admits(array $tier): int
+{
+    return max(1, min(50, (int) ($tier['admits'] ?? 1)));
+}
+
+/** [buy, pay] for a "Buy 5, pay for 4" deal, or null. */
+function tier_deal(array $tier): ?array
+{
+    $buy = (int) ($tier['deal_buy'] ?? 0);
+    $pay = (int) ($tier['deal_pay'] ?? 0);
+    return ($buy >= 2 && $pay >= 1 && $pay < $buy) ? [$buy, $pay] : null;
+}
+
+/** Short labels for the ticket list: "Admits 4", "Buy 5, pay 4". */
+function tier_badges(array $tier): array
+{
+    $out = [];
+    if (tier_admits($tier) > 1) {
+        $out[] = 'Admits ' . tier_admits($tier);
+    }
+    if ($d = tier_deal($tier)) {
+        $out[] = 'Buy ' . $d[0] . ', pay ' . $d[1];
+    }
+    return $out;
+}
+
+/** Saves a ticket type's group size and deal (after it was inserted or updated). */
+function save_tier_bundle(PDO $pdo, int $tierId, array $tier, ?int $eventId = null): void
+{
+    if (!bundles_ready()) {
+        return;
+    }
+    $deal = tier_deal($tier);
+    // scoped to the event when known, so a posted tier id from another event can never be changed
+    $pdo->prepare('UPDATE ticket_types SET admits = ?, deal_buy = ?, deal_pay = ? WHERE id = ?' . ($eventId !== null ? ' AND event_id = ?' : ''))
+        ->execute(array_merge([tier_admits($tier), $deal[0] ?? null, $deal[1] ?? null, $tierId], $eventId !== null ? [$eventId] : []));
 }

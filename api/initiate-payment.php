@@ -44,6 +44,13 @@ if (empty($cart['isFree'])) {
     }
 }
 
+// The organizer's checkout questions (includes/questions.php): required ones must be answered before any order exists.
+$questions = event_questions((int) $cart['event']['id']);
+[$answers, $answerError] = validate_answers($questions, is_array($body['answers'] ?? null) ? $body['answers'] : []);
+if ($answerError !== null) {
+    json_response(['error' => $answerError], 400);
+}
+
 try {
     $orderId = create_pending_order(
         (int) $user['id'],
@@ -54,7 +61,9 @@ try {
         $cart['fee'],
         $cart['total'],
         $cart['currency'],
-        !empty($cart['isFree']) ? '' : $phone
+        !empty($cart['isFree']) ? '' : $phone,
+        ['discount' => (float) ($cart['discount'] ?? 0), 'promo_id' => !empty($cart['promo']) ? (int) $cart['promo']['id'] : null,
+         'note' => implode(', ', array_column($cart['discounts'] ?? [], 0)) ?: null]
     );
 } catch (InsufficientTicketsException $e) {
     unset($_SESSION['pending_checkout']);
@@ -68,6 +77,22 @@ try {
     moment_attribute_order($orderId, (int) $cart['event']['id']);
 } catch (Throwable $e) {
     error_log('[moments] attribution failed: ' . $e->getMessage());
+}
+
+try {
+    save_order_answers($orderId, $answers);
+} catch (Throwable $e) {
+    error_log('[questions] saving answers failed for order ' . $orderId . ': ' . $e->getMessage());
+}
+
+// Opened through a friend's invite link: credit the friend (a free order is already paid, so check its reward now).
+try {
+    referral_attach_order($orderId, (int) $cart['event']['id'], (int) $user['id']);
+    if (!empty($cart['isFree'])) {
+        referral_after_paid($orderId);
+    }
+} catch (Throwable $e) {
+    error_log('[referral] attach failed: ' . $e->getMessage());
 }
 
 unset($_SESSION['pending_checkout']);

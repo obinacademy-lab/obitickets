@@ -29,6 +29,11 @@ function render_tier_form_row(array $tier, bool $withId): void
           <?php if ($GLOBALS['onlineReady']): ?><label class="tier-free-sw"><input type="checkbox" class="tier-free"<?= $isFree ? ' checked' : '' ?>><span class="sw-track" aria-hidden="true"></span><span>Free ticket</span></label><?php endif; ?></div>
         <div class="field"><label>Quantity</label><input type="number" min="1" step="1" name="tier_quantity[]" value="<?= htmlspecialchars((string) ($tier['quantity_total'] ?? '')) ?>"></div>
         <div class="field tier-limit-field"><label>Limit per person</label><input type="number" min="1" max="<?= FREE_TICKET_MAX_LIMIT ?>" step="1" name="tier_limit[]" value="<?= htmlspecialchars($limit) ?>" placeholder="<?= $isFree ? FREE_TICKET_DEFAULT_LIMIT : 'No limit' ?>" data-free-placeholder="<?= FREE_TICKET_DEFAULT_LIMIT ?>" data-paid-placeholder="No limit"></div>
+        <?php if (bundles_ready()): ?>
+        <div class="field"><label>People per ticket</label><input type="number" min="1" max="50" step="1" name="tier_admits[]" value="<?= htmlspecialchars((string) ($tier['admits'] ?? '1')) ?>" placeholder="1"></div>
+        <div class="field"><label>Deal: buy</label><input type="number" min="2" max="50" step="1" name="tier_deal_buy[]" value="<?= htmlspecialchars((string) ($tier['deal_buy'] ?? '')) ?>" placeholder="e.g. 5"></div>
+        <div class="field"><label>pay for</label><input type="number" min="1" max="49" step="1" name="tier_deal_pay[]" value="<?= htmlspecialchars((string) ($tier['deal_pay'] ?? '')) ?>" placeholder="e.g. 4"></div>
+        <?php endif; ?>
         <button type="button" class="icon-btn remove-tier" title="Remove this ticket type">&times;</button>
       </div>
     <?php
@@ -196,6 +201,30 @@ function render_tier_form_row(array $tier, bool $withId): void
   </label>
   <p class="field-hint" style="margin-top:6px">Off by default: buyers see only your ticket prices, never how many have sold.</p>
   <?php endif; ?>
+
+  <?php if (transfers_ready()): ?>
+  <label class="tier-free-sw" style="display:flex; margin-top:18px">
+    <input type="checkbox" name="allow_transfers" value="1"<?= !isset($event['allow_transfers']) || !empty($event['allow_transfers']) ? ' checked' : '' ?>>
+    <span class="sw-track" aria-hidden="true"></span>
+    <span>Let buyers send tickets to friends</span>
+  </label>
+  <p class="field-hint" style="margin-top:6px">On by default. The friend accepts with an obitickets account and gets a new QR code, so the old one stops working.</p>
+  <?php endif; ?>
+
+  <?php if (referrals_ready()): $refOn = !empty($event['referral_friends']); ?>
+  <label class="tier-free-sw" style="display:flex; margin-top:18px">
+    <input type="checkbox" name="referral_on" value="1"<?= $refOn ? ' checked' : '' ?> data-ref-toggle>
+    <span class="sw-track" aria-hidden="true"></span>
+    <span>Reward buyers who bring friends</span>
+  </label>
+  <p class="field-hint" style="margin-top:6px">Each buyer gets a personal link. When enough friends buy through it, they get a one-time discount code. The discount comes out of your ticket money.</p>
+  <div class="tier-row" data-ref-fields style="margin-top:10px<?= $refOn ? '' : '; display:none' ?>">
+    <div class="field"><label for="referral_friends">Friends who must buy</label><input id="referral_friends" type="number" min="1" max="50" step="1" name="referral_friends" value="<?= htmlspecialchars((string) ($event['referral_friends'] ?? '3')) ?>"></div>
+    <div class="field"><label for="referral_reward">Reward (UGX off)</label><input id="referral_reward" type="number" min="500" step="500" name="referral_reward" value="<?= htmlspecialchars((string) (isset($event['referral_reward']) && $event['referral_reward'] !== null ? (int) $event['referral_reward'] : '2000')) ?>"></div>
+  </div>
+  <script>document.addEventListener('change',function(e){if(e.target.matches('[data-ref-toggle]')){var f=document.querySelector('[data-ref-fields]');if(f){f.style.display=e.target.checked?'':'none';}}});</script>
+  <?php endif; ?>
+  <?php if (questions_ready()) { render_question_fields(question_form_rows(isset($id) ? (int) $id : null, $qRows ?? [])); } ?>
 
   <button class="btn btn-purple btn-lg btn-block" type="submit" style="margin-top:28px"><?= htmlspecialchars($submitLabel) ?></button>
 </form>

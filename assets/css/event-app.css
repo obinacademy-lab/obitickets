@@ -164,3 +164,7 @@ body.ev-app .ev-cd-u *{color:inherit !important}
 body.ev-app .ev-cd-u small{color:var(--ad-mute) !important}
 body.ev-app .ev-cd-u.is-sec{background:rgba(240,49,63,.14) !important; box-shadow:inset 0 0 0 1px rgba(240,49,63,.5) !important}
 body.ev-app .ev-cd-u.is-sec b,body.ev-app .ev-cd-u.is-sec b span{color:#FF6B76 !important}
+
+/* Group tickets and deals (11/24): small badges under the ticket name, any event layout */
+.tier .tbadges{display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 2px}
+.tier .tbadges span{display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:99px; background:rgba(240,49,63,.14); color:#FF8A92; font-size:11.5px; font-weight:800; letter-spacing:.01em}

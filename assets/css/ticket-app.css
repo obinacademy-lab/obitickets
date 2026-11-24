@@ -62,3 +62,51 @@ body.tk-page a.tk-btn{color:#fff}
 .tk-sum b span{color:inherit}
 .tk-total b{font-size:16px; font-weight:800}
 @media (max-width:360px){ .tk-qr .ticket-issued-qr,.tk-qr .ticket-issued-qr img{width:170px !important; height:170px !important} }
+
+/* Add to calendar (11/24): two buttons under the event card */
+.cal-btns{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:-4px 0 14px}
+.cal-btn{display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:0 12px; border-radius:14px;
+  background:var(--ad-card,#161113); box-shadow:inset 0 0 0 1px var(--ad-line,#2E2527); color:#fff; font-size:.86rem; font-weight:700; text-decoration:none}
+.cal-btn:hover{background:#1E181A; color:#fff}
+.cal-btn svg{color:#F0313F; flex:none}
+
+/* Send a ticket to a friend (11/24) */
+.tk-send{margin-top:12px; text-align:left}
+.tk-send summary{display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; border-radius:14px; cursor:pointer; list-style:none;
+  background:rgba(255,255,255,.06); box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); color:#fff; font-weight:800; font-size:14px}
+.tk-send summary::-webkit-details-marker{display:none}
+.tk-send summary svg{color:#F0313F}
+.tk-send[open] summary{background:rgba(255,255,255,.1)}
+.tk-send-form{display:flex; flex-direction:column; gap:8px; padding:12px 2px 2px}
+.tk-send-form label{font-size:13px; font-weight:700; color:var(--ad-soft,#D9CFCF)}
+.tk-send-form input{height:48px; padding:0 14px; border-radius:12px; border:1px solid #2E2527; background:#0B0708; color:#fff; font:500 15px 'Plus Jakarta Sans',sans-serif}
+.tk-send-form input:focus{outline:0; border-color:#F0313F; box-shadow:0 0 0 3px rgba(240,49,63,.2)}
+.tk-send-form small{color:var(--ad-mute,#A99C9C); font-size:12px; line-height:1.45}
+.tk-mini{display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 14px; border:0; border-radius:12px; cursor:pointer;
+  background:rgba(255,255,255,.08); box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); color:#fff; font:700 14px 'Plus Jakarta Sans',sans-serif; text-decoration:none}
+body.tk-page a.tk-mini{color:#fff}
+.tk-mini.tk-red{background:#F0313F; box-shadow:none}
+.tk-mini.tk-wa{background:#1FA855; box-shadow:none}
+.tk-mini.tk-ghost{background:transparent}
+.tk-pend{margin-top:12px; padding:12px; border-radius:14px; background:rgba(240,49,63,.08); box-shadow:inset 0 0 0 1px rgba(240,49,63,.25); text-align:left}
+.tk-pend p{margin:0 0 10px; font-size:13.5px; line-height:1.5; color:var(--ad-soft,#D9CFCF)}
+.tk-pend b{color:#fff}
+.tk-pend-acts{display:flex; flex-wrap:wrap; gap:8px}
+.tk-pend-acts form{margin:0}
+.tk-sent{display:flex; gap:12px; align-items:flex-start; margin-top:10px; padding:14px; border-radius:14px; background:rgba(255,255,255,.05); text-align:left; font-size:14px; line-height:1.5; color:var(--ad-soft,#D9CFCF)}
+.tk-sent svg{flex:none; color:#4ADE80; margin-top:2px}
+.tk-sent b{color:#fff}
+.tk-ticket.is-sent{opacity:.85}
+.tk-send-msg{margin:12px 0 0; text-align:left}
+
+/* Invite friends / referral rewards (11/24) */
+.tk-ref{margin:0 0 14px; padding:16px; border-radius:18px; background:linear-gradient(160deg,rgba(240,49,63,.16),rgba(240,49,63,.05)); box-shadow:inset 0 0 0 1px rgba(240,49,63,.3)}
+.tk-ref h2{margin:0 0 6px; font-size:17px; color:#fff}
+.tk-ref p{margin:0 0 12px; font-size:13.5px; line-height:1.5; color:var(--ad-soft,#D9CFCF)}
+.tk-ref small{display:block; margin:6px 0 12px; font-size:12.5px; color:var(--ad-mute,#A99C9C)}
+.tk-ref-bar{height:8px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden}
+.tk-ref-bar i{display:block; height:100%; border-radius:99px; background:#F0313F}
+.tk-ref-code{display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(34,197,94,.12); box-shadow:inset 0 0 0 1px rgba(34,197,94,.35); font-size:13px; color:#BBF7D0}
+.tk-ref-code b{flex:1; color:#fff; letter-spacing:.06em; font-size:15px}
+.tk-ref-code em{font-style:normal; font-weight:700}
+.tk-ref-code.used{opacity:.55}

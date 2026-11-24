@@ -104,17 +104,21 @@ function resolve_checkout_cart(array $pending, ?int $userId = null): array
         }
         $lineTotal = $qty * (float) $tier['price'];
         $subtotal += $lineTotal;
-        $ticketCount += $qty;
+        // A group ticket ("Table for 4") lets in several people: one QR each, and the buyer fee per person (migration 042).
+        $admits = function_exists('tier_admits') ? tier_admits($tier) : 1;
+        $ticketCount += $qty * $admits;
         if ((float) $tier['price'] > 0) {
-            $paidTicketCount += $qty;
+            $paidTicketCount += $qty * $admits;
         }
         $currency = $currency ?? $tier['currency'];
         $lineItems[] = [
             'tier_id' => $tierId,
             'name' => $tier['name'],
             'quantity' => $qty,
+            'admits' => $admits,
             'unit_price' => (float) $tier['price'],
             'line_total' => $lineTotal,
+            'deal' => function_exists('tier_deal') ? tier_deal($tier) : null,
         ];
     }
 
@@ -127,9 +131,47 @@ function resolve_checkout_cart(array $pending, ?int $userId = null): array
     // totals zero, which skips the payment step entirely.
     $fee = $paidTicketCount * SERVICE_FEE_PER_TICKET;
 
+    // Discounts (migration 040) come off the ticket money only, never the service fee. 'subtotal' below is AFTER
+    // discounts: it is what the organizer earns before commission, exactly what orders.subtotal_amount stores.
+    $gross = $subtotal;
+    $discounts = [];      // [label, amount] lines shown at checkout
+    $promo = null;
+    $promoError = null;
+    // "Buy 5, pay for 4" deals first (migration 042): every full group of 5 gets 1 free.
+    if (discounts_ready()) {
+        foreach ($lineItems as $li) {
+            if (!empty($li['deal']) && $li['unit_price'] > 0) {
+                [$buy, $pay] = $li['deal'];
+                $free = intdiv((int) $li['quantity'], $buy) * ($buy - $pay);
+                if ($free > 0) {
+                    $discounts[] = ['Buy ' . $buy . ', pay ' . $pay . ' (' . $li['name'] . ')', $free * $li['unit_price']];
+                }
+            }
+        }
+    }
+    $afterDeals = $gross - array_sum(array_column($discounts, 1));
+    $promoCode = strtoupper(trim((string) ($pending['promo'] ?? '')));
+    if ($promoCode !== '' && discounts_ready() && $afterDeals > 0) {
+        [$promo, $promoError] = promo_lookup($promoCode, (int) $event['id'], $afterDeals);
+        if ($promo) {
+            $amount = $promo['discount_type'] === 'PERCENT'
+                ? round($afterDeals * min(100.0, (float) $promo['discount_value']) / 100, 0)
+                : (float) $promo['discount_value'];
+            $discounts[] = ['Promo ' . $promo['code'], min($amount, $afterDeals)];
+        }
+    }
+    $discount = min($gross, array_sum(array_column($discounts, 1)));
+    $subtotal = $gross - $discount;
+
     return [
         'event' => $event,
         'lineItems' => $lineItems,
+        'gross' => $gross,
+        'discount' => $discount,
+        'discounts' => $discounts,
+        'promo' => $promo,
+        'promoCode' => $promoCode,
+        'promoError' => $promoError,
         'subtotal' => $subtotal,
         'fee' => $fee,
         'total' => $subtotal + $fee,
@@ -138,6 +180,55 @@ function resolve_checkout_cart(array $pending, ?int $userId = null): array
         'isFree' => ($subtotal + $fee) <= 0.0,
         'notices' => $notices,
     ];
+}
+
+/** Discounts at checkout are switched on by migration 040. */
+function discounts_ready(): bool
+{
+    static $ready = null;
+    if ($ready === null) {
+        try {
+            $ready = (bool) db()->query("SHOW COLUMNS FROM orders LIKE 'discount_amount'")->fetch();
+        } catch (Throwable $e) {
+            $ready = false;
+        }
+    }
+    return $ready;
+}
+
+/**
+ * Checks a promo code for this event and this order size. Returns [row, null] when it applies, else [null, reason].
+ * Only codes made for this event apply: their discount comes out of that event's ticket money. Site-wide admin codes
+ * (no event) are refused until the owner decides who pays for them.
+ */
+function promo_lookup(string $code, int $eventId, float $gross): array
+{
+    if (!preg_match('/^[A-Z0-9_-]{3,32}$/', $code)) {
+        return [null, 'That promo code is not valid.'];
+    }
+    $stmt = db()->prepare('SELECT * FROM promo_codes WHERE code = ?');
+    $stmt->execute([$code]);
+    $p = $stmt->fetch();
+    if (!$p || !(int) $p['active']) {
+        return [null, 'That promo code is not valid.'];
+    }
+    if ((int) ($p['event_id'] ?? 0) !== $eventId) {
+        return [null, 'That promo code is not for this event.'];
+    }
+    $now = time();
+    if (!empty($p['starts_at']) && strtotime((string) $p['starts_at']) > $now) {
+        return [null, 'That promo code is not open yet.'];
+    }
+    if (!empty($p['ends_at']) && strtotime((string) $p['ends_at']) < $now) {
+        return [null, 'That promo code has expired.'];
+    }
+    if ($p['max_uses'] !== null && (int) $p['used_count'] >= (int) $p['max_uses']) {
+        return [null, 'That promo code has been fully used.'];
+    }
+    if ($p['min_order_amount'] !== null && $gross < (float) $p['min_order_amount']) {
+        return [null, 'That promo code needs an order of at least UGX ' . number_format((float) $p['min_order_amount']) . '.'];
+    }
+    return [$p, null];
 }
 
 /**
@@ -171,11 +262,21 @@ function create_pending_order(
     float $fee,
     float $total,
     string $currency,
-    string $phone
+    string $phone,
+    array $extra = []           // ['discount' => float, 'promo_id' => ?int, 'note' => ?string] from the cart (migration 040)
 ): int {
     $pdo = db();
     $pdo->beginTransaction();
     try {
+        // A promo code with a use limit is re-checked under a lock so two buyers cannot both take its last use.
+        if (!empty($extra['promo_id'])) {
+            $p = $pdo->prepare('SELECT max_uses, used_count, active FROM promo_codes WHERE id = ? FOR UPDATE');
+            $p->execute([(int) $extra['promo_id']]);
+            $pr = $p->fetch();
+            if (!$pr || !(int) $pr['active'] || ($pr['max_uses'] !== null && (int) $pr['used_count'] >= (int) $pr['max_uses'])) {
+                throw new InsufficientTicketsException('That promo code was just used up. Please start your order again without it.');
+            }
+        }
         foreach ($lineItems as $item) {
             $stmt = $pdo->prepare('SELECT * FROM ticket_types WHERE id = ? FOR UPDATE');
             $stmt->execute([$item['tier_id']]);
@@ -204,10 +305,17 @@ function create_pending_order(
         // A free order has no payment method and no phone to charge.
         $stmt->execute([$userId, $eventId, $subtotal, $fee, $commission, $total, $currency, $total > 0 ? 'MOBILE_MONEY' : null, $total > 0 ? $phone : null]);
         $orderId = (int) $pdo->lastInsertId();
+        if (discounts_ready() && ((float) ($extra['discount'] ?? 0) > 0 || !empty($extra['promo_id']))) {
+            $pdo->prepare('UPDATE orders SET discount_amount = ?, promo_code_id = ?, discount_note = ? WHERE id = ?')
+                ->execute([round((float) ($extra['discount'] ?? 0), 2), $extra['promo_id'] ?? null, isset($extra['note']) ? mb_substr((string) $extra['note'], 0, 160) : null, $orderId]);
+        }
 
         foreach ($lineItems as $item) {
             $stmt = $pdo->prepare('INSERT INTO order_items (order_id, ticket_type_id, quantity, unit_price) VALUES (?, ?, ?, ?)');
             $stmt->execute([$orderId, $item['tier_id'], $item['quantity'], $item['unit_price']]);
+            if (bundles_ready() && (int) ($item['admits'] ?? 1) > 1) {
+                $pdo->prepare('UPDATE order_items SET admits = ? WHERE id = ?')->execute([(int) $item['admits'], (int) $pdo->lastInsertId()]);
+            }
 
             $pdo->prepare('UPDATE ticket_types SET quantity_sold = quantity_sold + ? WHERE id = ?')
                 ->execute([$item['quantity'], $item['tier_id']]);
@@ -266,21 +374,34 @@ function finalize_order_success(int $orderId, ?string $statusMessage): void
             return;
         }
 
-        $stmt = $pdo->prepare('SELECT id, quantity FROM order_items WHERE order_id = ?');
+        // one QR per person: a "Table for 4" bought twice mints 8 tickets (order_items.admits, migration 042)
+        $stmt = $pdo->prepare('SELECT id, quantity' . (bundles_ready() ? ', admits' : ', 1 AS admits') . ' FROM order_items WHERE order_id = ?');
         $stmt->execute([$orderId]);
         foreach ($stmt->fetchAll() as $item) {
             $ticketStmt = $pdo->prepare('INSERT INTO tickets (order_item_id, ticket_code) VALUES (?, ?)');
-            for ($i = 0; $i < (int) $item['quantity']; $i++) {
+            for ($i = 0; $i < (int) $item['quantity'] * max(1, (int) $item['admits']); $i++) {
                 $ticketStmt->execute([$item['id'], generate_ticket_code()]);
             }
         }
 
         $pdo->prepare("UPDATE orders SET status = 'PAID', status_message = ?, paid_at = NOW() WHERE id = ?")
             ->execute([$statusMessage, $orderId]);
+        // a promo code counts as used once the order is actually paid
+        if (discounts_ready()) {
+            $pdo->prepare('UPDATE promo_codes SET used_count = used_count + 1 WHERE id = (SELECT promo_code_id FROM orders WHERE id = ?)')
+                ->execute([$orderId]);
+        }
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
+    }
+
+    // came through a friend's invite link: maybe that friend just earned a reward (includes/referrals.php)
+    try {
+        referral_after_paid($orderId);
+    } catch (Throwable $e) {
+        error_log('[referral] after paid failed for order ' . $orderId . ': ' . $e->getMessage());
     }
 
     try {
@@ -570,7 +691,7 @@ function flag_paid_order_needing_refund(array $order): void
 function get_order_for_user(int $orderId, int $userId): ?array
 {
     $stmt = db()->prepare('
-        SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at, e.venue_name
+        SELECT o.*, e.title AS event_title, e.slug AS event_slug, e.starts_at AS event_starts_at, e.ends_at AS event_ends_at, e.venue_name, e.venue_address
         FROM orders o
         JOIN events e ON e.id = o.event_id
         WHERE o.id = ? AND o.user_id = ?

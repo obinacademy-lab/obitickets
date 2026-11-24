@@ -20,6 +20,9 @@ $event = [
     'online_url' => '',
     'online_notes' => '',
     'show_tickets_left' => 0,
+    'allow_transfers' => 1,
+    'referral_friends' => null,
+    'referral_reward' => null,
     'district' => '',
 ];
 $tiers = [['name' => '', 'description' => '', 'price' => '', 'currency' => 'UGX', 'quantity_total' => '', 'max_per_person' => '']];
@@ -37,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event['ends_at'] = $_POST['ends_at'] ?? '';
     $event['status'] = ($_POST['status'] ?? 'DRAFT') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT';
     $event['show_tickets_left'] = !empty($_POST['show_tickets_left']) ? 1 : 0;
+    $event['allow_transfers'] = !empty($_POST['allow_transfers']) ? 1 : 0;
+    $event['referral_friends'] = !empty($_POST['referral_on']) ? max(1, min(50, (int) ($_POST['referral_friends'] ?? 0))) : null;
+    $event['referral_reward'] = !empty($_POST['referral_on']) ? max(0, (float) ($_POST['referral_reward'] ?? 0)) : null;
     $event['district'] = is_string($_POST['district'] ?? null) && is_uganda_district($_POST['district']) ? $_POST['district'] : '';
 
     $tiers = parse_tier_submission($_POST);
@@ -62,6 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     [$validTiers, $tierErrors] = validate_tiers($tiers);
+    [$qRows, $qErrors] = parse_question_submission($_POST);   // questions for buyers (includes/questions.php)
+    $tierErrors = array_merge($tierErrors, $qErrors);
     $errors = array_merge($errors, $tierErrors);
 
     // Only touch the filesystem once every other field has already passed —
@@ -82,6 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['banner_image'] = $bannerImage;
         $eventId = create_event($organizerId, $eventFields, $validTiers);
         set_event_show_tickets_left($eventId, (bool) $event['show_tickets_left']);
+        set_event_allow_transfers($eventId, (bool) $event['allow_transfers']);
+        set_event_referrals($eventId, $event['referral_friends'], $event['referral_reward'] !== null && $event['referral_reward'] > 0 ? (float) $event['referral_reward'] : null);
+        save_event_questions($eventId, $qRows);
         set_event_district($eventId, ($event['attend_mode'] ?? '') === 'ONLINE' ? null : ($event['district'] !== '' ? $event['district'] : detect_district($event['venue_address'], $event['venue_name'])));
         log_organizer_action($organizerId, $ctx['actor_id'], 'event.create', 'event', $eventId, ['title' => $eventFields['title']]);
 

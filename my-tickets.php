@@ -11,6 +11,11 @@ foreach ($orders as $o) {
     if (!empty($o['event_upcoming'])) { $upcoming[] = $o; } else { $past[] = $o; }
 }
 usort($upcoming, static fn ($a, $b) => strcmp((string) $a['event_starts_at'], (string) $b['event_starts_at']));
+// Tickets friends sent this person (includes/transfers.php): shown as their own cards, opening ticket.php.
+$received = tickets_received_by_user((int) $user['id']);
+$receivedUp = array_values(array_filter($received, static fn ($r) => (int) $r['event_upcoming'] === 1));
+$receivedPast = array_values(array_filter($received, static fn ($r) => (int) $r['event_upcoming'] !== 1));
+$hasAny = $orders || $received;
 
 /** Online state, price label and safe flyer path for one order. */
 $orderBits = static function (array $o): array {
@@ -47,7 +52,7 @@ include __DIR__ . '/includes/header.php';
     <a class="ad-icon" href="/me.php" aria-label="My profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></a>
   </div>
 
-  <?php if (!$orders): ?>
+  <?php if (!$hasAny): ?>
     <div class="tw-empty">
       <i><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z"/><path d="M14 5v14" stroke-dasharray="2 3"/></svg></i>
       <h2>No tickets yet</h2>
@@ -56,12 +61,12 @@ include __DIR__ . '/includes/header.php';
     </div>
   <?php else: ?>
     <div class="tw-seg" role="tablist" aria-label="Tickets">
-      <button type="button" role="tab" id="twTabUp" aria-controls="twUp" aria-selected="true">Upcoming <small><?= count($upcoming) ?></small></button>
-      <button type="button" role="tab" id="twTabPast" aria-controls="twPast" aria-selected="false" tabindex="-1">Past <small><?= count($past) ?></small></button>
+      <button type="button" role="tab" id="twTabUp" aria-controls="twUp" aria-selected="true">Upcoming <small><?= count($upcoming) + count($receivedUp) ?></small></button>
+      <button type="button" role="tab" id="twTabPast" aria-controls="twPast" aria-selected="false" tabindex="-1">Past <small><?= count($past) + count($receivedPast) ?></small></button>
     </div>
 
     <section id="twUp" role="tabpanel" aria-labelledby="twTabUp" class="tw-panel">
-      <?php if (!$upcoming): ?>
+      <?php if (!$upcoming && !$receivedUp): ?>
         <div class="tw-empty tw-empty-sm"><h2>Nothing coming up</h2><p>Your next event will show here.</p><a class="tw-cta" href="/discover.php">Discover events</a></div>
       <?php endif; ?>
       <?php foreach ($upcoming as $o):
@@ -100,10 +105,38 @@ include __DIR__ . '/includes/header.php';
           </div>
         </article>
       <?php endforeach; ?>
+      <?php foreach ($receivedUp as $r):
+          $ts = strtotime((string) $r['event_starts_at']);
+          $img = preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', (string) ($r['banner_image'] ?? '')) ? (string) $r['banner_image'] : '';
+          $days = (int) floor((strtotime(date('Y-m-d', $ts)) - strtotime(date('Y-m-d'))) / 86400);
+      ?>
+        <article class="tw-card">
+          <div class="tw-main">
+            <a class="tw-art" href="/event.php?slug=<?= urlencode((string) $r['event_slug']) ?>" aria-label="Event page">
+              <?php if ($img !== ''): ?><img src="<?= htmlspecialchars($img) ?>" alt="" loading="lazy"><?php else: ?><span><b><?= date('d', $ts) ?></b><?= strtoupper(date('M', $ts)) ?></span><?php endif; ?>
+            </a>
+            <div class="tw-info">
+              <span class="tw-when"><?= htmlspecialchars($days > 1 ? 'In ' . $days . ' days' : ($days === 1 ? 'Tomorrow' : ($days === 0 ? 'Today' : 'Now'))) ?></span>
+              <h2><?= htmlspecialchars((string) $r['event_title']) ?></h2>
+              <p><?= htmlspecialchars(date('D j M Y', $ts) . ' · ' . date('g:i A', $ts)) ?></p>
+              <p><?= htmlspecialchars((string) $r['venue_name']) ?></p>
+              <div class="tw-chips">
+                <span class="tw-chip"><?= htmlspecialchars((string) $r['tier_name']) ?></span>
+                <span class="tw-chip g">From <?= htmlspecialchars((string) ($r['from_name'] ?: 'a friend')) ?></span>
+              </div>
+            </div>
+          </div>
+          <div class="tw-cut" aria-hidden="true"></div>
+          <div class="tw-act">
+            <a class="tw-btn tw-red" href="/ticket.php?id=<?= (int) $r['id'] ?>"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></svg>Show ticket</a>
+            <span class="tw-no">Sent to you</span>
+          </div>
+        </article>
+      <?php endforeach; ?>
     </section>
 
     <section id="twPast" role="tabpanel" aria-labelledby="twTabPast" class="tw-panel" hidden>
-      <?php if (!$past): ?>
+      <?php if (!$past && !$receivedPast): ?>
         <div class="tw-empty tw-empty-sm"><h2>No past events yet</h2><p>Events you have been to will show here.</p></div>
       <?php endif; ?>
       <div class="tw-rows">
@@ -116,6 +149,16 @@ include __DIR__ . '/includes/header.php';
             <span class="tw-row-tx">
               <b><?= htmlspecialchars((string) $o['event_title']) ?></b>
               <small><?= htmlspecialchars(date('j M Y', $ts)) ?> &middot; <?php if ($b['free']): ?><span>Free</span><?php else: ?><?= htmlspecialchars($b['price']) ?><?php endif; ?> &middot; <?= htmlspecialchars(ucfirst(strtolower((string) $o['status']))) ?></small>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </a>
+        <?php endforeach; ?>
+        <?php foreach ($receivedPast as $r): $img = preg_match('#^/uploads/[A-Za-z0-9/_.\-]+$#', (string) ($r['banner_image'] ?? '')) ? (string) $r['banner_image'] : ''; ?>
+          <a class="tw-row" href="/ticket.php?id=<?= (int) $r['id'] ?>">
+            <span class="tw-row-art"><?php if ($img !== ''): ?><img src="<?= htmlspecialchars($img) ?>" alt="" loading="lazy"><?php endif; ?></span>
+            <span class="tw-row-tx">
+              <b><?= htmlspecialchars((string) $r['event_title']) ?></b>
+              <small><?= htmlspecialchars(date('j M Y', strtotime((string) $r['event_starts_at']))) ?> &middot; From <?= htmlspecialchars((string) ($r['from_name'] ?: 'a friend')) ?></small>
             </span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
           </a>

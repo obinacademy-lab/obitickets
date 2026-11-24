@@ -41,6 +41,9 @@ $event = [
     'online_url' => $existing['online_url'] ?? '',
     'online_notes' => $existing['online_notes'] ?? '',
     'show_tickets_left' => event_shows_tickets_left($existing) ? 1 : 0,
+    'allow_transfers' => event_allows_transfers($existing) ? 1 : 0,
+    'referral_friends' => $existing['referral_friends'] ?? null,
+    'referral_reward' => $existing['referral_reward'] ?? null,
     'district' => (string) (event_district($existing) ?? ''),
 ];
 $tiers = get_ticket_types_for_event($id);
@@ -62,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $event['ends_at'] = $_POST['ends_at'] ?? '';
     $event['status'] = ($_POST['status'] ?? 'DRAFT') === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT';
     $event['show_tickets_left'] = !empty($_POST['show_tickets_left']) ? 1 : 0;
+    $event['allow_transfers'] = !empty($_POST['allow_transfers']) ? 1 : 0;
+    $event['referral_friends'] = !empty($_POST['referral_on']) ? max(1, min(50, (int) ($_POST['referral_friends'] ?? 0))) : null;
+    $event['referral_reward'] = !empty($_POST['referral_on']) ? max(0, (float) ($_POST['referral_reward'] ?? 0)) : null;
     $event['district'] = is_string($_POST['district'] ?? null) && is_uganda_district($_POST['district']) ? $_POST['district'] : '';
 
     $tiers = parse_tier_submission($_POST);
@@ -87,6 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     [$validTiers, $tierErrors] = validate_tiers($tiers);
+    [$qRows, $qErrors] = parse_question_submission($_POST);   // questions for buyers (includes/questions.php)
+    $tierErrors = array_merge($tierErrors, $qErrors);
     $errors = array_merge($errors, $tierErrors);
 
     // Default to keeping whatever banner is already on the event; only
@@ -132,6 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $eventFields['banner_image'] = $bannerImage;
         update_event($id, $eventFields);
         set_event_show_tickets_left($id, (bool) $event['show_tickets_left']);
+        set_event_allow_transfers($id, (bool) $event['allow_transfers']);
+        set_event_referrals($id, $event['referral_friends'], $event['referral_reward'] !== null && $event['referral_reward'] > 0 ? (float) $event['referral_reward'] : null);
+        save_event_questions($id, $qRows);
         set_event_district($id, ($event['attend_mode'] ?? '') === 'ONLINE' ? null : ($event['district'] !== '' ? $event['district'] : detect_district($event['venue_address'], $event['venue_name'])));
         replace_ticket_types($id, $validTiers);
         log_organizer_action($organizerId, $ctx['actor_id'], 'event.update', 'event', $id);

@@ -25,9 +25,20 @@ if (($_GET['export'] ?? '') === 'csv') {
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="attendees.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['Name', 'Email', 'Phone', 'Event', 'Tier', 'Ticket code', 'Order #', 'Payment status', 'Check-in status', 'Purchased at', 'Joined online']);
+    // the buyers' answers to checkout questions (includes/questions.php), one column per question
+    $csvAnswers = answers_for_orders(array_column($rows, 'order_id'));
+    $qCols = [];
+    foreach ($csvAnswers as $byLabel) {
+        foreach (array_keys($byLabel) as $l) {
+            $qCols[$l] = true;
+        }
+    }
+    $qCols = array_keys($qCols);
+    fputcsv($out, array_merge(['Name', 'Email', 'Phone', 'Event', 'Tier', 'Ticket code', 'Order #', 'Payment status', 'Check-in status', 'Purchased at', 'Joined online'], $qCols));
     foreach ($rows as $r) {
-        fputcsv($out, [$r['attendee_name'], $r['attendee_email'], $r['attendee_phone'], $r['event_title'], $r['tier_name'], $r['ticket_code'], $r['order_id'], $r['payment_status'], $r['status'], $r['purchased_at'], ($j = $joinedFor($r)) === null ? '' : ($j > 0 ? 'Yes' : 'No')]);
+        $ans = $csvAnswers[(int) $r['order_id']] ?? [];
+        fputcsv($out, array_merge([$r['attendee_name'], $r['attendee_email'], $r['attendee_phone'], $r['event_title'], $r['tier_name'], $r['ticket_code'], $r['order_id'], $r['payment_status'], $r['status'], $r['purchased_at'], ($j = $joinedFor($r)) === null ? '' : ($j > 0 ? 'Yes' : 'No')],
+            array_map(static fn ($l) => $ans[$l] ?? '', $qCols)));
     }
     fclose($out);
     exit;

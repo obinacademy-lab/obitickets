@@ -50,6 +50,19 @@
         setError('Enter a valid phone number.');
         return;
       }
+      // the organizer's checkout questions (includes/questions.php): required ones must be answered first
+      const answers = {};
+      let missing = null;
+      root.querySelectorAll('[data-answer]').forEach((el) => {
+        const v = (el.value || '').trim();
+        if (v) answers[el.dataset.answer] = v;
+        else if (el.dataset.required === '1' && !missing) missing = el;
+      });
+      if (missing) {
+        setError('Please answer: ' + (missing.dataset.label || 'the question above'));
+        missing.focus();
+        return;
+      }
       setError('');
       payBtn.disabled = true; // guard against a double-click reserving stock twice
       show('waiting');
@@ -59,7 +72,7 @@
         const res = await fetch(initiateUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, csrf_token: csrfToken() }),
+          body: JSON.stringify({ phone, answers, csrf_token: csrfToken() }),
         });
         const data = await res.json();
         if (data.error) {

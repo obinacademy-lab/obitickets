@@ -41,6 +41,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reche
     exit;
 }
 
+// Send a ticket to a friend / take a send back (includes/transfers.php). Only tickets in this order.
+$sendNotice = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['send_ticket', 'cancel_send'], true)) {
+    verify_csrf();
+    $tid = (int) ($_POST['ticket_id'] ?? 0);
+    $mine = false;
+    foreach ($order['items'] as $it) {
+        foreach ($it['tickets'] as $tk) {
+            $mine = $mine || (int) $tk['id'] === $tid;
+        }
+    }
+    if ($mine && $_POST['action'] === 'send_ticket') {
+        $res = transfer_create($tid, $user, (string) ($_POST['to'] ?? ''));
+        $_SESSION['send_notice'] = isset($res['error']) ? ['error', $res['error'], $tid]
+            : ['ok', $res['via'] === 'email' ? 'Sent to ' . $res['contact'] . '. They will get an email to accept it.' : ($res['via'] === 'sms' ? 'Sent by SMS to ' . $res['contact'] . '.' : 'Ready. Share the link below with your friend.'), $tid];
+    } elseif ($mine) {
+        $_SESSION['send_notice'] = transfer_cancel($tid, (int) $user['id']) ? ['ok', 'Taken back. The ticket is yours again and the link no longer works.', $tid] : ['error', 'That send was already accepted or taken back.', $tid];
+    }
+    header('Location: /order.php?id=' . $orderId . '#ticket-' . $tid);
+    exit;
+}
+if (isset($_SESSION['send_notice'])) {
+    $sendNotice = $_SESSION['send_notice'];
+    unset($_SESSION['send_notice']);
+}
+$sendStates = transfer_states_for_order((int) $order['id']);
+
 $justPaid = isset($_GET['success']);
 
 $checkMessages = [
@@ -99,6 +126,35 @@ include __DIR__ . '/includes/header.php';
       <small><?= htmlspecialchars($orderWhere) ?></small>
     </span>
   </a>
+  <?php if ($isPaid && strtotime((string) ($order['event_ends_at'] ?: $order['event_starts_at'])) > time()): ?>
+    <?= calendar_buttons_html(['id' => (int) $order['event_id'], 'title' => $order['event_title'], 'slug' => $order['event_slug'], 'starts_at' => $order['event_starts_at'], 'ends_at' => $order['event_ends_at'], 'venue_name' => $orderIsOnlineOnly ? '' : $order['venue_name'], 'venue_address' => $orderIsOnlineOnly ? '' : ($order['venue_address'] ?? ''), 'attend_mode' => $orderIsOnlineOnly ? 'ONLINE' : ''], 'cal-btns tk-cal') ?>
+    <?php
+      // Invite friends (includes/referrals.php): only when the organizer runs referrals for this event
+      $refTerms = $orderEventFull ? referral_terms($orderEventFull) : null;
+      $refLink = $refTerms ? referral_link_for((int) $order['event_id'], (int) $user['id']) : null;
+    ?>
+    <?php if ($refTerms && $refLink):
+        [$refNeed, $refReward] = $refTerms;
+        $refUrl = referral_url($orderEventFull, $refLink);
+        $refCount = referral_friend_count((int) $refLink['id']);
+        $refCodes = referral_rewards_for_link((int) $refLink['id']);
+        $refToward = $refCount % $refNeed;
+    ?>
+      <section class="tk-ref" aria-labelledby="refH">
+        <h2 id="refH">Invite friends, get <?= htmlspecialchars($order['currency'] . ' ' . number_format($refReward)) ?> off</h2>
+        <p>When <?= $refNeed ?> friend<?= $refNeed === 1 ? '' : 's' ?> buy<?= $refNeed === 1 ? 's' : '' ?> a ticket through your link, you get a code worth <?= htmlspecialchars($order['currency'] . ' ' . number_format($refReward)) ?> off your next tickets to this event.</p>
+        <div class="tk-ref-bar" role="progressbar" aria-valuemin="0" aria-valuemax="<?= $refNeed ?>" aria-valuenow="<?= $refToward ?>" aria-label="Friends who bought"><i style="width:<?= (int) round(100 * $refToward / $refNeed) ?>%"></i></div>
+        <small><?= $refToward ?> of <?= $refNeed ?> friends so far<?= $refCount >= $refNeed ? ' (' . $refCount . ' in total)' : '' ?></small>
+        <div class="tk-pend-acts">
+          <a class="tk-mini tk-wa" href="https://wa.me/?text=<?= rawurlencode('Come with me to ' . $order['event_title'] . '! Get your ticket here: ' . $refUrl) ?>" target="_blank" rel="noopener">Share on WhatsApp</a>
+          <button class="tk-mini" type="button" data-copy="<?= htmlspecialchars($refUrl) ?>">Copy my link</button>
+        </div>
+        <?php foreach ($refCodes as $rc): ?>
+          <div class="tk-ref-code<?= (int) $rc['used_count'] > 0 ? ' used' : '' ?>"><span>Your reward code</span><b class="mono"><?= htmlspecialchars((string) $rc['code']) ?></b><em><?= (int) $rc['used_count'] > 0 ? 'Used' : htmlspecialchars($order['currency'] . ' ' . number_format((float) $rc['discount_value'])) . ' off' ?></em></div>
+        <?php endforeach; ?>
+      </section>
+    <?php endif; ?>
+  <?php endif; ?>
 
   <?php if ($justPaid): ?>
     <div class="tk-note tk-ok"><?= $isFreeOrder ? "🎉 You're in &mdash; your free ticket is ready below." : '🎉 Payment confirmed &mdash; your tickets are ready below.' ?></div>
@@ -135,7 +191,13 @@ include __DIR__ . '/includes/header.php';
     <div class="tk-list">
       <?php $n = 0; foreach ($order['items'] as $item): ?>
         <?php foreach ($item['tickets'] as $ticket): $n++; ?>
-          <article class="tk-ticket">
+          <?php
+            $st = $sendStates[(int) $ticket['id']] ?? null;
+            $gone = $st && $st['holder_id'] && $st['holder_id'] !== (int) $user['id'];   // accepted by a friend
+            $pend = $gone ? null : ($st['pending'] ?? null);
+            $canSend = !$gone && $isPaid && transfers_ready() && transfer_block_reason(transfer_ticket_row((int) $ticket['id']), (int) $user['id']) === null;
+          ?>
+          <article class="tk-ticket<?= $gone ? ' is-sent' : '' ?>" id="ticket-<?= (int) $ticket['id'] ?>">
             <div class="tk-ticket-top">
               <div>
                 <span class="tk-tier"><?= htmlspecialchars($item['tier_name']) ?></span>
@@ -144,9 +206,38 @@ include __DIR__ . '/includes/header.php';
               <span class="tk-pill tk-<?= $ticket['status'] === 'VALID' || $ticket['status'] === 'ACTIVE' ? 'g' : 'n' ?>"><?= htmlspecialchars($ticket['status']) ?></span>
             </div>
             <div class="tk-cut" aria-hidden="true"></div>
+            <?php if ($gone): ?>
+              <div class="tk-sent"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                <span>Sent to <b><?= htmlspecialchars((string) ($st['holder_name'] ?: 'a friend')) ?></b>. It is in their My Tickets now with its own QR code.</span></div>
+            <?php else: ?>
             <?php if (!$orderIsOnlineOnly): ?><div class="tk-qr"><div class="ticket-issued-qr" data-code="<?= htmlspecialchars($ticket['ticket_code']) ?>" role="img" aria-label="QR code for ticket <?= htmlspecialchars($ticket['ticket_code']) ?>"></div></div><?php endif; ?>
             <div class="ticket-issued-code tk-code mono"><?= htmlspecialchars($ticket['ticket_code']) ?></div>
             <div class="tk-hint"><?= $orderIsOnlineOnly ? 'Online ticket. Use the Join button above to enter the meeting.' : ($orderIsOnline ? 'Show this QR code at the venue. Use the Join button above for the online room.' : 'Show this QR code at the gate. Turn your screen brightness up.') ?></div>
+            <?php endif; ?>
+            <?php if ($sendNotice && (int) $sendNotice[2] === (int) $ticket['id']): ?>
+              <div class="tk-note tk-<?= $sendNotice[0] === 'ok' ? 'ok' : 'error' ?> tk-send-msg" role="status"><?= htmlspecialchars($sendNotice[1]) ?></div>
+            <?php endif; ?>
+            <?php if ($pend): $claim = transfer_claim_url((string) $pend['token']); ?>
+              <div class="tk-pend">
+                <p>Waiting for <b><?= htmlspecialchars((string) $pend['to_contact']) ?></b> to accept. Until they do, this ticket is still yours.</p>
+                <div class="tk-pend-acts">
+                  <a class="tk-mini tk-wa" href="https://wa.me/?text=<?= rawurlencode('I sent you a ticket to ' . $order['event_title'] . '. Accept it here: ' . $claim) ?>" target="_blank" rel="noopener">Share on WhatsApp</a>
+                  <button class="tk-mini" type="button" data-copy="<?= htmlspecialchars($claim) ?>">Copy link</button>
+                  <form method="post" action="/order.php?id=<?= (int) $order['id'] ?>"><?= csrf_field() ?><input type="hidden" name="action" value="cancel_send"><input type="hidden" name="ticket_id" value="<?= (int) $ticket['id'] ?>"><button class="tk-mini tk-ghost" type="submit">Take back</button></form>
+                </div>
+              </div>
+            <?php elseif ($canSend): ?>
+              <details class="tk-send"<?= $sendNotice && $sendNotice[0] === 'error' && (int) $sendNotice[2] === (int) $ticket['id'] ? ' open' : '' ?>>
+                <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Send to a friend</summary>
+                <form method="post" action="/order.php?id=<?= (int) $order['id'] ?>" class="tk-send-form">
+                  <?= csrf_field() ?><input type="hidden" name="action" value="send_ticket"><input type="hidden" name="ticket_id" value="<?= (int) $ticket['id'] ?>">
+                  <label for="to-<?= (int) $ticket['id'] ?>">Friend's email or phone</label>
+                  <input id="to-<?= (int) $ticket['id'] ?>" name="to" type="text" inputmode="email" autocomplete="off" placeholder="friend@email.com or 07XX XXX XXX" required maxlength="191">
+                  <small>They accept it with a free obitickets account. Then this QR stops working and they get a new one.</small>
+                  <button class="tk-mini tk-red" type="submit">Send ticket</button>
+                </form>
+              </details>
+            <?php endif; ?>
           </article>
         <?php endforeach; ?>
       <?php endforeach; ?>
@@ -155,6 +246,7 @@ include __DIR__ . '/includes/header.php';
 
   <div class="tk-sum">
     <div><span>Order number</span><b class="mono">#<?= (int) $order['id'] ?></b></div>
+    <?php if ((float) ($order['discount_amount'] ?? 0) > 0): ?><div><span><?= htmlspecialchars((string) ($order['discount_note'] ?: 'Discount')) ?></span><b class="mono">&minus; <?= htmlspecialchars($order['currency'] . ' ' . number_format((float) $order['discount_amount'], 0)) ?></b></div><?php endif; ?>
     <div><span>Status</span><b><span class="tk-pill tk-<?= $statusTone ?>"><?= htmlspecialchars($order['status']) ?></span></b></div>
     <?php if (!$isFreeOrder): ?><div><span>Paid via</span><b><?= htmlspecialchars(str_replace('_', ' ', $order['payment_method'] ?? '')) ?></b></div><?php endif; ?>
     <div class="tk-total"><span><?= $isPaid && !$isFreeOrder ? 'Total paid' : 'Total' ?></span><b><?php if ($isFreeOrder): ?><span>Free</span><?php else: ?><?= htmlspecialchars($order['currency'] . ' ' . number_format((float) $order['total_amount'], 0)) ?><?php endif; ?></b></div>
@@ -176,6 +268,14 @@ include __DIR__ . '/includes/header.php';
       correctLevel: QRCode.CorrectLevel.M
     });
   });
+</script>
+<script>
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-copy]");
+  if (!b) { return; }
+  var url = b.getAttribute("data-copy"), done = function () { var t = b.textContent; b.textContent = "Copied"; setTimeout(function () { b.textContent = t; }, 1600); };
+  if (navigator.clipboard) { navigator.clipboard.writeText(url).then(done, function () { window.prompt("Copy this link", url); }); } else { window.prompt("Copy this link", url); }
+});
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

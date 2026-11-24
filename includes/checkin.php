@@ -12,16 +12,19 @@ function find_ticket_by_code(string $code): ?array
     if ($code === '') {
         return null;
     }
+    // A ticket sent to a friend (migration 039) shows the friend's name at the gate.
+    $holder = function_exists('transfers_ready') && transfers_ready();
     $stmt = db()->prepare('
         SELECT t.*, oi.order_id, oi.ticket_type_id, tt.name AS tier_name, tt.event_id,
                e.title AS event_title, e.organizer_id,
-               u.name AS attendee_name, u.email AS attendee_email
+               ' . ($holder ? 'COALESCE(h.name, u.name) AS attendee_name, COALESCE(h.email, u.email) AS attendee_email' : 'u.name AS attendee_name, u.email AS attendee_email') . '
         FROM tickets t
         JOIN order_items oi ON oi.id = t.order_item_id
         JOIN ticket_types tt ON tt.id = oi.ticket_type_id
         JOIN events e ON e.id = tt.event_id
         JOIN orders o ON o.id = oi.order_id
         JOIN users u ON u.id = o.user_id
+        ' . ($holder ? 'LEFT JOIN users h ON h.id = t.holder_user_id' : '') . '
         WHERE t.ticket_code = ?
     ');
     $stmt->execute([$code]);
