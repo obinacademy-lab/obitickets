@@ -390,7 +390,8 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
                (e.ends_at < NOW()) AS event_ended,
                COALESCE(NULLIF(op.org_name, ""), ou.name) AS org_name, op.slug AS org_slug, (op.verification_status = "VERIFIED") AS org_verified,
                (SELECT MIN(t.price) FROM ticket_types t WHERE t.event_id = e.id) AS min_price,
-               (SELECT COUNT(*) FROM organizer_follows f2 WHERE f2.organizer_user_id = e.organizer_id AND f2.user_id = ' . (int) $viewer . ') AS i_follow' . ($viewer && function_exists('post_saves_ready') && post_saves_ready() ? ',
+               (SELECT COUNT(*) FROM organizer_follows f2 WHERE f2.organizer_user_id = e.organizer_id AND f2.user_id = ' . (int) $viewer . ') AS i_follow' . (function_exists('post_saves_ready') && post_saves_ready() ? ',
+               (SELECT COUNT(*) FROM post_saves ps2 WHERE ps2.post_id = x.id) AS save_count' : '') . ($viewer && function_exists('post_saves_ready') && post_saves_ready() ? ',
                (SELECT COUNT(*) FROM post_saves ps WHERE ps.post_id = x.id AND ps.user_id = ' . (int) $viewer . ') AS i_saved' : '') . (function_exists('post_boosts_ready') && post_boosts_ready() ? ',
                ' . $boostSql . ' AS boost_count' . ($viewer ? ',
                (SELECT COUNT(*) FROM post_boosts pb3 WHERE pb3.post_id = x.id AND pb3.user_id = ' . (int) $viewer . ') AS i_boosted' : '') : '') . '
@@ -555,6 +556,7 @@ function socials_item_public(array $row): array
     $item['share'] = socials_watch_url((int) $row['id']);
     $item['likes'] = moment_compact((int) $row['reaction_count']);
     $item['saved'] = (int) ($row['i_saved'] ?? 0) > 0;
+    $item['saves'] = (int) ($row['save_count'] ?? 0);
     $item['boosts'] = (int) ($row['boost_count'] ?? 0);
     $item['boosted'] = (int) ($row['i_boosted'] ?? 0) > 0;
     // The picture's own shape (width / height) so the player can show it whole from the first frame: the image, the

@@ -214,7 +214,8 @@
     like.setAttribute('aria-pressed', it.liked ? 'true' : 'false');
     var com = railButton('Comments', IC.chat, compact(d.comments), true);
     var sh = railButton('Share', IC.share, compact(d.shares), true);
-    var save = railButton(d.saved ? 'Saved' : 'Save', IC.save, d.saved ? 'Saved' : 'Save', true, 'fd-save');
+    d.saves = Number(d.saves) || 0;
+    var save = railButton(d.saved ? 'Saved' : 'Save', IC.save, compact(d.saves), true, 'fd-save');
     if (d.saved) { save.classList.add('is-on'); }
     save.setAttribute('aria-pressed', d.saved ? 'true' : 'false');
     if (!D.canSave) { save.hidden = true; }
@@ -354,16 +355,21 @@
     save.addEventListener('click', function () {
       if (needLogin()) { return; }
       var on = !d.saved;
+      // the number moves at once (like the heart) and is corrected by the server's real count when it answers
       var paint = function (v) {
+        if (v !== d.saved) { d.saves = Math.max(0, d.saves + (v ? 1 : -1)); }
         d.saved = v;
         save.classList.toggle('is-on', v); save.setAttribute('aria-pressed', v ? 'true' : 'false');
-        save.setAttribute('aria-label', v ? 'Saved' : 'Save'); save._count.textContent = v ? 'Saved' : 'Save';
+        save.setAttribute('aria-label', v ? 'Saved' : 'Save'); save._count.textContent = compact(d.saves);
       };
       paint(on);
       api('/api/community.php', { action: 'save_post', id: d.id, save: on }).then(function (r) {
         if (r && r._status === 401) { window.location.href = D.loginUrl; return; }
         if (!r || !r.ok) { paint(!on); toast((r && r.error) || 'Could not save. Try again.'); }
-        else { toast(on ? 'Saved' : 'Removed from saved'); }
+        else {
+          if (typeof r.count === 'number') { d.saves = r.count; save._count.textContent = compact(d.saves); }
+          toast(on ? 'Saved' : 'Removed from saved');
+        }
       }, function () { paint(!on); toast('Could not save. Try again.'); });
     });
     fol.addEventListener('click', function () {

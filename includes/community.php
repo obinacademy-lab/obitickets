@@ -644,7 +644,9 @@ function set_post_save(int $postId, int $userId, bool $save): array
     } else {
         db()->prepare('DELETE FROM post_saves WHERE post_id = ? AND user_id = ?')->execute([$postId, $userId]);
     }
-    return ['ok' => true, 'saved' => $save];
+    $n = db()->prepare('SELECT COUNT(*) FROM post_saves WHERE post_id = ?');
+    $n->execute([$postId]);
+    return ['ok' => true, 'saved' => $save, 'count' => (int) $n->fetchColumn()];
 }
 
 // =====================================================================
