@@ -489,7 +489,7 @@
   }
   function loadMore() {
     loading = true;
-    api('/api/socials.php', { action: 'feed', tab: D.tab, offset: offset, start: D.org ? null : D.start, org: D.org || null }).then(function (r) {
+    api('/api/socials.php', { action: 'feed', tab: D.tab, offset: offset, start: D.org ? null : D.start, org: D.org || null, near: D.near || null, seed: D.seed || null }).then(function (r) {
       loading = false;
       if (!r || !r.ok) { hasMore = false; return; }
       offset += r.items.length; hasMore = !!r.has_more;

@@ -341,7 +341,44 @@ function socials_admin_payments(int $limit = 60): array
  *
  * @return list<array<string,mixed>> rows ready for socials_item_public()
  */
-function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, int $limit = SOCIALS_FEED_PAGE, ?int $startId = null, ?int $organizerId = null, ?string $category = null): array
+/**
+ * Every event that can show videos in Near You, ranked by how close it is to a district: published and not over for
+ * more than a week. There is no distance limit: if nothing is close, the next closest places come up, so the tab
+ * is never empty. Events with no place (online, or an address nobody can match) come last.
+ * Returns [eventId => closeness bucket]: 0 = same district, then one step per ~15 km, 99 = no place.
+ * @return array<int,int>
+ */
+function socials_near_event_ids(string $district): array
+{
+    if (!is_uganda_district($district) || !function_exists('event_district')) {
+        return [];
+    }
+    $cols = 'id, venue_name, venue_address, ' . (function_exists('places_ready') && places_ready() ? 'district' : 'NULL AS district') . ', '
+        . (events_online_ready() ? 'attend_mode' : "'IN_PERSON' AS attend_mode");
+    $rows = db()->query("SELECT $cols FROM events WHERE status = 'PUBLISHED' AND ends_at >= NOW() - INTERVAL 7 DAY ORDER BY id DESC LIMIT 2000")->fetchAll();
+    if (!$rows) {
+        // nothing current at all: better older events than an empty tab
+        $rows = db()->query("SELECT $cols FROM events WHERE status = 'PUBLISHED' ORDER BY id DESC LIMIT 2000")->fetchAll();
+    }
+    $out = [];
+    foreach ($rows as $ev) {
+        $d = event_district($ev);
+        if ($d === null) {
+            $out[(int) $ev['id']] = 99;
+            continue;
+        }
+        $km = $d === $district ? 0.0 : district_distance_km($district, $d);
+        $out[(int) $ev['id']] = is_finite($km) ? min(98, (int) round($km / 15)) : 98;
+    }
+    return $out;
+}
+
+/**
+ * The feed. $tab: foryou | following | trending | near | profile. $nearDistrict is only for "near" (a district name).
+ * $seed (For You only) gives this visit its own random order: the same seed always gives the same order, so scrolling
+ * through pages never repeats a video, and a new visit (new seed) shows a different mix.
+ */
+function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, int $limit = SOCIALS_FEED_PAGE, ?int $startId = null, ?int $organizerId = null, ?string $category = null, ?string $nearDistrict = null, ?int $seed = null): array
 {
     if (!moments_ready()) {
         return [];
@@ -352,6 +389,15 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
 
     $where = "e.status = 'PUBLISHED'";
     $params = [];
+    $nearBuckets = [];
+    if ($tab === 'near') {
+        // always a place to measure from: the given district, else Kampala (the capital, where most events are)
+        $nearBuckets = socials_near_event_ids(is_uganda_district((string) $nearDistrict) ? (string) $nearDistrict : 'Kampala');
+        if (!$nearBuckets) {
+            return [];
+        }
+        $where .= ' AND e.id IN (' . implode(',', array_map('intval', array_keys($nearBuckets))) . ')';
+    }
     if ($tab === 'following') {
         if (!$viewer) {
             return [];
@@ -378,9 +424,25 @@ function socials_feed(?int $viewerId, string $tab = 'foryou', int $offset = 0, i
     } elseif ($tab === 'following' || $organizerId) {
         $order = 'x.id DESC';
     } else {
-        $order = '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + ' . $boostSql . ' * 6 + LEAST(x.view_count, 600) / 20 + 4)
+        $score = '((x.reaction_count * 3 + x.comment_count * 4 + x.share_count * 5 + ' . $boostSql . ' * 6 + LEAST(x.view_count, 600) / 20 + 4)
               * IF(e.ends_at >= NOW(), 1, 0.45)
-              / POW(TIMESTAMPDIFF(HOUR, x.created_at, NOW()) + 6, 1.15)) DESC, x.id DESC';
+              / POW(TIMESTAMPDIFF(HOUR, x.created_at, NOW()) + 6, 1.15))';
+        if ($tab === 'near') {
+            // the closest place first (each step ~15 km further, events with no place last); within a place, events
+            // that are still on before ones that just ended, then the best video
+            $whens = '';
+            foreach ($nearBuckets as $eid => $bucket) {
+                $whens .= ' WHEN ' . (int) $eid . ' THEN ' . (int) $bucket;
+            }
+            $order = 'CASE e.id' . $whens . ' ELSE 99 END ASC, (e.ends_at < NOW()) ASC, ' . $score . ' DESC, x.id DESC';
+        } elseif ($seed !== null) {
+            // mostly luck, a little quality: a per-video number from the visit's seed (70%) plus how well the video
+            // does (30%, squeezed into 0..1), and videos of events that are over come up less often
+            $rnd = '((CRC32(CONCAT(x.id, "-", ' . (int) $seed . ')) % 10000) / 10000)';
+            $order = 'IF(e.ends_at >= NOW(), 1, 0.6) * (0.7 * ' . $rnd . ' + 0.3 * (' . $score . ' / (' . $score . ' + 3))) DESC, x.id DESC';
+        } else {
+            $order = $score . ' DESC, x.id DESC';
+        }
     }
     $first = $startId ? '(x.id = ' . (int) $startId . ') DESC, ' : '';
 

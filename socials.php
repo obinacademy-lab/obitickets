@@ -5,7 +5,24 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 $user = current_user();
 $uid = $user ? (int) $user['id'] : null;
-$tab = in_array($_GET['tab'] ?? '', ['following', 'trending'], true) ? (string) $_GET['tab'] : 'foryou';
+$tab = in_array($_GET['tab'] ?? '', ['following', 'trending', 'near'], true) ? (string) $_GET['tab'] : 'foryou';
+// Near You: only a district name ever reaches the server (the browser works it out from the phone's location, which
+// never leaves the phone). It comes from ?near=, else the last one remembered in the ot_near cookie.
+$nearGet = trim((string) ($_GET['near'] ?? ''));
+// the place to measure from, best guess first, so the videos appear at once: ?near=, the last Near You place, the
+// place the visitor last browsed, else Kampala. The page then checks the phone's real location and switches if needed.
+$near = '';
+foreach ([$nearGet, (string) ($_COOKIE['ot_near'] ?? ''), (string) ($_COOKIE['ot_place'] ?? ''), 'Kampala'] as $guess) {
+    if (is_uganda_district($guess)) {
+        $near = $guess;
+        break;
+    }
+}
+if (is_uganda_district($nearGet) && ($_COOKIE['ot_near'] ?? '') !== $nearGet) {
+    setcookie('ot_near', $nearGet, ['expires' => time() + 30 * 86400, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off', 'samesite' => 'Lax']);
+}
+// Each visit to For You gets its own random order (includes/socials.php, socials_feed): refresh = a different mix.
+$feedSeed = random_int(1, 2000000000);
 $startId = (int) ($_GET['v'] ?? 0);
 $ready = function_exists('socials_ready') && moments_ready();
 // Two screens: the list (the Socials tab opens it), one card per organizer holding their posts; and the
@@ -33,7 +50,7 @@ if (!$ready) {
     if (!in_array($cat, $cats, true)) {
         $cat = '';
     }
-    $shorts = array_map('socials_item_public', socials_feed($uid, $tab, 0, SOCIALS_SHELF_PAGE, null, null, $cat));
+    $shorts = array_map('socials_item_public', socials_feed($uid, $tab, 0, SOCIALS_SHELF_PAGE, null, null, $cat, $tab === 'near' ? $near : null));
     $featured = ($tab === 'foryou' && $cat === '') ? socials_featured() : null;
     $rows = [];
 } elseif ($orgFilter > 0) {
@@ -41,7 +58,7 @@ if (!$ready) {
     $rows = socials_feed($uid, 'profile', 0, 24, null, $orgFilter);
     $orgCount = socials_profile_counts($orgFilter)['posts'];
 } else {
-    $rows = socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null);
+    $rows = socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null, null, null, $tab === 'near' ? $near : null, $tab === 'foryou' ? $feedSeed : null);
 }
 $items = array_map('socials_item_public', $rows);
 if ($orgFilter > 0 && $items) {
@@ -151,8 +168,9 @@ include __DIR__ . '/includes/header.php';
   <div class="so-top">
     <a class="so-search so-bell" href="<?= $user ? '/notifications.php' : htmlspecialchars($loginUrl) ?>" aria-label="Notifications<?= $soUnread ? ', ' . (int) $soUnread . ' unread' : '' ?>"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><?php if ($soUnread): ?><i></i><?php endif; ?></a>
     <nav class="so-tabs" aria-label="Feed">
-      <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= $tab !== 'following' ? ' class="on" aria-current="page"' : '' ?>>For You</a>
+      <a href="<?= htmlspecialchars($tabUrl('foryou')) ?>"<?= !in_array($tab, ['following', 'near'], true) ? ' class="on" aria-current="page"' : '' ?>>For You</a>
       <a href="<?= htmlspecialchars($tabUrl('following')) ?>"<?= $tab === 'following' ? ' class="on" aria-current="page"' : '' ?>>Following</a>
+      <a href="<?= htmlspecialchars($tabUrl('near')) ?>" data-near-link<?= $tab === 'near' ? ' class="on" aria-current="page"' : '' ?>>Near You</a>
     </nav>
     <a class="so-search" href="/discover.php" aria-label="Search events"><svg width="22" height="22" aria-hidden="true"><use href="#ic-search"/></svg></a>
   </div>
@@ -195,6 +213,11 @@ include __DIR__ . '/includes/header.php';
 
 <?php if ($shorts): ?>
 <script src="/assets/js/socials-list.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials-list.js') ?: time() ?>" defer></script>
+<?php endif; ?>
+
+<?php if ($view === 'player'): ?>
+<script type="application/json" id="soDistricts"><?= json_encode(array_map(static fn ($n, $v) => [$n, $v[1], $v[2]], array_keys(uganda_districts()), uganda_districts()), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="/assets/js/socials-near.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials-near.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 
 <?php if ($items && $view === 'player'): ?>
@@ -256,6 +279,8 @@ include __DIR__ . '/includes/header.php';
     'items' => $items,
     'hasMore' => count($items) === ($orgFilter ? 24 : SOCIALS_FEED_PAGE),
     'tab' => $tab,
+    'near' => $tab === 'near' ? $near : null,
+    'seed' => $tab === 'foryou' ? $feedSeed : null,
     'start' => $startId ?: null,
     'org' => $orgFilter ?: null,
     'signedIn' => (bool) $user,

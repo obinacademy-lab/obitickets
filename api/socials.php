@@ -42,19 +42,23 @@ $commentOut = static function (array $c) use (&$commentOut): array {
 try {
     switch ($action) {
         case 'feed':
-            $tab = in_array($body['tab'] ?? '', ['following', 'trending'], true) ? (string) $body['tab'] : 'foryou';
+            $tab = in_array($body['tab'] ?? '', ['following', 'trending', 'near'], true) ? (string) $body['tab'] : 'foryou';
             $offset = max(0, (int) ($body['offset'] ?? 0));
             $start = !empty($body['start']) ? (int) $body['start'] : null;
             $org = max(0, (int) ($body['org'] ?? 0));
+            // Near You: a district name only; For You: the visit's seed keeps the random order the same while scrolling
+            $near = is_uganda_district((string) ($body['near'] ?? '')) ? (string) $body['near'] : null;
+            $seed = $tab === 'foryou' && !empty($body['seed']) ? max(1, min(2000000000, (int) $body['seed'])) : null;
             // one organizer's posts (the player opened from their card), or the main feed
-            $rows = $org ? socials_feed($uid, 'profile', $offset, SOCIALS_FEED_PAGE, null, $org) : socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start);
+            $rows = $org ? socials_feed($uid, 'profile', $offset, SOCIALS_FEED_PAGE, null, $org) : socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start, null, null, $tab === 'near' ? $near : null, $seed);
             json_response(['ok' => true, 'items' => array_map('socials_item_public', $rows), 'has_more' => count($rows) === SOCIALS_FEED_PAGE]);
 
         case 'shorts':
             // more tiles for the Socials list (Shorts Shelf), drawn here so the page and this match exactly
-            $tab = in_array($body['tab'] ?? '', ['following', 'trending'], true) ? (string) $body['tab'] : 'foryou';
+            $tab = in_array($body['tab'] ?? '', ['following', 'trending', 'near'], true) ? (string) $body['tab'] : 'foryou';
             $cat = mb_substr(trim((string) ($body['cat'] ?? '')), 0, 64);
-            $items = array_map('socials_item_public', socials_feed($uid, $tab, max(0, (int) ($body['offset'] ?? 0)), SOCIALS_SHELF_PAGE, null, null, $cat));
+            $nearShelf = is_uganda_district((string) ($body['near'] ?? '')) ? (string) $body['near'] : null;
+            $items = array_map('socials_item_public', socials_feed($uid, $tab, max(0, (int) ($body['offset'] ?? 0)), SOCIALS_SHELF_PAGE, null, null, $cat, $tab === 'near' ? $nearShelf : null));
             json_response(['ok' => true, 'html' => implode('', array_map(static fn ($it) => socials_short_tile_html($it, $tab), $items)), 'count' => count($items), 'has_more' => count($items) === SOCIALS_SHELF_PAGE]);
 
         case 'org_cards':

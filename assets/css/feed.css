@@ -296,6 +296,23 @@ body.so-v3 .so-toast.on{transform:translate(-50%, 0)}
 .fd-facts li svg{justify-self:center; opacity:.9}
 .fd-facts li span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .fd-facts .fd-track{font-weight:500; color:rgba(255,255,255,.8)}
+/* three tabs at the top (For You, Following, Near You) have to fit on small phones */
+body.so-v3 .so-tabs{gap:20px; font-size:16.5px}
+@media (max-width:400px){ body.so-v3 .so-tabs{gap:15px; font-size:15.5px} }
+@media (max-width:340px){
+  body.so-v3 .so-top{padding:0 6px; gap:4px}
+  body.so-v3 .so-top .so-search{width:36px; height:36px}
+  body.so-v3 .so-tabs{gap:10px; font-size:14px}
+}
+/* the empty "Near You" screen: location button, district picker, link to all videos */
+.so-near-msg{color:#FFB4B4; font-size:13.5px; max-width:30ch; margin:0}
+.so-near-form{display:flex; gap:8px; align-items:center; margin-top:6px; max-width:100%}
+.so-near-form select{height:44px; border-radius:22px; border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.08); color:#fff; padding:0 14px; font:600 14px 'Plus Jakarta Sans',system-ui,sans-serif; max-width:210px}
+.so-near-form select option,.so-near-form select optgroup{color:#111; background:#fff}
+.so-near-go{height:44px; padding:0 18px; border-radius:22px; border:0; background:rgba(255,255,255,.14); color:#fff; font:700 14px 'Plus Jakarta Sans',system-ui,sans-serif; cursor:pointer}
+.so-near-go:hover{background:rgba(255,255,255,.22)}
+.so-near-all{color:rgba(255,255,255,.7); font-size:13.5px; text-decoration:underline; margin-top:2px}
+.so-btn:disabled{opacity:.6; cursor:default}
 /* less text on the video: one-line caption (tap to read all), smaller lines, tighter gaps */
 .fd-info{gap:4px}
 .fd-cap{-webkit-line-clamp:1; font-size:13.5px; line-height:1.35}
