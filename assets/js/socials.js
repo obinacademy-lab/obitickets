@@ -144,8 +144,89 @@
     return b;
   }
 
+  // ---------------------------------------------------------------- the shared video elements
+  // Four <video> elements are reused for every video post. A post gets one (it.video) when it is within one post of the
+  // one being watched and gives it back when it is further away. The first tap starts all four (primeDecks), which
+  // is what lets iPhones play the sound of every later video without another tap.
+  var DECKS = 4, decks = [], deckPrimed = false;
+  function makeDeck() {
+    var v = document.createElement('video');
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+    v.loop = true; v.muted = true; v.preload = 'none';
+    var deck = { el: v, owner: null };
+    v.addEventListener('loadedmetadata', function () { var o = deck.owner; if (o && v.videoWidth && v.videoHeight) { setShape(o, v.videoWidth / v.videoHeight); measure(o); } });
+    v.addEventListener('waiting', function () { if (deck.owner) { deck.owner.el.classList.add('is-loading'); } });
+    v.addEventListener('playing', function () { if (deck.owner) { deck.owner.el.classList.remove('is-loading', 'is-broken'); } });
+    v.addEventListener('canplay', function () { if (deck.owner) { deck.owner.el.classList.remove('is-loading'); } });
+    v.addEventListener('error', function () { var o = deck.owner; if (o && v.getAttribute('src')) { o.el.classList.remove('is-loading'); o.el.classList.add('is-broken'); } });
+    v.addEventListener('timeupdate', function () {
+      var o = deck.owner;
+      if (o && o.progFill && v.duration) { o.progFill.style.transform = 'scaleX(' + Math.min(1, v.currentTime / v.duration).toFixed(4) + ')'; }
+    });
+    decks.push(deck);
+    return deck;
+  }
+  for (var di = 0; di < DECKS; di++) { makeDeck(); }
+  // give a video post one of the shared elements (the one furthest from the post being watched is taken back if all are busy)
+  function bindDeck(it, forPlay) {
+    if (!it.isVideo) { return null; }
+    if (it.video) { it.video.preload = forPlay ? 'auto' : it.video.preload; return it.video; }
+    var deck = null, i;
+    for (i = 0; i < decks.length; i++) { if (!decks[i].owner) { deck = decks[i]; break; } }
+    if (!deck) {
+      var cur = items.indexOf(current), best = -1;
+      for (i = 0; i < decks.length; i++) {
+        var o = decks[i].owner, dist = Math.abs(items.indexOf(o) - cur);
+        if (o !== current && dist > best) { best = dist; deck = decks[i]; }
+      }
+      if (!deck) { return null; }
+      releaseDeck(deck.owner);
+    }
+    var v = deck.el;
+    deck.owner = it; it.video = v;
+    v.muted = true;
+    v.preload = forPlay ? 'auto' : 'metadata';
+    if (it.data.poster) { v.poster = it.data.poster; } else { v.removeAttribute('poster'); }
+    if (it.progFill) { it.progFill.style.transform = 'scaleX(0)'; }
+    it.pic.insertBefore(v, it.spin);
+    v.setAttribute('src', it.videoSrc);
+    return v;
+  }
+  function releaseDeck(it) {
+    if (!it || !it.video) { return; }
+    var v = it.video, i;
+    try { v.pause(); } catch (e) { /* fine */ }
+    v.removeAttribute('src'); v.removeAttribute('poster');
+    try { v.load(); } catch (e) { /* fine */ }
+    if (v.parentNode) { v.parentNode.removeChild(v); }
+    for (i = 0; i < decks.length; i++) { if (decks[i].el === v) { decks[i].owner = null; } }
+    it.video = null; it.scrubbing = false;
+    it.el.classList.remove('is-loading', 'is-broken');
+  }
+  // keep a video only for the post being watched, the one before it and the two after it
+  function trimDecks() {
+    var idx = items.indexOf(current);
+    if (idx < 0) { return; }
+    items.forEach(function (x, i) { if (x.video && (i < idx - 1 || i > idx + 2)) { releaseDeck(x); } });
+  }
+  // On the first tap or key press: start every shared element once, which is what iPhones need to allow sound later
+  function primeDecks() {
+    if (deckPrimed) { return; }
+    deckPrimed = true;
+    decks.forEach(function (d) {
+      if (d.owner && d.owner === current) { return; }   // the video playing now is unlocked by this same tap
+      var v = d.el;
+      try {
+        v.muted = false;
+        var p = v.play(); v.pause();
+        if (p && p.catch) { p.catch(function () { /* nothing to play yet: fine */ }); }
+      } catch (e) { /* fine */ }
+      v.muted = true;
+    });
+  }
+
   function build(d) {
-    var it = { data: d, video: null, audio: null, slides: [], bars: [], timer: null, viewed: false, liked: !!d.mine };
+    var it = { data: d, video: null, isVideo: false, audio: null, slides: [], bars: [], timer: null, viewed: false, liked: !!d.mine };
     var a = el('article', 'fd-item');
     a.setAttribute('data-id', d.id);
     a.setAttribute('aria-label', d.event.title + ', by ' + d.org.name);
@@ -161,22 +242,14 @@
     it.stage = stage;
     stage.appendChild(pic); a.appendChild(stage);
     if (d.type === 'video') {
-      var v = document.createElement('video');
-      v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
-      v.loop = true; v.muted = true; v.preload = 'none';
-      if (d.poster) { v.poster = d.poster; }
-      v.setAttribute('data-src', d.src);
-      pic.appendChild(v);
-      it.video = v;
-      v.addEventListener('loadedmetadata', function () { if (v.videoWidth && v.videoHeight) { setShape(it, v.videoWidth / v.videoHeight); measure(it); } });
-      v.addEventListener('waiting', function () { a.classList.add('is-loading'); });
-      v.addEventListener('playing', function () { a.classList.remove('is-loading', 'is-broken'); });
-      v.addEventListener('canplay', function () { a.classList.remove('is-loading'); });
-      v.addEventListener('error', function () { a.classList.remove('is-loading'); a.classList.add('is-broken'); });
-      v.addEventListener('timeupdate', function () {
-        if (it.progFill && v.duration) { it.progFill.style.transform = 'scaleX(' + Math.min(1, v.currentTime / v.duration).toFixed(4) + ')'; }
-      });
-      var spin = el('span', 'fd-spin'); spin.setAttribute('aria-hidden', 'true'); pic.appendChild(spin);
+      // The real <video> is borrowed from a small shared set only while this post is on or next to the screen (see
+      // bindDeck / releaseDeck). iPhones allow sound only from a video element that a tap has started, so reusing the same
+      // few elements means the sound keeps working for every later video after one tap.
+      it.isVideo = true;
+      it.videoSrc = d.src;
+      it.pic = pic;
+      if (d.poster) { var pimg = el('img'); pimg.alt = ''; pimg.decoding = 'async'; pimg.loading = 'lazy'; pimg.src = d.poster; pic.appendChild(pimg); }
+      it.spin = el('span', 'fd-spin'); it.spin.setAttribute('aria-hidden', 'true'); pic.appendChild(it.spin);
       pic.appendChild(el('p', 'fd-err', 'This video cannot play right now.'));
     } else if (d.type === 'slideshow' && d.slides && d.slides.length) {
       var bars = el('div', 'fd-bars'); bars.setAttribute('aria-hidden', 'true');
@@ -199,12 +272,12 @@
     }
 
     var tap = el('button', 'fd-tap'); tap.type = 'button';
-    tap.setAttribute('aria-label', it.video ? 'Pause or play. Double tap to like.' : 'Show or hide the details. Double tap to like.');
+    tap.setAttribute('aria-label', it.isVideo ? 'Pause or play. Double tap to like.' : 'Show or hide the details. Double tap to like.');
     a.appendChild(tap);
     var paused = el('span', 'fd-paused'); paused.setAttribute('aria-hidden', 'true'); paused.appendChild(svg(IC.play, 34, true)); a.appendChild(paused);
     var heart = el('span', 'fd-heart'); heart.setAttribute('aria-hidden', 'true'); heart.appendChild(svg(IC.heart, 110, true)); a.appendChild(heart);
 
-    if (it.video || it.audio) {
+    if (it.isVideo || it.audio) {
       a.classList.add('has-sound');
       var snd = el('button', 'fd-sound' + (muted ? ' is-muted' : '')); snd.type = 'button';
       snd.appendChild(svg(IC.mute, 20)); snd.appendChild(svg(IC.vol, 20));
@@ -296,7 +369,7 @@
     cta.setAttribute('aria-label', label + ', ' + d.event.title);
     a.appendChild(cta);
 
-    if (it.video) {
+    if (it.isVideo) {
       var prog = el('div', 'fd-prog');
       it.progFill = el('i'); prog.appendChild(it.progFill);
       // the bar can be dragged (or tapped) to go forward and back; a bigger invisible strip makes it easy to catch with a thumb
@@ -305,16 +378,18 @@
       hit.setAttribute('aria-valuemin', '0'); hit.setAttribute('aria-valuemax', '100'); hit.setAttribute('aria-valuenow', '0');
       prog.appendChild(hit); a.appendChild(prog);
       var timeEl = el('div', 'fd-time'); timeEl.setAttribute('aria-hidden', 'true'); a.appendChild(timeEl);
-      var vid = it.video, scrubWasPlaying = false;
+      var vid = null, scrubWasPlaying = false;   // vid is the shared element this post has right now (set when a drag starts)
       var clamp = function (x, lo, hi) { return Math.max(lo, Math.min(hi, x)); };
       var fmt = function (s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); };
       function beginScrub() {
-        if (it.scrubbing || !vid.duration || !isFinite(vid.duration)) { return false; }
+        vid = it.video;
+        if (it.scrubbing || !vid || !vid.duration || !isFinite(vid.duration)) { return false; }
         it.scrubbing = true; scrubWasPlaying = !vid.paused; vid.pause();
         a.classList.add('is-scrubbing');
         return true;
       }
       function moveScrub(t) {
+        if (!vid || it.video !== vid) { return; }   // the shared element went back to the pool: nothing to move
         t = clamp(t, 0, vid.duration);
         vid.currentTime = t;
         it.progFill.style.transform = 'scaleX(' + (t / vid.duration).toFixed(4) + ')';
@@ -325,10 +400,11 @@
         if (!it.scrubbing) { return; }
         it.scrubbing = false; it.lastScrub = Date.now();
         a.classList.remove('is-scrubbing');
-        if (scrubWasPlaying && !a.classList.contains('is-paused')) { vid.play().catch(function () {}); }
+        if (scrubWasPlaying && it.video && !a.classList.contains('is-paused')) { it.video.play().catch(function () {}); }
       }
       it.skipBy = function (secs) {   // arrow keys: back or forward a few seconds
-        if (!vid.duration || !isFinite(vid.duration)) { return; }
+        vid = it.video;
+        if (!vid || !vid.duration || !isFinite(vid.duration)) { return; }
         vid.currentTime = clamp(vid.currentTime + secs, 0, vid.duration);
         toast((secs > 0 ? '+' : '') + secs + 's  ·  ' + fmt(vid.currentTime) + ' / ' + fmt(vid.duration));
       };
@@ -383,7 +459,7 @@
       tapTimer = setTimeout(function () {
         // the tap that just turned the sound on (browser had blocked it) is not also a pause
         if (Date.now() - unlockedAt < 700) { return; }
-        if (it.video) { togglePause(it); }
+        if (it.isVideo) { togglePause(it); }
         else { a.classList.toggle('is-clear'); }   // pictures: hide the words to see the whole picture
       }, 330);
     });
@@ -481,20 +557,24 @@
     current = it;
     it.el.classList.remove('is-paused');
     warm(it);
-    if (it.video) {
-      if (!it.video.src) { it.video.src = it.video.getAttribute('data-src'); }
-      if (it.video.readyState < 3) { it.el.classList.add('is-loading'); }
-      it.video.muted = muted || !!it.audio;       // with a chosen sound, the sound is the audio
-      var p = it.video.play();
-      if (p && p.catch) {
-        p.catch(function (err) {
-          // only "not allowed" means the browser wants a tap first (a quick swipe past the video also fails play(), harmlessly)
-          if (!muted && err && err.name === 'NotAllowedError') { soundWasBlocked(); }
-          if (err && err.name === 'AbortError') { return; }
-          it.video.muted = true;
-          it.video.play().catch(function () { it.el.classList.add('is-paused'); });
-        });
+    if (it.isVideo) {
+      var vv = bindDeck(it, true);               // borrow one of the shared video elements
+      if (vv) {
+        if (vv.readyState < 3) { it.el.classList.add('is-loading'); }
+        vv.muted = muted || !!it.audio;          // with a chosen sound, the sound is the audio
+        var p = vv.play();
+        if (p && p.catch) {
+          p.catch(function (err) {
+            // only "not allowed" means the browser wants a tap first (a quick swipe past the video also fails play(), harmlessly)
+            if (!muted && err && err.name === 'NotAllowedError') { soundWasBlocked(); }
+            if (err && err.name === 'AbortError') { return; }
+            if (it.video !== vv) { return; }     // the element was handed to another post meanwhile
+            vv.muted = true;
+            vv.play().catch(function () { if (it.video === vv) { it.el.classList.add('is-paused'); } });
+          });
+        }
       }
+      trimDecks();
     }
     if (it.audio && !muted) { playAudio(it); }
     if (it.slides.length > 1 && !reduce) {
@@ -515,7 +595,7 @@
     warm(items[idx - 1]); warm(items[idx + 1]); warm(items[idx + 2]);
     // warm up the next video so the swipe feels instant
     var next = items[idx + 1];
-    if (next && next.video && !next.video.src) { next.video.preload = 'metadata'; next.video.src = next.video.getAttribute('data-src'); }
+    if (next && next.isVideo) { bindDeck(next, false); }
   }
   function playAudio(it) {
     if (!it.audio) { return; }
@@ -533,6 +613,7 @@
   }
   // any tap or key press is the permission the browser wanted: turn the sound on (not when the tap is on the sound button itself)
   function unlockSound(e) {
+    primeDecks();   // the very first tap or key press starts all shared video elements (iPhones then allow sound on every video)
     if (!soundBlocked) { return; }
     if (e && e.target && e.target.closest && e.target.closest('.fd-sound')) { return; }
     soundBlocked = false; muted = false; unlockedAt = Date.now();
@@ -605,8 +686,8 @@
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
     else if (e.key === 'ArrowLeft' && current && current.skipBy) { e.preventDefault(); current.skipBy(-5); }
     else if (e.key === 'ArrowRight' && current && current.skipBy) { e.preventDefault(); current.skipBy(5); }
-    else if ((e.key === 'm' || e.key === 'M') && current && (current.video || current.audio)) { soundBlocked = false; muted = !muted; rememberSound(); applyMute(); paintSound(); }
-    else if (e.key === ' ' && current && current.video && (t === document.body || t === feed)) { e.preventDefault(); togglePause(current); }
+    else if ((e.key === 'm' || e.key === 'M') && current && (current.isVideo || current.audio)) { soundBlocked = false; muted = !muted; rememberSound(); applyMute(); paintSound(); }
+    else if (e.key === ' ' && current && current.isVideo && (t === document.body || t === feed)) { e.preventDefault(); togglePause(current); }
   });
   // computers: previous / next buttons beside the feed
   var app = document.getElementById('soApp');
