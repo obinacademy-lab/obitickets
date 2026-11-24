@@ -296,6 +296,12 @@ body.so-v3 .so-toast.on{transform:translate(-50%, 0)}
 .fd-facts li svg{justify-self:center; opacity:.9}
 .fd-facts li span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .fd-facts .fd-track{font-weight:500; color:rgba(255,255,255,.8)}
+/* less text on the video: one-line caption (tap to read all), smaller lines, tighter gaps */
+.fd-info{gap:4px}
+.fd-cap{-webkit-line-clamp:1; font-size:13.5px; line-height:1.35}
+.fd-cap.open{-webkit-line-clamp:unset}
+.fd-facts{gap:3px}
+.fd-facts li{font-size:12px; font-weight:500; color:rgba(255,255,255,.88)}
 
 /* Buy tickets: a ring of light runs around the button, a shine sweeps across it, and it glows softly */
 @property --fd-spin{syntax:'<angle>'; inherits:false; initial-value:0deg}

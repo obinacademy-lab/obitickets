@@ -274,9 +274,9 @@
     var fact = function (cls, icon, filled, text) {
       var li = el('li', cls); li.appendChild(svg(icon, 15, filled)); li.appendChild(el('span', null, text)); facts.appendChild(li);
     };
-    fact('fd-when', IC.cal, false, d.event.when);
-    fact('fd-where', IC.pin, false, d.event.where);
-    fact('fd-track', IC.note, true, d.sound ? d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '') : 'Original Audio');
+    // kept short so the words do not cover the video: date and place share one line; "Original Audio" is not shown
+    fact('fd-when', IC.cal, false, d.event.when + (d.event.where ? '  ·  ' + d.event.where : ''));
+    if (d.sound) { fact('fd-track', IC.note, true, d.sound.title + (d.sound.artist ? ' – ' + d.sound.artist : '')); }
     info.appendChild(facts);
     a.appendChild(info);
 
