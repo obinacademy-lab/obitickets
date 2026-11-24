@@ -8,7 +8,7 @@ $adminId = (int) $admin['id'];
 $ready = gifts_ready();
 $canManage = admin_can('gifts.manage');
 $canSplit = admin_can('gifts.commission');
-$tab = ($_GET['tab'] ?? '') === 'split' ? 'split' : 'catalogue';
+$tab = in_array($_GET['tab'] ?? '', ['split', 'withdrawals'], true) ? $_GET['tab'] : 'catalogue';
 $error = null;
 $flash = $_SESSION['gift_admin_flash'] ?? null;
 unset($_SESSION['gift_admin_flash']);
@@ -26,6 +26,30 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (in_array($action, ['save_gift', 'set_active', 'move', 'toggle_switch'], true) && !$canManage) {
         http_response_code(403);
         exit('You do not have permission to manage gifts.');
+    }
+    if (in_array($action, ['toggle_withdrawals', 'wd_mark_paid', 'wd_mark_failed'], true) && !$canSplit) {
+        http_response_code(403);
+        exit('Only the top-level admin can change gift withdrawals.');
+    }
+    if ($action === 'toggle_withdrawals') {
+        $turnOn = !empty($_POST['on']);
+        if ($turnOn && !payouts_iotec_configured()) {
+            $go('/admin-gifts.php?tab=withdrawals', 'Cannot switch withdrawals on: the ioTec keys are missing from the server config.');
+        }
+        gift_withdraw_set_enabled($adminId, $turnOn);
+        $go('/admin-gifts.php?tab=withdrawals', $turnOn ? 'Automatic gift withdrawals are switched ON.' : 'Automatic gift withdrawals are switched OFF.');
+    }
+    if ($action === 'wd_mark_paid') {
+        $done = gift_withdraw_mark_paid((int) ($_POST['id'] ?? 0), $adminId);
+        $go('/admin-gifts.php?tab=withdrawals', $done ? 'Marked paid. The organizer was told.' : 'That withdrawal is not waiting any more.');
+    }
+    if ($action === 'wd_mark_failed') {
+        $why = trim((string) ($_POST['reason'] ?? ''));
+        if ($why === '') {
+            $go('/admin-gifts.php?tab=withdrawals', 'Give a reason first.');
+        }
+        $done = gift_withdraw_fail((int) ($_POST['id'] ?? 0), 'Checked by an admin: ' . $why, false, $adminId);
+        $go('/admin-gifts.php?tab=withdrawals', $done ? 'Marked failed. The money is back with the organizer.' : 'That withdrawal is not waiting any more.');
     }
     if ($action === 'set_commission' && !$canSplit) {
         http_response_code(403);
@@ -98,11 +122,11 @@ render_admin_head('gifts');
 <?php else: ?>
 
 <div class="admin-card" style="margin-bottom:18px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
-  <div style="min-width:240px; flex:1">
+  <div style="min-width:min(240px,100%); flex:1">
     <h3 style="margin:0 0 4px">Gifts for viewers: <span class="admin-badge <?= $switchLive ? 'admin-badge-success' : 'admin-badge-muted' ?>"><?= $switchLive ? 'ON' : 'OFF' ?></span></h3>
     <p class="muted" style="margin:0; font-size:0.86rem">
       <?php if ($switchSetting && !payouts_iotec_configured()): ?>The switch is on, but the ioTec keys are missing from the server config, so gifts stay off.
-      <?php elseif ($switchLive): ?>The switch is on. (The Gift button for viewers arrives in the next build phase.)
+      <?php elseif ($switchLive): ?>The switch is on: viewers can see the Gift button and pay for gifts with real money.
       <?php else: ?>The switch is off: no viewer can see or send gifts. Turn it on only after the viewer screens and a small real test payment are done.<?php endif; ?>
     </p>
   </div>
@@ -117,6 +141,7 @@ render_admin_head('gifts');
 <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap">
   <a class="btn <?= $tab === 'catalogue' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php">Gift catalogue</a>
   <a class="btn <?= $tab === 'split' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php?tab=split">Revenue split</a>
+  <a class="btn <?= $tab === 'withdrawals' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php?tab=withdrawals">Withdrawals</a>
 </div>
 
 <?php if ($tab === 'catalogue'): ?>
@@ -216,6 +241,74 @@ render_admin_head('gifts');
       </table>
     </div>
     <p class="muted" style="font-size:0.82rem; margin:12px 0 0">Gifts are never deleted: sent gifts refer to them, so a gift you no longer want is hidden instead. Only visible gifts appear to viewers.</p>
+  </div>
+
+<?php elseif ($tab === 'withdrawals'): /* ------------------------------------------------ withdrawals */
+  $wdLive = gift_withdraw_enabled();
+  $wdSetting = get_setting('gift_withdrawals_enabled', '0') === '1';
+  $wdRows = gift_withdraw_admin_list(60);
+  $wdProcessing = count(array_filter($wdRows, static fn ($r) => $r['status'] === 'PROCESSING'));
+  $wdStuck = count(array_filter($wdRows, static fn ($r) => $r['status'] === 'PROCESSING' && (int) $r['age_min'] >= 10));
+  $wdPaidToday = (int) db()->query("SELECT COALESCE(SUM(amount_ugx), 0) FROM gift_withdrawals WHERE status = 'PAID' AND completed_at >= CURDATE()")->fetchColumn();
+  $wdBadge = ['PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-danger'];
+?>
+  <div class="admin-card" style="margin-bottom:18px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
+    <div style="min-width:min(240px,100%); flex:1">
+      <h3 style="margin:0 0 4px">Automatic gift withdrawals: <span class="admin-badge <?= $wdLive ? 'admin-badge-success' : 'admin-badge-muted' ?>"><?= $wdLive ? 'ON' : 'OFF' ?></span></h3>
+      <p class="muted" style="margin:0; font-size:0.86rem">
+        <?php if ($wdSetting && !payouts_iotec_configured()): ?>The switch is on, but the ioTec keys are missing from the server config, so withdrawals stay off.
+        <?php elseif ($wdLive): ?>Organizers can withdraw their gift earnings and the money is sent to their mobile money at once, with no click from you. obitickets pays the ioTec fees.
+        <?php else: ?>Off: organizers see their gift balance but cannot withdraw it yet. Turn it on after your first real gift has arrived and you have checked the numbers.<?php endif; ?>
+      </p>
+      <p class="muted" style="margin:6px 0 0; font-size:0.82rem">Being sent now: <b><?= $wdProcessing ?></b> &middot; waiting more than 10 minutes: <b><?= $wdStuck ?></b> &middot; sent today: <b>UGX <?= number_format($wdPaidToday) ?></b></p>
+    </div>
+    <?php if ($canSplit): ?>
+      <form method="post" data-confirm="<?= $wdSetting ? 'Switch automatic gift withdrawals OFF? Organizers will not be able to withdraw until you switch it on again.' : 'Switch automatic gift withdrawals ON? Real money will be sent from your ioTec wallet as soon as an organizer withdraws.' ?>">
+        <?= csrf_field() ?><input type="hidden" name="action" value="toggle_withdrawals"><?php if (!$wdSetting): ?><input type="hidden" name="on" value="1"><?php endif; ?>
+        <button type="submit" class="btn <?= $wdSetting ? 'btn-line' : 'btn-purple' ?>"><?= $wdSetting ? 'Switch OFF' : 'Switch ON' ?></button>
+      </form>
+    <?php else: ?><span class="muted" style="font-size:.82rem">Only the top-level admin can change this switch.</span><?php endif; ?>
+  </div>
+
+  <div class="admin-card">
+    <h3 style="margin:0 0 6px">Gift withdrawals</h3>
+    <p class="muted" style="margin:0 0 14px; font-size:0.84rem">The newest 60. A withdrawal is normally "Paid" within a minute. If one stays "Processing" for more than 10 minutes, ioTec did not answer: open the ioTec portal, look for the reference below, and then mark it <b>paid</b> (the money left) or <b>failed</b> (it did not, the money goes back to the organizer). It is never sent a second time.</p>
+    <?php if (!$wdRows): ?>
+      <p class="muted" style="margin:0">No gift withdrawals yet.</p>
+    <?php else: ?>
+      <div class="admin-table-wrap" style="border:none; box-shadow:none;">
+        <table class="admin-table">
+          <thead><tr><th>When</th><th>Organizer</th><th style="text-align:right">Amount</th><th>Sent to</th><th>Status</th><th>ioTec reference</th><?php if ($canSplit): ?><th></th><?php endif; ?></tr></thead>
+          <tbody>
+            <?php foreach ($wdRows as $w): $stuck = $w['status'] === 'PROCESSING' && (int) $w['age_min'] >= 10; ?>
+              <tr>
+                <td class="muted" style="white-space:nowrap"><?= $h(date('d M, H:i', strtotime((string) $w['requested_at']))) ?></td>
+                <td><?= $h($w['organizer']) ?></td>
+                <td class="mono" style="text-align:right; white-space:nowrap">UGX <?= number_format((int) $w['amount_ugx']) ?></td>
+                <td style="white-space:nowrap"><?= $h($w['destination']) ?> <span class="muted" style="font-size:.78rem"><?= $w['method'] === 'AIRTEL_MONEY' ? 'Airtel' : 'MTN' ?></span></td>
+                <td><span class="admin-badge <?= $wdBadge[$w['status']] ?? ($stuck ? 'admin-badge-danger' : 'admin-badge-warn') ?>"><?= $h($stuck ? 'Needs a check' : ucfirst(strtolower((string) $w['status']))) ?></span><?php if ($w['reason']): ?><br><span class="muted" style="font-size:.76rem"><?= $h($w['reason']) ?></span><?php endif; ?></td>
+                <td class="muted mono" style="font-size:.76rem">OGW-<?= (int) $w['id'] ?><?php if ($w['provider_reference']): ?><br><?= $h($w['provider_reference']) ?><?php endif; ?></td>
+                <?php if ($canSplit): ?>
+                  <td style="white-space:nowrap">
+                    <?php if ($w['status'] === 'PROCESSING'): ?>
+                      <form method="post" style="display:inline" data-confirm="Mark this withdrawal PAID? Only do this after you saw in the ioTec portal that the money was sent.">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="wd_mark_paid"><input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
+                        <button class="btn btn-line" type="submit">Mark paid</button>
+                      </form>
+                      <form method="post" style="display:inline-flex; gap:4px" data-confirm="Mark this withdrawal FAILED and return the money to the organizer? Only do this after you saw in the ioTec portal that nothing was sent.">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="wd_mark_failed"><input type="hidden" name="id" value="<?= (int) $w['id'] ?>">
+                        <input type="text" name="reason" required maxlength="150" placeholder="Why (e.g. not in ioTec)" style="width:150px">
+                        <button class="btn btn-line" type="submit">Mark failed</button>
+                      </form>
+                    <?php endif; ?>
+                  </td>
+                <?php endif; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
   </div>
 
 <?php else: /* ------------------------------------------------ revenue split */

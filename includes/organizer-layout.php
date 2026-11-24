@@ -63,6 +63,7 @@ function render_organizer_head(string $active, array $orgContext): void
             ['gifts', 'Overview', '/org-gifts.php', 'gifts.view'],
             ['gifts-history', 'Gift history', '/org-gifts.php?tab=history', 'gifts.view'],
             ['gifts-analytics', 'Analytics', '/org-gifts.php?tab=analytics', 'gifts.view'],
+            ['gifts-withdrawals', 'Withdrawals', '/org-gifts.php?tab=withdrawals', 'gifts.withdraw'],
         ]],
         ['key' => 'analytics', 'label' => 'Analytics', 'icon' => 'ic-chart', 'group' => 'Money', 'tabs' => [
             ['analytics', 'Performance', '/org-analytics.php', 'analytics.view'],

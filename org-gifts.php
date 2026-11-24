@@ -8,7 +8,7 @@ require_once __DIR__ . '/includes/bootstrap.php';
 $ctx = require_organizer_access('gifts.view');
 $organizerId = $ctx['organizer_id'];
 
-$tab = in_array($_GET['tab'] ?? '', ['history', 'analytics'], true) ? $_GET['tab'] : 'overview';
+$tab = in_array($_GET['tab'] ?? '', ['history', 'analytics', 'withdrawals'], true) ? $_GET['tab'] : 'overview';
 $ready = gifts_ready();
 $visible = $ready && gift_org_menu_visible($organizerId);
 
@@ -48,9 +48,39 @@ if ($visible && $tab === 'history' && isset($_GET['export'])) {
     exit;
 }
 
+// withdrawing gift money (phase 5): checked under a lock, then sent straight away (includes/gift-payouts.php)
+$wError = null;
+$doneMsg = $_SESSION['gift_wd_msg'] ?? null;
+unset($_SESSION['gift_wd_msg']);
+if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'withdraw') {
+    verify_csrf();
+    if (!organizer_can($ctx, 'gifts.withdraw')) {
+        http_response_code(403);
+        exit('You do not have permission to withdraw gift money.');
+    }
+    $rawAmount = trim((string) ($_POST['amount'] ?? ''));
+    if (!ctype_digit($rawAmount)) {
+        $wError = 'Enter a whole number of shillings.';
+    } else {
+        $res = gift_withdraw_request($organizerId, (int) $ctx['actor_id'], (int) $rawAmount, (string) ($_POST['method'] ?? ''), (string) ($_POST['destination'] ?? ''), gift_disburse_fn());
+        if ($res['ok']) {
+            $_SESSION['gift_wd_msg'] = $res['message'];
+            header('Location: /org-gifts.php?tab=withdrawals&done=1');
+            exit;
+        }
+        $wError = $res['error'];
+        $tab = 'withdrawals';
+    }
+    $tab = 'withdrawals';
+}
+// refresh any of this organizer's withdrawals that ioTec is still processing, so the page shows the real status
+if ($ready && in_array($tab, ['overview', 'withdrawals'], true)) {
+    gift_withdraw_poll_open($organizerId, 5);
+}
+
 $GLOBALS['orgExtraCss'] = ['org-gifts.css'];
 $pageTitle = 'Gifts & Support';
-$active = $tab === 'history' ? 'gifts-history' : ($tab === 'analytics' ? 'gifts-analytics' : 'gifts');
+$active = ['history' => 'gifts-history', 'analytics' => 'gifts-analytics', 'withdrawals' => 'gifts-withdrawals'][$tab] ?? 'gifts';
 render_organizer_head($active, $ctx);
 
 $sharePct = gift_org_share_percent();
@@ -84,7 +114,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">Gift balance</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-wallet"/></svg></span></div>
       <span class="num"><?= og_ugx($bal['available']) ?></span>
-      <span class="sub"><?= $bal['pending'] > 0 ? og_ugx($bal['pending']) . ' on its way &middot; ' : '' ?>Withdrawing gift money opens soon</span>
+      <span class="sub"><?= $bal['pending'] > 0 ? og_ugx($bal['pending']) . ' on its way &middot; ' : '' ?><?= $bal['reserved'] > 0 ? og_ugx($bal['reserved']) . ' being sent &middot; ' : '' ?><?php if (gift_withdraw_enabled() && organizer_can($ctx, 'gifts.withdraw')): ?><a href="/org-gifts.php?tab=withdrawals" style="font-weight:700; color:var(--ov-red,#E11D48); text-decoration:none">Withdraw</a><?php else: ?>Withdrawing opens soon<?php endif; ?></span>
     </div>
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">This month</span><span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span></div>
@@ -185,6 +215,91 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <?php endif; ?>
   </div>
   <p class="muted" style="font-size:0.8rem; margin-top:12px">Supporters who chose to stay anonymous show as "Anonymous supporter". Phone numbers are never shown.</p>
+
+<?php elseif ($tab === 'withdrawals'):
+    $bal = gift_balance($organizerId);
+    $hist = gift_withdraw_history($organizerId, 30);
+    $canWd = organizer_can($ctx, 'gifts.withdraw');
+    $prof = payout_profile($organizerId);
+    $savedMobile = in_array($prof['payout_provider'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) ($prof['payout_phone'] ?? ''));
+    $wProv = $savedMobile ? $prof['payout_provider'] : 'MTN_MOMO';
+    $wNum = $savedMobile ? (string) $prof['payout_phone'] : '';
+    $avail = max(0, $bal['available']);
+    $wOpen = gift_withdraw_has_open($organizerId);
+    $tones = ['success' => 'admin-badge-success', 'warn' => 'admin-badge-warn', 'danger' => 'admin-badge-danger'];
+?>
+  <?php if (isset($_GET['done'])): ?><span data-flash="<?= htmlspecialchars($doneMsg ?: 'Your withdrawal is in.', ENT_QUOTES) ?>" hidden></span><?php endif; ?>
+  <?php if ($wError): ?><span data-flash="<?= htmlspecialchars($wError, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
+  <div class="admin-grid-2">
+    <div class="admin-card">
+      <h3 style="margin-bottom:14px">Your withdrawals</h3>
+      <?php if (!$hist): ?>
+        <div class="admin-empty" style="padding:26px 12px"><div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-wallet"/></svg></div><p style="margin-top:0">You have not withdrawn any gift money yet.</p></div>
+      <?php else: ?>
+        <div class="admin-table-wrap" style="border:none; box-shadow:none;">
+          <table class="admin-table og-table">
+            <thead><tr><th>Requested</th><th style="text-align:right">Amount</th><th>Sent to</th><th>Status</th></tr></thead>
+            <tbody>
+              <?php foreach ($hist as $w): ?>
+                <tr>
+                  <td class="muted"><?= htmlspecialchars(date('j M Y, H:i', strtotime($w['when']))) ?></td>
+                  <td class="mono" style="text-align:right"><?= og_ugx($w['amount']) ?></td>
+                  <td><?= htmlspecialchars($w['destination']) ?> <span class="muted" style="font-size:.78rem"><?= $w['method'] === 'AIRTEL_MONEY' ? 'Airtel' : 'MTN' ?></span></td>
+                  <td><span class="admin-badge <?= $tones[$w['tone']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($w['label']) ?></span></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:0.8rem; margin:12px 0 0">If a withdrawal could not be sent, the money is back in your gift balance straight away.</p>
+      <?php endif; ?>
+    </div>
+
+    <div class="admin-card">
+      <h3 style="margin-bottom:14px">Withdraw gift earnings</h3>
+      <p style="margin:0 0 4px"><span class="muted" style="font-size:.82rem">Gift balance</span><br><strong class="mono" style="font-size:1.35rem"><?= og_ugx($bal['available']) ?></strong></p>
+      <?php if ($bal['reserved'] > 0): ?><p class="muted" style="font-size:.82rem; margin:0 0 4px"><?= og_ugx($bal['reserved']) ?> is on its way to you now.</p><?php endif; ?>
+      <div style="height:12px"></div>
+      <?php if (!$canWd): ?>
+        <p class="muted" style="font-size:.9rem; margin:0">Only the account owner or a Finance Manager can withdraw gift money.</p>
+      <?php elseif (!gift_withdraw_enabled()): ?>
+        <p style="font-size:.92rem; margin:0 0 6px"><b>Withdrawing gift money is not open yet.</b></p>
+        <p class="muted" style="font-size:.84rem; margin:0">Your gift balance is safe. You will be able to take it out here as soon as withdrawals open.</p>
+      <?php elseif ($wOpen): ?>
+        <div class="admin-empty" style="padding:20px"><div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-clock"/></svg></div><p style="margin-top:0">You already have a gift withdrawal being processed. You can request another once it is done.</p></div>
+      <?php elseif ($bal['available'] < 0): ?>
+        <p style="font-size:.92rem; margin:0 0 6px"><b>A reversed gift is being paid back.</b></p>
+        <p class="muted" style="font-size:.84rem; margin:0"><?= og_ugx(-$bal['available']) ?> will be taken from your next gifts first. You can withdraw once new gifts cover it. Your ticket money is never touched.</p>
+      <?php elseif ($avail < GIFT_WITHDRAW_MIN_UGX): ?>
+        <p style="font-size:.92rem; margin:0 0 6px"><b>The smallest withdrawal is UGX <?= number_format(GIFT_WITHDRAW_MIN_UGX) ?>.</b></p>
+        <p class="muted" style="font-size:.84rem; margin:0">You can withdraw once your gift balance reaches UGX <?= number_format(GIFT_WITHDRAW_MIN_UGX) ?>.</p>
+      <?php else: ?>
+        <form method="post" id="gwForm" data-confirm="Send the money now? Money sent to a wrong number cannot be brought back.">
+          <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
+          <p class="muted" style="font-size:.86rem; margin:0 0 12px">Paid straight to your mobile money, no waiting. obitickets pays the mobile money fee, so you receive the full amount you ask for.</p>
+          <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" id="gwAmount" name="amount" min="<?= GIFT_WITHDRAW_MIN_UGX ?>" step="1" max="<?= $avail ?>" value="<?= $avail ?>" required></div>
+          <p class="muted" style="font-size:.8rem; margin:-4px 0 12px">From UGX <?= number_format(GIFT_WITHDRAW_MIN_UGX) ?> up to UGX <?= number_format($avail) ?> (your whole gift balance).</p>
+          <div class="admin-form-row"><label>Send to</label>
+            <select name="method" id="gwMethod">
+              <option value="MTN_MOMO" <?= $wProv === 'MTN_MOMO' ? 'selected' : '' ?>>MTN MoMo</option>
+              <option value="AIRTEL_MONEY" <?= $wProv === 'AIRTEL_MONEY' ? 'selected' : '' ?>>Airtel Money</option>
+            </select>
+          </div>
+          <div class="admin-form-row"><label>Mobile money number</label><input type="text" inputmode="tel" id="gwNumber" name="destination" value="<?= htmlspecialchars($wNum, ENT_QUOTES) ?>" required placeholder="e.g. 0772 123 456" autocomplete="tel"></div>
+          <button class="btn btn-purple btn-block" type="submit">Withdraw now</button>
+        </form>
+        <script>
+        (function () {
+          var f = document.getElementById('gwForm'), a = document.getElementById('gwAmount'), n = document.getElementById('gwNumber'), m = document.getElementById('gwMethod');
+          function upd() { f.setAttribute('data-confirm', 'Send UGX ' + Number(a.value || 0).toLocaleString() + ' to ' + (n.value || 'this number') + ' now? Money sent to a wrong number cannot be brought back.'); }
+          // pick MTN or Airtel from the number as it is typed (070/075/074/020 = Airtel, 077/078/076/039 = MTN)
+          function guess() { var d = n.value.replace(/\D/g, ''); if (d.indexOf('256') === 0) { d = '0' + d.slice(3); } var p = d.slice(0, 3); if (['070', '075', '074', '020'].indexOf(p) > -1) { m.value = 'AIRTEL_MONEY'; } else if (['077', '078', '076', '039'].indexOf(p) > -1) { m.value = 'MTN_MOMO'; } }
+          a.addEventListener('input', upd); n.addEventListener('input', function () { guess(); upd(); }); upd();
+        })();
+        </script>
+      <?php endif; ?>
+    </div>
+  </div>
 
 <?php else:
     $days = (int) ($_GET['days'] ?? 30);

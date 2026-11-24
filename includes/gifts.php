@@ -664,6 +664,30 @@ function gift_reconcile(): array
             $problems[] = 'organizer ' . $id . ' has delivered gifts but no balance row';
         }
     }
+    // withdrawals (phase 5): reserved money = open withdrawals, withdrawn money = paid ones, every paid one has balanced ledger rows
+    $open = $pdo->query("SELECT organizer_id AS id, SUM(amount_ugx) AS s FROM gift_withdrawals WHERE status IN ('REQUESTED','PENDING_REVIEW','APPROVED','PROCESSING') GROUP BY organizer_id")->fetchAll(PDO::FETCH_KEY_PAIR);
+    $paid = $pdo->query("SELECT organizer_id AS id, SUM(amount_ugx) AS s FROM gift_withdrawals WHERE status = 'PAID' GROUP BY organizer_id")->fetchAll(PDO::FETCH_KEY_PAIR);
+    foreach ($pdo->query('SELECT organizer_id, reserved_ugx, total_withdrawn_ugx FROM gift_balances')->fetchAll() as $b) {
+        $id = (int) $b['organizer_id'];
+        if ((int) $b['reserved_ugx'] !== (int) ($open[$id] ?? 0)) {
+            $problems[] = 'organizer ' . $id . ': reserved ' . $b['reserved_ugx'] . ' but open withdrawals add up to ' . (int) ($open[$id] ?? 0);
+        }
+        if ((int) $b['total_withdrawn_ugx'] !== (int) ($paid[$id] ?? 0)) {
+            $problems[] = 'organizer ' . $id . ': withdrawn ' . $b['total_withdrawn_ugx'] . ' but paid withdrawals add up to ' . (int) ($paid[$id] ?? 0);
+        }
+    }
+    foreach ($pdo->query("SELECT w.id, w.reference, w.status, w.amount_ugx, (SELECT COUNT(*) FROM gift_ledger l WHERE l.withdrawal_id = w.id) AS n,
+                                 (SELECT COALESCE(SUM(CASE l.entry WHEN 'DEBIT' THEN l.amount_ugx ELSE -l.amount_ugx END), 0) FROM gift_ledger l WHERE l.withdrawal_id = w.id) AS diff,
+                                 (SELECT COALESCE(SUM(CASE l.entry WHEN 'DEBIT' THEN l.amount_ugx ELSE 0 END), 0) FROM gift_ledger l WHERE l.withdrawal_id = w.id) AS debits
+                          FROM gift_withdrawals w")->fetchAll() as $r) {
+        $ref = 'withdrawal ' . $r['reference'];
+        if ($r['status'] === 'PAID' && ((int) $r['n'] !== 2 || (int) $r['diff'] !== 0 || (int) $r['debits'] !== (int) $r['amount_ugx'])) {
+            $problems[] = $ref . ': paid but its ledger rows are missing or wrong';
+        }
+        if ($r['status'] !== 'PAID' && (int) $r['n'] > 0) {
+            $problems[] = $ref . ': ' . $r['status'] . ' but money was recorded in the ledger';
+        }
+    }
     return $problems;
 }
 
