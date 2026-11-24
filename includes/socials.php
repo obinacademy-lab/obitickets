@@ -447,7 +447,7 @@ function socials_share_image(int $id, string $src, bool $isVideo): ?string
     if (!is_file($file)) {
         return null;
     }
-    $rel = '/uploads/og/v' . $id . '-' . substr(md5($src . '|' . (int) @filemtime($file) . '|' . ($isVideo ? 1 : 0) . '|3'), 0, 12) . '.jpg';
+    $rel = '/uploads/og/v' . $id . '-' . substr(md5($src . '|' . (int) @filemtime($file) . '|' . ($isVideo ? 1 : 0) . '|5'), 0, 12) . '.jpg';
     if (is_file($root . $rel)) {
         return $rel;
     }
@@ -476,11 +476,17 @@ function socials_share_image(int $id, string $src, bool $isVideo): ?string
     $ch = (int) round($H / $scale);
     $tiny = imagecreatetruecolor(120, 63);
     imagecopyresampled($tiny, $im, 0, 0, (int) (($sw - $cw) / 2), (int) (($sh - $ch) / 2), 120, 63, $cw, $ch);
-    for ($i = 0; $i < 8; $i++) {
+    for ($i = 0; $i < 6; $i++) {
         imagefilter($tiny, IMG_FILTER_GAUSSIAN_BLUR);
     }
-    imagecopyresampled($out, $tiny, 0, 0, 0, 0, $W, $H, 120, 63);
+    // stretch with a smooth (bilinear) scale: GD's imagecopyresampled enlarges in visible blocks
+    imagesetinterpolation($tiny, IMG_BILINEAR_FIXED);
+    $big = imagescale($tiny, $W, $H, IMG_BILINEAR_FIXED);
     imagedestroy($tiny);
+    if ($big) {
+        imagecopy($out, $big, 0, 0, 0, 0, $W, $H);
+        imagedestroy($big);
+    }
     imagefilledrectangle($out, 0, 0, $W, $H, imagecolorallocatealpha($out, 11, 7, 8, 50));
 
     // the whole cover, as tall as the frame (or as wide, for landscape covers)
