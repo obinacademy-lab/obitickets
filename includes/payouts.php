@@ -228,7 +228,7 @@ function payout_request(int $organizerId, float $amount, string $method, string 
         $st->execute([$payoutId]);
         if ($st->fetchColumn() === 'FAILED') {
             // the money never left: it is back in the balance, so say so plainly instead of promising a payment
-            return $fail('We could not send the money right now. Nothing was taken from your balance. Please try again in a few minutes.');
+            return $fail('We could not send the money right now. Nothing was taken from your balance. Please try again in 30 minutes.');
         }
         return ['ok' => true, 'error' => null, 'payout_id' => $payoutId, 'state' => 'queued',
             'message' => 'Your request is in and is being processed.'];
@@ -279,7 +279,9 @@ function payout_send(int $payoutId, ?int $adminId = null, ?callable $sender = nu
         $res = $sender((float) $p['amount'], (string) $p['destination'], $externalId, 'obitickets payout #' . (int) $p['id']);
     } catch (IotecRefusedException $e) {
         // ioTec said no before moving anything: the payout fails and the money stays in the organizer's balance
-        payout_mark_failed($payoutId, 'ioTec refused the payment: ' . mb_substr($e->getMessage(), 0, 300), true);
+        $why = 'ioTec refused the payment: ' . mb_substr($e->getMessage(), 0, 300);
+        payout_mark_failed($payoutId, $why, false);
+        payout_wallet_alert($payoutId, $why, (float) $p['amount']);   // one email per incident, not one per organizer
         return ['ok' => false, 'message' => 'ioTec refused the payment. Nothing was sent.'];
     } catch (Throwable $e) {
         // unknown outcome: the money may have gone. Keep it processing, tell an admin, never resend.
@@ -331,7 +333,7 @@ function payout_mark_failed(int $payoutId, string $reason, bool $alertAdmin): bo
     if ($row = $p->fetch()) {
         try {
             create_notification((int) $row['organizer_id'], 'payout', 'Payout could not be sent',
-                'Your withdrawal of UGX ' . number_format((float) $row['amount']) . ' did not go through. The money is back in your balance, so you can try again.', '/org-payouts.php');
+                'Your withdrawal of UGX ' . number_format((float) $row['amount']) . ' did not go through. The money is back in your balance, so you can try again in 30 minutes.', '/org-payouts.php');
         } catch (Throwable $e) {
             error_log('[payout] failed notification failed: ' . $e->getMessage());
         }
@@ -340,6 +342,60 @@ function payout_mark_failed(int $payoutId, string $reason, bool $alertAdmin): bo
         }
     }
     return true;
+}
+
+/** True when ioTec's refusal reads like an empty or low wallet. */
+function payout_reason_looks_like_low_wallet(?string $reason): bool
+{
+    return $reason !== null && preg_match('/insufficient|not enough|balance|funds?\b|wallet|float|top.?up/i', $reason) === 1;
+}
+
+/**
+ * Admin warning: has ioTec been refusing payouts since the last one it accepted? That usually means the ioTec wallet is
+ * empty. It clears by itself as soon as a payout goes through again (after a top-up). Organizers never see any of this.
+ * @return array{warn:bool, low:bool, count:int, reason:?string, at:?string}
+ */
+function payout_wallet_status(): array
+{
+    $none = ['warn' => false, 'low' => false, 'count' => 0, 'reason' => null, 'at' => null];
+    if (!payouts_auto_ready()) {
+        return $none;
+    }
+    $lastOk = db()->query("SELECT MAX(sent_at) FROM payouts WHERE iotec_id IS NOT NULL AND status IN ('PAID','PROCESSING')")->fetchColumn() ?: '1970-01-01 00:00:00';
+    $stmt = db()->prepare("SELECT failure_reason, processed_at FROM payouts WHERE status = 'FAILED' AND failure_reason LIKE 'ioTec refused the payment%'
+                           AND processed_at > ? AND processed_at >= NOW() - INTERVAL 48 HOUR ORDER BY processed_at DESC, id DESC");
+    $stmt->execute([$lastOk]);
+    $rows = $stmt->fetchAll();
+    if (!$rows) {
+        return $none;
+    }
+    $reason = preg_replace('/^ioTec refused the payment:\s*/i', '', (string) $rows[0]['failure_reason']);
+    return ['warn' => true, 'low' => payout_reason_looks_like_low_wallet($reason), 'count' => count($rows), 'reason' => $reason, 'at' => (string) $rows[0]['processed_at']];
+}
+
+/**
+ * Emails the admins when ioTec refuses a payout, at most once every 3 hours however many organizers are turned away.
+ * @return bool true when an email was sent (false when it was held back to avoid a flood)
+ */
+function payout_wallet_alert(int $payoutId, string $reason, float $amount): bool
+{
+    try {
+        $last = db()->query("SELECT setting_value FROM platform_settings WHERE setting_key = 'payout_wallet_alert_at'")->fetchColumn();
+        if ($last && strtotime((string) $last) > time() - 3 * 3600) {
+            return false;
+        }
+        db()->prepare("INSERT INTO platform_settings (setting_key, setting_value) VALUES ('payout_wallet_alert_at', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)")
+            ->execute([date('Y-m-d H:i:s')]);
+        $low = payout_reason_looks_like_low_wallet($reason);
+        payout_alert_admins($low ? 'Your ioTec wallet may be low: payouts are being refused' : 'ioTec refused a payout',
+            'Payout #' . $payoutId . ' (UGX ' . number_format($amount) . ') was refused. ' . $reason . ' '
+            . ($low ? 'Please top up your ioTec wallet. ' : 'Please check it in the ioTec portal. ')
+            . 'Organizers were told to try again in 30 minutes and their money is safe. You will not get another email about this for 3 hours; the warning in Admin > Payouts clears itself once a payout goes through.');
+        return true;
+    } catch (Throwable $e) {
+        error_log('[payout] wallet alert failed: ' . $e->getMessage());
+        return false;
+    }
 }
 
 /** Asks ioTec how a processing payout went and updates it. Returns the payout's status afterwards. */

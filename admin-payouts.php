@@ -54,6 +54,14 @@ render_admin_head('payouts');
 
 <?php if (isset($_GET['sent'])): ?><span data-flash="<?= htmlspecialchars((string) $adminPayoutMsg, ENT_QUOTES) ?>"<?= $_GET['sent'] === '1' ? '' : ' data-flash-type="error"' ?> hidden></span><?php endif; ?>
 <?php if (isset($_GET['auto'])): ?><span data-flash="<?= htmlspecialchars(['on' => 'Automatic payouts are ON: organizers are paid the moment they tap Withdraw.', 'off' => 'Automatic payouts are OFF: requests wait here for Send now.', 'unavailable' => 'Cannot switch on yet: run database update 044 and add the ioTec keys to the server config first.'][$_GET['auto']] ?? 'Updated.', ENT_QUOTES) ?>"<?= $_GET['auto'] === 'unavailable' ? ' data-flash-type="error"' : '' ?> hidden></span><?php endif; ?>
+<?php $wallet = payout_wallet_status(); if ($wallet['warn']): ?>
+<div class="admin-card" role="alert" style="margin-bottom:16px; border-left:4px solid var(--danger)">
+  <h3 style="margin:0 0 6px; color:var(--danger)"><?= $wallet['low'] ? 'Top up your ioTec wallet' : 'ioTec refused some payouts' ?></h3>
+  <p style="margin:0 0 6px; font-size:0.9rem">ioTec refused <b><?= (int) $wallet['count'] ?></b> payout<?= $wallet['count'] === 1 ? '' : 's' ?> since the last one it accepted (latest: <?= htmlspecialchars(date('d M, H:i', strtotime((string) $wallet['at']))) ?>).
+    <?= $wallet['low'] ? 'The reason looks like the wallet is empty or low.' : 'Check the reason in the ioTec portal.' ?></p>
+  <p class="muted" style="margin:0; font-size:0.84rem">ioTec said: &ldquo;<?= htmlspecialchars((string) $wallet['reason']) ?>&rdquo;. Organizers saw &ldquo;Please try again in 30 minutes&rdquo; and their money is safe. This warning clears by itself once a payout goes through again.</p>
+</div>
+<?php endif; ?>
 <?php if ($autoReady): ?>
 <div class="admin-card" style="margin-bottom:24px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
   <div style="min-width:240px; flex:1">
