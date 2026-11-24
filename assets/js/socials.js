@@ -55,7 +55,8 @@
     down: ['M6 9l6 6 6-6'],
     // Boost: an arrow going up with two speed lines under it (filled, like the other buttons)
     boost: ['M12 2.500 20 11h-4.500v5h-7v-5H4z', 'M8.500 17.500h7v1.800h-7z', 'M8.500 20.600h7v1.400h-7z'],
-    check: ['M5 12.500l4.500 4.500L19 7.500']
+    check: ['M5 12.500l4.500 4.500L19 7.500'],
+    plus: ['M12 5v14', 'M5 12h14']
   };
 
   function api(url, body) {
@@ -225,6 +226,19 @@
     if (d.boosted) { boost.classList.add('is-on'); }
     boost.setAttribute('aria-pressed', d.boosted ? 'true' : 'false');
     boost.hidden = !canBoost || !(it.liked || d.boosted);
+    // organizer picture on top of the heart, like TikTok: tap the picture for their profile, tap the + to follow
+    var fw = el('div', 'fd-fw');
+    var av = d.org.url ? el('a', 'fd-av') : el('span', 'fd-av');
+    if (d.org.url) { av.href = d.org.url; av.setAttribute('aria-label', d.org.name + ' profile'); }
+    if (d.org.avatar) { var ai = el('img'); ai.alt = ''; ai.src = d.org.avatar; av.appendChild(ai); } else { av.textContent = d.org.initials; }
+    fw.appendChild(av);
+    var fol = el('button', 'fd-follow' + (d.org.following ? ' is-on is-gone' : ''));
+    fol.type = 'button';
+    fol.appendChild(svg(d.org.following ? IC.check : IC.plus, 14));
+    fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
+    if (D.me && D.me === d.org.id) { fol.hidden = true; }
+    fw.appendChild(fol);
+    rail.appendChild(fw);
     rail.appendChild(like); rail.appendChild(boost); rail.appendChild(com); rail.appendChild(sh); rail.appendChild(save);
     a.appendChild(rail);
     it.rail = rail;
@@ -235,28 +249,18 @@
       measure(it);
     }
 
-    // words (the mockup): organizer picture, @handle and tick, the event under it, Follow; caption; when and where; sound
+    // words: @handle and tick, the event under it; caption; when and where; sound (the picture and Follow are in the rail)
     var info = el('div', 'fd-info');
     it.info = info;
-    var who = el('div', 'fd-who');
-    var av = d.org.url ? el('a', 'fd-av') : el('span', 'fd-av');
-    if (d.org.url) { av.href = d.org.url; av.setAttribute('aria-label', d.org.name + ' profile'); }
-    if (d.org.avatar) { var ai = el('img'); ai.alt = ''; ai.src = d.org.avatar; av.appendChild(ai); } else { av.textContent = d.org.initials; }
-    who.appendChild(av);
     var whoTx = el('div', 'fd-who-tx');
     var handle = el('div', 'fd-handle');
-    var hl = d.org.url ? el('a', null, d.org.handle || d.org.name) : el('span', null, d.org.handle || d.org.name);
-    if (d.org.url) { hl.href = d.org.url; }
+    // the organizer's name only (no @handle, no event title); tapping it opens their profile
+    var hl = d.org.url ? el('a', null, d.org.name) : el('span', null, d.org.name);
+    if (d.org.url) { hl.href = d.org.url; hl.setAttribute('aria-label', d.org.name + ' profile'); }
     handle.appendChild(hl);
     if (d.org.verified) { var ver = el('span', 'fd-ver'); ver.title = 'Verified organizer'; ver.appendChild(svg(IC.check, 10)); handle.appendChild(ver); }
     whoTx.appendChild(handle);
-    var evl = el('a', 'fd-ev', d.event.title); evl.href = d.event.url; whoTx.appendChild(evl);
-    who.appendChild(whoTx);
-    var fol = el('button', 'fd-follow' + (d.org.following ? ' is-on' : ''), d.org.following ? 'Following' : 'Follow');
-    fol.type = 'button'; fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
-    if (D.me && D.me === d.org.id) { fol.hidden = true; }
-    who.appendChild(fol);
-    info.appendChild(who);
+    info.appendChild(whoTx);
     if (d.caption) {
       var cap = el('div', 'fd-cap', d.caption);
       cap.setAttribute('role', 'button'); cap.setAttribute('tabindex', '0'); cap.setAttribute('aria-label', 'Caption. Tap to read more or less.');
@@ -364,7 +368,8 @@
     });
     fol.addEventListener('click', function () {
       if (needLogin()) { return; }
-      var on = !d.org.following;
+      if (d.org.following) { return; }   // the badge only follows; unfollow is on the organizer's profile
+      var on = true;
       setFollow(d.org.id, on);
       api('/api/community.php', { action: 'follow_organizer', organizer_id: d.org.id, follow: on }).then(function (r) {
         if (!r || !r.ok) { setFollow(d.org.id, !on); toast((r && r.error) || 'Could not update. Try again.'); }
@@ -382,10 +387,15 @@
     items.forEach(function (it) {
       if (it.data.org.id !== orgId) { return; }
       it.data.org.following = on;
-      it.followBtn.classList.toggle('is-on', on);
-      it.followBtn.textContent = on ? 'Following' : 'Follow';
-      it.followBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      it.followBtn.setAttribute('aria-label', (on ? 'Following ' : 'Follow ') + it.data.org.name);
+      var b = it.followBtn;
+      b.classList.toggle('is-on', on);
+      b.replaceChildren(svg(on ? IC.check : IC.plus, 14));
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.setAttribute('aria-label', (on ? 'Following ' : 'Follow ') + it.data.org.name);
+      // like TikTok: a tick shows for a moment, then the badge folds away (unfollow lives on the organizer's profile)
+      clearTimeout(it.folT);
+      if (on) { it.folT = setTimeout(function () { b.classList.add('is-gone'); }, 1100); }
+      else { b.classList.remove('is-gone'); }
     });
   }
 
