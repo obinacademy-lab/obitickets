@@ -138,11 +138,7 @@ render_admin_head('gifts');
   <?php endif; ?>
 </div>
 
-<div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap">
-  <a class="btn <?= $tab === 'catalogue' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php">Gift catalogue</a>
-  <a class="btn <?= $tab === 'split' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php?tab=split">Revenue split</a>
-  <a class="btn <?= $tab === 'withdrawals' ? 'btn-purple' : 'btn-line' ?>" href="/admin-gifts.php?tab=withdrawals">Withdrawals</a>
-</div>
+<?= gift_admin_tabs($tab) ?>
 
 <?php if ($tab === 'catalogue'): ?>
 
