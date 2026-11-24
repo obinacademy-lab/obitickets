@@ -168,3 +168,24 @@ body.ev-app .ev-cd-u.is-sec b,body.ev-app .ev-cd-u.is-sec b span{color:#FF6B76 !
 /* Group tickets and deals (11/24): small badges under the ticket name, any event layout */
 .tier .tbadges{display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 2px}
 .tier .tbadges span{display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:99px; background:rgba(240,49,63,.14); color:#FF8A92; font-size:11.5px; font-weight:800; letter-spacing:.01em}
+
+/* Every ticket option has its own colour (tone-0 .. tone-7, in the order the options are listed) so buyers can tell
+   them apart at a glance: a stripe on the left, a soft tint, a dot by the name and a coloured price. Picking tickets
+   outlines the card in its own colour. */
+body.ev-app .ea .tier{--tc:#38BDF8; --tcr:56,189,248; position:relative; overflow:hidden; padding-left:24px;
+  background:linear-gradient(90deg, rgba(var(--tcr),.17), rgba(var(--tcr),.04) 64%), var(--ad-card);
+  box-shadow:inset 0 0 0 1px rgba(var(--tcr),.34)}
+body.ev-app .ea .tier::before{content:""; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--tc)}
+body.ev-app .ea .tier .tn{display:flex; align-items:center; gap:9px}
+body.ev-app .ea .tier .tn::before{content:""; flex:none; width:10px; height:10px; border-radius:50%; background:var(--tc); box-shadow:0 0 0 3px rgba(var(--tcr),.26)}
+body.ev-app .ea .tier .tp{color:var(--tc)}
+body.ev-app .ea .tier.is-picked,body.ev-app .ea .tier:has(.qty-input:not([value="0"])){
+  background:linear-gradient(90deg, rgba(var(--tcr),.30), rgba(var(--tcr),.10) 72%), #1B1215; box-shadow:inset 0 0 0 2px var(--tc)}
+body.ev-app .ea .tier.tone-0{--tc:#38BDF8; --tcr:56,189,248}    /* sky */
+body.ev-app .ea .tier.tone-1{--tc:#FBBF24; --tcr:251,191,36}    /* gold */
+body.ev-app .ea .tier.tone-2{--tc:#34D399; --tcr:52,211,153}    /* green */
+body.ev-app .ea .tier.tone-3{--tc:#A78BFA; --tcr:167,139,250}   /* violet */
+body.ev-app .ea .tier.tone-4{--tc:#FB7185; --tcr:251,113,133}   /* rose */
+body.ev-app .ea .tier.tone-5{--tc:#FB923C; --tcr:251,146,60}    /* orange */
+body.ev-app .ea .tier.tone-6{--tc:#A3E635; --tcr:163,230,53}    /* lime */
+body.ev-app .ea .tier.tone-7{--tc:#F472B6; --tcr:244,114,182}   /* pink */

@@ -384,13 +384,13 @@ ob_start(); ?>
         <input type="hidden" name="event_slug" value="<?= htmlspecialchars($event['slug']) ?>">
 
         <div class="poster-tiers">
-          <?php foreach ($tiers as $tier):
+          <?php foreach (array_values($tiers) as $tierNo => $tier):
               $available = max(0, (int) $tier['quantity_total'] - (int) $tier['quantity_sold']);
               $soldOut = $available === 0;
               $tierLimit = tier_person_limit($tier);
               $maxPick = $tierLimit !== null ? min($available, $tierLimit) : $available;
           ?>
-            <div class="tier" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $maxPick ?>">
+            <div class="tier tone-<?= $tierNo % 8 ?>" data-price="<?= htmlspecialchars($tier['price']) ?>" data-max="<?= $maxPick ?>">
               <div class="tier-row">
                 <div class="tier-info">
                   <div class="tn"><?= htmlspecialchars($tier['name']) ?></div>
