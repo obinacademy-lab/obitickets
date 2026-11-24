@@ -131,3 +131,96 @@ function iotec_check_collection_status(string $transactionId): array
     }
     return ['status' => $data['status'], 'statusMessage' => $data['statusMessage'] ?? null];
 }
+
+// ---------------------------------------------------------------------------
+// Disbursements: sending money OUT of the ioTec Pay wallet to a mobile money number (organizer payouts).
+// Same OAuth token and wallet as collections. https://pay.iotec.io/api/disbursements/disburse
+// ---------------------------------------------------------------------------
+const IOTEC_DISBURSE_URL = 'https://pay.iotec.io/api/disbursements/disburse';
+const IOTEC_DISBURSE_STATUS_URL = 'https://pay.iotec.io/api/disbursements/status';
+const IOTEC_DISBURSE_EXTERNAL_URL = 'https://pay.iotec.io/api/disbursements/external-id';
+
+/** Thrown when ioTec clearly REFUSED the request (nothing was sent), so the payout can be marked failed safely. */
+class IotecRefusedException extends IotecException
+{
+}
+
+/** The wallet currency for payouts: UGX live; ioTec's test wallet uses ITX (set IOTEC_CURRENCY in the test config). */
+function iotec_payout_currency(): string
+{
+    return defined('IOTEC_CURRENCY') && IOTEC_CURRENCY ? (string) IOTEC_CURRENCY : 'UGX';
+}
+
+/**
+ * Sends $amount to a mobile money number. $externalId is OUR unique reference for this payout.
+ * Returns ['transactionId' => ..., 'status' => ...]. A 4xx answer means ioTec refused it (IotecRefusedException:
+ * safe to mark the payout failed). A network error or 5xx is an UNKNOWN outcome (plain IotecException): the money
+ * may have gone, so the payout must stay "processing" until ioTec confirms.
+ */
+function iotec_disburse(float $amount, string $phone, string $externalId, string $note): array
+{
+    try {
+        $token = iotec_get_access_token();
+    } catch (IotecException $e) {
+        throw new IotecRefusedException('could not sign in to ioTec, nothing was sent: ' . $e->getMessage());   // before any money request, so safe to fail
+    }
+    [$status, $body] = iotec_http('POST', IOTEC_DISBURSE_URL, [
+        'Authorization: Bearer ' . $token,
+        'Content-Type: application/json',
+        'Accept: application/json',
+    ], json_encode([
+        'category' => 'MobileMoney',
+        'currency' => iotec_payout_currency(),
+        'walletId' => IOTEC_WALLET_ID,
+        'externalId' => $externalId,
+        'payee' => iotec_normalize_phone($phone),
+        'amount' => (int) round($amount),
+        'payerNote' => $note,
+        'payeeNote' => $note,
+    ]));
+    if ($status >= 400 && $status < 500) {
+        throw new IotecRefusedException("iotec disbursement refused ($status): $body");
+    }
+    if ($status < 200 || $status >= 300) {
+        throw new IotecException("iotec disbursement unclear ($status): $body");
+    }
+    $data = json_decode($body, true);
+    if (empty($data['id'])) {
+        throw new IotecException("iotec disbursement response missing transaction id: $body");
+    }
+    return ['transactionId' => (string) $data['id'], 'status' => (string) ($data['status'] ?? 'Pending')];
+}
+
+/** @return array{status: string, statusMessage: ?string} */
+function iotec_check_disbursement_status(string $transactionId): array
+{
+    $token = iotec_get_access_token();
+    [$status, $body] = iotec_http('GET', IOTEC_DISBURSE_STATUS_URL . '/' . urlencode($transactionId), [
+        'Authorization: Bearer ' . $token, 'Content-Type: application/json', 'Accept: application/json',
+    ]);
+    if ($status < 200 || $status >= 300) {
+        throw new IotecException("iotec disbursement status check failed ($status): $body");
+    }
+    $data = json_decode($body, true);
+    if (empty($data['status'])) {
+        throw new IotecException("iotec disbursement status missing status field: $body");
+    }
+    return ['status' => (string) $data['status'], 'statusMessage' => $data['statusMessage'] ?? null];
+}
+
+/** Finds a disbursement by OUR reference (used when the first answer was lost). Returns ['transactionId','status'] or null. */
+function iotec_find_disbursement_by_external_id(string $externalId): ?array
+{
+    $token = iotec_get_access_token();
+    [$status, $body] = iotec_http('GET', IOTEC_DISBURSE_EXTERNAL_URL . '/' . urlencode($externalId), [
+        'Authorization: Bearer ' . $token, 'Content-Type: application/json', 'Accept: application/json',
+    ]);
+    if ($status === 404) {
+        return null;
+    }
+    if ($status < 200 || $status >= 300) {
+        throw new IotecException("iotec disbursement lookup failed ($status): $body");
+    }
+    $data = json_decode($body, true);
+    return !empty($data['id']) ? ['transactionId' => (string) $data['id'], 'status' => (string) ($data['status'] ?? 'Pending')] : null;
+}

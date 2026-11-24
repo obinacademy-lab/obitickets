@@ -1276,8 +1276,30 @@ function update_organizer_profile(int $userId, array $fields): void
 {
     db()->prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?')
         ->execute([$fields['name'], $fields['phone'] ?: null, $userId]);
+    $before = function_exists('payout_profile') ? payout_profile($userId) : ['payout_phone' => '', 'payout_provider' => ''];
     db()->prepare('UPDATE organizer_profiles SET org_name = ?, bio = ?, payout_provider = ?, payout_phone = ? WHERE user_id = ?')
         ->execute([$fields['org_name'], $fields['bio'] ?: null, $fields['payout_provider'], $fields['payout_phone'] ?: null, $userId]);
+
+    // A changed payout number or provider: note when (automatic payouts to it wait 24 hours) and tell the owner by email,
+    // so someone who takes over an account cannot quietly redirect the money (includes/payouts.php).
+    $changed = payout_digits((string) $before['payout_phone']) !== payout_digits((string) $fields['payout_phone'])
+        || (string) $before['payout_provider'] !== (string) $fields['payout_provider'];
+    if ($changed && function_exists('payouts_auto_ready') && payouts_auto_ready()) {
+        db()->prepare('UPDATE organizer_profiles SET payout_phone_changed_at = NOW() WHERE user_id = ?')->execute([$userId]);
+        try {
+            $u = db()->prepare('SELECT email, name FROM users WHERE id = ?');
+            $u->execute([$userId]);
+            if (($row = $u->fetch()) && function_exists('resend_send')) {
+                $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
+                resend_send((string) $row['email'], 'Your obitickets payout number was changed',
+                    '<div style="font-family:sans-serif;max-width:520px"><h2 style="color:#991B1B">Payout number changed</h2><p>Hi ' . $h((string) $row['name']) . ', the number your obitickets earnings are paid to was just changed to <b>' . $h((string) $fields['payout_phone']) . '</b>.</p>'
+                    . '<p>If this was you, nothing else to do (the first automatic payout to a new number waits ' . (int) PAYOUT_NEW_NUMBER_HOLD_HOURS . ' hours for a quick check). <b>If it was not you</b>, log in and change your password now and contact us.</p></div>',
+                    'payout_number_changed');
+            }
+        } catch (Throwable $e) {
+            error_log('[payout] number-change email failed: ' . $e->getMessage());
+        }
+    }
 }
 
 /** @return array{0: bool, 1: ?string} [success, errorMessage] */

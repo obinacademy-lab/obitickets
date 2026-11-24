@@ -11,18 +11,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'withd
         http_response_code(403);
         exit('You do not have permission to request payouts.');
     }
-    [$ok, $err] = request_withdrawal(
-        $organizerId,
-        (float) ($_POST['amount'] ?? 0),
-        in_array($_POST['method'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY', 'BANK'], true) ? $_POST['method'] : 'MTN_MOMO',
-        (string) ($_POST['destination'] ?? '')
-    );
-    if ($ok) {
-        header('Location: /org-payouts.php?withdrawn=1');
-        exit;
+    $wMethod = in_array($_POST['method'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY', 'BANK'], true) ? $_POST['method'] : 'MTN_MOMO';
+    $wDest = (string) ($_POST['destination'] ?? '');
+    if (payouts_auto_ready()) {
+        // locked balance check, then sent straight away when automatic payouts are on (includes/payouts.php)
+        if (!empty($_POST['to_saved'])) {
+            $sp = payout_profile($organizerId);
+            $wMethod = $sp['payout_provider'];
+            $wDest = (string) $sp['payout_phone'];
+        }
+        $res = payout_request($organizerId, (float) ($_POST['amount'] ?? 0), $wMethod, $wDest);
+        if ($res['ok']) {
+            $_SESSION['payout_msg'] = $res['message'];
+            header('Location: /org-payouts.php?withdrawn=1');
+            exit;
+        }
+        $withdrawError = $res['error'];
+    } else {
+        [$ok, $err] = request_withdrawal($organizerId, (float) ($_POST['amount'] ?? 0), $wMethod, $wDest);
+        if ($ok) {
+            header('Location: /org-payouts.php?withdrawn=1');
+            exit;
+        }
+        $withdrawError = $err;
     }
-    $withdrawError = $err;
 }
+
+// refresh any of this organizer's payouts that ioTec is still processing, so the page shows the real status
+if (payouts_auto_ready()) {
+    payout_poll_open($organizerId, 5);
+}
+$payoutMsg = $_SESSION['payout_msg'] ?? null;
+unset($_SESSION['payout_msg']);
 
 $balance = get_organizer_balance($organizerId);
 $pendingPayouts = get_pending_payouts_for_organizer($organizerId);
@@ -42,7 +62,7 @@ render_organizer_head('payouts', $ctx);
   <div><h1>Payouts</h1><p>Request a withdrawal from your available balance and track its status.</p></div>
 </div>
 
-<?php if (isset($_GET['withdrawn'])): ?><span data-flash="Withdrawal requested — we'll process it shortly." hidden></span><?php endif; ?>
+<?php if (isset($_GET['withdrawn'])): ?><span data-flash="<?= htmlspecialchars($payoutMsg ?: "Withdrawal requested — we'll process it shortly.", ENT_QUOTES) ?>" hidden></span><?php endif; ?>
 <?php if ($withdrawError): ?><span data-flash="<?= htmlspecialchars($withdrawError, ENT_QUOTES) ?>" data-flash-type="error" hidden></span><?php endif; ?>
 
 <div class="admin-kpi-grid" style="margin-bottom:24px">
@@ -108,6 +128,14 @@ render_organizer_head('payouts', $ctx);
         </div>
       <?php elseif (array_sum(array_column($balance, 'available')) <= 0): ?>
         <p class="muted" style="font-size:0.86rem">You don't have any available balance to withdraw yet.</p>
+      <?php elseif (payout_auto_enabled() && in_array($profile['payout_provider'], ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) $profile['payout_phone'])): $avail = (int) floor(array_sum(array_column($balance, 'available'))); ?>
+        <form method="post" data-confirm="Send the money to <?= htmlspecialchars((string) $profile['payout_phone'], ENT_QUOTES) ?> now?">
+          <?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="to_saved" value="1">
+          <p class="muted" style="font-size:0.86rem; margin:0 0 12px">Paid instantly to your <b><?= htmlspecialchars(str_replace('_', ' ', $profile['payout_provider'])) ?></b> number <b class="mono"><?= htmlspecialchars((string) $profile['payout_phone']) ?></b>. <a class="link" href="/org-settings.php">Change number</a></p>
+          <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" id="wAmount" name="amount" min="<?= PAYOUT_MIN_AMOUNT ?>" step="1" max="<?= $avail ?>" value="<?= $avail ?>" required></div>
+          <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">You can withdraw up to UGX <?= number_format($avail) ?> (your whole available balance).</p>
+          <button class="btn btn-purple btn-block" type="submit">Withdraw now</button>
+        </form>
       <?php else: ?>
         <form method="post">
           <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
