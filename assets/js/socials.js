@@ -13,7 +13,13 @@
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var items = [];            // {data, el, video, audio, slides, timer}
   var current = null;
-  var muted = true;
+  // Sound is ON from the start. Browsers only allow that after the person has tapped on the site once; when they refuse,
+  // the video plays silently and the first tap anywhere turns the sound on (soundBlocked). If the person turns the sound
+  // off themselves with the button, that choice is remembered ('ot-feed-sound').
+  var SOUND_KEY = 'ot-feed-sound';
+  var muted = (function () { try { return localStorage.getItem(SOUND_KEY) === 'off'; } catch (e) { return false; } })();
+  var soundBlocked = false, unlockedAt = 0, soundHinted = false;
+  function rememberSound() { try { localStorage.setItem(SOUND_KEY, muted ? 'off' : 'on'); } catch (e) { /* private window: fine */ } }
   var loading = false;
   var hasMore = !!D.hasMore;
   var offset = D.items.length;
@@ -200,9 +206,9 @@
 
     if (it.video || it.audio) {
       a.classList.add('has-sound');
-      var snd = el('button', 'fd-sound is-muted'); snd.type = 'button';
+      var snd = el('button', 'fd-sound' + (muted ? ' is-muted' : '')); snd.type = 'button';
       snd.appendChild(svg(IC.mute, 20)); snd.appendChild(svg(IC.vol, 20));
-      snd.addEventListener('click', function () { muted = !muted; applyMute(); paintSound(); toast(muted ? 'Sound off' : 'Sound on'); });
+      snd.addEventListener('click', function () { soundBlocked = false; muted = !muted; rememberSound(); applyMute(); paintSound(); toast(muted ? 'Sound off' : 'Sound on'); });
       a.appendChild(snd);
       it.soundBtn = snd;
     }
@@ -291,8 +297,70 @@
     a.appendChild(cta);
 
     if (it.video) {
-      var prog = el('div', 'fd-prog'); prog.setAttribute('aria-hidden', 'true');
-      it.progFill = el('i'); prog.appendChild(it.progFill); a.appendChild(prog);
+      var prog = el('div', 'fd-prog');
+      it.progFill = el('i'); prog.appendChild(it.progFill);
+      // the bar can be dragged (or tapped) to go forward and back; a bigger invisible strip makes it easy to catch with a thumb
+      var hit = el('div', 'fd-prog-hit'); hit.setAttribute('role', 'slider'); hit.setAttribute('tabindex', '0');
+      hit.setAttribute('aria-label', 'Video position. Use the left and right arrow keys to go back and forward.');
+      hit.setAttribute('aria-valuemin', '0'); hit.setAttribute('aria-valuemax', '100'); hit.setAttribute('aria-valuenow', '0');
+      prog.appendChild(hit); a.appendChild(prog);
+      var timeEl = el('div', 'fd-time'); timeEl.setAttribute('aria-hidden', 'true'); a.appendChild(timeEl);
+      var vid = it.video, scrubWasPlaying = false;
+      var clamp = function (x, lo, hi) { return Math.max(lo, Math.min(hi, x)); };
+      var fmt = function (s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); };
+      function beginScrub() {
+        if (it.scrubbing || !vid.duration || !isFinite(vid.duration)) { return false; }
+        it.scrubbing = true; scrubWasPlaying = !vid.paused; vid.pause();
+        a.classList.add('is-scrubbing');
+        return true;
+      }
+      function moveScrub(t) {
+        t = clamp(t, 0, vid.duration);
+        vid.currentTime = t;
+        it.progFill.style.transform = 'scaleX(' + (t / vid.duration).toFixed(4) + ')';
+        hit.setAttribute('aria-valuenow', String(Math.round(t / vid.duration * 100)));
+        timeEl.textContent = fmt(t) + ' / ' + fmt(vid.duration);
+      }
+      function endScrub() {
+        if (!it.scrubbing) { return; }
+        it.scrubbing = false; it.lastScrub = Date.now();
+        a.classList.remove('is-scrubbing');
+        if (scrubWasPlaying && !a.classList.contains('is-paused')) { vid.play().catch(function () {}); }
+      }
+      it.skipBy = function (secs) {   // arrow keys: back or forward a few seconds
+        if (!vid.duration || !isFinite(vid.duration)) { return; }
+        vid.currentTime = clamp(vid.currentTime + secs, 0, vid.duration);
+        toast((secs > 0 ? '+' : '') + secs + 's  ·  ' + fmt(vid.currentTime) + ' / ' + fmt(vid.duration));
+      };
+      // 1) drag or tap the bar
+      var atX = function (x) { var r = prog.getBoundingClientRect(); return clamp((x - r.left) / (r.width || 1), 0, 1) * vid.duration; };
+      hit.addEventListener('pointerdown', function (e) {
+        if (!beginScrub()) { return; }
+        e.preventDefault();
+        try { hit.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+        moveScrub(atX(e.clientX));
+      });
+      hit.addEventListener('pointermove', function (e) { if (it.scrubbing && it.scrubFrom === undefined) { moveScrub(atX(e.clientX)); } });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { hit.addEventListener(ev, endScrub); });
+      hit.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); it.skipBy(-5); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); it.skipBy(5); }
+      });
+      // 2) swipe sideways on the video: a full-width swipe covers up to 90 seconds
+      var sx = 0, sy = 0, startT = 0, tracking = false, swiping = false;
+      tap.addEventListener('pointerdown', function (e) { tracking = true; swiping = false; sx = e.clientX; sy = e.clientY; });
+      tap.addEventListener('pointermove', function (e) {
+        if (!tracking) { return; }
+        var dx = e.clientX - sx, dy = e.clientY - sy;
+        if (!swiping) {
+          if (Math.abs(dx) < 14 || Math.abs(dx) < Math.abs(dy) * 1.6 || !beginScrub()) { return; }
+          swiping = true; startT = vid.currentTime; it.scrubFrom = sx;
+          try { tap.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+        }
+        moveScrub(startT + dx / (tap.clientWidth || 1) * Math.min(vid.duration, 90));
+      });
+      var endSwipe = function () { tracking = false; if (swiping) { swiping = false; it.scrubFrom = undefined; endScrub(); } };
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { tap.addEventListener(ev, endSwipe); });
     }
 
     // ---- behaviour
@@ -303,6 +371,7 @@
     var lastTap = 0, tapTimer = null;
     tap.addEventListener('click', function () {
       var now = Date.now();
+      if (now - (it.lastScrub || 0) < 450) { return; }   // the end of a sideways swipe is not a tap
       if (now - lastTap < 320) {           // double tap: like
         clearTimeout(tapTimer); lastTap = 0;
         if (!it.liked) { toggleLike(true); }
@@ -312,8 +381,8 @@
       }
       lastTap = now;
       tapTimer = setTimeout(function () {
-        // Phones start silent: the first tap on a post with sound turns the sound on (for every post after it).
-        if (muted && (it.video || it.audio)) { muted = false; applyMute(); paintSound(); toast('Sound on'); return; }
+        // the tap that just turned the sound on (browser had blocked it) is not also a pause
+        if (Date.now() - unlockedAt < 700) { return; }
         if (it.video) { togglePause(it); }
         else { a.classList.toggle('is-clear'); }   // pictures: hide the words to see the whole picture
       }, 330);
@@ -417,7 +486,15 @@
       if (it.video.readyState < 3) { it.el.classList.add('is-loading'); }
       it.video.muted = muted || !!it.audio;       // with a chosen sound, the sound is the audio
       var p = it.video.play();
-      if (p && p.catch) { p.catch(function () { it.video.muted = true; it.video.play().catch(function () { it.el.classList.add('is-paused'); }); }); }
+      if (p && p.catch) {
+        p.catch(function (err) {
+          // only "not allowed" means the browser wants a tap first (a quick swipe past the video also fails play(), harmlessly)
+          if (!muted && err && err.name === 'NotAllowedError') { soundWasBlocked(); }
+          if (err && err.name === 'AbortError') { return; }
+          it.video.muted = true;
+          it.video.play().catch(function () { it.el.classList.add('is-paused'); });
+        });
+      }
     }
     if (it.audio && !muted) { playAudio(it); }
     if (it.slides.length > 1 && !reduce) {
@@ -445,8 +522,25 @@
     if (!it.audio.src) { it.audio.src = it.audio.getAttribute('data-src'); }
     try { if (it.data.sound && it.data.sound.start && !it.audio.currentTime) { it.audio.currentTime = it.data.sound.start; } } catch (e) { /* not loaded yet */ }
     it.audio.volume = it.data.sound && it.data.sound.mix ? Math.min(1, it.data.sound.mix / 100) : 0.7;
-    var p = it.audio.play(); if (p && p.catch) { p.catch(function () {}); }
+    var p = it.audio.play(); if (p && p.catch) { p.catch(function (err) { if (!muted && err && err.name === 'NotAllowedError') { soundWasBlocked(); } }); }
   }
+  // the browser refused to start sound without a tap: show the sound button as off, say how to fix it, and wait for a tap
+  function soundWasBlocked() {
+    soundBlocked = true; muted = true;
+    paintSound();
+    if (current && current.audio) { current.audio.pause(); }
+    if (!soundHinted) { soundHinted = true; toast('Tap the screen to turn the sound on'); }
+  }
+  // any tap or key press is the permission the browser wanted: turn the sound on (not when the tap is on the sound button itself)
+  function unlockSound(e) {
+    if (!soundBlocked) { return; }
+    if (e && e.target && e.target.closest && e.target.closest('.fd-sound')) { return; }
+    soundBlocked = false; muted = false; unlockedAt = Date.now();
+    applyMute(); paintSound();
+    toast('Sound on');
+  }
+  document.addEventListener('click', unlockSound, true);
+  document.addEventListener('keydown', unlockSound, true);
   function stop(it) {
     if (it.video) { it.video.pause(); }
     if (it.audio) { it.audio.pause(); }
@@ -509,7 +603,9 @@
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) { return; }
     if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(1); }
     else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
-    else if ((e.key === 'm' || e.key === 'M') && current && (current.video || current.audio)) { muted = !muted; applyMute(); paintSound(); }
+    else if (e.key === 'ArrowLeft' && current && current.skipBy) { e.preventDefault(); current.skipBy(-5); }
+    else if (e.key === 'ArrowRight' && current && current.skipBy) { e.preventDefault(); current.skipBy(5); }
+    else if ((e.key === 'm' || e.key === 'M') && current && (current.video || current.audio)) { soundBlocked = false; muted = !muted; rememberSound(); applyMute(); paintSound(); }
     else if (e.key === ' ' && current && current.video && (t === document.body || t === feed)) { e.preventDefault(); togglePause(current); }
   });
   // computers: previous / next buttons beside the feed

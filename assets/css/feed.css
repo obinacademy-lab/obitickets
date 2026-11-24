@@ -296,6 +296,18 @@ body.so-v3 .so-toast.on{transform:translate(-50%, 0)}
 .fd-facts li svg{justify-self:center; opacity:.9}
 .fd-facts li span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .fd-facts .fd-track{font-weight:500; color:rgba(255,255,255,.8)}
+/* going forward and back: sideways swipe on the video, drag/tap the bar, time shown while moving */
+.fd-tap{touch-action:pan-y}
+.fd-prog{transition:height .15s ease; overflow:visible}
+.fd-prog i{border-radius:0 2px 2px 0}
+.fd-prog-hit{position:absolute; left:0; right:0; bottom:-3px; height:22px; pointer-events:auto; touch-action:none; cursor:pointer; -webkit-tap-highlight-color:transparent; outline:none}
+.fd-prog-hit:focus-visible{box-shadow:0 2px 0 0 #fff}
+.fd-item.is-scrubbing .fd-prog{height:6px}
+.fd-item.is-scrubbing .fd-prog i{transition:none}
+.fd-time{position:absolute; z-index:6; left:50%; bottom:calc(var(--fd-tabs) + 56px); transform:translateX(-50%); padding:8px 18px; border-radius:999px; background:rgba(12,8,10,.72); color:#fff; font:800 22px/1 'Outfit','Plus Jakarta Sans',system-ui,sans-serif; letter-spacing:.02em; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease}
+.fd-item.is-scrubbing .fd-time{opacity:1}
+.fd-item.is-scrubbing .fd-info,.fd-item.is-scrubbing .fd-rail,.fd-item.is-scrubbing .fd-cta,.fd-item.is-scrubbing .fd-sound,.fd-item.is-scrubbing::after{opacity:0; pointer-events:none}
+@media (min-width:700px){ .fd-time{bottom:56px} }
 /* three tabs at the top (For You, Following, Near You) have to fit on small phones */
 body.so-v3 .so-tabs{gap:20px; font-size:16.5px}
 @media (max-width:400px){ body.so-v3 .so-tabs{gap:15px; font-size:15.5px} }
