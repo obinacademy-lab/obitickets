@@ -41,7 +41,6 @@
     sheet.appendChild(el('div', 'og-handle'));
     head = el('header', 'og-head'); body = el('div', 'og-body'); foot = el('div', 'og-foot');
     sheet.appendChild(head); sheet.appendChild(body); sheet.appendChild(foot);
-    sheet.appendChild(el('i', 'og-lights')); sheet.appendChild(el('i', 'og-lights b'));   // the blinking bulbs (gifts.css)
     document.body.appendChild(shade); document.body.appendChild(sheet);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet.classList.contains('on')) { close(); } });
   }
