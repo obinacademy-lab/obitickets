@@ -558,6 +558,9 @@ function request_withdrawal(int $organizerId, float $amount, string $method, str
     if ($amount > $available) {
         return [false, "That's more than your available balance."];
     }
+    if (function_exists('payout_reserve') && $amount > $available - payout_reserve($organizerId)) {
+        return [false, 'UGX ' . number_format(payout_reserve($organizerId)) . ' of your balance stays on your account as a reserve while you have events running. You can withdraw up to UGX ' . number_format(max(0, floor($available - payout_reserve($organizerId)))) . '.'];
+    }
 
     db()->prepare('INSERT INTO payouts (organizer_id, amount, currency, method, destination, notes) VALUES (?, ?, ?, ?, ?, ?)')
         ->execute([$organizerId, $amount, 'UGX', $method, $destination, $notes]);

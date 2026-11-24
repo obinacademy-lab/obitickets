@@ -45,6 +45,9 @@ $payoutMsg = $_SESSION['payout_msg'] ?? null;
 unset($_SESSION['payout_msg']);
 
 $balance = get_organizer_balance($organizerId);
+$availTotal = (float) array_sum(array_column($balance, 'available'));
+$reserve = payout_reserve($organizerId);                              // kept on the account while events run (released 7 days after the last one)
+$withdrawable = payout_withdrawable($organizerId, $availTotal);
 $pendingPayouts = get_pending_payouts_for_organizer($organizerId);
 $history = get_payouts_for_organizer($organizerId);
 
@@ -126,10 +129,18 @@ render_organizer_head('payouts', $ctx);
           <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-clock"/></svg></div>
           <p style="margin-top:0">You already have a withdrawal request being processed. You can request another once it's resolved.</p>
         </div>
-      <?php elseif (array_sum(array_column($balance, 'available')) <= 0): ?>
+      <?php elseif ($availTotal <= 0): ?>
         <p class="muted" style="font-size:0.86rem">You don't have any available balance to withdraw yet.</p>
+      <?php elseif ($withdrawable < PAYOUT_MIN_AMOUNT): ?>
+        <?php if ($reserve > 0): ?>
+          <p style="font-size:0.9rem; margin:0 0 8px"><b>You can withdraw once your balance reaches UGX <?= number_format($reserve + PAYOUT_MIN_AMOUNT) ?>.</b></p>
+          <p class="muted" style="font-size:0.84rem; margin:0">UGX <?= number_format($reserve) ?> stays on your account as a reserve while you have events running. It is still your money: it is released automatically <?= (int) PAYOUT_RESERVE_RELEASE_DAYS ?> days after your last event ends. The smallest withdrawal is UGX <?= number_format(PAYOUT_MIN_AMOUNT) ?>.</p>
+        <?php else: ?>
+          <p style="font-size:0.9rem; margin:0 0 8px"><b>The smallest withdrawal is UGX <?= number_format(PAYOUT_MIN_AMOUNT) ?>.</b></p>
+          <p class="muted" style="font-size:0.84rem; margin:0">Your balance is UGX <?= number_format($availTotal) ?>. You can withdraw once it reaches UGX <?= number_format(PAYOUT_MIN_AMOUNT) ?>.</p>
+        <?php endif; ?>
       <?php elseif (payout_auto_enabled()):
-        $avail = (int) floor(array_sum(array_column($balance, 'available')));
+        $avail = (int) floor($withdrawable);
         $savedMobile = in_array($profile['payout_provider'], ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) $profile['payout_phone']);
         $wProv = $savedMobile ? $profile['payout_provider'] : 'MTN_MOMO';
         $wNum = $savedMobile ? (string) $profile['payout_phone'] : '';
@@ -138,7 +149,7 @@ render_organizer_head('payouts', $ctx);
           <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
           <p class="muted" style="font-size:0.86rem; margin:0 0 12px">Paid straight to your mobile money, no waiting.</p>
           <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" id="wAmount" name="amount" min="<?= PAYOUT_MIN_AMOUNT ?>" step="1" max="<?= $avail ?>" value="<?= $avail ?>" required></div>
-          <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">You can withdraw up to UGX <?= number_format($avail) ?> (your whole available balance).</p>
+          <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">You can withdraw from UGX <?= number_format(PAYOUT_MIN_AMOUNT) ?> up to UGX <?= number_format($avail) ?><?= $reserve > 0 ? '. UGX ' . number_format($reserve) . ' of your balance stays on your account as a reserve while you have events running. It is still yours and is released ' . (int) PAYOUT_RESERVE_RELEASE_DAYS . ' days after your last event ends.' : ' (your whole available balance).' ?></p>
           <div class="admin-form-row"><label>Send to</label>
             <select name="method" id="wMethod">
               <option value="MTN_MOMO" <?= $wProv === 'MTN_MOMO' ? 'selected' : '' ?>>MTN MoMo</option>
@@ -159,7 +170,7 @@ render_organizer_head('payouts', $ctx);
           <summary class="muted" style="font-size:0.84rem; cursor:pointer">Need a bank transfer instead?</summary>
           <form method="post" style="margin-top:12px">
             <?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="method" value="BANK">
-            <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="1" step="1" max="<?= $avail ?>" required></div>
+            <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="<?= PAYOUT_MIN_AMOUNT ?>" step="1" max="<?= $avail ?>" required></div>
             <div class="admin-form-row"><label>Bank account details</label><input type="text" name="destination" required placeholder="Bank, account name, account number"></div>
             <button class="btn btn-block" type="submit">Request bank transfer</button>
             <p class="muted" style="font-size:0.78rem; margin:8px 0 0">Bank transfers are paid by hand and take longer.</p>
@@ -168,7 +179,7 @@ render_organizer_head('payouts', $ctx);
       <?php else: ?>
         <form method="post">
           <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
-          <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="1" step="1" max="<?= (float) array_sum(array_column($balance, 'available')) ?>" required></div>
+          <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="<?= PAYOUT_MIN_AMOUNT ?>" step="1" max="<?= (float) $withdrawable ?>" required></div>
           <div class="admin-form-row"><label>Method</label>
             <select name="method">
               <option value="MTN_MOMO" <?= $profile['payout_provider'] === 'MTN_MOMO' ? 'selected' : '' ?>>MTN MoMo</option>

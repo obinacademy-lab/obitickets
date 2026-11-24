@@ -16,7 +16,12 @@
 //  * Protection without delay: the organizer is emailed when money goes to a number other than their saved one,
 //    and when their saved number is changed.
 
-const PAYOUT_MIN_AMOUNT = 500;            // UGX (ioTec's own minimum)
+// Fees (owner decision 11/24): every payout costs obitickets an ioTec sending fee, so tiny withdrawals are not allowed and
+// UGX 10,000 of an organizer's balance stays on their account as a reserve (it covers refunds that arrive after a
+// payout). The reserve is still THEIR money: it is released automatically 7 days after their last event ends.
+const PAYOUT_MIN_AMOUNT = 5000;           // UGX, smallest withdrawal
+const PAYOUT_RESERVE = 10000;             // UGX kept back while the organizer has events running
+const PAYOUT_RESERVE_RELEASE_DAYS = 7;
 
 /** Migration 044 has run. */
 function payouts_auto_ready(): bool
@@ -77,17 +82,38 @@ function payout_profile(int $organizerId): array
     return $stmt->fetch() ?: ['payout_provider' => 'MTN_MOMO', 'payout_phone' => '', 'payout_phone_changed_at' => null];
 }
 
-/** Why a mobile money request cannot be sent (a bad number or amount), or null when it is fine. Bank requests wait by design. */
+/**
+ * UGX of this organizer's balance that must stay on the account: PAYOUT_RESERVE while they have an event that is
+ * on, was cancelled recently or ended less than PAYOUT_RESERVE_RELEASE_DAYS days ago, otherwise 0 (released).
+ */
+function payout_reserve(int $organizerId): int
+{
+    if (defined('PAYOUT_TEST_NO_RESERVE')) {   // only ever defined by the command-line test script
+        return 0;
+    }
+    $q = db()->prepare("SELECT 1 FROM events WHERE organizer_id = ? AND status IN ('PUBLISHED','CANCELLED')
+                        AND ends_at >= NOW() - INTERVAL " . (int) PAYOUT_RESERVE_RELEASE_DAYS . ' DAY LIMIT 1');
+    $q->execute([$organizerId]);
+    return $q->fetchColumn() ? PAYOUT_RESERVE : 0;
+}
+
+/** What the organizer may withdraw right now: the available balance minus the reserve (never below zero). */
+function payout_withdrawable(int $organizerId, float $available): float
+{
+    return max(0.0, floor($available - payout_reserve($organizerId)));
+}
+
+/** Why a request cannot be sent (a bad number or amount), or null when it is fine. Bank requests still wait for an admin. */
 function payout_input_error(string $method, string $destination, float $amount): ?string
 {
+    if ($amount < PAYOUT_MIN_AMOUNT) {
+        return 'The smallest withdrawal is UGX ' . number_format(PAYOUT_MIN_AMOUNT) . '.';
+    }
     if (!in_array($method, ['MTN_MOMO', 'AIRTEL_MONEY'], true)) {
-        return null;   // bank: queued for an admin, nothing to validate here
+        return null;   // bank: queued for an admin, nothing more to validate here
     }
     if (!payout_valid_phone($destination)) {
         return 'Enter a valid MTN or Airtel number, like 0772 123 456.';
-    }
-    if ($amount < PAYOUT_MIN_AMOUNT) {
-        return 'The smallest withdrawal is UGX ' . number_format(PAYOUT_MIN_AMOUNT) . '.';
     }
     return null;
 }
@@ -128,6 +154,10 @@ function payout_request(int $organizerId, float $amount, string $method, string 
     $profile = payout_profile($organizerId);
     $auto = payout_auto_enabled();
     $reason = null;
+    if ($amount < PAYOUT_MIN_AMOUNT) {
+        // every payout costs an ioTec fee: this holds whether or not automatic sending is on
+        return $fail('The smallest withdrawal is UGX ' . number_format(PAYOUT_MIN_AMOUNT) . '.');
+    }
     if ($auto) {
         if ($bad = payout_input_error($method, $destination, $amount)) {
             return $fail($bad);
@@ -153,6 +183,13 @@ function payout_request(int $organizerId, float $amount, string $method, string 
         if ($amount > $available) {
             $pdo->rollBack();
             return $fail("That's more than your available balance (UGX " . number_format(max(0, $available)) . ').');
+        }
+        $reserve = payout_reserve($organizerId);
+        if ($reserve > 0 && $amount > $available - $reserve) {
+            $pdo->rollBack();
+            $can = max(0, floor($available - $reserve));
+            return $fail('UGX ' . number_format($reserve) . ' of your balance stays on your account as a reserve while you have events running, and for ' . PAYOUT_RESERVE_RELEASE_DAYS . ' days after your last event ends. '
+                . ($can >= PAYOUT_MIN_AMOUNT ? 'You can withdraw up to UGX ' . number_format($can) . ' now.' : 'You can withdraw once your balance reaches UGX ' . number_format($reserve + PAYOUT_MIN_AMOUNT) . '.'));
         }
         $pdo->prepare('INSERT INTO payouts (organizer_id, amount, currency, method, destination, notes) VALUES (?, ?, ?, ?, ?, ?)')
             ->execute([$organizerId, $amount, 'UGX', $method, $destination, $auto && $reason ? 'Queued: ' . $reason : null]);
