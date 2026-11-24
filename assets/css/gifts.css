@@ -3,12 +3,12 @@
 :root { --og-bg:#141011; --og-card:#1D1518; --og-card2:#241A1E; --og-line:#2F2327; --og-red:#F0313F; --og-gold:#FBBF24; --og-mute:#A89AA0; --og-ok:#34D399; }
 
 .og-open { overflow: hidden; }
-.og-shade { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.62); opacity:0; transition:opacity .22s ease; }
-.og-shade.on { opacity:1; }
-.og-sheet { position:fixed; z-index:91; left:50%; bottom:0; width:min(520px, 100%); transform:translate(-50%, 100%); transition:transform .28s cubic-bezier(.2,.9,.25,1);
+.og-shade { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.62); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .22s ease, visibility 0s linear .22s; }
+.og-shade.on { opacity:1; visibility:visible; pointer-events:auto; transition:opacity .22s ease; }
+.og-sheet { position:fixed; z-index:91; left:50%; bottom:0; width:min(520px, 100%); transform:translate(-50%, 100%); visibility:hidden; pointer-events:none; transition:transform .28s cubic-bezier(.2,.9,.25,1), visibility 0s linear .28s;
   background:var(--og-bg); color:#fff; border-radius:24px 24px 0 0; border:1px solid var(--og-line); border-bottom:0; box-shadow:0 -24px 60px rgba(0,0,0,.6);
   max-height:88vh; display:flex; flex-direction:column; font:15px/1.45 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; padding-bottom:env(safe-area-inset-bottom, 0px); }
-.og-sheet.on { transform:translate(-50%, 0); }
+.og-sheet.on { transform:translate(-50%, 0); visibility:visible; pointer-events:auto; transition:transform .28s cubic-bezier(.2,.9,.25,1); }
 .og-sheet *, .og-sheet *::before, .og-sheet *::after { box-sizing:border-box; }
 .og-handle { width:42px; height:5px; border-radius:3px; background:#3a2d32; margin:9px auto 2px; flex:none; }
 .og-head { display:flex; align-items:center; gap:12px; padding:8px 16px 12px; flex:none; }
@@ -134,3 +134,67 @@
 /* the Gift button in the feed's right-hand column */
 .fd-gift .fd-ic { color:#fff; }
 .fd-gift:active .fd-ic { transform:scale(.86); }
+
+/* ---------------------------------------------------------------------------------------------------------------------------
+   Life in the gift sheet (owner 11/24): every gift moves in its own way, the cards pop in one after another, small stars twinkle,
+   the chosen card has a light running around it, and two rings of bulbs blink around the sheet. Only transform and opacity move
+   (cheap on a phone), and "reduce motion" turns all of it off. The grid is rebuilt on every tap, so each tile carries --ph (the
+   clock position) and --i (its place): the loops carry on from where they were instead of jumping back to the start. */
+@property --og-ang { syntax:'<angle>'; inherits:false; initial-value:0deg; }
+
+.og-art { position:relative; isolation:isolate; }
+.og-grid .og-tile .og-art { animation:ogBob 3s ease-in-out infinite; animation-delay:calc(var(--ph, 0s) - var(--i, 0) * .4s); transform-origin:50% 62%; }
+.og-tile.a-float .og-art { animation-name:ogBeat; animation-duration:1.5s; }
+.og-tile.a-pop .og-art { animation-name:ogSway; animation-duration:3s; }
+.og-tile.a-sparkle .og-art { animation-name:ogPulse; animation-duration:3s; }
+.og-tile.a-glow .og-art { animation-name:ogPulse; animation-duration:3s; }
+.og-tile.a-fly .og-art { animation-name:ogHover; animation-duration:2s; }
+.og-tile.a-confetti .og-art { animation-name:ogWobble; animation-duration:3s; }
+.og-tile.a-drive .og-art { animation-name:ogDrive; animation-duration:2s; }
+.og-tile.a-jet .og-art { animation-name:ogGlide; animation-duration:3s; }
+
+/* a soft halo behind the precious ones */
+.og-tile.a-glow .og-art::before, .og-tile.a-sparkle .og-art::before, .og-tile.a-jet .og-art::before { content:''; position:absolute; z-index:-1; width:50px; height:50px; border-radius:50%;
+  background:radial-gradient(circle, rgba(251,191,36,.6), rgba(251,191,36,0) 66%); animation:ogHalo 3s ease-in-out infinite; animation-delay:calc(var(--ph, 0s) - var(--i, 0) * .4s); }
+.og-tile.a-sparkle .og-art::before { background:radial-gradient(circle, rgba(125,211,252,.65), rgba(125,211,252,0) 66%); }
+
+/* a little star twinkling on every card */
+.og-tile::before { content:'\2726'; position:absolute; top:5px; right:7px; font-size:10px; line-height:1; color:var(--og-gold); pointer-events:none; opacity:0;
+  animation:ogTwinkle 3s ease-in-out infinite; animation-delay:calc(var(--ph, 0s) - var(--i, 0) * .37s); }
+
+/* the cards pop in one after another, but only when the sheet opens, not on every tap */
+.og-grid.og-enter .og-tile { animation:ogTileIn .55s cubic-bezier(.2,.9,.3,1.25) backwards; animation-delay:calc(var(--i, 0) * 55ms + 140ms); }
+
+/* a light running around the chosen card */
+.og-tile.on::after { content:''; position:absolute; inset:-2px; border-radius:18px; padding:2.5px; pointer-events:none;
+  background:conic-gradient(from var(--og-ang), #F0313F, #FBBF24, #ffffff, #F0313F 55%, #FBBF24 80%, #F0313F);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:ogRing 2.2s linear infinite; }
+
+/* two rings of bulbs around the sheet, blinking in turn */
+.og-lights { position:absolute; z-index:-1; pointer-events:none; inset:-7px -7px 0 -7px; border:3px dotted #FBBF24; border-bottom:0; border-radius:31px 31px 0 0; opacity:0; }
+.og-lights.b { inset:-13px -13px 0 -13px; border-color:#FF5A64; border-radius:37px 37px 0 0; }
+.og-sheet.on .og-lights { animation:ogBulbA 1.1s steps(1, end) infinite; }
+.og-sheet.on .og-lights.b { animation:ogBulbB 1.1s steps(1, end) infinite; }
+
+@keyframes ogTileIn { from { opacity:0; transform:translateY(24px) scale(.6); } 60% { opacity:1; transform:translateY(-4px) scale(1.07); } to { opacity:1; transform:none; } }
+@keyframes ogBob { 0%, 100% { transform:translateY(1px); } 50% { transform:translateY(-3px); } }
+@keyframes ogBeat { 0%, 100% { transform:scale(1); } 14% { transform:scale(1.2); } 28% { transform:scale(1); } 42% { transform:scale(1.13); } 70% { transform:scale(1); } }
+@keyframes ogSway { 0%, 100% { transform:rotate(-7deg); } 50% { transform:rotate(7deg); } }
+@keyframes ogPulse { 0%, 100% { transform:scale(1); } 50% { transform:scale(1.12); } }
+@keyframes ogHover { 0%, 100% { transform:translateY(2px) rotate(-5deg); } 50% { transform:translateY(-5px) rotate(-5deg); } }
+@keyframes ogWobble { 0%, 100% { transform:rotate(-4deg) scale(1); } 25% { transform:rotate(3deg) scale(1.07); } 50% { transform:rotate(-3deg) scale(1); } 75% { transform:rotate(4deg) scale(1.07); } }
+@keyframes ogDrive { 0%, 100% { transform:translateX(-4px); } 25% { transform:translateX(0) translateY(-2px); } 50% { transform:translateX(4px); } 75% { transform:translateX(0) translateY(-2px); } }
+@keyframes ogGlide { 0%, 100% { transform:translate(-4px, 3px) rotate(-3deg); } 50% { transform:translate(4px, -4px) rotate(3deg); } }
+@keyframes ogHalo { 0%, 100% { opacity:.25; transform:scale(.85); } 50% { opacity:1; transform:scale(1.18); } }
+@keyframes ogTwinkle { 0%, 100% { opacity:0; transform:scale(.4) rotate(0deg); } 50% { opacity:1; transform:scale(1.15) rotate(45deg); } }
+@keyframes ogRing { to { --og-ang:360deg; } }
+@keyframes ogBulbA { 0% { opacity:1; } 50% { opacity:.1; } }
+@keyframes ogBulbB { 0% { opacity:.1; } 50% { opacity:1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .og-grid .og-tile .og-art, .og-tile .og-art::before, .og-tile::before, .og-tile.on::after, .og-grid.og-enter .og-tile, .og-sheet.on .og-lights, .og-sheet.on .og-lights.b { animation:none !important; }
+  .og-tile::before { opacity:0; }
+  .og-lights { opacity:.6; }
+  .og-tile.on::after { background:var(--og-red); }
+}

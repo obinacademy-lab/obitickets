@@ -41,6 +41,7 @@
     sheet.appendChild(el('div', 'og-handle'));
     head = el('header', 'og-head'); body = el('div', 'og-body'); foot = el('div', 'og-foot');
     sheet.appendChild(head); sheet.appendChild(body); sheet.appendChild(foot);
+    sheet.appendChild(el('i', 'og-lights')); sheet.appendChild(el('i', 'og-lights b'));   // the blinking bulbs (gifts.css)
     document.body.appendChild(shade); document.body.appendChild(sheet);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet.classList.contains('on')) { close(); } });
   }
@@ -100,9 +101,11 @@
   function renderPick() {
     header(S.data.organizer, S.data.organizer.name);
     body.textContent = ''; foot.textContent = '';
-    var grid = el('div', 'og-grid'); grid.setAttribute('role', 'listbox'); grid.setAttribute('aria-label', 'Gifts');
-    S.data.gifts.forEach(function (g) {
-      var t = el('button', 'og-tile' + (g.id === S.sel ? ' on' : '')); t.type = 'button'; t.setAttribute('role', 'option'); t.setAttribute('aria-selected', g.id === S.sel ? 'true' : 'false');
+    var first = !S.entered; S.entered = true;   // the cards pop in when the sheet opens, not again on every tap
+    var grid = el('div', 'og-grid' + (first ? ' og-enter' : '')); grid.setAttribute('role', 'listbox'); grid.setAttribute('aria-label', 'Gifts');
+    grid.style.setProperty('--ph', '-' + ((Date.now() / 1000) % 6).toFixed(2) + 's');   // the grid is rebuilt on every tap: keep the loops where they were
+    S.data.gifts.forEach(function (g, idx) {
+      var t = el('button', 'og-tile a-' + String(g.anim || 'pop').replace(/[^a-z]/g, '') + (g.id === S.sel ? ' on' : '')); t.style.setProperty('--i', String(idx)); t.type = 'button'; t.setAttribute('role', 'option'); t.setAttribute('aria-selected', g.id === S.sel ? 'true' : 'false');
       t.setAttribute('aria-label', g.name + ', ' + money(g.price));
       t.appendChild(art(g)); t.appendChild(el('b', null, g.name)); t.appendChild(el('em', null, money(g.price)));
       t.addEventListener('click', function () { S.sel = g.id; if (S.qty * g.price > S.data.limits.max) { S.qty = Math.max(1, Math.floor(S.data.limits.max / g.price)); } renderPick(); });
