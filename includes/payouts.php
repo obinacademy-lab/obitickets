@@ -11,11 +11,12 @@
 //  * If the outcome is unknown (network error, 5xx, lost answer) the payout STAYS "processing" and an admin is told.
 //    It is never resent and never auto-failed on a guess.
 //  * The balance check and the insert run under a lock on the organizer's row, so two quick taps cannot overdraw.
-//  * Automatic sending needs the Admin switch (auto_payouts) AND a saved mobile money number that has not changed in
-//    the last 24 hours; otherwise the request waits in the admin queue ("Send now" button).
+//  * Automatic sending needs the Admin switch (auto_payouts). With it on, a withdrawal to any valid MTN/Airtel number
+//    goes out at once (owner decision 11/24: no waiting). Only bank requests wait in the admin queue ("Send now").
+//  * Protection without delay: the organizer is emailed when money goes to a number other than their saved one,
+//    and when their saved number is changed.
 
-const PAYOUT_MIN_AMOUNT = 1000;           // UGX
-const PAYOUT_NEW_NUMBER_HOLD_HOURS = 24;
+const PAYOUT_MIN_AMOUNT = 500;            // UGX (ioTec's own minimum)
 
 /** Migration 044 has run. */
 function payouts_auto_ready(): bool
@@ -76,22 +77,37 @@ function payout_profile(int $organizerId): array
     return $stmt->fetch() ?: ['payout_provider' => 'MTN_MOMO', 'payout_phone' => '', 'payout_phone_changed_at' => null];
 }
 
-/** Why a request cannot go out automatically, or null when it can. */
-function payout_auto_block_reason(array $profile, float $amount): ?string
+/** Why a mobile money request cannot be sent (a bad number or amount), or null when it is fine. Bank requests wait by design. */
+function payout_input_error(string $method, string $destination, float $amount): ?string
 {
-    if (!in_array($profile['payout_provider'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY'], true)) {
-        return 'Bank transfers are paid by hand.';
+    if (!in_array($method, ['MTN_MOMO', 'AIRTEL_MONEY'], true)) {
+        return null;   // bank: queued for an admin, nothing to validate here
     }
-    if (!payout_valid_phone((string) ($profile['payout_phone'] ?? ''))) {
-        return 'Add a valid mobile money number in Settings first.';
+    if (!payout_valid_phone($destination)) {
+        return 'Enter a valid MTN or Airtel number, like 0772 123 456.';
     }
     if ($amount < PAYOUT_MIN_AMOUNT) {
-        return 'The smallest automatic payout is UGX ' . number_format(PAYOUT_MIN_AMOUNT) . '.';
-    }
-    if (!empty($profile['payout_phone_changed_at']) && strtotime((string) $profile['payout_phone_changed_at']) > time() - PAYOUT_NEW_NUMBER_HOLD_HOURS * 3600) {
-        return 'You changed your payout number in the last ' . PAYOUT_NEW_NUMBER_HOLD_HOURS . ' hours, so this request waits for a quick check.';
+        return 'The smallest withdrawal is UGX ' . number_format(PAYOUT_MIN_AMOUNT) . '.';
     }
     return null;
+}
+
+/** Tells the organizer by email that money went to a number other than the one saved in Settings. */
+function payout_email_other_number(int $organizerId, float $amount, string $destination): void
+{
+    try {
+        $u = db()->prepare('SELECT email, name FROM users WHERE id = ?');
+        $u->execute([$organizerId]);
+        if (($row = $u->fetch()) && function_exists('resend_send')) {
+            $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES);
+            resend_send((string) $row['email'], 'A payout was sent to a different number',
+                '<div style="font-family:sans-serif;max-width:520px"><h2 style="color:#991B1B">Payout sent</h2><p>Hi ' . $h((string) $row['name']) . ', UGX ' . number_format($amount) . ' from your obitickets balance was just sent to <b>' . $h($destination) . '</b>, which is not the payout number saved in your settings.</p>'
+                . '<p>If this was you, nothing else to do. <b>If it was not you</b>, change your password now and contact us right away.</p></div>',
+                'payout_other_number');
+        }
+    } catch (Throwable $e) {
+        error_log('[payout] other-number email failed: ' . $e->getMessage());
+    }
 }
 
 /**
@@ -113,13 +129,15 @@ function payout_request(int $organizerId, float $amount, string $method, string 
     $auto = payout_auto_enabled();
     $reason = null;
     if ($auto) {
-        // automatic payouts only ever go to the number saved in Settings, never to one typed in just now
-        if (payout_digits($destination) !== payout_digits((string) $profile['payout_phone']) || !in_array($method, ['MTN_MOMO', 'AIRTEL_MONEY'], true)) {
-            $reason = 'Not the saved payout number.';
-        } else {
-            $reason = payout_auto_block_reason($profile, $amount);
+        if ($bad = payout_input_error($method, $destination, $amount)) {
+            return $fail($bad);
+        }
+        if (!in_array($method, ['MTN_MOMO', 'AIRTEL_MONEY'], true)) {
+            $reason = 'Bank transfers are paid by hand.';
         }
     }
+    $savedOk = in_array($profile['payout_provider'] ?? '', ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) ($profile['payout_phone'] ?? ''));
+    $otherNumber = $auto && !$reason && $savedOk && payout_digits($destination) !== payout_digits((string) $profile['payout_phone']);
 
     $pdo = db();
     $pdo->beginTransaction();
@@ -152,13 +170,31 @@ function payout_request(int $organizerId, float $amount, string $method, string 
     }
 
     if ($auto && !$reason) {
+        if (!$savedOk) {
+            // first time: remember this number so the next withdrawal is one tap
+            try {
+                db()->prepare('UPDATE organizer_profiles SET payout_provider = ?, payout_phone = ?, payout_phone_changed_at = NOW() WHERE user_id = ?')
+                    ->execute([$method, $destination, $organizerId]);
+            } catch (Throwable $e) {
+                error_log('[payout] could not save payout number: ' . $e->getMessage());
+            }
+        }
         $r = payout_send($payoutId, null, $sender, true);
         if ($r['ok']) {
+            if ($otherNumber) {
+                payout_email_other_number($organizerId, $amount, $destination);
+            }
             return ['ok' => true, 'error' => null, 'payout_id' => $payoutId, 'state' => 'sent',
                 'message' => 'Sent! UGX ' . number_format($amount) . ' is on its way to ' . $destination . '. It usually arrives within a minute.'];
         }
+        $st = db()->prepare('SELECT status FROM payouts WHERE id = ?');
+        $st->execute([$payoutId]);
+        if ($st->fetchColumn() === 'FAILED') {
+            // the money never left: it is back in the balance, so say so plainly instead of promising a payment
+            return $fail('We could not send the money right now. Nothing was taken from your balance. Please try again in a few minutes.');
+        }
         return ['ok' => true, 'error' => null, 'payout_id' => $payoutId, 'state' => 'queued',
-            'message' => 'Your request is in. We could not send it instantly, so it will be paid shortly.'];
+            'message' => 'Your request is in and is being processed.'];
     }
     return ['ok' => true, 'error' => null, 'payout_id' => $payoutId, 'state' => 'queued',
         'message' => $reason ? $reason . ' It will be paid shortly.' : "Withdrawal requested. We'll process it shortly."];
@@ -324,6 +360,29 @@ function payout_poll_open(?int $organizerId = null, int $limit = 25): int
         $n++;
     }
     return $n;
+}
+
+/**
+ * Sends mobile money requests that are still waiting (made before automatic payouts were on, or interrupted), so nobody
+ * has to press Send now. Only when the Admin switch is on. Bank requests are skipped: they are paid by hand.
+ * Each row is still claimed with the single-sender UPDATE in payout_send(), so it can never go out twice.
+ * @return int how many were sent
+ */
+function payout_send_waiting(int $limit = 20, ?callable $sender = null): int
+{
+    if (!payout_auto_enabled()) {
+        return 0;
+    }
+    $ids = db()->query("SELECT id FROM payouts WHERE status = 'PENDING' AND iotec_id IS NULL AND method IN ('MTN_MOMO','AIRTEL_MONEY')
+                        AND requested_at < NOW() - INTERVAL 1 MINUTE ORDER BY id LIMIT " . (int) $limit)->fetchAll(PDO::FETCH_COLUMN);
+    $sent = 0;
+    foreach ($ids as $id) {
+        $r = payout_send((int) $id, null, $sender, true);
+        if ($r['ok']) {
+            $sent++;
+        }
+    }
+    return $sent;
 }
 
 /** Emails the active admins (never throws). */

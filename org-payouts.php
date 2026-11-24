@@ -128,14 +128,43 @@ render_organizer_head('payouts', $ctx);
         </div>
       <?php elseif (array_sum(array_column($balance, 'available')) <= 0): ?>
         <p class="muted" style="font-size:0.86rem">You don't have any available balance to withdraw yet.</p>
-      <?php elseif (payout_auto_enabled() && in_array($profile['payout_provider'], ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) $profile['payout_phone'])): $avail = (int) floor(array_sum(array_column($balance, 'available'))); ?>
-        <form method="post" data-confirm="Send the money to <?= htmlspecialchars((string) $profile['payout_phone'], ENT_QUOTES) ?> now?">
-          <?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="to_saved" value="1">
-          <p class="muted" style="font-size:0.86rem; margin:0 0 12px">Paid instantly to your <b><?= htmlspecialchars(str_replace('_', ' ', $profile['payout_provider'])) ?></b> number <b class="mono"><?= htmlspecialchars((string) $profile['payout_phone']) ?></b>. <a class="link" href="/org-settings.php">Change number</a></p>
+      <?php elseif (payout_auto_enabled()):
+        $avail = (int) floor(array_sum(array_column($balance, 'available')));
+        $savedMobile = in_array($profile['payout_provider'], ['MTN_MOMO', 'AIRTEL_MONEY'], true) && payout_valid_phone((string) $profile['payout_phone']);
+        $wProv = $savedMobile ? $profile['payout_provider'] : 'MTN_MOMO';
+        $wNum = $savedMobile ? (string) $profile['payout_phone'] : '';
+      ?>
+        <form method="post" id="wForm" data-confirm="Send the money now? Money sent to a wrong number cannot be brought back.">
+          <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
+          <p class="muted" style="font-size:0.86rem; margin:0 0 12px">Paid straight to your mobile money, no waiting.</p>
           <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" id="wAmount" name="amount" min="<?= PAYOUT_MIN_AMOUNT ?>" step="1" max="<?= $avail ?>" value="<?= $avail ?>" required></div>
           <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">You can withdraw up to UGX <?= number_format($avail) ?> (your whole available balance).</p>
+          <div class="admin-form-row"><label>Send to</label>
+            <select name="method" id="wMethod">
+              <option value="MTN_MOMO" <?= $wProv === 'MTN_MOMO' ? 'selected' : '' ?>>MTN MoMo</option>
+              <option value="AIRTEL_MONEY" <?= $wProv === 'AIRTEL_MONEY' ? 'selected' : '' ?>>Airtel Money</option>
+            </select>
+          </div>
+          <div class="admin-form-row"><label>Mobile money number</label><input type="text" inputmode="tel" id="wNumber" name="destination" value="<?= htmlspecialchars($wNum, ENT_QUOTES) ?>" required placeholder="e.g. 0772 123 456" autocomplete="tel"></div>
           <button class="btn btn-purple btn-block" type="submit">Withdraw now</button>
         </form>
+        <script>
+        (function () {
+          var f = document.getElementById('wForm'), a = document.getElementById('wAmount'), n = document.getElementById('wNumber');
+          function upd() { f.setAttribute('data-confirm', 'Send UGX ' + Number(a.value || 0).toLocaleString() + ' to ' + (n.value || 'this number') + ' now? Money sent to a wrong number cannot be brought back.'); }
+          a.addEventListener('input', upd); n.addEventListener('input', upd); upd();
+        })();
+        </script>
+        <details style="margin-top:14px">
+          <summary class="muted" style="font-size:0.84rem; cursor:pointer">Need a bank transfer instead?</summary>
+          <form method="post" style="margin-top:12px">
+            <?= csrf_field() ?><input type="hidden" name="action" value="withdraw"><input type="hidden" name="method" value="BANK">
+            <div class="admin-form-row"><label>Amount (UGX)</label><input type="number" name="amount" min="1" step="1" max="<?= $avail ?>" required></div>
+            <div class="admin-form-row"><label>Bank account details</label><input type="text" name="destination" required placeholder="Bank, account name, account number"></div>
+            <button class="btn btn-block" type="submit">Request bank transfer</button>
+            <p class="muted" style="font-size:0.78rem; margin:8px 0 0">Bank transfers are paid by hand and take longer.</p>
+          </form>
+        </details>
       <?php else: ?>
         <form method="post">
           <?= csrf_field() ?><input type="hidden" name="action" value="withdraw">
