@@ -816,7 +816,15 @@
     it.comBtn._count.textContent = compact(n);
     if (cmFor === it && cmTitle) { cmTitle.textContent = 'Comments (' + n + ')'; }
   }
-  function openComments(it, opener) {
+  function focusComment(id) {
+    var node = cmList.querySelector('.so-cm[data-id="' + Number(id) + '"]');
+    if (!node) { toast('That comment is no longer there.'); return; }
+    var mark = node.querySelector(':scope > div:not(.so-cm-replies)') || node;   // just this comment, not the replies under it
+    mark.classList.add('so-cm-hl');
+    node.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    setTimeout(function () { mark.classList.remove('so-cm-hl'); }, 4000);
+  }
+  function openComments(it, opener, focusId) {
     cmFor = it; replyTo = null; if (replying) { replying.hidden = true; }
     cmTitle.textContent = 'Comments (' + it.data.comments + ')';
     cmList.textContent = '';
@@ -829,6 +837,7 @@
       if (!r.comments.length) { cmList.appendChild(el('p', 'so-cm-none', r.open ? 'No comments yet. Be the first.' : 'Comments are off for this video.')); }
       r.comments.forEach(function (c) { cmList.appendChild(commentNode(c, false)); });
       if (cmForm) { cmForm.hidden = !r.open; }
+      if (focusId) { focusComment(focusId); }
     });
   }
   if (replyCancel) { replyCancel.addEventListener('click', function () { replyTo = null; replying.hidden = true; }); }
@@ -953,6 +962,11 @@
   add(D.items);
   applyMute();
   maybeHint();
+  // opened from a notification about a comment: the video is first in the feed; open its comments and show that comment
+  if (D.comment && D.start && !D.org && items.length && items[0].data.id === D.start) {
+    var firstItem = items[0];
+    setTimeout(function () { openComments(firstItem, null, D.comment); }, 500);
+  }
   // opened from a small picture on an organizer card: start on that post (it may not be the first)
   if (D.org && D.start) {
     for (var si = 0; si < items.length; si++) {

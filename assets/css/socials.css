@@ -611,3 +611,7 @@ body.so-v3 .so-cta span{flex:none; margin:0; text-align:center}
 @media (prefers-reduced-motion: reduce){ .so-info .so-follow{transition:none} }
 /* a hidden rail button stays hidden (Save, until migration 032 has run) */
 .so-rail [hidden]{display:none !important}
+/* the comment a notification pointed at (works on the light and the dark sheet) */
+.so-cm-hl{background:rgba(240,49,63,.20); border-radius:12px; box-shadow:0 0 0 6px rgba(240,49,63,.20); animation:so-cm-glow 1.2s ease-out 2}
+@keyframes so-cm-glow{0%{background:rgba(240,49,63,.45); box-shadow:0 0 0 6px rgba(240,49,63,.45)} 100%{background:rgba(240,49,63,.20); box-shadow:0 0 0 6px rgba(240,49,63,.20)}}
+@media (prefers-reduced-motion:reduce){.so-cm-hl{animation:none}}

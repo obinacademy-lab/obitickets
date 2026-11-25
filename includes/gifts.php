@@ -421,7 +421,7 @@ function gift_notify_delivered(int $txId): void
         }
         $label = ((int) $t['quantity'] > 1 ? (int) $t['quantity'] . ' x ' : '') . $t['gift_name'];
         $paidText = ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? number_format((int) $t['coins_spent']) . ' OBI COINS' : 'UGX ' . number_format((int) $t['gross_ugx']);
-        create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (' . $paidText . ') was delivered. Thank you for supporting the organizer.', null);
+        create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (' . $paidText . ') was delivered. Thank you for supporting the organizer.', ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? '/wallet.php' : null);
         $big = (int) $t['gross_ugx'] >= GIFT_BIG_GIFT_UGX;
         create_notification((int) $t['recipient_organizer_id'], 'gift', $big ? 'You received a big OBI GIFT!' : 'You received an OBI GIFT',
             gift_sender_label($t) . ' sent you ' . $label . (($t['payment_source'] ?? 'DIRECT') === 'COINS' ? ' (' . number_format((int) $t['coins_spent']) . ' OBI COINS)' : '') . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', '/org-gifts.php?tab=history');
@@ -621,7 +621,7 @@ function gift_reverse(int $txId, int $adminId, string $reason): array
         } else {
             create_notification((int) $tx['sender_id'], 'gift', 'Gift refunded', 'Your gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was refunded. Our team will send the money back to your phone.', null);
         }
-        create_notification($orgId, 'gift', 'A gift was reversed', 'A gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was reversed (' . $reason . '). UGX ' . number_format($organizer) . ' was taken off your gift earnings.', null);
+        create_notification($orgId, 'gift', 'A gift was reversed', 'A gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was reversed (' . $reason . '). UGX ' . number_format($organizer) . ' was taken off your gift earnings.', '/org-gifts.php?tab=history');
     } catch (Throwable $e) {
         error_log('[gift] reversal notification failed: ' . $e->getMessage());
     }

@@ -590,3 +590,7 @@ a.ev-quote:hover{background:#F0E9E5;}
 
 /* the floating WhatsApp button shows on the event page like everywhere else; on phones the ticket bar owns that corner */
 @media (max-width:920px){body.event-page .wa-float{display:none}}
+
+/* a comment or post a notification pointed at */
+.ev-comment:target,.ev-post:target{background:rgba(240,49,63,.12); border-radius:12px; box-shadow:0 0 0 8px rgba(240,49,63,.12); scroll-margin-top:90px}
+

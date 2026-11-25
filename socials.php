@@ -24,6 +24,7 @@ if (is_uganda_district($nearGet) && ($_COOKIE['ot_near'] ?? '') !== $nearGet) {
 // Each visit to For You gets its own random order (includes/socials.php, socials_feed): refresh = a different mix.
 $feedSeed = random_int(1, 2000000000);
 $startId = (int) ($_GET['v'] ?? 0);
+$openComment = $startId > 0 ? max(0, (int) ($_GET['c'] ?? 0)) : 0;   // from a notification: open the comments on that video and show this comment
 $ready = function_exists('socials_ready') && moments_ready();
 // Two screens: the list (the Socials tab opens it), one card per organizer holding their posts; and the
 // full-screen player. A card opens the player on that organizer's posts (?org=<id>, newest first, ?v= to start on
@@ -283,6 +284,7 @@ include __DIR__ . '/includes/header.php';
     'near' => $tab === 'near' ? $near : null,
     'seed' => $tab === 'foryou' ? $feedSeed : null,
     'start' => $startId ?: null,
+    'comment' => $openComment ?: null,
     'org' => $orgFilter ?: null,
     'signedIn' => (bool) $user,
     'loginUrl' => $loginUrl,

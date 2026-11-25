@@ -20,7 +20,7 @@ if (isset($_GET['open'])) {
     foreach (get_notifications($uid, 200) as $n) {
         if ((int) $n['id'] === $openId) {
             mark_notification_read($uid, $openId);
-            $link = (string) ($n['link'] ?? '');
+            $link = notification_target($n);   // the exact place: that comment, that video, that person (includes/community.php)
             if ($link !== '' && $link[0] === '/' && !str_starts_with($link, '//') && !str_contains($link, '\\')) {
                 $go = $link;
             }

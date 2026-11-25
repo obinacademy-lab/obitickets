@@ -355,7 +355,7 @@ function set_organizer_follow(int $organizerUserId, int $userId, bool $follow): 
         $ins = db()->prepare('INSERT IGNORE INTO organizer_follows (organizer_user_id, user_id) VALUES (?, ?)');
         $ins->execute([$organizerUserId, $userId]);
         if ($ins->rowCount() > 0) {
-            community_notify($organizerUserId, $userId, 'follow', community_user_name($userId) . ' started following you', null, '/org-social.php', true);
+            community_notify($organizerUserId, $userId, 'follow', community_user_name($userId) . ' started following you', null, '/u.php?id=' . $userId, true);
         }
     } else {
         db()->prepare('DELETE FROM organizer_follows WHERE organizer_user_id = ? AND user_id = ?')->execute([$organizerUserId, $userId]);
@@ -742,9 +742,45 @@ function set_post_boost(int $postId, int $userId, bool $boost): array
 function community_post_link(array $post, ?int $commentId = null): string
 {
     if (($post['post_type'] ?? '') === 'MOMENT') {
-        return '/socials.php?v=' . (int) $post['id'];   // the same link the Share button gives
+        // the same link the Share button gives; with a comment it opens the comments on that video and shows that comment (like Instagram or TikTok)
+        return '/socials.php?v=' . (int) $post['id'] . ($commentId ? '&c=' . (int) $commentId : '');
     }
     return '/event.php?slug=' . urlencode((string) ($post['event_slug'] ?? '')) . ($commentId ? '#comment-' . $commentId : '#post-' . (int) $post['id']);
+}
+
+/**
+ * Where tapping a notification should go. New notifications already carry the exact place; this also repairs older ones:
+ *  - someone followed you: their profile (older ones pointed at your own followers page);
+ *  - a comment, reply or comment like on a video: that video with that comment shown (the comment is found again from who wrote it and what it said).
+ * Always a path on this site.
+ */
+function notification_target(array $n): string
+{
+    $link = (string) ($n['link'] ?? '');
+    $type = (string) ($n['type'] ?? '');
+    $actor = (int) ($n['actor_id'] ?? 0);
+    $safe = static fn (string $l): bool => $l !== '' && $l[0] === '/' && !str_starts_with($l, '//') && !str_contains($l, '\\');
+    if ($type === 'follow' && $actor > 0 && ($link === '' || $link === '/org-social.php' || $link === '/me.php')) {
+        $p = function_exists('social_person') ? social_person($actor) : null;
+        return $p && !empty($p['url']) && $safe((string) $p['url']) ? (string) $p['url'] : '/u.php?id=' . $actor;
+    }
+    if (in_array($type, ['post_comment', 'comment_reply', 'comment_like'], true) && $actor > 0 && preg_match('#^/socials\.php\?v=(\d+)$#', $link, $m)) {
+        $body = trim(html_entity_decode((string) ($n['body'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($body !== '') {
+            try {
+                // a like on your comment: the comment is yours; a comment or reply: it is the actor's
+                $author = $type === 'comment_like' ? (int) ($n['user_id'] ?? 0) : $actor;
+                $st = db()->prepare('SELECT id FROM post_comments WHERE post_id = ? AND user_id = ? AND body LIKE ? ORDER BY id DESC LIMIT 1');
+                $st->execute([(int) $m[1], $author, addcslashes($body, '%_\\') . '%']);
+                if (($cid = (int) $st->fetchColumn()) > 0) {
+                    return $link . '&c=' . $cid;
+                }
+            } catch (Throwable $e) {
+                error_log('[notifications] could not find the comment again: ' . $e->getMessage());
+            }
+        }
+    }
+    return $safe($link) ? $link : '';
 }
 
 function community_user_name(int $userId): string
