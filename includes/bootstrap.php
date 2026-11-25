@@ -95,6 +95,8 @@ require_once __DIR__ . '/coins-monitor.php';
 require_once __DIR__ . '/gift-thanks.php';
 require_once __DIR__ . '/gift-fans.php';
 require_once __DIR__ . '/gift-emails.php';
+require_once __DIR__ . '/market.php';
+require_once __DIR__ . '/market-orders.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();
