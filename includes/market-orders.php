@@ -452,3 +452,46 @@ function market_reconcile(): array
     }
     return $problems;
 }
+
+// ---------------------------------------------------------------------------------------------------- the customer's own orders
+
+/** @return list<array<string,mixed>> the customer's orders (paid or waiting), newest first, with the first picture and the item count */
+function market_customer_orders(int $customerId, int $limit = 40): array
+{
+    if (!market_ready()) {
+        return [];
+    }
+    $st = db()->prepare("SELECT o.id, o.order_number, o.total_ugx, o.payment_status, o.fulfilment, o.delivery_method, o.created_at, o.release_after, o.received_by, s.name AS store_name, s.slug AS store_slug,
+                                (SELECT COALESCE(SUM(i.quantity), 0) FROM market_order_items i WHERE i.order_id = o.id) AS items,
+                                (SELECT i.product_name FROM market_order_items i WHERE i.order_id = o.id ORDER BY i.id LIMIT 1) AS first_name,
+                                (SELECT i.image_path FROM market_order_items i WHERE i.order_id = o.id ORDER BY i.id LIMIT 1) AS first_image
+                         FROM market_orders o JOIN market_stores s ON s.seller_id = o.seller_id
+                         WHERE o.customer_id = ? AND o.payment_status NOT IN ('FAILED', 'EXPIRED')
+                         ORDER BY o.id DESC LIMIT " . max(1, min(100, $limit)));
+    $st->execute([$customerId]);
+    return $st->fetchAll();
+}
+
+/** One order for its own customer: the order, its items, the delivery details and the history. Null when it is not theirs. */
+function market_customer_order(string $orderNumber, int $customerId): ?array
+{
+    if (!market_ready()) {
+        return null;
+    }
+    $st = db()->prepare('SELECT o.*, s.name AS store_name, s.slug AS store_slug, s.delivery_note, s.policies, c.delivery_name, c.delivery_phone, c.delivery_address, c.delivery_district, c.delivery_note AS customer_note,
+                                c.customer_name, c.customer_email, c.customer_phone, c.reference AS checkout_reference, c.payment_method, c.phone AS pay_phone
+                         FROM market_orders o JOIN market_stores s ON s.seller_id = o.seller_id JOIN market_checkouts c ON c.id = o.checkout_id
+                         WHERE o.order_number = ? AND o.customer_id = ?');
+    $st->execute([$orderNumber, $customerId]);
+    $o = $st->fetch();
+    if (!$o) {
+        return null;
+    }
+    $i = db()->prepare('SELECT product_id, product_name, variant_label, image_path, unit_price_ugx, quantity, line_ugx FROM market_order_items WHERE order_id = ? ORDER BY id');
+    $i->execute([(int) $o['id']]);
+    $h = db()->prepare("SELECT to_status, actor_role, note, created_at FROM market_order_history WHERE order_id = ? AND to_status <> 'PENDING_PAYMENT' ORDER BY id");
+    $h->execute([(int) $o['id']]);
+    $o['items'] = $i->fetchAll();
+    $o['history'] = $h->fetchAll();
+    return $o;
+}

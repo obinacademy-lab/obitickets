@@ -153,6 +153,7 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
       <a class="nv-t<?= $navCur('/discover.php') ?>" href="/discover.php" data-pop="ev" aria-haspopup="true" aria-expanded="false">Browse events <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
       <a class="nv-t<?= $navCur('/my-events.php') ?>" href="/my-events.php" data-pop="org" aria-haspopup="true" aria-expanded="false">Sell tickets <svg class="nv-chev" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="#ic-chev" transform="rotate(90 12 12)"/></svg></a>
       <?php if (function_exists('socials_feed') && moments_ready()): ?><a class="nv-a<?= $navCur('/socials.php') ?>" href="/socials.php">Socials</a><?php endif; ?>
+      <?php if (function_exists('market_visible') && market_visible($authUser)): ?><a class="nv-a<?= $navCur('/market.php') ?>" href="/market.php">OBI MARKET</a><?php endif; ?>
       <a class="nv-a<?= $navCur('/past-events.php') ?>" href="/past-events.php">Past events</a>
       <a class="nv-a<?= $navCur('/about.php') ?>" href="/about.php">About Us</a>
       <a class="nv-a<?= $navCur('/contact.php') ?>" href="/contact.php">Contact Us</a>
@@ -246,6 +247,13 @@ $navCatLinks = defined('EVENT_CATEGORIES') ? EVENT_CATEGORIES : [];
     <a class="nav-drawer-row<?= $navPath === '/socials.php' ? ' current' : '' ?>" href="/socials.php">
       <span class="ic"><svg width="17" height="17"><use href="#ic-play"/></svg></span>
       <span class="label">Socials</span>
+      <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
+    </a>
+    <?php endif; ?>
+    <?php if (function_exists('market_visible') && market_visible($authUser)): ?>
+    <a class="nav-drawer-row<?= str_starts_with($navPath, '/market') ? ' current' : '' ?>" href="/market.php">
+      <span class="ic"><svg width="17" height="17"><use href="#ic-hanger"/></svg></span>
+      <span class="label">OBI MARKET</span>
       <svg class="chev" width="16" height="16"><use href="#ic-chev"/></svg>
     </a>
     <?php endif; ?>

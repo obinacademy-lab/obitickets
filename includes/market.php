@@ -1099,3 +1099,69 @@ function market_sweep(int $limit = 50, ?callable $statusCheck = null): array
     }
     return ['checked' => count($rows), 'settled' => $settled];
 }
+
+// ---------------------------------------------------------------------------------------------------- what the public pages need
+
+/** The shop window is open to everyone when OBI MARKET is switched on; until then only an admin can look (a preview, nothing can be bought). */
+function market_visible(?array $user): bool
+{
+    return market_ready() && (market_enabled() || ($user !== null && ($user['role'] ?? '') === 'ADMIN'));
+}
+
+/**
+ * What a checkout would cost, per seller, WITHOUT writing anything: the cart (or the "Buy now" lines) priced from the database, the delivery fee of each store for the chosen
+ * method, and whether each store can serve that method. market_checkout_start() does the same sums again under locks: this is only for showing the customer.
+ * @return array{stores:list<array<string,mixed>>, lines:list<array<string,mixed>>, merch:int, delivery:int, total:int, buyable:bool, methods:list<string>, problems:list<string>}
+ */
+function market_checkout_quote(int $userId, ?array $only, string $method): array
+{
+    $method = $method === 'COLLECTION' ? 'COLLECTION' : 'DELIVERY';
+    $cart = market_cart_lines($userId, $only);
+    $stores = [];
+    $problems = [];
+    foreach ($cart['lines'] as $l) {
+        $sid = $l['seller_id'];
+        if (!isset($stores[$sid])) {
+            $stores[$sid] = ['seller_id' => $sid, 'store' => $l['store'], 'slug' => $l['store_slug'], 'mode' => $l['delivery_mode'], 'fee' => (int) $l['delivery_fee'], 'merch' => 0, 'lines' => []];
+        }
+        $stores[$sid]['merch'] += $l['problem'] === null ? $l['line'] : 0;
+        $stores[$sid]['lines'][] = $l;
+        if ($l['problem'] !== null) {
+            $problems[] = $l['name'] . ': ' . $l['problem'];
+        }
+    }
+    $methods = ['DELIVERY', 'COLLECTION'];
+    foreach ($stores as &$s) {
+        $s['can_deliver'] = $s['mode'] !== 'COLLECTION';
+        $s['can_collect'] = $s['mode'] !== 'DELIVERY';
+        $s['delivery'] = $method === 'DELIVERY' ? $s['fee'] : 0;
+        $s['total'] = $s['merch'] + $s['delivery'];
+        if (!$s['can_deliver']) { $methods = array_values(array_diff($methods, ['DELIVERY'])); }
+        if (!$s['can_collect']) { $methods = array_values(array_diff($methods, ['COLLECTION'])); }
+        if ($method === 'DELIVERY' && !$s['can_deliver']) { $problems[] = $s['store'] . ' does not deliver.'; }
+        if ($method === 'COLLECTION' && !$s['can_collect']) { $problems[] = $s['store'] . ' only delivers.'; }
+    }
+    unset($s);
+    $merch = array_sum(array_column($stores, 'merch'));
+    $delivery = array_sum(array_column($stores, 'delivery'));
+    return ['stores' => array_values($stores), 'lines' => $cart['lines'], 'merch' => $merch, 'delivery' => $delivery, 'total' => $merch + $delivery,
+        'buyable' => $cart['buyable'] && $problems === [] && $methods !== [], 'methods' => $methods, 'problems' => array_values(array_unique($problems))];
+}
+
+/** A stored product picture path made safe for an img src (only our own /uploads files; anything else shows the placeholder). */
+function market_img(?string $path): string
+{
+    $p = (string) $path;
+    return preg_match('#^/uploads/[A-Za-z0-9._/\-]+$#', $p) === 1 && !str_contains($p, '..') ? $p : '';
+}
+
+/** The words for an order's state, as the customer reads them: [label, tone]. */
+function market_status_label(string $fulfilment, string $payment = 'PAID'): array
+{
+    if ($payment === 'PENDING') { return ['Waiting for payment', 'wait']; }
+    if (in_array($payment, ['FAILED', 'EXPIRED'], true)) { return ['Payment not completed', 'bad']; }
+    return match ($fulfilment) {
+        'NEW' => ['Order received', 'new'], 'PROCESSING' => ['Being prepared', 'new'], 'SHIPPED' => ['On its way', 'go'], 'READY_FOR_COLLECTION' => ['Ready for collection', 'go'],
+        'COMPLETED' => ['Delivered', 'ok'], 'CANCELLED' => ['Cancelled', 'bad'], 'REFUND_REQUESTED' => ['Refund in progress', 'bad'], 'REFUNDED' => ['Refunded', 'bad'], default => ['Processing', 'new'],
+    };
+}
