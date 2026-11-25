@@ -90,6 +90,7 @@ require_once __DIR__ . '/gifts-organizer.php';
 require_once __DIR__ . '/gift-payouts.php';
 require_once __DIR__ . '/gifts-admin.php';
 require_once __DIR__ . '/coins.php';
+require_once __DIR__ . '/coins-admin.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();

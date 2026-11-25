@@ -40,7 +40,7 @@ function gift_admin_date(?string $s): ?string
 /** The admin sub-menu shown on every OBI GIFTS admin page (HTML). */
 function gift_admin_tabs(string $active): string
 {
-    $tabs = ['catalogue' => ['Gift catalogue', '/admin-gifts.php'], 'transactions' => ['Transactions', '/admin-gift-transactions.php'], 'reports' => ['Reports', '/admin-gift-reports.php'],
+    $tabs = ['catalogue' => ['Gift catalogue', '/admin-gifts.php'], 'transactions' => ['Transactions', '/admin-gift-transactions.php'], 'reports' => ['Reports', '/admin-gift-reports.php'], 'coins' => ['OBI COINS', '/admin-coins.php'],
              'split' => ['Revenue split', '/admin-gifts.php?tab=split'], 'withdrawals' => ['Withdrawals', '/admin-gifts.php?tab=withdrawals']];
     $out = '<div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap">';
     foreach ($tabs as $key => [$label, $href]) {

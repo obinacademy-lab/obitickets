@@ -27,7 +27,7 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(403);
         exit('You do not have permission to manage gifts.');
     }
-    if (in_array($action, ['toggle_withdrawals', 'wd_mark_paid', 'wd_mark_failed'], true) && !$canSplit) {
+    if (in_array($action, ['toggle_withdrawals', 'wd_mark_paid', 'wd_mark_failed', 'wd_approve', 'wd_decline', 'toggle_wd_approval'], true) && !$canSplit) {
         http_response_code(403);
         exit('Only the top-level admin can change gift withdrawals.');
     }
@@ -38,6 +38,19 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         gift_withdraw_set_enabled($adminId, $turnOn);
         $go('/admin-gifts.php?tab=withdrawals', $turnOn ? 'Automatic gift withdrawals are switched ON.' : 'Automatic gift withdrawals are switched OFF.');
+    }
+    if ($action === 'toggle_wd_approval') {
+        $turnOn = !empty($_POST['on']);
+        gift_withdraw_set_approval($adminId, $turnOn);
+        $go('/admin-gifts.php?tab=withdrawals', $turnOn ? 'Approval is ON: new withdrawals wait for you before any money is sent.' : 'Approval is OFF: withdrawals are sent automatically again. Ones already waiting still need you.');
+    }
+    if ($action === 'wd_approve') {
+        $res = gift_withdraw_approve((int) ($_POST['id'] ?? 0), $adminId);
+        $go('/admin-gifts.php?tab=withdrawals', $res['message']);
+    }
+    if ($action === 'wd_decline') {
+        $res = gift_withdraw_decline((int) ($_POST['id'] ?? 0), $adminId, (string) ($_POST['reason'] ?? ''));
+        $go('/admin-gifts.php?tab=withdrawals', $res['message']);
     }
     if ($action === 'wd_mark_paid') {
         $done = gift_withdraw_mark_paid((int) ($_POST['id'] ?? 0), $adminId);
@@ -99,6 +112,7 @@ if ($ready && $editing === null && $tab === 'catalogue') {
 $h = static fn ($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
 $cfg = $ready ? gift_commission_current() : null;
 $gifts = $ready ? gift_catalog_all() : [];
+$coinsOn = $ready && function_exists('coins_ready') && coins_ready();
 $switchSetting = $ready && get_setting('gifts_enabled', '0') === '1';
 $switchLive = $ready && gifts_enabled();
 $fv = static fn (string $k, $default = '') => $form[$k] ?? $default;   // a form value: what was typed (after an error) or the saved one
@@ -152,6 +166,10 @@ render_admin_head('gifts');
             <div class="admin-form-row"><label>Name</label><input type="text" name="name" id="gName" maxlength="60" required value="<?= $h($fv('name', $editing['name'] ?? '')) ?>" placeholder="e.g. Diamond"></div>
             <div class="admin-form-row"><label>Price (UGX)</label><input type="number" name="price_ugx" id="gPrice" min="<?= GIFT_MIN_UGX ?>" max="<?= GIFT_MAX_PAYMENT_UGX ?>" step="1" required value="<?= $h($fv('price_ugx', $editing['price_ugx'] ?? '')) ?>"></div>
             <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">Between UGX <?= number_format(GIFT_MIN_UGX) ?> and UGX <?= number_format(GIFT_MAX_PAYMENT_UGX) ?>. A new price applies to <b>new gifts only</b>; gifts already sent keep the price they were bought at.</p>
+            <?php if ($coinsOn): ?>
+              <div class="admin-form-row"><label>Price in OBI COINS</label><input type="number" name="price_coins" min="1" max="9999999" step="1" value="<?= $h($fv('price_coins', $editing['price_coins'] ?? ($isNew ? '' : ''))) ?>" placeholder="Leave empty to keep it out of OBI COINS"></div>
+              <p class="muted" style="font-size:0.8rem; margin:-4px 0 12px">This is the only price viewers see once OBI COINS is on. A gift with no coin price is not offered then. A new price applies to <b>new gifts only</b>.</p>
+            <?php endif; ?>
             <div class="admin-form-row"><label>Emoji (shown when there is no picture)</label><input type="text" name="emoji" id="gEmoji" maxlength="16" value="<?= $h($fv('emoji', $editing['emoji'] ?? '')) ?>" placeholder="e.g. 💎"></div>
             <div class="admin-form-row"><label>Description (optional)</label><input type="text" name="description" maxlength="255" value="<?= $h($fv('description', $editing['description'] ?? '')) ?>"></div>
             <div class="admin-form-row"><label>Animation style</label>
@@ -207,7 +225,7 @@ render_admin_head('gifts');
     </div>
     <div class="admin-table-wrap" style="border:none; box-shadow:none">
       <table class="admin-table">
-        <thead><tr><th>Order</th><th>Gift</th><th>Price</th><th>Animation</th><th>Status</th><th>Sent</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
+        <thead><tr><th>Order</th><th>Gift</th><th>Price</th><?php if ($coinsOn): ?><th>OBI COINS</th><?php endif; ?><th>Animation</th><th>Status</th><th>Sent</th><?php if ($canManage): ?><th></th><?php endif; ?></tr></thead>
         <tbody>
           <?php foreach ($gifts as $i => $g): ?>
             <tr>
@@ -219,6 +237,7 @@ render_admin_head('gifts');
               </td>
               <td><span style="font-size:1.5rem; vertical-align:middle; margin-right:8px"><?php if ($g['image_path']): ?><img src="<?= $h($g['image_path']) ?>" alt="" style="height:30px; vertical-align:middle"><?php else: ?><?= $h($g['emoji']) ?><?php endif; ?></span><b><?= $h($g['name']) ?></b><div class="muted" style="font-size:0.78rem"><?= $h($g['slug']) ?></div></td>
               <td class="mono" style="font-weight:700">UGX <?= number_format((int) $g['price_ugx']) ?></td>
+              <?php if ($coinsOn): ?><td class="mono" style="font-weight:700"><?= $g['price_coins'] !== null ? number_format((int) $g['price_coins']) : '<span class="muted">none</span>' ?></td><?php endif; ?>
               <td class="muted"><?= $h(GIFT_ANIMATIONS[$g['animation_type']] ?? $g['animation_type']) ?><?= $g['animation_asset'] ? ' + file' : '' ?></td>
               <td><span class="admin-badge <?= $g['is_active'] ? 'admin-badge-success' : 'admin-badge-muted' ?>"><?= $g['is_active'] ? 'Visible' : 'Hidden' ?></span></td>
               <td class="muted mono"><?= (int) $g['sent_count'] ?><?php if ($g['sent_count']): ?> · UGX <?= number_format((int) $g['sent_gross']) ?><?php endif; ?></td>
@@ -246,7 +265,9 @@ render_admin_head('gifts');
   $wdProcessing = count(array_filter($wdRows, static fn ($r) => $r['status'] === 'PROCESSING'));
   $wdStuck = count(array_filter($wdRows, static fn ($r) => $r['status'] === 'PROCESSING' && (int) $r['age_min'] >= 10));
   $wdPaidToday = (int) db()->query("SELECT COALESCE(SUM(amount_ugx), 0) FROM gift_withdrawals WHERE status = 'PAID' AND completed_at >= CURDATE()")->fetchColumn();
-  $wdBadge = ['PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-danger'];
+  $wdBadge = ['PAID' => 'admin-badge-success', 'FAILED' => 'admin-badge-danger', 'REJECTED' => 'admin-badge-danger', 'CANCELLED' => 'admin-badge-danger', 'PENDING_REVIEW' => 'admin-badge-warn'];
+  $wdApproval = gift_withdraw_approval_required();
+  $wdQueue = gift_withdraw_pending_review();
 ?>
   <div class="admin-card" style="margin-bottom:18px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
     <div style="min-width:min(240px,100%); flex:1">
@@ -266,6 +287,51 @@ render_admin_head('gifts');
     <?php else: ?><span class="muted" style="font-size:.82rem">Only the top-level admin can change this switch.</span><?php endif; ?>
   </div>
 
+  <div class="admin-card" style="margin-bottom:18px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
+    <div style="min-width:min(240px,100%); flex:1">
+      <h3 style="margin:0 0 4px">Approve each withdrawal first: <span class="admin-badge <?= $wdApproval ? 'admin-badge-warn' : 'admin-badge-muted' ?>"><?= $wdApproval ? 'ON' : 'OFF' ?></span></h3>
+      <p class="muted" style="margin:0; font-size:0.86rem"><?= $wdApproval ? 'On: when an organizer withdraws, the money is set aside and waits here until you approve it. Nothing is sent without your click.' : 'Off: withdrawals are sent at once, with no click from you. Turn this on if you want to check each one first.' ?></p>
+    </div>
+    <?php if ($canSplit): ?>
+      <form method="post" data-confirm="<?= $wdApproval ? 'Stop asking for approval? New withdrawals will be sent automatically again. Ones already waiting still need your decision.' : 'Ask for your approval on every new withdrawal? Organizers will wait until you approve.' ?>">
+        <?= csrf_field() ?><input type="hidden" name="action" value="toggle_wd_approval"><?php if (!$wdApproval): ?><input type="hidden" name="on" value="1"><?php endif; ?>
+        <button type="submit" class="btn <?= $wdApproval ? 'btn-line' : 'btn-purple' ?>"><?= $wdApproval ? 'Turn approval OFF' : 'Turn approval ON' ?></button>
+      </form>
+    <?php endif; ?>
+  </div>
+
+  <?php if ($wdQueue): ?>
+    <div class="admin-card" style="margin-bottom:18px; border-left:4px solid var(--warn)">
+      <h3 style="margin:0 0 6px">Waiting for your approval (<?= count($wdQueue) ?>)</h3>
+      <p class="muted" style="margin:0 0 12px; font-size:0.84rem">The money is already set aside for the organizer. Approve to send it to their mobile money now, or decline to give it straight back (they will read your reason).</p>
+      <div class="admin-table-wrap" style="border:none; box-shadow:none">
+        <table class="admin-table">
+          <thead><tr><th>Asked</th><th>Organizer</th><th style="text-align:right">Amount</th><th>Send to</th><th>Earned / withdrawn so far</th><?php if ($canSplit): ?><th></th><?php endif; ?></tr></thead>
+          <tbody>
+            <?php foreach ($wdQueue as $q): ?>
+              <tr>
+                <td class="muted" style="white-space:nowrap"><?= $h(date('d M, H:i', strtotime((string) $q['requested_at']))) ?></td>
+                <td><?= $h($q['organizer']) ?></td>
+                <td class="mono" style="text-align:right; white-space:nowrap"><b>UGX <?= number_format((int) $q['amount_ugx']) ?></b></td>
+                <td style="white-space:nowrap"><?= $h($q['destination']) ?> <span class="muted" style="font-size:.78rem"><?= $q['method'] === 'AIRTEL_MONEY' ? 'Airtel' : 'MTN' ?></span></td>
+                <td class="muted mono" style="font-size:.8rem">UGX <?= number_format((int) $q['earned']) ?> / <?= number_format((int) $q['withdrawn']) ?></td>
+                <?php if ($canSplit): ?><td style="white-space:nowrap">
+                  <form method="post" style="display:inline" data-confirm="Approve and send UGX <?= number_format((int) $q['amount_ugx']) ?> to <?= $h($q['destination']) ?> now?">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="wd_approve"><input type="hidden" name="id" value="<?= (int) $q['id'] ?>"><button class="btn btn-purple" type="submit">Approve</button>
+                  </form>
+                  <form method="post" style="display:inline-flex; gap:4px" data-confirm="Decline this withdrawal? The money goes back to the organizer and they will read your reason.">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="wd_decline"><input type="hidden" name="id" value="<?= (int) $q['id'] ?>">
+                    <input type="text" name="reason" required maxlength="150" placeholder="Reason (they will read it)" style="width:170px"><button class="btn btn-line" type="submit">Decline</button>
+                  </form>
+                </td><?php endif; ?>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <div class="admin-card">
     <h3 style="margin:0 0 6px">Gift withdrawals</h3>
     <p class="muted" style="margin:0 0 14px; font-size:0.84rem">The newest 60. A withdrawal is normally "Paid" within a minute. If one stays "Processing" for more than 10 minutes, ioTec did not answer: open the ioTec portal, look for the reference below, and then mark it <b>paid</b> (the money left) or <b>failed</b> (it did not, the money goes back to the organizer). It is never sent a second time.</p>
@@ -282,7 +348,7 @@ render_admin_head('gifts');
                 <td><?= $h($w['organizer']) ?></td>
                 <td class="mono" style="text-align:right; white-space:nowrap">UGX <?= number_format((int) $w['amount_ugx']) ?></td>
                 <td style="white-space:nowrap"><?= $h($w['destination']) ?> <span class="muted" style="font-size:.78rem"><?= $w['method'] === 'AIRTEL_MONEY' ? 'Airtel' : 'MTN' ?></span></td>
-                <td><span class="admin-badge <?= $wdBadge[$w['status']] ?? ($stuck ? 'admin-badge-danger' : 'admin-badge-warn') ?>"><?= $h($stuck ? 'Needs a check' : ucfirst(strtolower((string) $w['status']))) ?></span><?php if ($w['reason']): ?><br><span class="muted" style="font-size:.76rem"><?= $h($w['reason']) ?></span><?php endif; ?></td>
+                <td><span class="admin-badge <?= $wdBadge[$w['status']] ?? ($stuck ? 'admin-badge-danger' : 'admin-badge-warn') ?>"><?= $h($stuck ? 'Needs a check' : ucfirst(strtolower(str_replace('_', ' ', (string) $w['status'])))) ?></span><?php if ($w['reason']): ?><br><span class="muted" style="font-size:.76rem"><?= $h($w['reason']) ?></span><?php endif; ?></td>
                 <td class="muted mono" style="font-size:.76rem">OGW-<?= (int) $w['id'] ?><?php if ($w['provider_reference']): ?><br><?= $h($w['provider_reference']) ?><?php endif; ?></td>
                 <?php if ($canSplit): ?>
                   <td style="white-space:nowrap">

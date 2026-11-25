@@ -37,6 +37,18 @@ function gift_withdraw_set_enabled(int $adminId, bool $on): void
     set_setting($adminId, 'gift_withdrawals_enabled', $on ? '1' : '0');
 }
 
+/** Withdrawals wait for an admin's approval before any money is sent. Off by default: they stay automatic and instant. */
+function gift_withdraw_approval_required(): bool
+{
+    return get_setting('gift_withdraw_approval', '0') === '1';
+}
+
+function gift_withdraw_set_approval(int $adminId, bool $on): void
+{
+    set_setting($adminId, 'gift_withdraw_approval', $on ? '1' : '0');
+    log_admin_action($adminId, 'gift.withdraw.approval_mode', 'setting', null, ['approval_required' => $on]);
+}
+
 // ---------------------------------------------------------------------------------------------------- pretend ioTec payouts (development only)
 
 /**
@@ -223,8 +235,9 @@ function gift_withdraw_request(int $organizerId, int $actorId, int $amount, stri
             return $fail("That's more than your gift balance (UGX " . number_format($available) . ').');
         }
         $reference = 'GWD-' . strtoupper(bin2hex(random_bytes(5)));
-        $pdo->prepare('INSERT INTO gift_withdrawals (reference, organizer_id, amount_ugx, method, destination, status, is_auto) VALUES (?, ?, ?, ?, ?, ?, 1)')
-            ->execute([$reference, $organizerId, $amount, $method, $destination, 'REQUESTED']);
+        $needsReview = gift_withdraw_approval_required();
+        $pdo->prepare('INSERT INTO gift_withdrawals (reference, organizer_id, amount_ugx, method, destination, status, is_auto) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$reference, $organizerId, $amount, $method, $destination, $needsReview ? 'PENDING_REVIEW' : 'REQUESTED', $needsReview ? 0 : 1]);
         $wid = (int) $pdo->lastInsertId();
         $pdo->prepare('UPDATE gift_balances SET available_ugx = available_ugx - ?, reserved_ugx = reserved_ugx + ? WHERE organizer_id = ?')
             ->execute([$amount, $amount, $organizerId]);
@@ -248,6 +261,19 @@ function gift_withdraw_request(int $organizerId, int $actorId, int $amount, stri
         } catch (Throwable $e) {
             error_log('[gift] could not save payout number: ' . $e->getMessage());
         }
+    }
+
+    if ($needsReview) {
+        // the money is set aside (reserved) but nothing is sent until an admin approves it
+        if ($otherNumber) {
+            gift_wd_email_other_number($organizerId, $amount, $destination);
+        }
+        try {
+            gift_wd_alert_admins('Gift withdrawal waiting for approval', 'An organizer asked to withdraw UGX ' . number_format($amount) . ' of gift earnings (withdrawal #' . $wid . '). Open OBI GIFTS > Withdrawals to approve or decline it.');
+        } catch (Throwable $e) {
+            error_log('[gift] could not alert admins about a withdrawal waiting for approval: ' . $e->getMessage());
+        }
+        return ['ok' => true, 'error' => null, 'withdrawal_id' => $wid, 'state' => 'review', 'message' => 'Your withdrawal request of UGX ' . number_format($amount) . ' is in. An obitickets admin will check and approve it, then the money is sent to ' . $destination . '. The money is set aside for you meanwhile.'];
     }
 
     $r = gift_withdraw_send($wid, $sender);
@@ -424,6 +450,88 @@ function gift_withdraw_fail(int $withdrawalId, string $reason, bool $alertAdmin,
     return true;
 }
 
+// ---------------------------------------------------------------------------------------------------- admin approval (only when the approval switch is on)
+
+/**
+ * An admin approves a withdrawal that was waiting. It becomes a normal REQUESTED withdrawal and is sent at once (and if sending hiccups,
+ * the cron retries it like any other).
+ * @return array{ok:bool, message:string}
+ */
+function gift_withdraw_approve(int $withdrawalId, int $adminId, ?callable $sender = null): array
+{
+    $w = gift_wd_find($withdrawalId);
+    if (!$w || $w['status'] !== 'PENDING_REVIEW') {
+        return ['ok' => false, 'message' => 'That withdrawal is not waiting for approval any more.'];
+    }
+    if (gift_recipient_status((int) $w['organizer_id']) === 'SUSPENDED') {
+        return ['ok' => false, 'message' => 'This organizer is suspended. Decline the withdrawal (the money goes back to them) or lift the suspension first.'];
+    }
+    $claim = db()->prepare("UPDATE gift_withdrawals SET status = 'REQUESTED', reviewed_by = ?, reason = NULL WHERE id = ? AND status = 'PENDING_REVIEW'");
+    $claim->execute([$adminId, $withdrawalId]);
+    if ($claim->rowCount() !== 1) {
+        return ['ok' => false, 'message' => 'That withdrawal is not waiting for approval any more.'];
+    }
+    log_admin_action($adminId, 'gift.withdraw.approve', 'gift_withdrawal', $withdrawalId, ['amount' => (int) $w['amount_ugx'], 'organizer' => (int) $w['organizer_id']]);
+    try {
+        create_notification((int) $w['organizer_id'], 'gift', 'Withdrawal approved', 'Your gift withdrawal of UGX ' . number_format((int) $w['amount_ugx']) . ' was approved and is being sent.', '/org-gifts.php?tab=withdrawals');
+    } catch (Throwable $e) {
+        error_log('[gift] approval notification failed: ' . $e->getMessage());
+    }
+    $r = gift_withdraw_send($withdrawalId, $sender ?? gift_disburse_fn());
+    return ['ok' => true, 'message' => $r['ok'] ? 'Approved and sent to ioTec.' : 'Approved. It could not be sent right now (' . $r['message'] . '), so it will be retried automatically.'];
+}
+
+/**
+ * An admin declines a withdrawal that was waiting: the money goes straight back to the organizer's available balance, who is told why.
+ * @return array{ok:bool, message:string}
+ */
+function gift_withdraw_decline(int $withdrawalId, int $adminId, string $reason): array
+{
+    $reason = trim($reason);
+    if ($reason === '') {
+        return ['ok' => false, 'message' => 'Give a reason. The organizer will read it.'];
+    }
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM gift_withdrawals WHERE id = ? FOR UPDATE');
+        $stmt->execute([$withdrawalId]);
+        $w = $stmt->fetch();
+        if (!$w || $w['status'] !== 'PENDING_REVIEW') {
+            $pdo->rollBack();
+            return ['ok' => false, 'message' => 'That withdrawal is not waiting for approval any more.'];
+        }
+        $org = (int) $w['organizer_id'];
+        $amt = (int) $w['amount_ugx'];
+        $pdo->prepare("UPDATE gift_withdrawals SET status = 'REJECTED', completed_at = NOW(), reason = ?, reviewed_by = ? WHERE id = ?")
+            ->execute(['Checked by an admin: ' . mb_substr($reason, 0, 220), $adminId, $withdrawalId]);
+        gift_balance_row($pdo, $org);
+        $pdo->prepare('UPDATE gift_balances SET reserved_ugx = reserved_ugx - ?, available_ugx = available_ugx + ? WHERE organizer_id = ?')->execute([$amt, $amt, $org]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+    log_admin_action($adminId, 'gift.withdraw.decline', 'gift_withdrawal', $withdrawalId, ['amount' => $amt, 'organizer' => $org, 'reason' => $reason]);
+    try {
+        create_notification($org, 'gift', 'Withdrawal not approved', 'Your gift withdrawal of UGX ' . number_format($amt) . ' was not approved (' . $reason . '). The money is back in your gift balance.', '/org-gifts.php?tab=withdrawals');
+    } catch (Throwable $e) {
+        error_log('[gift] decline notification failed: ' . $e->getMessage());
+    }
+    return ['ok' => true, 'message' => 'Declined. The money is back with the organizer.'];
+}
+
+/** Withdrawals waiting for an admin, oldest first. */
+function gift_withdraw_pending_review(): array
+{
+    return db()->query("SELECT w.id, w.reference, w.organizer_id, w.amount_ugx, w.method, w.destination, w.requested_at, COALESCE(NULLIF(op.org_name, ''), u.name) AS organizer,
+                                TIMESTAMPDIFF(MINUTE, w.requested_at, NOW()) AS age_min, COALESCE(b.total_earned_ugx, 0) AS earned, COALESCE(b.total_withdrawn_ugx, 0) AS withdrawn
+                         FROM gift_withdrawals w JOIN users u ON u.id = w.organizer_id LEFT JOIN organizer_profiles op ON op.user_id = w.organizer_id
+                         LEFT JOIN gift_balances b ON b.organizer_id = w.organizer_id WHERE w.status = 'PENDING_REVIEW' ORDER BY w.id")->fetchAll();
+}
+
 // ---------------------------------------------------------------------------------------------------- ask ioTec how it went
 
 /**
@@ -531,6 +639,7 @@ function gift_withdraw_history(int $organizerId, int $limit = 25): array
         $s = (string) $r['status'];
         [$label, $tone] = match ($s) {
             'PAID' => ['Paid', 'success'],
+            'PENDING_REVIEW' => ['Waiting for approval', 'warn'],
             'FAILED', 'REJECTED', 'CANCELLED' => ['Not sent, money returned', 'danger'],
             default => ['Processing', 'warn'],
         };

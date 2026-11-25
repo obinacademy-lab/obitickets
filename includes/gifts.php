@@ -815,6 +815,18 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
     if ($price < GIFT_MIN_UGX || $price > GIFT_MAX_PAYMENT_UGX) {
         return $fail('The price must be between UGX ' . number_format(GIFT_MIN_UGX) . ' and UGX ' . number_format(GIFT_MAX_PAYMENT_UGX) . '.');
     }
+    // the price in OBI COINS (only when the coin tables exist and the form sent it); empty = no coin price, so the gift is not offered while OBI COINS is on
+    $coinsGiven = array_key_exists('price_coins', $in) && function_exists('coins_ready') && coins_ready();
+    $priceCoins = null;
+    if ($coinsGiven) {
+        $pc = trim((string) $in['price_coins']);
+        if ($pc !== '') {
+            if (!preg_match('/^\d{1,7}$/', $pc) || (int) $pc < 1) {
+                return $fail('The price in OBI COINS must be a whole number above zero.');
+            }
+            $priceCoins = (int) $pc;
+        }
+    }
     $anim = (string) ($in['animation_type'] ?? 'pop');
     if (!isset(GIFT_ANIMATIONS[$anim])) {
         return $fail('Pick one of the animation styles.');
@@ -866,7 +878,10 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         $pdo->prepare('INSERT INTO gift_catalog (slug, name, description, emoji, image_path, animation_type, animation_asset, price_ugx, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
             ->execute([$slug, $name, $desc !== '' ? $desc : null, $emoji !== '' ? $emoji : null, $image, $anim, $animAsset, $price, $active, $sort]);
         $id = (int) $pdo->lastInsertId();
-        log_admin_action($adminId, 'gift.catalog.create', 'gift_catalog', $id, ['name' => $name, 'price' => $price, 'active' => $active]);
+        if ($coinsGiven) {
+            $pdo->prepare('UPDATE gift_catalog SET price_coins = ? WHERE id = ?')->execute([$priceCoins, $id]);
+        }
+        log_admin_action($adminId, 'gift.catalog.create', 'gift_catalog', $id, ['name' => $name, 'price' => $price, 'price_coins' => $priceCoins, 'active' => $active]);
         return ['ok' => true, 'id' => $id];
     }
     $pdo->prepare('UPDATE gift_catalog SET name = ?, description = ?, emoji = ?, image_path = ?, animation_type = ?, animation_asset = ?, price_ugx = ?, is_active = ?, sort_order = ? WHERE id = ?')
@@ -878,6 +893,12 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         gift_delete_upload($old['animation_asset'] ?? null);
     }
     $changes = [];
+    if ($coinsGiven) {
+        $pdo->prepare('UPDATE gift_catalog SET price_coins = ? WHERE id = ?')->execute([$priceCoins, $giftId]);
+        if (($old['price_coins'] ?? null) !== null ? (int) $old['price_coins'] !== $priceCoins : $priceCoins !== null) {
+            $changes['price_coins'] = [$old['price_coins'] ?? null, $priceCoins];
+        }
+    }
     foreach (['name' => $name, 'price_ugx' => $price, 'is_active' => $active, 'animation_type' => $anim, 'sort_order' => $sort] as $k => $v) {
         if ((string) $old[$k] !== (string) $v) {
             $changes[$k] = [$old[$k], $v];
