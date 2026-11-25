@@ -197,6 +197,13 @@ function gift_org_history(int $organizerId, array $f = [], int $limit = 25): arr
         unset($row['sender_name']);   // the full name never leaves this function
     }
     unset($row);
+    // thank-you state (includes/gift-thanks.php): which gifts were thanked, with what words, and which can still be
+    $thanks = function_exists('gift_thanks_for') ? gift_thanks_for(array_column($rows, 'id')) : [];
+    foreach ($rows as &$row) {
+        $row['thanked'] = $thanks[(int) $row['id']] ?? null;
+        $row['can_thank'] = !$row['reversed'] && $row['payment_status'] === 'SUCCESSFUL' && $row['thanked'] === null;
+    }
+    unset($row);
     return ['rows' => $rows, 'next' => $next];
 }
 

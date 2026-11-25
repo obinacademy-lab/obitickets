@@ -95,7 +95,7 @@ $initials = static function (string $name): string {
 };
 $badge = [
     'like' => ['heart', '#F0313F'], 'comment_like' => ['heart', '#F0313F'], 'boost' => ['boost', '#F59E0B'],
-    'post_comment' => ['chat', '#3B82F6'], 'comment_reply' => ['chat', '#3B82F6'], 'follow' => ['user', '#22C55E'],
+    'post_comment' => ['chat', '#3B82F6'], 'comment_reply' => ['chat', '#3B82F6'], 'follow' => ['user', '#22C55E'], 'thank_you' => ['heart', '#F0313F'],
 ];
 $icons = [
     'heart' => '<path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.6 3.9 4.5 7.2 4.5c1.9 0 3.6 1 4.8 2.6 1.2-1.6 2.9-2.6 4.8-2.6 3.3 0 5.7 3.1 4.5 6.6-1.8 4.8-9.3 9.4-9.3 9.4z" fill="currentColor" stroke="none"/>',

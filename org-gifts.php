@@ -73,6 +73,37 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') 
     }
     $tab = 'withdrawals';
 }
+// say thank you to a supporter (includes/gift-thanks.php): the message goes to them privately, never to the public
+$canThank = organizer_can($ctx, 'gifts.thank');
+$thanksFlash = $_SESSION['gift_thanks_flash'] ?? null;
+unset($_SESSION['gift_thanks_flash']);
+if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'thank') {
+    verify_csrf();
+    if (!$canThank) {
+        http_response_code(403);
+        exit('You do not have permission to message supporters.');
+    }
+    $res = gift_thank($organizerId, (int) ($_POST['id'] ?? 0), (string) ($_POST['message'] ?? ''));
+    $_SESSION['gift_thanks_flash'] = $res['ok']
+        ? ['ok', $res['channel'] === 'chat' ? 'Your thank-you was sent. They will see it in their chats.' : 'Your thank-you was sent. This supporter chose to stay anonymous, so they get it as a notification and you do not learn who they are.']
+        : ['error', $res['error']];
+    $back = (string) ($_POST['back'] ?? '');
+    header('Location: ' . (preg_match('#^/org-gifts\.php(\?[A-Za-z0-9=&_.%-]*)?$#', $back) ? $back : '/org-gifts.php?tab=history'));
+    exit;
+}
+$orgDisplayName = (string) db()->query('SELECT COALESCE(NULLIF(op.org_name, \'\'), u.name) FROM users u LEFT JOIN organizer_profiles op ON op.user_id = u.id WHERE u.id = ' . (int) $organizerId)->fetchColumn();
+/** The thank-you button for one gift, or the "Thanked" mark. */
+function og_thank_control(array $r, bool $canThank, string $orgName): string
+{
+    if (!empty($r['thanked'])) {
+        return '<span class="og-thanked" title="' . htmlspecialchars((string) $r['thanked']['message'], ENT_QUOTES) . '">Thanked &#10003;</span>';
+    }
+    if (!$canThank || empty($r['can_thank'])) {
+        return '';
+    }
+    return '<button type="button" class="og-thank" data-id="' . (int) $r['id'] . '" data-who="' . htmlspecialchars((string) $r['supporter'], ENT_QUOTES) . '" data-anon="' . (!empty($r['is_anonymous']) ? '1' : '0')
+        . '" data-text="' . htmlspecialchars(gift_thanks_default_message((string) $r['gift_name'], $orgName), ENT_QUOTES) . '">Say thanks</button>';
+}
 // refresh any of this organizer's withdrawals that ioTec is still processing, so the page shows the real status
 if ($ready && in_array($tab, ['overview', 'withdrawals'], true)) {
     gift_withdraw_poll_open($organizerId, 5);
@@ -93,6 +124,8 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <p>The OBI GIFTS your supporters send you on your videos, and the money they earn you. It is kept completely separate from your ticket sales.</p>
   </div>
 </div>
+
+<?php if ($thanksFlash): ?><span data-flash="<?= htmlspecialchars($thanksFlash[1]) ?>"<?= $thanksFlash[0] === 'error' ? ' data-flash-type="error"' : '' ?> hidden></span><?php endif; ?>
 
 <?php if (!$visible): ?>
   <div class="admin-card"><div class="admin-empty" style="padding:34px 24px">
@@ -170,6 +203,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
             <strong><?= htmlspecialchars($r['supporter']) ?></strong> sent <?= (int) $r['quantity'] > 1 ? (int) $r['quantity'] . ' &times; ' : 'a ' ?><?= htmlspecialchars($r['gift_name']) ?>
             <small><?= htmlspecialchars($r['where']) ?> &middot; <?= htmlspecialchars(date('j M, H:i', strtotime((string) $r['paid_at']))) ?><?= $r['coins'] !== null ? ' &middot; ' . number_format($r['coins']) . ' OBI COINS' : '' ?></small>
           </span>
+          <?= og_thank_control($r, $canThank, $orgDisplayName) ?>
           <span class="og-line-amt<?= $r['reversed'] ? ' is-reversed' : '' ?>"><?= $r['reversed'] ? 'Reversed' : '+' . og_ugx((int) $r['organizer_ugx']) ?></span>
         </div>
       <?php endforeach; endif; ?>
@@ -239,7 +273,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <?php else: ?>
       <div class="admin-table-wrap" style="border:none; box-shadow:none;">
         <table class="admin-table og-table">
-          <thead><tr><th>Date</th><th>Supporter</th><th>Gift</th><th>Where</th><th style="text-align:right">OBI COINS</th><th style="text-align:right">Value (UGX)</th><th style="text-align:right">Your share</th><th>Status</th></tr></thead>
+          <thead><tr><th>Date</th><th>Supporter</th><th>Gift</th><th>Where</th><th style="text-align:right">OBI COINS</th><th style="text-align:right">Value (UGX)</th><th style="text-align:right">Your share</th><th>Status</th><th>Thank-you</th></tr></thead>
           <tbody>
           <?php foreach ($rows as $r): ?>
             <tr>
@@ -251,6 +285,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
               <td class="mono" style="text-align:right"><?= og_ugx((int) $r['gross_ugx']) ?></td>
               <td class="mono" style="text-align:right"><?= $r['reversed'] ? '<s class="muted">' . og_ugx((int) $r['organizer_ugx']) . '</s>' : og_ugx((int) $r['organizer_ugx']) ?></td>
               <td><span class="admin-badge <?= $r['reversed'] ? 'admin-badge-danger' : 'admin-badge-success' ?>"><?= $r['reversed'] ? 'Reversed' : 'Received' ?></span></td>
+              <td><?= og_thank_control($r, $canThank, $orgDisplayName) ?></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
@@ -440,6 +475,39 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
       </div>
     <?php endif; ?>
   </div>
+<?php endif; ?>
+
+<?php if ($visible && $canThank): ?>
+<dialog id="ogThanks" class="og-dialog" aria-labelledby="ogThanksTitle">
+  <form method="post">
+    <?= csrf_field() ?><input type="hidden" name="action" value="thank"><input type="hidden" name="id" id="ogThanksId"><input type="hidden" name="back" value="<?= htmlspecialchars((string) ($_SERVER['REQUEST_URI'] ?? '/org-gifts.php')) ?>">
+    <h3 id="ogThanksTitle">Say thank you</h3>
+    <p class="muted" id="ogThanksWho" style="margin:0 0 10px; font-size:.86rem"></p>
+    <textarea name="message" id="ogThanksText" rows="5" maxlength="<?= (int) GIFT_THANKS_MAX_CHARS ?>" required></textarea>
+    <div class="muted" style="display:flex; justify-content:space-between; gap:12px; font-size:.78rem; margin:4px 0 12px"><span id="ogThanksNote"></span><span><span id="ogThanksCount">0</span>/<?= (int) GIFT_THANKS_MAX_CHARS ?></span></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" class="btn btn-line" id="ogThanksCancel">Cancel</button><button type="submit" class="btn btn-purple">Send thank-you</button></div>
+  </form>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('ogThanks'); if (!dlg || typeof dlg.showModal !== 'function') { return; }
+  var id = document.getElementById('ogThanksId'), who = document.getElementById('ogThanksWho'), text = document.getElementById('ogThanksText'), note = document.getElementById('ogThanksNote'), count = document.getElementById('ogThanksCount');
+  function recount() { count.textContent = String(text.value.length); }
+  text.addEventListener('input', recount);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('.og-thank') : null;
+    if (!b) { return; }
+    var anon = b.getAttribute('data-anon') === '1';
+    id.value = b.getAttribute('data-id');
+    who.textContent = 'To: ' + b.getAttribute('data-who');
+    note.textContent = anon ? 'They stay anonymous: it reaches them as a notification, and you will not see who they are.' : 'It goes to them as a private chat message.';
+    text.value = b.getAttribute('data-text'); recount();
+    dlg.showModal(); text.focus();
+  });
+  document.getElementById('ogThanksCancel').addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) { dlg.close(); } });
+})();
+</script>
 <?php endif; ?>
 
 <?php render_organizer_foot(); ?>
