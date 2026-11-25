@@ -432,6 +432,10 @@ function gift_notify_delivered(int $txId): void
     if (function_exists('gift_auto_thank')) {
         gift_auto_thank($txId);
     }
+    // the organizer's email about this gift: only queued here, the background job sends it (includes/gift-emails.php)
+    if (function_exists('gift_email_queue')) {
+        gift_email_queue($txId);
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------- ask ioTec and settle

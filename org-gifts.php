@@ -104,6 +104,22 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') 
     header('Location: /org-gifts.php#autoThanks');
     exit;
 }
+if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['gift_email_pref', 'gift_email_test'], true)) {
+    verify_csrf();
+    if (!$canThank) {   // the owner: the emails go to the owner's own address
+        http_response_code(403);
+        exit('Only the account owner can change these emails.');
+    }
+    if (($_POST['action'] ?? '') === 'gift_email_pref') {
+        gift_emails_set($organizerId, !empty($_POST['on']));
+        $_SESSION['gift_thanks_flash'] = ['ok', !empty($_POST['on']) ? 'Saved. You will get an email when someone sends you a gift.' : 'Saved. Gift emails are off.'];
+    } else {
+        $t = gift_email_send_test($organizerId);
+        $_SESSION['gift_thanks_flash'] = $t['ok'] ? ['ok', 'A test email is on its way to ' . $t['to'] . '.'] : ['error', $t['error']];
+    }
+    header('Location: /org-gifts.php#giftEmails');
+    exit;
+}
 $orgDisplayName = (string) db()->query('SELECT COALESCE(NULLIF(op.org_name, \'\'), u.name) FROM users u LEFT JOIN organizer_profiles op ON op.user_id = u.id WHERE u.id = ' . (int) $organizerId)->fetchColumn();
 /** The thank-you button for one gift, or the "Thanked" mark. */
 function og_thank_control(array $r, bool $canThank, string $orgName): string
@@ -250,6 +266,20 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
           <div class="og-rank-bar"><i style="width:<?= max(2, round($g['gifts'] / $topN * 100)) ?>%"></i></div>
         </div>
       <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
+  <?php if ($canThank): $mailOn = gift_emails_enabled_for($organizerId); $mailTo = (string) db()->query('SELECT email FROM users WHERE id = ' . (int) $organizerId)->fetchColumn(); ?>
+    <div class="admin-card" id="giftEmails" style="margin-top:20px">
+      <h3 style="margin-bottom:4px">Email me when I get a gift</h3>
+      <p class="muted" style="margin:0 0 14px; font-size:.86rem">Every gift you receive also reaches you by email at <b><?= htmlspecialchars($mailTo) ?></b>, within a few minutes. If a lot of gifts arrive at once (a busy night), you get one summary email instead of many. A supporter who chose to stay anonymous is never named.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+        <form method="post" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><?= csrf_field() ?><input type="hidden" name="action" value="gift_email_pref">
+          <label style="display:flex; align-items:center; gap:10px; font-weight:700"><input type="checkbox" name="on" value="1" <?= $mailOn ? 'checked' : '' ?>> Send me an email for each gift</label>
+          <button class="btn btn-purple" type="submit">Save</button>
+        </form>
+        <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="gift_email_test"><button class="btn btn-line" type="submit">Send me a test email</button></form>
+      </div>
     </div>
   <?php endif; ?>
 

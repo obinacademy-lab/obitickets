@@ -35,3 +35,7 @@ echo date('c') . " gift withdrawals checked: {$polled}, sent: {$sent}\n";
 coin_cron_heartbeat();
 $books = coin_books_scheduled();
 echo date('c') . ' OBI COINS books check: ' . ($books['ran'] ? 'ran, ' . $books['problem_count'] . ' problem(s), ' . $books['high_flags'] . ' high alert(s)' . ($books['alerted'] ? ', admins emailed' : '') : 'not due yet') . "\n";
+
+// the organizers' emails about the gifts they received (queued when each gift was delivered): one email per gift, or one summary when many arrive together
+$mail = gift_email_send_queued(200);
+echo date('c') . " organizer gift emails: sent {$mail['single']}, summaries {$mail['digest']}, skipped {$mail['skipped']}, failed {$mail['failed']}, waiting {$mail['waiting']}\n";
