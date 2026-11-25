@@ -9,7 +9,7 @@ $ready = coins_ready();
 $canManage = admin_can('gifts.manage');       // packages, the switch, who can receive gifts
 $canRefund = admin_can('gifts.refund');       // freeze a wallet, reverse a purchase
 $canMoney = admin_can('gifts.commission');    // the accounting rate and adding or removing coins (top-level admin only)
-$tabs = ['overview' => 'Overview', 'packages' => 'Packages', 'rate' => 'Accounting rate', 'wallets' => 'Wallets', 'purchases' => 'Purchases', 'recipients' => 'Who can receive gifts', 'history' => 'Change history'];
+$tabs = ['overview' => 'Overview', 'packages' => 'Packages', 'rate' => 'Accounting rate', 'wallets' => 'Wallets', 'purchases' => 'Purchases', 'recipients' => 'Who can receive gifts', 'alerts' => 'Alerts', 'check' => 'Payment check', 'history' => 'Change history'];
 $tab = array_key_exists($_GET['tab'] ?? '', $tabs) ? $_GET['tab'] : 'overview';
 $error = null;
 $flash = $_SESSION['coin_admin_flash'] ?? null;
@@ -30,10 +30,18 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = (string) ($_POST['action'] ?? '');
     if (in_array($action, ['toggle_coins', 'save_package', 'recipient'], true) && !$canManage) { $deny('You do not have permission to manage OBI COINS.'); }
-    if (in_array($action, ['wallet_status', 'reverse_purchase'], true) && !$canRefund) { $deny('You do not have permission to freeze wallets or reverse purchases.'); }
+    if (in_array($action, ['wallet_status', 'reverse_purchase', 'recheck_payments'], true) && !$canRefund) { $deny('You do not have permission to freeze wallets or reverse purchases.'); }
     if (in_array($action, ['set_rate', 'adjust'], true) && !$canMoney) { $deny('Only the top-level admin can change the rate or add and remove OBI COINS.'); }
 
-    if ($action === 'toggle_coins') {
+    if ($action === 'run_books' && !$canManage) { $deny('You do not have permission to run the books check.'); }
+
+    if ($action === 'run_books') {
+        $b = coin_books_scheduled(true);
+        $go('/admin-coins.php?tab=check', 'Books check done: ' . $b['problem_count'] . ' problem(s), ' . $b['high_flags'] . ' high alert(s).' . ($b['alerted'] ? ' The admins were emailed.' : ''));
+    } elseif ($action === 'recheck_payments') {
+        $sw = coin_purchase_sweep(50, gift_status_fn());
+        $go('/admin-coins.php?tab=check', 'Asked ioTec about every waiting payment: ' . $sw['checked'] . ' checked, ' . $sw['credited'] . ' credited.');
+    } elseif ($action === 'toggle_coins') {
         $turnOn = !empty($_POST['on']);
         if ($turnOn && ($missing = coins_missing_setup())) {
             $go('/admin-coins.php', 'Cannot switch OBI COINS on yet: ' . implode('; ', $missing) . '.');
@@ -162,13 +170,19 @@ render_admin_head('gifts');
     <?php endif; ?>
   </div>
 
+  <?php $flagsAll = coin_admin_flags(); $flagsHigh = count(array_filter($flagsAll, static fn ($f) => $f['severity'] === 'high')); $booksLast = json_decode((string) get_setting('coin_books_last', ''), true); ?>
+  <?php if ($flagsAll): ?>
+    <div class="admin-card" style="margin-bottom:18px; border-left:4px solid <?= $flagsHigh ? 'var(--danger)' : 'var(--warn)' ?>">
+      <p style="margin:0"><b><?= count($flagsAll) ?></b> alert<?= count($flagsAll) === 1 ? '' : 's' ?> to look at<?= $flagsHigh ? ' (<b>' . $flagsHigh . '</b> high)' : '' ?>. <a href="/admin-coins.php?tab=alerts">Open alerts</a></p>
+    </div>
+  <?php endif; ?>
   <?php if ($problems): ?>
     <div class="admin-card" style="border-left:4px solid var(--danger); margin-bottom:18px">
       <h3 style="margin:0 0 6px">The books check found <?= count($problems) ?> problem<?= count($problems) === 1 ? '' : 's' ?></h3>
       <ul style="margin:0; padding-left:18px"><?php foreach (array_slice($problems, 0, 8) as $p): ?><li><?= $h($p) ?></li><?php endforeach; ?></ul>
     </div>
   <?php else: ?>
-    <p class="muted" style="margin:-6px 0 14px; font-size:.84rem">Books check: every wallet, purchase and coin gift adds up.</p>
+    <p class="muted" style="margin:-6px 0 14px; font-size:.84rem">Books check: every wallet, purchase and coin gift adds up.<?= is_array($booksLast) && !empty($booksLast['at']) ? ' The background job last checked at ' . $h(date('d M, H:i', strtotime((string) $booksLast['at']))) . '.' : ' The background job has not run the scheduled check yet.' ?> <a href="/admin-coins.php?tab=check">Payment check</a></p>
   <?php endif; ?>
 
   <?php if ($o['review_waiting'] > 0 || $o['waiting'] > 0): ?>
@@ -501,6 +515,55 @@ render_admin_head('gifts');
         <?php endforeach; ?></tbody></table></div>
     <?php endif; ?>
   </div>
+
+<?php elseif ($tab === 'alerts'): /* -------------------------------------------------------------------------- alerts */
+  $flags = coin_admin_flags();
+  $sevBadge = ['high' => 'admin-badge-danger', 'medium' => 'admin-badge-warn', 'low' => 'admin-badge-muted'];
+?>
+  <div class="admin-card" style="margin-bottom:18px">
+    <h3 style="margin:0 0 6px">Alerts</h3>
+    <p class="muted" style="margin:0; font-size:.86rem">Patterns worth a look: payments that keep failing, one phone paying for many accounts, bursts of gifts, buying coins with the organizer's own payout number, repeated reversals. They are <b>signals, not proof</b>: nothing is blocked or changed by them. Open the person's wallet to freeze it, or suspend an organizer under Who can receive gifts. An alert disappears by itself when the pattern is gone.</p>
+  </div>
+  <div class="admin-card">
+    <?php if (!$flags): ?><p style="margin:0">Nothing to look at right now.</p><?php else: ?>
+      <div class="admin-table-wrap" style="border:none; box-shadow:none"><table class="admin-table">
+        <thead><tr><th>How serious</th><th>What</th><th>Who</th><th></th></tr></thead>
+        <tbody><?php foreach ($flags as $f): ?>
+          <tr>
+            <td><span class="admin-badge <?= $sevBadge[$f['severity']] ?>"><?= $h(ucfirst($f['severity'])) ?></span></td>
+            <td><b><?= $h($f['title']) ?></b><br><span class="muted" style="font-size:.82rem"><?= $h($f['detail']) ?></span></td>
+            <td><?= $f['user_id'] ? $h($f['user_name']) . ' <span class="muted" style="font-size:.78rem">#' . (int) $f['user_id'] . '</span>' : '—' ?></td>
+            <td><?php if ($f['user_id']): ?><a class="btn btn-line" href="/admin-coins.php?tab=wallets&amp;user=<?= (int) $f['user_id'] ?>">Open wallet</a><?php endif; ?></td>
+          </tr>
+        <?php endforeach; ?></tbody></table></div>
+    <?php endif; ?>
+  </div>
+
+<?php elseif ($tab === 'check'): /* ---------------------------------------------------------------------- payment check */
+  $ver = coin_admin_verification();
+  $booksLast = json_decode((string) get_setting('coin_books_last', ''), true);
+  $mark = ['pass' => ['Pass', 'admin-badge-success'], 'warn' => ['Look', 'admin-badge-warn'], 'fail' => ['Fix', 'admin-badge-danger']];
+?>
+  <div class="admin-card" style="margin-bottom:18px; display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap">
+    <div style="min-width:min(260px,100%); flex:1">
+      <h3 style="margin:0 0 4px">Payment check: <span class="admin-badge <?= $mark[$ver['overall']][1] ?>"><?= $h($ver['overall'] === 'pass' ? 'All good' : ($ver['overall'] === 'warn' ? 'Some things to look at' : 'Something needs fixing')) ?></span></h3>
+      <p class="muted" style="margin:0; font-size:.86rem">Every promise OBI COINS makes about money, checked against the data right now. <b>Fix</b> means do not take more money until it is fixed; <b>Look</b> means worth a look (including the real-money tests only you can do). The background job also runs the books check every <?= (int) COIN_BOOKS_EVERY_HOURS ?> hours and emails the admins if something does not add up<?= is_array($booksLast) && !empty($booksLast['at']) ? ' (last: ' . $h(date('d M, H:i', strtotime((string) $booksLast['at']))) . ')' : '' ?>.</p>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <?php if ($canManage): ?><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="run_books"><button class="btn btn-line" type="submit">Run the books check now</button></form><?php endif; ?>
+      <?php if ($canRefund): ?><form method="post" data-confirm="Ask ioTec about every payment that is still waiting, and credit the ones that were paid?"><?= csrf_field() ?><input type="hidden" name="action" value="recheck_payments"><button class="btn btn-purple" type="submit">Check waiting payments now</button></form><?php endif; ?>
+    </div>
+  </div>
+  <?php foreach ($ver['groups'] as $group => $rows): ?>
+    <div class="admin-card" style="margin-bottom:18px">
+      <h3 style="margin:0 0 12px"><?= $h($group) ?></h3>
+      <div class="admin-table-wrap" style="border:none; box-shadow:none"><table class="admin-table"><tbody>
+        <?php foreach ($rows as $r): ?>
+          <tr><td style="white-space:nowrap; width:1%"><span class="admin-badge <?= $mark[$r['status']][1] ?>"><?= $h($mark[$r['status']][0]) ?></span></td><td><b><?= $h($r['label']) ?></b><br><span class="muted" style="font-size:.82rem"><?= $h($r['detail']) ?></span></td></tr>
+        <?php endforeach; ?>
+      </tbody></table></div>
+    </div>
+  <?php endforeach; ?>
 
 <?php else: /* ------------------------------------------------------------------------------------------ history */
   $audit = coin_admin_audit(60);

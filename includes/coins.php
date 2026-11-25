@@ -23,6 +23,13 @@ const COIN_PHONE_HOURLY_LIMIT = 6;         // prompts to one phone number per ho
 const COIN_MIN_PURCHASE_UGX = 500;
 const COIN_MAX_PURCHASE_UGX = 500000;      // one purchase
 const COIN_DAILY_PURCHASE_CAP_UGX = 1000000;   // per user per 24 hours
+// phase 7: abuse limits (the same ideas as the ticket payment guard in payguard.php, measured by the database clock)
+const COIN_STARTS_PER_10_MIN = 4;          // purchases one account may start in 10 minutes
+const COIN_FAILS_IN_A_ROW = 3;             // this many failed or expired purchases in a row pause the account...
+const COIN_FAILS_PAUSE_MINUTES = 30;       // ...for this long
+const COIN_DISTINCT_PHONES_PER_HOUR = 3;   // different phone numbers one account may try in an hour (a sweep changes numbers every time)
+const COIN_GIFTS_PER_MINUTE = 20;          // coin gifts one account may send in a minute
+const COIN_POLL_MIN_SECONDS = 2;           // the payment status of one purchase is asked from ioTec at most this often per visitor
 
 // ---------------------------------------------------------------------------------------------------- readiness and the switches
 
@@ -409,6 +416,29 @@ function coin_purchase_start(array $user, int $packageId, string $phone, ?string
             $pdo->rollBack();
             return $fail('You have payments waiting for approval on your phone. Approve or wait a few minutes.');
         }
+        $throttle = static function (string $msg) use ($pdo): array {
+            $pdo->rollBack();
+            return ['ok' => false, 'error' => $msg, 'throttled' => true];
+        };
+        $starts = $pdo->prepare('SELECT COUNT(*) FROM coin_purchases WHERE user_id = ? AND created_at > NOW() - INTERVAL 10 MINUTE');
+        $starts->execute([$userId]);
+        if ((int) $starts->fetchColumn() >= COIN_STARTS_PER_10_MIN) {
+            return $throttle('You have started several payments in a short time. Please wait a few minutes and try again.');
+        }
+        $last = $pdo->prepare('SELECT payment_status, TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS age FROM coin_purchases WHERE user_id = ? ORDER BY id DESC LIMIT ' . (int) COIN_FAILS_IN_A_ROW);
+        $last->execute([$userId]);
+        $lastRows = $last->fetchAll();
+        if (count($lastRows) === COIN_FAILS_IN_A_ROW && $lastRows[0]['age'] < COIN_FAILS_PAUSE_MINUTES
+            && count(array_filter($lastRows, static fn ($r) => in_array($r['payment_status'], ['FAILED', 'CANCELLED', 'EXPIRED'], true))) === COIN_FAILS_IN_A_ROW) {
+            return $throttle('Your last ' . COIN_FAILS_IN_A_ROW . ' payments did not go through, so buying is paused for a little while. Please check your number and balance and try again in about ' . COIN_FAILS_PAUSE_MINUTES . ' minutes.');
+        }
+        $phoneN0 = iotec_normalize_phone($phone);
+        $numbers = $pdo->prepare('SELECT DISTINCT phone FROM coin_purchases WHERE user_id = ? AND created_at > NOW() - INTERVAL 1 HOUR');
+        $numbers->execute([$userId]);
+        $usedNumbers = $numbers->fetchAll(PDO::FETCH_COLUMN);
+        if (count($usedNumbers) >= COIN_DISTINCT_PHONES_PER_HOUR && !in_array($phoneN0, $usedNumbers, true)) {
+            return $throttle('Please use a mobile money number you already tried, or wait a while before using a different one.');
+        }
         $day = $pdo->prepare("SELECT COALESCE(SUM(price_ugx), 0) FROM coin_purchases WHERE user_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR AND payment_status IN ('PENDING','PROCESSING','SUCCESSFUL')");
         $day->execute([$userId]);
         if ((int) $day->fetchColumn() + $price > COIN_DAILY_PURCHASE_CAP_UGX) {
@@ -420,7 +450,7 @@ function coin_purchase_start(array $user, int $packageId, string $phone, ?string
         $byPhone->execute([$phoneN]);
         if ((int) $byPhone->fetchColumn() >= COIN_PHONE_HOURLY_LIMIT) {
             $pdo->rollBack();
-            return $fail('Too many payments were started for this number in the last hour. Please try again later.');
+            return ['ok' => false, 'error' => 'Too many payments were started for this number in the last hour. Please try again later.', 'throttled' => true];
         }
         $reference = coin_new_reference('CPU');
         $pdo->prepare('INSERT INTO coin_purchases (reference, idempotency_key, user_id, package_id, package_name, coins, bonus_coins, price_ugx, payment_method, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
@@ -728,6 +758,12 @@ function coin_gift_send(array $sender, int $organizerId, int $giftId, int $quant
         if ((int) $day->fetchColumn() + $gross > GIFT_DAILY_CAP_UGX) {
             $pdo->rollBack();
             return $fail('You have reached the daily gift limit. Try again tomorrow.');
+        }
+        $fast = $pdo->prepare("SELECT COUNT(*) FROM gift_transactions WHERE sender_id = ? AND payment_source = 'COINS' AND created_at > NOW() - INTERVAL 1 MINUTE");
+        $fast->execute([$senderId]);
+        if ((int) $fast->fetchColumn() >= COIN_GIFTS_PER_MINUTE) {
+            $pdo->rollBack();
+            return ['ok' => false, 'error' => 'You are sending gifts very fast. Please wait a moment and try again.', 'throttled' => true];
         }
         coin_wallet_ensure($pdo, $senderId);
         $w = $pdo->prepare('SELECT balance, status FROM coin_wallets WHERE user_id = ? FOR UPDATE');

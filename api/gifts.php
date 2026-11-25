@@ -55,7 +55,7 @@ try {
                     if (!empty($res['insufficient'])) {
                         json_response(['error' => $res['error'], 'insufficient' => true, 'balance' => $res['balance'], 'needed' => $res['needed']], 402);
                     }
-                    json_response(['error' => $res['error']], 400);
+                    json_response(['error' => $res['error']], !empty($res['throttled']) ? 429 : 400);
                 }
                 json_response(['ok' => true, 'coins' => true, 'id' => $res['id'], 'reference' => $res['reference'], 'spent' => $res['coins'], 'balance_after' => $res['balance_after'], 'delivery' => gift_delivery_payload((int) $res['id'])]);
             }

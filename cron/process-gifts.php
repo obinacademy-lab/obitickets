@@ -30,3 +30,8 @@ echo date('c') . " OBI COINS purchases checked: {$cp['checked']}, credited: {$cp
 $polled = gift_withdraw_poll_open(null, 50);
 $sent = gift_withdraw_send_waiting(20);
 echo date('c') . " gift withdrawals checked: {$polled}, sent: {$sent}\n";
+
+// phase 7: tell Admin this job is alive, and check the books every few hours (emails the admins when something does not add up)
+coin_cron_heartbeat();
+$books = coin_books_scheduled();
+echo date('c') . ' OBI COINS books check: ' . ($books['ran'] ? 'ran, ' . $books['problem_count'] . ' problem(s), ' . $books['high_flags'] . ' high alert(s)' . ($books['alerted'] ? ', admins emailed' : '') : 'not due yet') . "\n";

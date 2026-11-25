@@ -52,12 +52,23 @@ try {
                 gift_collect_fn()
             );
             if (!$res['ok']) {
-                json_response(['error' => $res['error']], 400);
+                if (!empty($res['throttled']) && function_exists('ipguard_note')) {
+                    ipguard_note('pay_refused');
+                }
+                json_response(['error' => $res['error']], !empty($res['throttled']) ? 429 : 400);
             }
             json_response(['ok' => true, 'id' => $res['id'], 'reference' => $res['reference'], 'price' => $res['price'], 'coins' => $res['coins'], 'bonus' => $res['bonus']]);
 
         case 'poll':
             $id = max(0, (int) ($body['id'] ?? 0));
+            // the same purchase is not re-checked with ioTec more often than every COIN_POLL_MIN_SECONDS by one visitor (a page polls every few seconds)
+            $lastPoll = (float) ($_SESSION['coin_poll_at'][$id] ?? 0);
+            $nowMs = microtime(true);
+            if ($nowMs - $lastPoll < COIN_POLL_MIN_SECONDS) {
+                json_response(['ok' => true, 'status' => 'PENDING', 'message' => null, 'balance' => coin_wallet($uid)['balance']]);
+            }
+            $_SESSION['coin_poll_at'] = array_slice(($_SESSION['coin_poll_at'] ?? []) + [$id => $nowMs], -20, null, true);
+            $_SESSION['coin_poll_at'][$id] = $nowMs;
             $r = coin_purchase_poll($id, $uid, gift_status_fn());
             $out = ['ok' => true, 'status' => $r['status'], 'message' => $r['message'], 'balance' => $r['balance']];
             if ($r['status'] === 'PAID') {
