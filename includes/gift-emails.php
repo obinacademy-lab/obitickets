@@ -3,14 +3,15 @@
  * OBI GIFTS: an email to the organizer every time they receive a gift.
  *
  * HOW. When a gift is delivered it is only put in a small queue (a gift_events row, kind org_email_queued): the supporter's gift never waits for an email
- * service. The 5-minute background job (cron/process-gifts.php) sends the queued emails. One email per gift, as asked. To protect the organizer's inbox
+ * service. The email goes out a moment later: right after the page has answered the supporter (gift_email_fast_path), and in any case within 5 minutes
+ * by the background job (cron/process-gifts.php), which also retries anything that failed. One email per gift, as asked. To protect the organizer's inbox
  * (and our sending reputation) on a very busy night: at most GIFT_EMAIL_PER_HOUR single emails an hour, and when many gifts arrive together they come
  * as ONE summary email instead (never more than one summary every GIFT_EMAIL_DIGEST_EVERY_MIN minutes). Nothing is lost: every gift is in one or the other.
  *
  * WHO. The organizer account's own email address. A supporter who chose to stay anonymous is "Anonymous supporter" here too: the email never names them.
  * The organizer can switch these emails off (and send themselves a test) on OBI GIFTS & earnings. On by default.
  *
- * States of a gift's row: org_email_queued -> org_emailed | org_email_digested | org_email_skipped (reserved/demo address) | org_email_failed (after
+ * States of a gift's row: org_email_queued -> org_email_sending (claimed by exactly one sender: the page or the job) -> org_emailed | org_email_digested | org_email_skipped (reserved/demo address) | org_email_failed (after
  * GIFT_EMAIL_ATTEMPTS tries). The record lives in gift_events, so no new table is needed.
  */
 
@@ -18,7 +19,8 @@ const GIFT_EMAIL_PER_HOUR = 15;
 const GIFT_EMAIL_MAX_SINGLE_PER_RUN = 3;    // more than this waiting at once for one organizer -> one summary email
 const GIFT_EMAIL_DIGEST_EVERY_MIN = 10;
 const GIFT_EMAIL_ATTEMPTS = 3;
-const GIFT_EMAIL_KINDS = "'org_email_queued','org_emailed','org_email_digested','org_email_skipped','org_email_failed'";
+const GIFT_EMAIL_CLAIM_STALE_MIN = 10;      // a gift claimed for sending but never finished (a crash) goes back in the queue after this long
+const GIFT_EMAIL_KINDS = "'org_email_queued','org_email_sending','org_emailed','org_email_digested','org_email_skipped','org_email_failed'";
 
 /** Gift emails are on unless the organizer switched them off. */
 function gift_emails_enabled_for(int $organizerId): bool
@@ -60,11 +62,41 @@ function gift_email_queue(int $txId): bool
             return false;   // already queued or handled: never twice
         }
         gift_log($txId, 'org_email_queued', 'attempt:0');
+        gift_email_fast_path();
         return true;
     } catch (Throwable $e) {
         error_log('[gift] could not queue the organizer email for gift ' . $txId . ': ' . $e->getMessage());
         return false;
     }
+}
+
+/**
+ * Sends the queue a moment after the page has already answered the supporter, so the organizer's email arrives within seconds. It only works where the
+ * server can finish the response first (php-fpm or LiteSpeed); anywhere else, and on the command line, it does nothing and the 5-minute job does the sending.
+ * Returns whether it was armed.
+ */
+function gift_email_fast_path(): bool
+{
+    static $armed = false;
+    if ($armed || PHP_SAPI === 'cli') {
+        return false;
+    }
+    $finish = function_exists('fastcgi_finish_request') ? 'fastcgi_finish_request' : (function_exists('litespeed_finish_request') ? 'litespeed_finish_request' : null);
+    if ($finish === null) {
+        return false;
+    }
+    $armed = true;
+    register_shutdown_function(static function () use ($finish): void {
+        try {
+            ignore_user_abort(true);
+            @set_time_limit(60);
+            $finish();   // the supporter already has their answer; what follows is invisible to them
+            gift_email_send_queued(5);
+        } catch (Throwable $e) {
+            error_log('[gift] fast gift email failed: ' . $e->getMessage());
+        }
+    });
+    return true;
 }
 
 /** Wraps the shared look of the email. */
@@ -123,6 +155,9 @@ function gift_email_send_queued(int $limit = 200, ?callable $send = null): array
     }
     $send = $send ?? static fn (string $to, string $subject, string $html, string $kind): bool => resend_send($to, $subject, $html, $kind);
     $pdo = db();
+    // a gift claimed for sending long ago and never finished (the sender crashed) goes back in the queue
+    $pdo->prepare("UPDATE gift_events SET kind = 'org_email_queued', details = 'attempt:0' WHERE kind = 'org_email_sending' AND CAST(SUBSTRING(details, 9) AS UNSIGNED) < ?")
+        ->execute([time() - GIFT_EMAIL_CLAIM_STALE_MIN * 60]);
     $rows = $pdo->query("SELECT e.id AS event_id, e.details, t.id AS tx_id, t.recipient_organizer_id AS org, t.sender_id, t.is_anonymous, t.quantity, t.organizer_ugx, t.coins_spent, t.payment_source, t.paid_at, t.post_id,
                                 g.name AS gift_name, u.email AS org_email, ev.title AS event_title
                          FROM gift_events e JOIN gift_transactions t ON t.id = e.gift_tx_id JOIN gift_catalog g ON g.id = t.gift_id JOIN users u ON u.id = t.recipient_organizer_id
@@ -134,6 +169,12 @@ function gift_email_send_queued(int $limit = 200, ?callable $send = null): array
     }
     $mark = static function (int $eventId, string $kind, string $details) use ($pdo): void {
         $pdo->prepare('UPDATE gift_events SET kind = ?, details = ? WHERE id = ?')->execute([$kind, mb_substr($details, 0, 500), $eventId]);
+    };
+    // exactly one sender wins a gift: whoever changes it from queued to sending
+    $claim = static function (int $eventId) use ($pdo): bool {
+        $u = $pdo->prepare("UPDATE gift_events SET kind = 'org_email_sending', details = ? WHERE id = ? AND kind = 'org_email_queued'");
+        $u->execute(['sending:' . time(), $eventId]);
+        return $u->rowCount() === 1;
     };
     foreach ($byOrg as $orgId => $list) {
         if (!gift_emails_enabled_for($orgId)) {
@@ -151,6 +192,9 @@ function gift_email_send_queued(int $limit = 200, ?callable $send = null): array
         $line = static fn (array $r): string => ((int) $r['quantity'] > 1 ? (int) $r['quantity'] . ' x ' : '') . $r['gift_name'];
         if (count($list) <= GIFT_EMAIL_MAX_SINGLE_PER_RUN && count($list) <= $room) {
             foreach ($list as $r) {
+                if (!$claim((int) $r['event_id'])) {
+                    continue;   // another sender has this gift
+                }
                 $attempt = (int) preg_replace('/\D/', '', (string) $r['details']);
                 [$subject, $html] = gift_email_render_single([
                     'sender' => !empty($r['is_anonymous']) ? 'Anonymous supporter' : (function_exists('gift_first_name') ? gift_first_name((string) $pdo->query('SELECT name FROM users WHERE id = ' . (int) $r['sender_id'])->fetchColumn()) : 'A supporter'),
@@ -177,6 +221,12 @@ function gift_email_send_queued(int $limit = 200, ?callable $send = null): array
             $out['waiting'] += count($list);
             continue;
         }
+        $attempts = [];
+        foreach ($list as $r) { $attempts[(int) $r['event_id']] = (int) preg_replace('/\D/', '', (string) $r['details']); }
+        $list = array_values(array_filter($list, static fn ($r) => $claim((int) $r['event_id'])));
+        if (!$list) {
+            continue;
+        }
         $counts = [];
         $ugx = 0;
         foreach ($list as $r) { $counts[$line($r)] = ($counts[$line($r)] ?? 0) + 1; $ugx += (int) $r['organizer_ugx']; }
@@ -189,6 +239,7 @@ function gift_email_send_queued(int $limit = 200, ?callable $send = null): array
             gift_log(null, 'org_email_digest', 'org:' . $orgId . ' gifts:' . count($list));
             $out['digest']++;
         } else {
+            foreach ($list as $r) { $mark((int) $r['event_id'], 'org_email_queued', 'attempt:' . ($attempts[(int) $r['event_id']] ?? 0)); }
             $out['waiting'] += count($list);
         }
     }
