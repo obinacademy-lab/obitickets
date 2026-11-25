@@ -363,7 +363,22 @@
       cap.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
       info.appendChild(cap);
     }
-    // date, place and sound: one per line, icons lined up in one column
+    // the best fans of this video (only when someone gifted it and gifts are on): three small faces, tap for the list
+    if (d.topFans && d.topFans.length) {
+      var fb = el('button', 'fd-fans'); fb.type = 'button';
+      fb.setAttribute('aria-label', 'Top fans of this video: ' + d.topFans.map(function (f) { return f.name; }).join(', ') + '. Tap to see the list.');
+      var faces = el('span', 'fd-fans-faces');
+      d.topFans.forEach(function (f) {
+        var fc = el('i', 'fd-fan fd-fan-' + f.rank);
+        if (f.avatar) { var fi = el('img'); fi.alt = ''; fi.src = f.avatar; fc.appendChild(fi); } else { fc.textContent = f.initials; }
+        faces.appendChild(fc);
+      });
+      fb.appendChild(faces);
+      fb.appendChild(el('span', 'fd-fans-tx', 'Top fans: ' + d.topFans[0].name + (d.topFans.length > 1 ? ' +' + (d.topFans.length - 1) : '')));
+      fb.addEventListener('click', function () { openFans(it, fb); });
+      info.appendChild(fb);
+    }
+    // date, place and sound: one per line, icons lined up one column
     var facts = el('ul', 'fd-facts');
     var fact = function (cls, icon, filled, text) {
       var li = el('li', cls); li.appendChild(svg(icon, 15, filled)); li.appendChild(el('span', null, text)); facts.appendChild(li);
@@ -815,6 +830,29 @@
     it.data.comments = n;
     it.comBtn._count.textContent = compact(n);
     if (cmFor === it && cmTitle) { cmTitle.textContent = 'Comments (' + n + ')'; }
+  }
+  // ---- top fans of one video
+  var fansList = document.getElementById('soFansList');
+  var MEDAL = { 1: '\uD83E\uDD47', 2: '\uD83E\uDD48', 3: '\uD83E\uDD49' };
+  function openFans(it, opener) {
+    if (!fansList) { return; }
+    fansList.textContent = '';
+    fansList.appendChild(el('p', 'so-cm-none', 'Loading...'));
+    show('soFans', opener);
+    api('/api/socials.php', { action: 'top_fans', post_id: it.data.id }).then(function (r) {
+      fansList.textContent = '';
+      if (!r || !r.ok || !r.fans.length) { fansList.appendChild(el('p', 'so-cm-none', 'No fans yet. Send a gift to be the first.')); return; }
+      r.fans.forEach(function (f) {
+        var row = el(f.url ? 'a' : 'div', 'so-fan'); if (f.url) { row.href = f.url; }
+        row.appendChild(el('span', 'so-fan-rank', MEDAL[f.rank] || String(f.rank)));
+        var av = el('span', 'so-av'); if (f.avatar) { var im = el('img'); im.alt = ''; im.src = f.avatar; av.appendChild(im); } else { av.textContent = f.initials; }
+        row.appendChild(av);
+        var tx = el('span', 'so-fan-tx'); tx.appendChild(el('b', null, f.name));
+        (f.badges || []).forEach(function (b) { tx.appendChild(el('em', 'so-fan-badge' + (b === 'Top fan' ? ' is-top' : ''), b)); });
+        row.appendChild(tx);
+        fansList.appendChild(row);
+      });
+    });
   }
   function focusComment(id) {
     var node = cmList.querySelector('.so-cm[data-id="' + Number(id) + '"]');

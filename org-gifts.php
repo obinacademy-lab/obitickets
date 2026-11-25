@@ -91,6 +91,19 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') 
     header('Location: ' . (preg_match('#^/org-gifts\.php(\?[A-Za-z0-9=&_.%-]*)?$#', $back) ? $back : '/org-gifts.php?tab=history'));
     exit;
 }
+if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'auto_thanks') {
+    verify_csrf();
+    if (!$canThank) {
+        http_response_code(403);
+        exit('You do not have permission to message supporters.');
+    }
+    $res = gift_auto_thanks_set($organizerId, !empty($_POST['on']), (string) ($_POST['mode'] ?? 'first'), (string) ($_POST['message'] ?? ''));
+    $_SESSION['gift_thanks_flash'] = $res['ok']
+        ? ['ok', !empty($_POST['on']) ? 'Saved. New supporters will be thanked automatically.' : 'Saved. Automatic thank-yous are off.']
+        : ['error', $res['error']];
+    header('Location: /org-gifts.php#autoThanks');
+    exit;
+}
 $orgDisplayName = (string) db()->query('SELECT COALESCE(NULLIF(op.org_name, \'\'), u.name) FROM users u LEFT JOIN organizer_profiles op ON op.user_id = u.id WHERE u.id = ' . (int) $organizerId)->fetchColumn();
 /** The thank-you button for one gift, or the "Thanked" mark. */
 function og_thank_control(array $r, bool $canThank, string $orgName): string
@@ -238,6 +251,34 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
         </div>
       <?php endforeach; ?>
     </div>
+  <?php endif; ?>
+
+  <?php if ($canThank): $auto = gift_auto_thanks_get($organizerId); ?>
+    <div class="admin-card" id="autoThanks" style="margin-top:20px">
+      <h3 style="margin-bottom:4px">Thank your supporters automatically</h3>
+      <p class="muted" style="margin:0 0 14px; font-size:.86rem">Write one message and it is sent for you whenever someone sends you a gift. It reaches them as a private chat (or, if they chose to stay anonymous, as a notification, without you learning who they are). You can still thank anyone yourself from Gift history.</p>
+      <form method="post">
+        <?= csrf_field() ?><input type="hidden" name="action" value="auto_thanks">
+        <label style="display:flex; align-items:center; gap:10px; font-weight:700; margin-bottom:12px"><input type="checkbox" name="on" value="1" <?= $auto['on'] ? 'checked' : '' ?>> Send my thank-you automatically</label>
+        <div class="og-auto-modes" role="radiogroup" aria-label="Who gets it">
+          <label><input type="radio" name="mode" value="first" <?= $auto['mode'] === 'first' ? 'checked' : '' ?>> <span><b>First-time supporters</b> (recommended)<small>Someone who has never sent you a gift before.</small></span></label>
+          <label><input type="radio" name="mode" value="every" <?= $auto['mode'] === 'every' ? 'checked' : '' ?>> <span><b>Every gift</b><small>At most one automatic message per supporter a day.</small></span></label>
+        </div>
+        <label for="autoMsg" style="display:block; font-weight:700; margin:14px 0 6px">Your message</label>
+        <textarea name="message" id="autoMsg" rows="4" maxlength="<?= (int) GIFT_AUTO_THANKS_MAX_CHARS ?>" required class="og-auto-msg"><?= htmlspecialchars($auto['message']) ?></textarea>
+        <div class="muted" style="display:flex; justify-content:space-between; gap:12px; font-size:.78rem; margin:4px 0 10px"><span>Use <b>{name}</b> for their first name, <b>{gift}</b> for the gift and <b>{org}</b> for your name.</span><span><span id="autoCount">0</span>/<?= (int) GIFT_AUTO_THANKS_MAX_CHARS ?></span></div>
+        <p class="og-auto-preview" aria-live="polite"><span class="muted">Example:</span> <span id="autoPreview"></span></p>
+        <button class="btn btn-purple" type="submit">Save</button>
+      </form>
+    </div>
+    <script>
+    (function () {
+      var t = document.getElementById('autoMsg'), pv = document.getElementById('autoPreview'), c = document.getElementById('autoCount');
+      var org = <?= json_encode($orgDisplayName) ?>;
+      function paint() { c.textContent = String(t.value.length); pv.textContent = t.value.split('{name}').join('Mary').split('{gift}').join('Rose').split('{org}').join(org); }
+      t.addEventListener('input', paint); paint();
+    })();
+    </script>
   <?php endif; ?>
 
 <?php elseif ($tab === 'history'):

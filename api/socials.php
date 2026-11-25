@@ -51,7 +51,7 @@ try {
             $seed = $tab === 'foryou' && !empty($body['seed']) ? max(1, min(2000000000, (int) $body['seed'])) : null;
             // one organizer's posts (the player opened from their card), or the main feed
             $rows = $org ? socials_feed($uid, 'profile', $offset, SOCIALS_FEED_PAGE, null, $org) : socials_feed($uid, $tab, $offset, SOCIALS_FEED_PAGE, $start, null, null, $tab === 'near' ? $near : null, $seed);
-            json_response(['ok' => true, 'items' => array_map('socials_item_public', $rows), 'has_more' => count($rows) === SOCIALS_FEED_PAGE]);
+            json_response(['ok' => true, 'items' => gift_attach_top_fans(array_map('socials_item_public', $rows)), 'has_more' => count($rows) === SOCIALS_FEED_PAGE]);
 
         case 'shorts':
             // more tiles for the Socials list (Shorts Shelf), drawn here so the page and this match exactly
@@ -76,6 +76,15 @@ try {
             $rows = get_post_comments((int) $post['id'], $uid, 20, $after);
             json_response(['ok' => true, 'comments' => array_map($commentOut, $rows), 'has_more' => count($rows) === 20,
                 'last_id' => $rows ? (int) end($rows)['id'] : null, 'open' => (int) $post['comments_enabled'] === 1]);
+
+        case 'top_fans':
+            $post = get_post((int) ($body['post_id'] ?? 0));
+            if (!$post || $post['status'] !== 'PUBLISHED' || !gift_fans_visible()) {
+                json_response(['ok' => true, 'fans' => []]);
+            }
+            $ev = db()->prepare('SELECT organizer_id FROM events WHERE id = ?');
+            $ev->execute([(int) $post['event_id']]);
+            json_response(['ok' => true, 'fans' => gift_top_fans_post((int) $post['id'], (int) $ev->fetchColumn(), GIFT_FANS_LIST)]);
 
         case 'comment_add':
             if (!$user) {

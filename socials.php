@@ -61,7 +61,7 @@ if (!$ready) {
 } else {
     $rows = socials_feed($uid, $tab, 0, SOCIALS_FEED_PAGE, $startId ?: null, null, null, $tab === 'near' ? $near : null, $tab === 'foryou' ? $feedSeed : null);
 }
-$items = array_map('socials_item_public', $rows);
+$items = gift_attach_top_fans(array_map('socials_item_public', $rows));
 if ($orgFilter > 0 && $items) {
     $orgInfo = $items[0]['org'] + ['count' => $orgCount ?? count($items)];
 }
@@ -224,6 +224,12 @@ include __DIR__ . '/includes/header.php';
 
 <?php if ($items && $view === 'player'): ?>
 <div class="so-shade" id="soShade" hidden></div>
+
+<section class="so-sheet" id="soFans" role="dialog" aria-modal="true" aria-labelledby="soFansTitle" hidden>
+  <header><h2 id="soFansTitle">Top fans</h2><button type="button" class="so-x" data-so-close aria-label="Close top fans"><svg width="18" height="18" aria-hidden="true"><use href="#ic-x"/></svg></button></header>
+  <div class="so-fans-list" id="soFansList" aria-live="polite"></div>
+  <p class="so-fans-note">Ranked by the gifts sent on this video. Anonymous gifts are never shown.</p>
+</section>
 
 <section class="so-sheet" id="soComments" role="dialog" aria-modal="true" aria-labelledby="soCmTitle" hidden>
   <header><h2 id="soCmTitle">Comments</h2><button type="button" class="so-x" data-so-close aria-label="Close comments"><svg width="18" height="18" aria-hidden="true"><use href="#ic-x"/></svg></button></header>

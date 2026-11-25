@@ -72,3 +72,10 @@
 .og-dialog textarea{width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:12px; padding:12px; font:inherit; resize:vertical; min-height:110px}
 @media (max-width:520px){.og-line{flex-wrap:wrap}.og-line .og-thank,.og-line .og-thanked{order:5}}
 
+/* automatic thank-you */
+.og-auto-modes{display:grid; gap:8px}
+.og-auto-modes label{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--line); border-radius:12px; cursor:pointer}
+.og-auto-modes small{display:block; color:var(--muted); font-size:.78rem; margin-top:2px}
+.og-auto-msg{width:100%; box-sizing:border-box; border:1px solid var(--line); border-radius:12px; padding:12px; font:inherit; resize:vertical; min-height:96px}
+.og-auto-preview{margin:0 0 14px; padding:10px 12px; border-radius:12px; background:var(--purple-tint, #FDECEC); font-size:.88rem}
+

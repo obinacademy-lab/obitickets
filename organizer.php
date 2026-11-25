@@ -174,6 +174,61 @@ $opLive = (bool) $events['upcoming'];
     <?php endif; ?>
   </section>
 
+<?php
+  // Top fans: the people who sent this organizer the most gifts (only gifts sent in their own name; never an amount)
+  $fansMonth = $fansAll = [];
+  if (function_exists('gift_fans_visible') && gift_fans_visible()) {
+      try {
+          $fansMonth = gift_top_fans_org((int) $uid, 'month', GIFT_FANS_LIST);
+          $fansAll = gift_top_fans_org((int) $uid, 'all', GIFT_FANS_LIST);
+      } catch (Throwable $e) {
+          error_log('[organizer] top fans failed: ' . $e->getMessage());
+      }
+  }
+  $medal = [1 => "\u{1F947}", 2 => "\u{1F948}", 3 => "\u{1F949}"];
+  $fanRows = static function (array $fans, array $medal): void {
+      foreach ($fans as $f): ?>
+        <<?= $f['url'] ? 'a href="' . htmlspecialchars($f['url'], ENT_QUOTES) . '"' : 'div' ?> class="op-fan"<?= $f['rank'] > 5 ? ' data-more hidden' : '' ?>>
+          <span class="op-fan-rank"><?= $medal[$f['rank']] ?? (int) $f['rank'] ?></span>
+          <span class="op-fan-av"><?php if ($f['avatar']): ?><img src="<?= htmlspecialchars($f['avatar']) ?>" alt="" loading="lazy"><?php else: ?><?= htmlspecialchars($f['initials']) ?><?php endif; ?></span>
+          <span class="op-fan-tx"><b><?= htmlspecialchars($f['name']) ?></b><?php foreach ($f['badges'] as $b): ?><em class="<?= $b === 'Top fan' ? 'is-top' : '' ?>"><?= htmlspecialchars($b) ?></em><?php endforeach; ?></span>
+        </<?= $f['url'] ? 'a' : 'div' ?>>
+      <?php endforeach;
+  };
+?>
+  <?php if ($fansMonth || $fansAll): ?>
+  <section class="ev-wrap op-fans" aria-labelledby="opFansH">
+    <div class="op-fans-head">
+      <h2 class="op-h" id="opFansH">Top fans</h2>
+      <div class="op-fans-tabs" role="tablist" aria-label="Top fans period">
+        <button type="button" role="tab" id="opFansTabM" aria-controls="opFansM" aria-selected="<?= $fansMonth ? 'true' : 'false' ?>">This month</button>
+        <button type="button" role="tab" id="opFansTabA" aria-controls="opFansA" aria-selected="<?= $fansMonth ? 'false' : 'true' ?>">All time</button>
+      </div>
+    </div>
+    <div class="op-fans-list" id="opFansM" role="tabpanel" aria-labelledby="opFansTabM"<?= $fansMonth ? '' : ' hidden' ?>>
+      <?php if ($fansMonth) { $fanRows($fansMonth, $medal); } else { ?><p class="op-fans-none">No gifts this month yet.</p><?php } ?>
+    </div>
+    <div class="op-fans-list" id="opFansA" role="tabpanel" aria-labelledby="opFansTabA"<?= $fansMonth ? ' hidden' : '' ?>>
+      <?php $fanRows($fansAll, $medal); ?>
+    </div>
+    <?php if (count($fansAll) > 5 || count($fansMonth) > 5): ?><button type="button" class="op-fans-more" id="opFansMore">Show more</button><?php endif; ?>
+    <p class="op-fans-note">Ranked by the gifts sent to <?= htmlspecialchars($orgName) ?>. Anonymous gifts are never shown.</p>
+  </section>
+  <script>
+  (function () {
+    var tm = document.getElementById('opFansTabM'), ta = document.getElementById('opFansTabA'), pm = document.getElementById('opFansM'), pa = document.getElementById('opFansA'), more = document.getElementById('opFansMore');
+    if (!tm || !ta) { return; }
+    function pick(m) {
+      tm.setAttribute('aria-selected', m ? 'true' : 'false'); ta.setAttribute('aria-selected', m ? 'false' : 'true');
+      pm.hidden = !m; pa.hidden = m;
+    }
+    tm.addEventListener('click', function () { pick(true); });
+    ta.addEventListener('click', function () { pick(false); });
+    if (more) { more.addEventListener('click', function () { document.querySelectorAll('.op-fans [data-more]').forEach(function (e) { e.hidden = false; }); more.remove(); }); }
+  })();
+  </script>
+  <?php endif; ?>
+
   <div class="ev-wrap op-tabs" role="tablist" aria-label="Profile">
     <button type="button" role="tab" id="opTabEvents" aria-controls="opEvents" aria-selected="true">Events</button>
     <button type="button" role="tab" id="opTabVideos" aria-controls="opVideos" aria-selected="false" tabindex="-1">Videos</button>

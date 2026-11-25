@@ -428,6 +428,10 @@ function gift_notify_delivered(int $txId): void
     } catch (Throwable $e) {
         error_log('[gift] notification failed: ' . $e->getMessage());
     }
+    // the organizer's automatic thank-you, if they switched it on (includes/gift-fans.php); never blocks or changes the gift
+    if (function_exists('gift_auto_thank')) {
+        gift_auto_thank($txId);
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------- ask ioTec and settle

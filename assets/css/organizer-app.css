@@ -96,3 +96,32 @@ body.op-app a.op-stat:hover{color:#fff; background:rgba(255,255,255,.05)}
 body.op-app a.op-stat b{color:#fff; font-family:"Outfit","Plus Jakarta Sans",sans-serif; font-weight:700; font-size:1.25rem}
 body.op-app a.op-stat span{color:#B3A7A7; font-size:.8rem}
 body.op-app a.op-stat:focus-visible{outline:3px solid #fff; outline-offset:2px}
+
+/* top fans */
+.op-fans{margin-top:20px}
+.op-fans-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
+.op-fans-head .op-h{margin:0}
+.op-fans-tabs{display:inline-flex; background:rgba(255,255,255,.08); border-radius:99px; padding:3px}
+.op-fans-tabs button{border:0; background:none; color:#B3A7A7; font:700 .78rem 'Plus Jakarta Sans',sans-serif; padding:6px 12px; border-radius:99px; cursor:pointer}
+.op-fans-tabs button[aria-selected="true"]{background:#fff; color:#1A1010}
+.op-fans-list{display:grid; gap:4px; margin-top:12px}
+.op-fan{display:grid; grid-template-columns:30px 40px minmax(0,1fr); gap:10px; align-items:center; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.05); color:#fff; text-decoration:none}
+a.op-fan:hover{background:rgba(255,255,255,.1)}
+.op-fan[hidden]{display:none}
+.op-fan-rank{font:700 1.15rem 'Outfit',sans-serif; text-align:center; color:#B3A7A7}
+.op-fan-av{width:40px; height:40px; border-radius:50%; background:#3a2a2e; display:grid; place-items:center; font:700 .8rem 'Outfit',sans-serif; overflow:hidden}
+.op-fan-av img{width:100%; height:100%; object-fit:cover}
+.op-fan-tx b{display:block; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.op-fan-tx em{display:inline-block; margin:3px 6px 0 0; padding:2px 8px; border-radius:99px; background:rgba(255,255,255,.12); color:#E8DDDD; font:700 .66rem 'Plus Jakarta Sans',sans-serif; font-style:normal}
+.op-fan-tx em.is-top{background:#FBBF24; color:#3B2300}
+.op-fans-more{margin-top:10px; border:1px solid rgba(255,255,255,.2); background:none; color:#fff; font:700 .82rem 'Plus Jakarta Sans',sans-serif; padding:8px 16px; border-radius:99px; cursor:pointer}
+.op-fans-none,.op-fans-note{margin:10px 0 0; font-size:.78rem; color:#B3A7A7}
+/* the page forces a dark text colour on plain boxes: say white for the fans card */
+body.op-app .op-fan,body.op-app .op-fan-tx b,body.op-app .op-fan-av{color:#fff}
+body.op-app .op-fan-rank{color:#B3A7A7}
+body.op-app .op-fan-tx em{color:#E8DDDD}
+body.op-app .op-fan-tx em.is-top{color:#3B2300}
+body.op-app .op-fans-tabs button{color:#B3A7A7}
+body.op-app .op-fans-tabs button[aria-selected="true"]{color:#1A1010}
+body.op-app .op-fans-none,body.op-app .op-fans-note{color:#B3A7A7}
+.op-fans-list[hidden]{display:none}
