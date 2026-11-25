@@ -292,6 +292,7 @@ CREATE TABLE IF NOT EXISTS market_withdrawals (
   reviewed_by INT NULL,
   reason VARCHAR(255) NULL,
   requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sent_at DATETIME NULL,
   completed_at DATETIME NULL,
   UNIQUE KEY uq_market_wd_reference (reference),
   KEY idx_market_wd_seller (seller_id, status, requested_at),

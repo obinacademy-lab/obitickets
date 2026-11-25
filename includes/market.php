@@ -1165,3 +1165,63 @@ function market_status_label(string $fulfilment, string $payment = 'PAID'): arra
         'COMPLETED' => ['Delivered', 'ok'], 'CANCELLED' => ['Cancelled', 'bad'], 'REFUND_REQUESTED' => ['Refund in progress', 'bad'], 'REFUNDED' => ['Refunded', 'bad'], default => ['Processing', 'new'],
     };
 }
+
+// ---------------------------------------------------------------------------------------------------- pictures
+
+const MARKET_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Saves one uploaded product, logo or banner picture under /uploads/market. Same checks as every other upload on the site: a real upload, an actual
+ * JPG, PNG or WEBP (read from the file, never from its name), not huge. The stored name is random. Old pictures are never deleted here: an order that
+ * was already placed keeps pointing at the picture it was bought with.
+ * @param array $file one entry of $_FILES
+ * @return array{0: bool, 1: ?string, 2: ?string} [success, publicPath, errorMessage]; no file chosen = [true, null, null]
+ */
+function market_image_upload(array $file): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return [true, null, null];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return [false, null, "We couldn't upload that picture. Please try again."];
+    }
+    if ($file['size'] > MARKET_IMAGE_MAX_BYTES) {
+        return [false, null, 'A picture is too large. Please use ones under 5MB.'];
+    }
+    if (!is_uploaded_file($file['tmp_name'])) {
+        return [false, null, "That upload couldn't be verified. Please try again."];
+    }
+    $info = @getimagesize($file['tmp_name']);
+    $ext = $info !== false ? [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'][$info[2]] ?? null : null;
+    if ($ext === null) {
+        return [false, null, 'Please upload JPG, PNG or WEBP pictures.'];
+    }
+    if ($info[0] > 8000 || $info[1] > 8000 || $info[0] < 100 || $info[1] < 100) {
+        return [false, null, 'A picture is the wrong size. Use pictures from 100 to 8000 pixels wide.'];
+    }
+    $dir = __DIR__ . '/../uploads/market';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        return [false, null, "We couldn't prepare storage for the picture. Please try again."];
+    }
+    $name = bin2hex(random_bytes(16)) . '.' . $ext;
+    if (!move_uploaded_file($file['tmp_name'], $dir . '/' . $name)) {
+        return [false, null, "We couldn't save that picture. Please try again."];
+    }
+    return [true, '/uploads/market/' . $name, null];
+}
+
+/** Turns the awkward $_FILES shape of a multiple-file input into a list of single files. @return list<array<string,mixed>> */
+function market_files_list(?array $files): array
+{
+    if (!$files || !isset($files['name']) || !is_array($files['name'])) {
+        return $files && isset($files['name']) ? [$files] : [];
+    }
+    $out = [];
+    foreach (array_keys($files['name']) as $i) {
+        if (($files['error'][$i] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        $out[] = ['name' => $files['name'][$i], 'type' => $files['type'][$i], 'tmp_name' => $files['tmp_name'][$i], 'error' => $files['error'][$i], 'size' => $files['size'][$i]];
+    }
+    return $out;
+}

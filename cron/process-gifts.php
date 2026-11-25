@@ -39,3 +39,11 @@ echo date('c') . ' OBI COINS books check: ' . ($books['ran'] ? 'ran, ' . $books[
 // the organizers' emails about the gifts they received (queued when each gift was delivered): one email per gift, or one summary when many arrive together
 $mail = gift_email_send_queued(200);
 echo date('c') . " organizer gift emails: sent {$mail['single']}, summaries {$mail['digest']}, skipped {$mail['skipped']}, failed {$mail['failed']}, waiting {$mail['waiting']}\n";
+
+// OBI MARKET (ADR-003): payments whose buyer closed the page, orders the customer never answered after 7 days, and sellers' withdrawals still processing
+$mk = market_sweep(100);
+echo date('c') . " OBI MARKET payments checked: {$mk['checked']}, settled: {$mk['settled']}\n";
+$mkAuto = market_auto_release_sweep(100);
+$mkPolled = market_withdraw_poll_open(null, 50);
+$mkSent = market_withdraw_send_waiting(20);
+echo date('c') . " OBI MARKET orders auto-confirmed: {$mkAuto}, withdrawals checked: {$mkPolled}, sent: {$mkSent}\n";

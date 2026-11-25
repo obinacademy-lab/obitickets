@@ -42,6 +42,14 @@ function render_organizer_head(string $active, array $orgContext): void
             ['transactions', 'Payments', '/org-transactions.php', 'transactions.view'],
             ['refunds', 'Refunds', '/org-refunds.php', 'refunds.view'],
         ]],
+        // OBI MARKET (merchandise): the seller's store, products, orders, earnings and store settings.
+        ['key' => 'market', 'label' => 'OBI MARKET', 'icon' => 'ic-hanger', 'group' => 'Main', 'tabs' => [
+            ['market', 'Overview', '/org-market.php', 'market.view'],
+            ['market-products', 'Products', '/org-market-products.php', 'market.view'],
+            ['market-orders', 'Orders', '/org-market-orders.php', 'market.view'],
+            ['market-earnings', 'Earnings', '/org-market-earnings.php', 'market.view'],
+            ['market-store', 'Store settings', '/org-market-store.php', 'market.manage'],
+        ]],
         ['key' => 'attendees', 'label' => 'Attendees', 'icon' => 'ic-people', 'group' => 'Main', 'tabs' => [
             ['attendees', 'Attendees', '/org-attendees.php', 'attendees.view'],
             ['interested', 'Interested', '/org-interested.php', 'audience.use'],
@@ -79,6 +87,9 @@ function render_organizer_head(string $active, array $orgContext): void
     }
     if (!function_exists('gift_org_menu_visible') || !gift_org_menu_visible((int) $orgContext['organizer_id'])) {
         $hubs = array_values(array_filter($hubs, static fn ($h) => $h['key'] !== 'gifts'));
+    }
+    if (!function_exists('market_org_menu_visible') || !market_org_menu_visible((int) $orgContext['organizer_id'])) {
+        $hubs = array_values(array_filter($hubs, static fn ($h) => $h['key'] !== 'market'));
     }
     $footLinks = [
         ['settings', 'Settings', '/org-settings.php', 'ic-settings'],
