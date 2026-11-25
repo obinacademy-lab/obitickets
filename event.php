@@ -562,6 +562,15 @@ $eaBuy = str_replace(['id="buySubmit">', '>Get Tickets</button>', '>Get free tic
       <h2 class="ea-h"><?= $eventHasEnded ? 'Tickets' : 'Ticket options' ?></h2>
       <?= $eaBuy ?>
     </section>
+
+    <?php $mkShelf = function_exists('market_shelf') ? market_shelf(['event' => (int) $event['id']], $currentUser, 8) : ['rows' => [], 'total' => 0]; ?>
+    <?php if ($mkShelf['rows']): ?>
+    <section id="merch" class="ea-sec mk mk-shelf" aria-label="OBI MARKET merchandise for this event">
+      <link rel="stylesheet" href="/assets/css/market.css?v=<?= @filemtime(__DIR__ . '/assets/css/market.css') ?: time() ?>">
+      <div class="mk-shelf-head"><h2 class="ea-h" style="margin:0">OBI MARKET</h2><a href="/market.php?event=<?= (int) $event['id'] ?>"><?= $mkShelf['total'] > count($mkShelf['rows']) ? 'See all ' . (int) $mkShelf['total'] : 'Open the shop' ?> &rarr;</a></div>
+      <div class="mk-row"><?php foreach ($mkShelf['rows'] as $mkP) { echo market_card_html($mkP); } ?></div>
+    </section>
+    <?php endif; ?>
   </div>
 
   <?php if (!$eventHasEnded && $minPrice !== null): ?>

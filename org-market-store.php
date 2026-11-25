@@ -10,6 +10,13 @@ $sellerId = $ctx['organizer_id'];
 $store = market_ready() ? market_store_ensure($sellerId) : null;
 $error = null;
 
+if ($store && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'test_email') {
+    verify_csrf();
+    $r = market_email_send_test($sellerId);
+    $_SESSION['om_flash'] = [$r['ok'] ? 'ok' : 'bad', $r['message']];
+    header('Location: /org-market-store.php#orderEmails');
+    exit;
+}
 if ($store && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $in = ['name' => (string) ($_POST['name'] ?? ''), 'description' => (string) ($_POST['description'] ?? ''), 'delivery_mode' => (string) ($_POST['delivery_mode'] ?? ''), 'delivery_fee_ugx' => trim((string) ($_POST['delivery_fee_ugx'] ?? '0')),
@@ -98,6 +105,15 @@ render_organizer_head('market-store', $ctx);
   </section>
 
   <div class="om-savebar"><button class="om-btn primary" type="submit">Save settings</button></div>
+</form>
+
+<form class="om-form" method="post" action="/org-market-store.php" id="orderEmails" style="margin-top:18px">
+  <?= csrf_field() ?><input type="hidden" name="action" value="test_email">
+  <section class="om-card">
+    <h3>Order emails</h3>
+    <p>Every time a customer pays for one of your products you get an email straight away with the order, the customer, where to deliver and what you keep. It goes to your account email<?= $store['contact_email'] && strcasecmp((string) $store['contact_email'], (string) (current_user()['email'] ?? '')) !== 0 ? ' and a copy to ' . $h($store['contact_email']) : '' ?>. You also get a notification in the dashboard. These emails cannot be switched off, so you never miss an order.</p>
+    <button class="om-btn" type="submit">Send me a test email</button>
+  </section>
 </form>
 <?php endif; ?>
 

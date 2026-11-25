@@ -234,6 +234,8 @@ $opLive = (bool) $events['upcoming'];
     <button type="button" role="tab" id="opTabVideos" aria-controls="opVideos" aria-selected="false" tabindex="-1">Videos</button>
     <button type="button" role="tab" id="opTabLiked" aria-controls="opLiked" aria-selected="false" tabindex="-1">Liked</button>
     <button type="button" role="tab" id="opTabBoosts" aria-controls="opBoosts" aria-selected="false" tabindex="-1">Boosts</button>
+    <?php $mkShelf = function_exists('market_shelf') ? market_shelf(['seller' => $uid], $viewer, 12) : ['rows' => [], 'total' => 0]; ?>
+    <?php if ($mkShelf['rows']): ?><button type="button" role="tab" id="opTabShop" aria-controls="opShop" aria-selected="false" tabindex="-1">Shop</button><?php endif; ?>
   </div>
 
   <div class="ev-wrap ev-profile-body">
@@ -274,6 +276,13 @@ $opLive = (bool) $events['upcoming'];
         <div class="ev-empty"><b>No boosts yet</b><span>Videos <?= htmlspecialchars($orgName) ?> boosts will show up here.</span></div>
       <?php endif; ?>
     </section>
+    <?php if ($mkShelf['rows']): $mkStore = market_store($uid); ?>
+    <section class="op-panel mk" id="opShop" role="tabpanel" aria-labelledby="opTabShop" hidden>
+      <link rel="stylesheet" href="/assets/css/market.css?v=<?= @filemtime(__DIR__ . '/assets/css/market.css') ?: time() ?>">
+      <div class="mk-grid"><?php foreach ($mkShelf['rows'] as $mkP) { echo market_card_html($mkP); } ?></div>
+      <?php if ($mkStore): ?><a class="mk-more" href="/market.php?store=<?= urlencode((string) $mkStore['slug']) ?>"><?= $mkShelf['total'] > count($mkShelf['rows']) ? 'See all ' . (int) $mkShelf['total'] . ' products' : 'Open the store' ?> &rarr;</a><?php endif; ?>
+    </section>
+    <?php endif; ?>
   </div>
 
   <div class="ev-toast" id="evToast" role="status" aria-live="polite" hidden></div>

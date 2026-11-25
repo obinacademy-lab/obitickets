@@ -11,6 +11,11 @@ $ctx = require_organizer_access('market.view');
 $sellerId = $ctx['organizer_id'];
 $canManage = organizer_can($ctx, 'market.manage');
 $number = trim((string) ($_GET['n'] ?? $_POST['n'] ?? ''));
+if ($number === '' && isset($_GET['id']) && market_ready()) {   // the bell's links carry the order id
+    $byId = db()->prepare('SELECT order_number FROM market_orders WHERE id = ? AND seller_id = ?');
+    $byId->execute([max(0, (int) $_GET['id']), $sellerId]);
+    $number = (string) ($byId->fetchColumn() ?: '');
+}
 $o = market_ready() ? market_seller_order($sellerId, $number) : null;
 
 if ($o && $_SERVER['REQUEST_METHOD'] === 'POST') {

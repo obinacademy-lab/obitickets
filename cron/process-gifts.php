@@ -47,3 +47,7 @@ $mkAuto = market_auto_release_sweep(100);
 $mkPolled = market_withdraw_poll_open(null, 50);
 $mkSent = market_withdraw_send_waiting(20);
 echo date('c') . " OBI MARKET orders auto-confirmed: {$mkAuto}, withdrawals checked: {$mkPolled}, sent: {$mkSent}\n";
+
+// OBI MARKET emails (queued when an order was paid or its status changed): the seller's "new order" email, the customer's confirmation, retries of anything that failed
+$mkMail = market_email_send_queued(100);
+echo date('c') . " OBI MARKET emails: sent {$mkMail['sent']}, skipped {$mkMail['skipped']}, retrying {$mkMail['retry']}, failed {$mkMail['failed']}, waiting {$mkMail['waiting']}\n";

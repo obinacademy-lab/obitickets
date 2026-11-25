@@ -99,6 +99,7 @@ require_once __DIR__ . '/market.php';
 require_once __DIR__ . '/market-orders.php';
 require_once __DIR__ . '/market-payouts.php';
 require_once __DIR__ . '/market-seller.php';
+require_once __DIR__ . '/market-emails.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();

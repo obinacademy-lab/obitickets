@@ -125,6 +125,9 @@ function market_order_notify_customer(int $orderId, string $to): void
         'CANCELLED' => ['Your order was cancelled', 'The seller cancelled order ' . $o['order_number'] . '. A full refund will be sent to your phone.'],
         default => null,
     };
+    if (function_exists('market_email_queue_status')) {
+        market_email_queue_status($orderId, $to);   // the customer's email about it (queued, never blocks the seller's action)
+    }
     if ($text) {
         try {
             create_notification((int) $o['customer_id'], 'market_order', $text[0], $text[1], '/market-order.php?id=' . $orderId);

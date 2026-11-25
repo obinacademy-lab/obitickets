@@ -1225,3 +1225,37 @@ function market_files_list(?array $files): array
     }
     return $out;
 }
+
+// ---------------------------------------------------------------------------------------------------- merchandise on other pages (event page, organizer profile)
+
+/** One product card (the same one the shop window uses), as HTML. $p is a row of market_products_list(). */
+function market_card_html(array $p): string
+{
+    $h = static fn ($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
+    $img = market_img($p['image'] ?? null);
+    $pic = $img !== '' ? '<img src="' . $h($img) . '" alt="' . $h($p['name']) . '" loading="lazy">' : '<i><svg width="34" height="34" aria-hidden="true"><use href="#ic-hanger"/></svg></i>';
+    $tag = '';
+    if (!$p['in_stock']) {
+        $tag = '<em class="mk-tag out">Sold out</em>';
+    } elseif ($p['available'] <= 5) {
+        $tag = '<em class="mk-tag low">Only ' . (int) $p['available'] . ' left</em>';
+    } elseif (!empty($p['featured'])) {
+        $tag = '<em class="mk-tag">Featured</em>';
+    }
+    return '<a class="mk-card" href="/market-product.php?id=' . (int) $p['id'] . '"><span class="mk-pic">' . $pic . $tag . '</span><span class="mk-info"><small>' . $h($p['store']) . '</small><b>' . $h($p['name'])
+        . '</b><span class="mk-price">UGX ' . number_format((int) $p['price_from']) . '</span></span></a>';
+}
+
+/**
+ * A few products to show on another page: an event's linked merchandise, or a seller's own. Empty when OBI MARKET is not open to this viewer, so the page shows nothing at all.
+ * $filter is passed to market_products_list(): ['event' => id] or ['seller' => id].
+ * @return array{rows:list<array<string,mixed>>, total:int}
+ */
+function market_shelf(array $filter, ?array $viewer, int $limit = 8): array
+{
+    if (!market_visible($viewer)) {
+        return ['rows' => [], 'total' => 0];
+    }
+    $r = market_products_list($filter + ['sort' => 'featured'], 1, $limit);
+    return ['rows' => $r['rows'], 'total' => $r['total']];
+}

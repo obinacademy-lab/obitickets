@@ -42,7 +42,7 @@ function email_log_write(string $kind, string $to, string $subject, string $stat
  * fail or are skipped, is written to email_log so an admin can see what happened. Returns true only when Resend
  * accepted the message.
  */
-function resend_send(string $to, string $subject, string $html, string $kind = 'email', ?int $orderId = null, ?string $replyTo = null): bool
+function resend_send(string $to, string $subject, string $html, string $kind = 'email', ?int $orderId = null, ?string $replyTo = null, ?string $text = null): bool
 {
     $to = trim($to);
     // Reserved and demo domains can never receive mail (and tests and seed data use them), so do not spend a send on them.
@@ -75,6 +75,8 @@ function resend_send(string $to, string $subject, string $html, string $kind = '
             'to' => $to,
             'subject' => $subject,
             'html' => $html,
+            // an optional plain-text twin of the message (some inboxes and spam filters like to have one)
+            'text' => ($text !== null && trim($text) !== '') ? $text : null,
             // Replies go to a person (for example the organizer who wrote a follow-up), not to the no-reply address.
             'reply_to' => ($replyTo !== null && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) ? $replyTo : null,
         ], static fn ($v) => $v !== null)),

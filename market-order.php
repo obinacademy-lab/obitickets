@@ -8,7 +8,13 @@ require_once __DIR__ . '/includes/bootstrap.php';
  */
 $user = require_login();
 $uid = (int) $user['id'];
-$o = market_customer_order(trim((string) ($_GET['n'] ?? '')), $uid);
+$numberIn = trim((string) ($_GET['n'] ?? ''));
+if ($numberIn === '' && isset($_GET['id']) && market_ready()) {   // the bell's links carry the order id
+    $byId = db()->prepare('SELECT order_number FROM market_orders WHERE id = ? AND customer_id = ?');
+    $byId->execute([max(0, (int) $_GET['id']), $uid]);
+    $numberIn = (string) ($byId->fetchColumn() ?: '');
+}
+$o = market_customer_order($numberIn, $uid);
 if (!$o) {
     http_response_code(404);
 }

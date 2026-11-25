@@ -21,12 +21,23 @@ $inStock = !empty($_GET['in_stock']);
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $storeSlug = trim((string) ($_GET['store'] ?? ''));
 $store = $visible && $storeSlug !== '' ? market_store_by_slug($storeSlug) : null;
+$eventId = $visible ? max(0, (int) ($_GET['event'] ?? 0)) : 0;
+$eventRow = null;
+if ($eventId > 0) {
+    $er = db()->prepare("SELECT id, title, slug FROM events WHERE id = ? AND status = 'PUBLISHED'");
+    $er->execute([$eventId]);
+    $eventRow = $er->fetch() ?: null;
+    if (!$eventRow) { $eventId = 0; }
+}
 if ($store && !market_store_active($store)) {
     $store = null;
 }
 
 $cats = $visible ? market_categories() : [];
 $filters = ['q' => $q, 'category' => $cat, 'sort' => $sort, 'min' => $min, 'max' => $max, 'in_stock' => $inStock];
+if ($eventId) {
+    $filters['event'] = $eventId;
+}
 if ($store) {
     $filters['seller'] = (int) $store['seller_id'];
 }
@@ -35,8 +46,8 @@ $cartCount = $user ? market_cart_count((int) $user['id']) : 0;
 $num = static fn ($n): string => number_format((int) $n);
 $h = static fn ($s): string => htmlspecialchars((string) $s, ENT_QUOTES);
 $filtered = $q !== '' || $cat !== '' || $min > 0 || $max > 0 || $inStock;
-$qs = static function (array $over) use ($q, $cat, $sort, $min, $max, $inStock, $storeSlug): string {
-    $p = array_filter(['q' => $q, 'category' => $cat, 'sort' => $sort !== 'newest' ? $sort : '', 'min' => $min ?: '', 'max' => $max ?: '', 'in_stock' => $inStock ? 1 : '', 'store' => $storeSlug] , static fn ($v) => $v !== '' && $v !== null);
+$qs = static function (array $over) use ($q, $cat, $sort, $min, $max, $inStock, $storeSlug, $eventId): string {
+    $p = array_filter(['q' => $q, 'category' => $cat, 'sort' => $sort !== 'newest' ? $sort : '', 'min' => $min ?: '', 'max' => $max ?: '', 'in_stock' => $inStock ? 1 : '', 'store' => $storeSlug, 'event' => $eventId ?: ''] , static fn ($v) => $v !== '' && $v !== null);
     foreach ($over as $k => $v) { if ($v === null || $v === '') { unset($p[$k]); } else { $p[$k] = $v; } }
     return '/market.php' . ($p ? '?' . http_build_query($p) : '');
 };
@@ -71,6 +82,9 @@ include __DIR__ . '/includes/header.php';
   <?php else: ?>
     <?php if ($preview): ?><div class="mk-preview"><b>Preview.</b> OBI MARKET is switched off for the public. You see it as an admin; nothing can be bought until you switch it on in Admin &rarr; Settings.</div><?php endif; ?>
 
+    <?php if ($eventRow): ?>
+      <div class="mk-eventbar"><span>Merchandise from <b><?= $h($eventRow['title']) ?></b></span><a href="/event.php?slug=<?= urlencode((string) $eventRow['slug']) ?>">Back to the event</a> <a href="/market.php">All of OBI MARKET</a></div>
+    <?php endif; ?>
     <?php if ($store): ?>
       <section class="mk-store">
         <?php if (market_img($store['banner_path'] ?? '') !== ''): ?><img class="mk-store-banner" src="<?= $h(market_img($store['banner_path'])) ?>" alt=""><?php endif; ?>
@@ -106,6 +120,7 @@ include __DIR__ . '/includes/header.php';
 
     <form class="mk-bar" method="get" action="/market.php">
       <?php if ($storeSlug !== ''): ?><input type="hidden" name="store" value="<?= $h($storeSlug) ?>"><?php endif; ?>
+      <?php if ($eventId): ?><input type="hidden" name="event" value="<?= (int) $eventId ?>"><?php endif; ?>
       <?php if ($cat !== ''): ?><input type="hidden" name="category" value="<?= $h($cat) ?>"><?php endif; ?>
       <?php if ($store): ?><input class="mk-q" type="search" name="q" value="<?= $h($q) ?>" placeholder="Search this store" aria-label="Search this store" maxlength="80"><?php elseif ($q !== ''): ?><input type="hidden" name="q" value="<?= $h($q) ?>"><?php endif; ?>
       <label>Sort
@@ -120,7 +135,7 @@ include __DIR__ . '/includes/header.php';
       <label>To <input type="text" inputmode="numeric" name="max" value="<?= $max ?: '' ?>" placeholder="UGX" size="7"></label>
       <label class="mk-chk"><input type="checkbox" name="in_stock" value="1"<?= $inStock ? ' checked' : '' ?>> In stock</label>
       <button type="submit">Apply</button>
-      <?php if ($filtered): ?><a class="mk-clear" href="<?= $h('/market.php' . ($storeSlug !== '' ? '?store=' . urlencode($storeSlug) : '')) ?>">Clear</a><?php endif; ?>
+      <?php if ($filtered): ?><a class="mk-clear" href="<?= $h('/market.php' . ($storeSlug !== '' ? '?store=' . urlencode($storeSlug) : ($eventId ? '?event=' . $eventId : ''))) ?>">Clear</a><?php endif; ?>
     </form>
 
     <p class="mk-meta"><?= $num($list['total']) ?> product<?= $list['total'] === 1 ? '' : 's' ?><?= $q !== '' ? ' for &ldquo;' . $h($q) . '&rdquo;' : '' ?></p>
