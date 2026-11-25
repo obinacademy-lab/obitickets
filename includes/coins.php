@@ -78,7 +78,10 @@ function coin_rate_current(): ?array
     if (!coins_ready_tables()) {
         return null;
     }
-    $row = db()->query('SELECT version, rate_e4 FROM coin_accounting_rates WHERE effective_from <= NOW() ORDER BY effective_from DESC, version DESC LIMIT 1')->fetch();
+    // compared with the PHP clock (Africa/Kampala), the same clock that wrote effective_from: the database server may run on another time zone
+    $st = db()->prepare('SELECT version, rate_e4 FROM coin_accounting_rates WHERE effective_from <= ? ORDER BY effective_from DESC, version DESC LIMIT 1');
+    $st->execute([date('Y-m-d H:i:s')]);
+    $row = $st->fetch();
     return $row ? ['version' => (int) $row['version'], 'rate_e4' => (int) $row['rate_e4'], 'ugx_per_coin' => (int) $row['rate_e4'] / 10000] : null;
 }
 

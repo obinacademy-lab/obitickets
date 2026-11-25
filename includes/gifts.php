@@ -52,7 +52,9 @@ function gift_set_enabled(int $adminId, bool $on): void
 /** The split in force right now: ['version', 'platform_bps', 'organizer_bps']. */
 function gift_commission_current(): array
 {
-    $row = db()->query('SELECT version, platform_bps, organizer_bps FROM gift_commission_config WHERE effective_from <= NOW() ORDER BY effective_from DESC, version DESC LIMIT 1')->fetch();
+    $st = db()->prepare('SELECT version, platform_bps, organizer_bps FROM gift_commission_config WHERE effective_from <= ? ORDER BY effective_from DESC, version DESC LIMIT 1');
+    $st->execute([date('Y-m-d H:i:s')]);
+    $row = $st->fetch();
     if (!$row) {
         throw new RuntimeException('The gift commission is not configured.');
     }
