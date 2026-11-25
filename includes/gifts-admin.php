@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * OB GIFTS, phase 6: what ADMINS see and do about gift money: every transaction, one transaction in full, reports, per-organizer
+ * OBI GIFTS, phase 6: what ADMINS see and do about gift money: every transaction, one transaction in full, reports, per-organizer
  * earnings, and the refund follow-up. Reading only, except the sender-refund note (gift_events + audit log). Reversing a gift itself
  * is gift_reverse() in includes/gifts.php.
  *
@@ -37,7 +37,7 @@ function gift_admin_date(?string $s): ?string
     return $d && $d->format('Y-m-d') === $s ? $s : null;
 }
 
-/** The admin sub-menu shown on every OB Gifts admin page (HTML). */
+/** The admin sub-menu shown on every OBI GIFTS admin page (HTML). */
 function gift_admin_tabs(string $active): string
 {
     $tabs = ['catalogue' => ['Gift catalogue', '/admin-gifts.php'], 'transactions' => ['Transactions', '/admin-gift-transactions.php'], 'reports' => ['Reports', '/admin-gift-reports.php'],
@@ -197,6 +197,12 @@ function gift_admin_tx_detail(int $id): ?array
 /** Has the money for a reversed gift been sent back to the sender? ['done'=>bool, 'at'=>?string, 'note'=>?string]. */
 function gift_admin_sender_refund(int $txId): array
 {
+    $src = db()->prepare('SELECT payment_source, refunded_at FROM gift_transactions WHERE id = ?');
+    $src->execute([$txId]);
+    $srow = $src->fetch();
+    if ($srow && ($srow['payment_source'] ?? 'DIRECT') === 'COINS') {
+        return ['done' => true, 'at' => $srow['refunded_at'] !== null ? (string) $srow['refunded_at'] : null, 'note' => 'The OBI COINS were returned to the sender\'s wallet automatically.'];
+    }
     $stmt = db()->prepare("SELECT details, created_at FROM gift_events WHERE gift_tx_id = ? AND kind = 'sender_refunded' ORDER BY id LIMIT 1");
     $stmt->execute([$txId]);
     $r = $stmt->fetch();
@@ -216,12 +222,16 @@ function gift_admin_mark_sender_refunded(int $txId, int $adminId, string $note):
     $pdo = db();
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare('SELECT payment_status, gross_ugx, sender_id FROM gift_transactions WHERE id = ? FOR UPDATE');
+        $stmt = $pdo->prepare('SELECT payment_status, gross_ugx, sender_id, payment_source FROM gift_transactions WHERE id = ? FOR UPDATE');
         $stmt->execute([$txId]);
         $tx = $stmt->fetch();
         if (!$tx || $tx['payment_status'] !== 'REFUNDED') {
             $pdo->rollBack();
             return ['ok' => false, 'error' => 'Only a reversed gift has a refund to send back.'];
+        }
+        if ($tx['payment_source'] === 'COINS') {
+            $pdo->rollBack();
+            return ['ok' => false, 'error' => 'This gift was paid with OBI COINS: they were returned to the sender\'s wallet automatically, so there is no money to send back.'];
         }
         $done = $pdo->prepare("SELECT 1 FROM gift_events WHERE gift_tx_id = ? AND kind = 'sender_refunded' LIMIT 1");
         $done->execute([$txId]);
@@ -250,7 +260,7 @@ function gift_admin_mark_sender_refunded(int $txId, int $adminId, string $note):
 function gift_admin_refunds_owed(?int $organizerId = null): array
 {
     $sql = "SELECT COUNT(*) c, COALESCE(SUM(t.gross_ugx), 0) s, MIN(t.refunded_at) o FROM gift_transactions t
-            WHERE t.payment_status = 'REFUNDED' AND NOT EXISTS (SELECT 1 FROM gift_events e WHERE e.gift_tx_id = t.id AND e.kind = 'sender_refunded')"
+            WHERE t.payment_status = 'REFUNDED' AND t.payment_source = 'DIRECT' AND NOT EXISTS (SELECT 1 FROM gift_events e WHERE e.gift_tx_id = t.id AND e.kind = 'sender_refunded')"
          . ($organizerId ? ' AND t.recipient_organizer_id = ' . (int) $organizerId : '');
     $r = db()->query($sql)->fetch();
     return ['count' => (int) $r['c'], 'ugx' => (int) $r['s'], 'oldest' => $r['o'] !== null ? (string) $r['o'] : null];

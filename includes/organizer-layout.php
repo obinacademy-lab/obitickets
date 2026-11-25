@@ -58,8 +58,8 @@ function render_organizer_head(string $active, array $orgContext): void
             ['payouts', 'Payouts', '/org-payouts.php', 'payouts.view'],
             ['earnings', 'How it is calculated', '/org-earnings.php', 'earnings.view'],
         ]],
-        // Gifts & Support (OB Gifts): shows once gifts are switched on, or when this organizer has already received one.
-        ['key' => 'gifts', 'label' => 'Gifts & Support', 'icon' => 'ic-heart', 'group' => 'Money', 'tabs' => [
+        // Gifts & Support (OBI GIFTS): shows once gifts are switched on, or when this organizer has already received one.
+        ['key' => 'gifts', 'label' => 'OBI GIFTS', 'icon' => 'ic-heart', 'group' => 'Money', 'tabs' => [
             ['gifts', 'Overview', '/org-gifts.php', 'gifts.view'],
             ['gifts-history', 'Gift history', '/org-gifts.php?tab=history', 'gifts.view'],
             ['gifts-analytics', 'Analytics', '/org-gifts.php?tab=analytics', 'gifts.view'],

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/bootstrap.php';
 
 /*
- * Gifts & Support (OB Gifts, phase 4): what the organizer earned from gifts, who sent them, and how it is going.
+ * Gifts & Support (OBI GIFTS, phase 4): what the organizer earned from gifts, who sent them, and how it is going.
  * Read only. Withdrawing gift money comes in phase 5. Every number is scoped to the signed-in organizer's own account.
  */
 $ctx = require_organizer_access('gifts.view');
@@ -37,10 +37,10 @@ if ($visible && $tab === 'history' && isset($_GET['export'])) {
     header('Content-Disposition: attachment; filename="gifts-' . date('Y-m-d') . '.csv"');
     $out = fopen('php://output', 'w');
     fwrite($out, "\xEF\xBB\xBF");
-    fputcsv($out, ['Date', 'Supporter', 'Gift', 'Quantity', 'Gift price (UGX)', 'Your share (UGX)', 'Where', 'Status', 'Reference']);
+    fputcsv($out, ['Date', 'Supporter', 'Gift', 'Quantity', 'OBI COINS', 'Value (UGX)', 'Your share (UGX)', 'Where', 'Status', 'Reference']);
     foreach ($rows as $r) {
         fputcsv($out, [
-            (string) $r['paid_at'], og_csv_safe($r['supporter']), og_csv_safe($r['gift_name']), (int) $r['quantity'], (int) $r['gross_ugx'],
+            (string) $r['paid_at'], og_csv_safe($r['supporter']), og_csv_safe($r['gift_name']), (int) $r['quantity'], $r['coins'] !== null ? (int) $r['coins'] : '', (int) $r['gross_ugx'],
             (int) $r['organizer_ugx'], og_csv_safe($r['where']), $r['reversed'] ? 'Reversed' : 'Received', $r['reference'],
         ]);
     }
@@ -79,7 +79,7 @@ if ($ready && in_array($tab, ['overview', 'withdrawals'], true)) {
 }
 
 $GLOBALS['orgExtraCss'] = ['org-gifts.css'];
-$pageTitle = 'Gifts & Support';
+$pageTitle = 'OBI GIFTS & earnings';
 $active = ['history' => 'gifts-history', 'analytics' => 'gifts-analytics', 'withdrawals' => 'gifts-withdrawals'][$tab] ?? 'gifts';
 render_organizer_head($active, $ctx);
 
@@ -89,15 +89,15 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
 
 <div class="admin-page-head">
   <div>
-    <h1>Gifts &amp; Support</h1>
-    <p>Money your supporters send you as gifts on your videos. It is kept completely separate from your ticket sales.</p>
+    <h1>OBI GIFTS &amp; earnings</h1>
+    <p>The OBI GIFTS your supporters send you on your videos, and the money they earn you. It is kept completely separate from your ticket sales.</p>
   </div>
 </div>
 
 <?php if (!$visible): ?>
   <div class="admin-card"><div class="admin-empty" style="padding:34px 24px">
     <div class="admin-empty-ic"><svg width="22" height="22"><use href="#ic-heart"/></svg></div>
-    <p style="margin-top:0"><?= $ready ? 'Gifts are not switched on yet. When they are, supporters will be able to send you gifts from your videos and you will see them here.' : 'Gifts are not available yet.' ?></p>
+    <p style="margin-top:0"><?= $ready ? 'OBI GIFTS is not switched on yet. When it is, supporters will be able to send you gifts from your videos and you will see them here.' : 'Gifts are not available yet.' ?></p>
   </div></div>
 <?php render_organizer_foot(); return; endif; ?>
 
@@ -105,26 +105,51 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     $sum = gift_org_summary($organizerId);
     $recent = gift_org_history($organizerId, [], 6)['rows'];
     $bal = $sum['balance'];
+    $coinsLive = function_exists('coins_enabled') && coins_enabled();
+    $rateNow = $coinsLive ? coin_rate_current() : null;
 ?>
   <?php if ($sum['in_debt']): ?>
     <div class="og-note og-note-warn">A gift sent to you was reversed after you had already taken the money out. <strong><?= og_ugx(-$bal['available']) ?></strong> will be taken from your next gifts until it is paid back. Your ticket money is never touched.</div>
   <?php endif; ?>
 
-  <div class="admin-kpi-grid">
+  <div class="admin-kpi-grid og-kpis">
     <div class="admin-kpi-card">
-      <div class="admin-kpi-card-top"><span class="lbl">Gift balance</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-wallet"/></svg></span></div>
+      <div class="admin-kpi-card-top"><span class="lbl">Available to withdraw</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-wallet"/></svg></span></div>
       <span class="num"><?= og_ugx($bal['available']) ?></span>
-      <span class="sub"><?= $bal['pending'] > 0 ? og_ugx($bal['pending']) . ' on its way &middot; ' : '' ?><?= $bal['reserved'] > 0 ? og_ugx($bal['reserved']) . ' being sent &middot; ' : '' ?><?php if (gift_withdraw_enabled() && organizer_can($ctx, 'gifts.withdraw')): ?><a href="/org-gifts.php?tab=withdrawals" style="font-weight:700; color:var(--ov-red,#E11D48); text-decoration:none">Withdraw</a><?php else: ?>Withdrawing opens soon<?php endif; ?></span>
+      <span class="sub"><?= $bal['reserved'] > 0 ? og_ugx($bal['reserved']) . ' being sent &middot; ' : '' ?><?php if (gift_withdraw_enabled() && organizer_can($ctx, 'gifts.withdraw')): ?><a href="/org-gifts.php?tab=withdrawals" style="font-weight:700; color:var(--ov-red,#E11D48); text-decoration:none">Withdraw</a><?php else: ?>Withdrawing opens soon<?php endif; ?></span>
     </div>
     <div class="admin-kpi-card">
-      <div class="admin-kpi-card-top"><span class="lbl">This month</span><span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span></div>
-      <span class="num"><?= og_ugx($sum['month_ugx']) ?></span>
-      <span class="sub"><?= (int) $sum['month_gifts'] ?> gift<?= $sum['month_gifts'] === 1 ? '' : 's' ?> &middot; <?= og_ugx($sum['week_ugx']) ?> in the last 7 days</span>
+      <div class="admin-kpi-card-top"><span class="lbl">Pending earnings</span><span class="admin-kpi-ic" style="background:var(--warn-bg, #fff7e6); color:var(--warn, #8a5a00)"><svg width="17" height="17"><use href="#ic-clock"/></svg></span></div>
+      <span class="num"><?= og_ugx($bal['pending']) ?></span>
+      <span class="sub"><?= $bal['pending'] > 0 ? 'Waiting to become available' : 'New gifts are available to you at once' ?></span>
     </div>
     <div class="admin-kpi-card">
-      <div class="admin-kpi-card-top"><span class="lbl">Total earned</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-chart"/></svg></span></div>
+      <div class="admin-kpi-card-top"><span class="lbl">Your earnings (<?= htmlspecialchars($sharePctText) ?>%)</span><span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span></div>
       <span class="num"><?= og_ugx($bal['total_earned']) ?></span>
-      <span class="sub"><?= (int) $sum['gifts'] ?> gift<?= $sum['gifts'] === 1 ? '' : 's' ?> received<?= $sum['biggest_ugx'] > 0 ? ' &middot; biggest ' . og_ugx($sum['biggest_ugx']) : '' ?></span>
+      <span class="sub"><?= og_ugx($sum['month_ugx']) ?> this month &middot; <?= og_ugx($sum['week_ugx']) ?> in 7 days</span>
+    </div>
+    <div class="admin-kpi-card">
+      <div class="admin-kpi-card-top"><span class="lbl">Withdrawn</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-receipt"/></svg></span></div>
+      <span class="num"><?= og_ugx($bal['total_withdrawn']) ?></span>
+      <span class="sub"><?= (int) $sum['withdrawn_count'] ?> completed payout<?= $sum['withdrawn_count'] === 1 ? '' : 's' ?></span>
+    </div>
+  </div>
+
+  <div class="admin-kpi-grid og-kpis" style="margin-top:14px">
+    <div class="admin-kpi-card">
+      <div class="admin-kpi-card-top"><span class="lbl">OBI COINS received</span><span class="admin-kpi-ic" aria-hidden="true"><i class="og-coin"></i></span></div>
+      <span class="num"><?= number_format($sum['coins_received']) ?></span>
+      <span class="sub">sent to you as gifts</span>
+    </div>
+    <div class="admin-kpi-card">
+      <div class="admin-kpi-card-top"><span class="lbl">Gross gift value</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-chart"/></svg></span></div>
+      <span class="num"><?= og_ugx($sum['gross_ugx']) ?></span>
+      <span class="sub">what your gifts were worth in UGX before the split</span>
+    </div>
+    <div class="admin-kpi-card">
+      <div class="admin-kpi-card-top"><span class="lbl">Gifts received</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-heart"/></svg></span></div>
+      <span class="num"><?= (int) $sum['gifts'] ?></span>
+      <span class="sub"><?= (int) $sum['month_gifts'] ?> this month<?= $sum['biggest_ugx'] > 0 ? ' &middot; biggest worth ' . og_ugx($sum['biggest_ugx']) : '' ?></span>
     </div>
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">Supporters</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-people"/></svg></span></div>
@@ -143,7 +168,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
           <span class="og-emoji" aria-hidden="true"><?= htmlspecialchars((string) ($r['emoji'] ?: '🎁')) ?></span>
           <span class="og-line-main">
             <strong><?= htmlspecialchars($r['supporter']) ?></strong> sent <?= (int) $r['quantity'] > 1 ? (int) $r['quantity'] . ' &times; ' : 'a ' ?><?= htmlspecialchars($r['gift_name']) ?>
-            <small><?= htmlspecialchars($r['where']) ?> &middot; <?= htmlspecialchars(date('j M, H:i', strtotime((string) $r['paid_at']))) ?></small>
+            <small><?= htmlspecialchars($r['where']) ?> &middot; <?= htmlspecialchars(date('j M, H:i', strtotime((string) $r['paid_at']))) ?><?= $r['coins'] !== null ? ' &middot; ' . number_format($r['coins']) . ' OBI COINS' : '' ?></small>
           </span>
           <span class="og-line-amt<?= $r['reversed'] ? ' is-reversed' : '' ?>"><?= $r['reversed'] ? 'Reversed' : '+' . og_ugx((int) $r['organizer_ugx']) ?></span>
         </div>
@@ -152,13 +177,34 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
 
     <div class="admin-card">
       <h3 style="margin-bottom:14px">How gifts work</h3>
-      <div class="admin-detail-row"><span class="k">You keep</span><span class="v mono"><?= htmlspecialchars($sharePctText) ?>% of every gift</span></div>
+      <?php if ($coinsLive): ?>
+        <div class="admin-detail-row"><span class="k">Supporters pay with</span><span class="v">OBI COINS</span></div>
+        <div class="admin-detail-row"><span class="k">Each gift is valued in UGX</span><span class="v">at the rate on the day it was sent</span></div>
+        <?php if ($rateNow): $cfgNow = gift_commission_current(); $valNow = coin_unit_ugx(1000, $rateNow['rate_e4']); $mineNow = gift_split($valNow, $cfgNow['platform_bps'], $cfgNow['organizer_bps'])['organizer']; ?>
+          <div class="admin-detail-row"><span class="k">Today</span><span class="v mono">1,000 OBI COINS = <?= og_ugx($valNow) ?>, you earn <?= og_ugx($mineNow) ?></span></div>
+        <?php endif; ?>
+        <div class="admin-detail-row"><span class="k">You keep</span><span class="v mono"><?= htmlspecialchars($sharePctText) ?>% of that value</span></div>
+      <?php else: ?>
+        <div class="admin-detail-row"><span class="k">You keep</span><span class="v mono"><?= htmlspecialchars($sharePctText) ?>% of every gift</span></div>
+      <?php endif; ?>
       <div class="admin-detail-row"><span class="k">Mobile money fees</span><span class="v">Paid by obitickets, not you</span></div>
       <div class="admin-detail-row"><span class="k">Ticket money</span><span class="v">Separate, never mixed with gifts</span></div>
       <div class="admin-detail-row"><span class="k">Gifts reversed</span><span class="v mono"><?= (int) $sum['reversed'] ?><?= $sum['reversed'] > 0 ? ' (' . og_ugx($sum['reversed_ugx']) . ')' : '' ?></span></div>
       <p class="muted" style="font-size:0.82rem; margin:14px 0 0">Gifts are final for the supporter. Only the obitickets team can reverse one, for example after a payment problem.</p>
     </div>
   </div>
+
+  <?php if ($sum['popular']): $topN = max(1, $sum['popular'][0]['gifts']); ?>
+    <div class="admin-card" style="margin-top:20px">
+      <h3 style="margin-bottom:14px">Most popular gifts</h3>
+      <?php foreach ($sum['popular'] as $g): ?>
+        <div class="og-rank">
+          <div class="og-rank-top"><span><span aria-hidden="true"><?= htmlspecialchars((string) $g['emoji']) ?></span> <?= htmlspecialchars($g['name']) ?> <small class="muted">&times; <?= (int) $g['units'] ?><?= $g['coins'] > 0 ? ' &middot; ' . number_format($g['coins']) . ' OBI COINS' : '' ?></small></span><strong class="mono"><?= (int) $g['gifts'] ?> gift<?= $g['gifts'] === 1 ? '' : 's' ?></strong></div>
+          <div class="og-rank-bar"><i style="width:<?= max(2, round($g['gifts'] / $topN * 100)) ?>%"></i></div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 
 <?php elseif ($tab === 'history'):
     $page = gift_org_history($organizerId, $filters + ['before' => (int) ($_GET['before'] ?? 0)], 25);
@@ -193,7 +239,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <?php else: ?>
       <div class="admin-table-wrap" style="border:none; box-shadow:none;">
         <table class="admin-table og-table">
-          <thead><tr><th>Date</th><th>Supporter</th><th>Gift</th><th>Where</th><th style="text-align:right">Gift price</th><th style="text-align:right">Your share</th><th>Status</th></tr></thead>
+          <thead><tr><th>Date</th><th>Supporter</th><th>Gift</th><th>Where</th><th style="text-align:right">OBI COINS</th><th style="text-align:right">Value (UGX)</th><th style="text-align:right">Your share</th><th>Status</th></tr></thead>
           <tbody>
           <?php foreach ($rows as $r): ?>
             <tr>
@@ -201,6 +247,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
               <td><?= htmlspecialchars($r['supporter']) ?></td>
               <td><span aria-hidden="true"><?= htmlspecialchars((string) $r['emoji']) ?></span> <?= (int) $r['quantity'] > 1 ? (int) $r['quantity'] . ' &times; ' : '' ?><?= htmlspecialchars($r['gift_name']) ?></td>
               <td class="muted og-wrap"><?= htmlspecialchars($r['where']) ?></td>
+              <td class="mono" style="text-align:right"><?= $r['coins'] !== null ? number_format($r['coins']) : '—' ?></td>
               <td class="mono" style="text-align:right"><?= og_ugx((int) $r['gross_ugx']) ?></td>
               <td class="mono" style="text-align:right"><?= $r['reversed'] ? '<s class="muted">' . og_ugx((int) $r['organizer_ugx']) . '</s>' : og_ugx((int) $r['organizer_ugx']) ?></td>
               <td><span class="admin-badge <?= $r['reversed'] ? 'admin-badge-danger' : 'admin-badge-success' ?>"><?= $r['reversed'] ? 'Reversed' : 'Received' ?></span></td>
@@ -214,7 +261,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
       <?php endif; ?>
     <?php endif; ?>
   </div>
-  <p class="muted" style="font-size:0.8rem; margin-top:12px">Supporters who chose to stay anonymous show as "Anonymous supporter". Phone numbers are never shown.</p>
+  <p class="muted" style="font-size:0.8rem; margin-top:12px">Value is what the gift was worth in UGX at the OBI COINS rate on the day it was sent; your share is your cut of that value. Supporters who chose to stay anonymous show as "Anonymous supporter". Phone numbers are never shown.</p>
 
 <?php elseif ($tab === 'withdrawals'):
     $bal = gift_balance($organizerId);
@@ -238,14 +285,16 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
       <?php else: ?>
         <div class="admin-table-wrap" style="border:none; box-shadow:none;">
           <table class="admin-table og-table">
-            <thead><tr><th>Requested</th><th style="text-align:right">Amount</th><th>Sent to</th><th>Status</th></tr></thead>
+            <thead><tr><th>Reference</th><th>Requested</th><th style="text-align:right">Amount</th><th>Sent to</th><th>Status</th><th>Completed</th></tr></thead>
             <tbody>
               <?php foreach ($hist as $w): ?>
                 <tr>
+                  <td class="mono muted" style="font-size:.78rem"><?= htmlspecialchars($w['reference']) ?></td>
                   <td class="muted"><?= htmlspecialchars(date('j M Y, H:i', strtotime($w['when']))) ?></td>
                   <td class="mono" style="text-align:right"><?= og_ugx($w['amount']) ?></td>
                   <td><?= htmlspecialchars($w['destination']) ?> <span class="muted" style="font-size:.78rem"><?= $w['method'] === 'AIRTEL_MONEY' ? 'Airtel' : 'MTN' ?></span></td>
-                  <td><span class="admin-badge <?= $tones[$w['tone']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($w['label']) ?></span></td>
+                  <td><span class="admin-badge <?= $tones[$w['tone']] ?? 'admin-badge-muted' ?>"><?= htmlspecialchars($w['label']) ?></span><?= $w['note'] ? '<br><span class="muted" style="font-size:.76rem">Decision: ' . htmlspecialchars($w['note']) . '</span>' : '' ?></td>
+                  <td class="muted"><?= $w['done'] ? htmlspecialchars(date('j M Y, H:i', strtotime($w['done']))) : '—' ?></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
@@ -315,7 +364,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <?php endforeach; ?>
   </div>
 
-  <div class="admin-kpi-grid">
+  <div class="admin-kpi-grid og-kpis">
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">Earned</span><span class="admin-kpi-ic" style="background:var(--success-bg); color:var(--success)"><svg width="17" height="17"><use href="#ic-cash"/></svg></span></div>
       <span class="num"><?= og_ugx($an['ugx']) ?></span>
@@ -324,7 +373,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">Gifts received</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-heart"/></svg></span></div>
       <span class="num"><?= (int) $an['gifts'] ?></span>
-      <span class="sub"><?= (int) $an['units'] ?> in total counting quantities</span>
+      <span class="sub"><?= (int) $an['units'] ?> in total counting quantities<?= $an['coins'] > 0 ? ' &middot; ' . number_format($an['coins']) . ' OBI COINS' : '' ?></span>
     </div>
     <div class="admin-kpi-card">
       <div class="admin-kpi-card-top"><span class="lbl">Average gift</span><span class="admin-kpi-ic" style="background:var(--purple-tint); color:var(--purple)"><svg width="17" height="17"><use href="#ic-chart"/></svg></span></div>
@@ -358,7 +407,7 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
       <h3 style="margin-bottom:14px">Which gifts earn the most</h3>
       <?php if (!$an['by_gift']): ?><p class="muted" style="margin:0">Nothing yet.</p><?php else: $top = max(1, $an['by_gift'][0]['ugx']); foreach ($an['by_gift'] as $g): ?>
         <div class="og-rank">
-          <div class="og-rank-top"><span><span aria-hidden="true"><?= htmlspecialchars((string) $g['emoji']) ?></span> <?= htmlspecialchars($g['name']) ?> <small class="muted">&times; <?= (int) $g['units'] ?></small></span><strong class="mono"><?= og_ugx($g['ugx']) ?></strong></div>
+          <div class="og-rank-top"><span><span aria-hidden="true"><?= htmlspecialchars((string) $g['emoji']) ?></span> <?= htmlspecialchars($g['name']) ?> <small class="muted">&times; <?= (int) $g['units'] ?><?= $g['coins'] > 0 ? ' &middot; ' . number_format($g['coins']) . ' OBI COINS' : '' ?></small></span><strong class="mono"><?= og_ugx($g['ugx']) ?></strong></div>
           <div class="og-rank-bar"><i style="width:<?= max(2, round($g['ugx'] / $top * 100)) ?>%"></i></div>
         </div>
       <?php endforeach; endif; ?>

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// OB GIFTS (phase 6): reports for the owner/finance: sales, obitickets' income, what organizers earned, what is owed, per-organizer earnings,
+// OBI GIFTS (phase 6): reports for the owner/finance: sales, obitickets' income, what organizers earned, what is owed, per-organizer earnings,
 // and a live check that the books add up. Read only. Gifts are separate from tickets: nothing here reads orders, tickets or ticket payouts.
 $admin = require_admin_permission('gifts.view');
 $ready = gifts_ready();
@@ -35,7 +35,7 @@ if ($ready && isset($_GET['export'])) {
     header('Content-Disposition: attachment; filename="gift-report-' . $from . '-to-' . $to . '.csv"');
     $out = fopen('php://output', 'w');
     fwrite($out, "\xEF\xBB\xBF");
-    fputcsv($out, ['OB Gifts report', $from, $to]);
+    fputcsv($out, ['OBI GIFTS report', $from, $to]);
     foreach ([['Gifts paid', $r['gifts']], ['Sales (UGX)', $r['gross']], ['Organizers\' share (UGX)', $r['organizer']], ['obitickets share (UGX)', $r['platform']], ['ioTec collection fees (UGX)', $r['fees']],
               ['obitickets net after fees (UGX)', $r['net_platform']], ['Gifts reversed', $r['reversed_gifts']], ['Reversed value (UGX)', $r['reversed_gross']], ['Withdrawn by organizers (UGX)', $r['withdrawn_ugx']]] as $row) {
         fputcsv($out, $row);
@@ -49,12 +49,12 @@ if ($ready && isset($_GET['export'])) {
 
 $orgs = $ready ? gift_admin_organizers(100) : [];
 $problems = $ready ? gift_reconcile() : [];
-$pageTitle = 'OB Gifts: reports';
+$pageTitle = 'OBI GIFTS: reports';
 render_admin_head('gifts');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>OB Gifts</h1><p>How gifts are doing and where the money is. Gifts are completely separate from tickets.</p></div>
+  <div><h1>OBI GIFTS</h1><p>How gifts are doing and where the money is. Gifts are completely separate from tickets.</p></div>
 </div>
 
 <?php if (!$ready): ?>

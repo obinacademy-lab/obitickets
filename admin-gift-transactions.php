@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// OB GIFTS (phase 6): every gift transaction, one transaction in full, reversing a gift and the sender-refund follow-up.
+// OBI GIFTS (phase 6): every gift transaction, one transaction in full, reversing a gift and the sender-refund follow-up.
 // Reading needs gifts.view. Reversing a gift and recording that the sender was paid back need gifts.refund. Gifts are separate from tickets.
 $admin = require_admin_permission('gifts.view');
 $adminId = (int) $admin['id'];
@@ -61,12 +61,12 @@ if ($ready && isset($_GET['export']) && !$viewId) {
 }
 
 $allGifts = $ready ? db()->query('SELECT id, name, emoji FROM gift_catalog ORDER BY sort_order, id')->fetchAll() : [];
-$pageTitle = 'OB Gifts: transactions';
+$pageTitle = 'OBI GIFTS: transactions';
 render_admin_head('gifts');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>OB Gifts</h1><p>Every gift payment, from the first tap to the ledger. Gifts are completely separate from tickets.</p></div>
+  <div><h1>OBI GIFTS</h1><p>Every gift payment, from the first tap to the ledger. Gifts are completely separate from tickets.</p></div>
 </div>
 
 <?php if ($flash): ?><span data-flash="<?= $h($flash) ?>" hidden></span><?php endif; ?>

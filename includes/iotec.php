@@ -112,7 +112,7 @@ function iotec_initiate_collection(float $amount, string $phone, string $referen
 }
 
 /**
- * amount and charge are extra, optional fields (null when ioTec does not send them): OB Gifts uses them to check the paid amount
+ * amount and charge are extra, optional fields (null when ioTec does not send them): OBI GIFTS uses them to check the paid amount
  * and to record the fee. Tickets and Socials only read status and statusMessage, so nothing changes for them.
  * @return array{status: string, statusMessage: ?string, amount: ?float, charge: ?float}
  */

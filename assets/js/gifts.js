@@ -1,4 +1,4 @@
-/* OB Gifts (phase 3): the gift sheet and the gift animations. Used by the video feed (socials.js) and any page with a gift button.
+/* OBI GIFTS (phase 3): the gift sheet and the gift animations. Used by the video feed (socials.js) and any page with a gift button.
    Prices, the split and the checks all live on the server (includes/gifts.php). This script only shows the screens:
    pick a gift -> confirm and pay (phone prompt) -> waiting -> delivered with an animation (or a clear failure).
    Nothing is delivered until OUR server has asked ioTec and heard "paid"; the browser's word is never trusted.
@@ -14,6 +14,11 @@
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text != null) { e.textContent = text; } return e; }
   function money(n) { return 'UGX ' + Number(n || 0).toLocaleString('en-US'); }
+  function num(n) { return Number(n || 0).toLocaleString('en-US'); }
+  // With OBI COINS on (ADR-002) a gift costs coins, is paid from the wallet and is delivered at once. Otherwise the old direct payment runs.
+  function coinMode() { return !!(S && S.data && S.data.mode === 'coins'); }
+  function price(n) { return coinMode() ? num(n) + ' OBI COINS' : money(n); }
+  function coinIcon() { var c = el('i', 'og-c'); c.setAttribute('aria-hidden', 'true'); return c; }
   function api(body) {
     body.csrf_token = csrf;
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) })
@@ -48,7 +53,7 @@
     head.textContent = '';
     var av = el('span', 'og-av');
     if (org && org.avatar) { var i = el('img'); i.alt = ''; i.src = org.avatar; av.appendChild(i); } else { av.textContent = org ? String(org.name || '?').slice(0, 2).toUpperCase() : 'OB'; }
-    var tx = el('div', 'og-head-tx'); tx.appendChild(el('small', null, 'OB GIFTS'));
+    var tx = el('div', 'og-head-tx'); tx.appendChild(el('small', null, 'OBI GIFTS'));
     var b = el('b', null, title); b.id = 'ogTitle'; tx.appendChild(b);
     var x = el('button', 'og-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', close);
     head.appendChild(av); head.appendChild(tx); head.appendChild(x);
@@ -105,11 +110,13 @@
     grid.style.setProperty('--ph', '-' + ((Date.now() / 1000) % 6).toFixed(2) + 's');   // the grid is rebuilt on every tap: keep the loops where they were
     S.data.gifts.forEach(function (g, idx) {
       var t = el('button', 'og-tile a-' + String(g.anim || 'pop').replace(/[^a-z]/g, '') + (g.id === S.sel ? ' on' : '')); t.style.setProperty('--i', String(idx)); t.type = 'button'; t.setAttribute('role', 'option'); t.setAttribute('aria-selected', g.id === S.sel ? 'true' : 'false');
-      t.setAttribute('aria-label', g.name + ', ' + money(g.price));
-      t.appendChild(art(g)); t.appendChild(el('b', null, g.name)); t.appendChild(el('em', null, money(g.price)));
+      t.setAttribute('aria-label', g.name + ', ' + price(g.price));
+      t.appendChild(art(g)); t.appendChild(el('b', null, g.name));
+      var pe = el('em', null, coinMode() ? num(g.price) : money(g.price)); if (coinMode()) { pe.classList.add('c'); pe.insertBefore(coinIcon(), pe.firstChild); } t.appendChild(pe);
       t.addEventListener('click', function () { S.sel = g.id; if (S.qty * g.price > S.data.limits.max) { S.qty = Math.max(1, Math.floor(S.data.limits.max / g.price)); } renderPick(); });
       grid.appendChild(t);
     });
+    if (coinMode()) { body.appendChild(balanceBar()); }
     body.appendChild(grid);
     var g = selected();
     var row = el('div', 'og-row');
@@ -119,11 +126,85 @@
     minus.addEventListener('click', function () { if (S.qty > 1) { S.qty--; renderPick(); } });
     plus.addEventListener('click', function () { S.qty++; renderPick(); });
     q.appendChild(minus); q.appendChild(n); q.appendChild(plus);
-    var tot = el('div', 'og-total'); tot.appendChild(el('small', null, g ? 'Total' : 'Pick a gift')); tot.appendChild(el('b', null, g ? money(total()) : '—'));
+    var tot = el('div', 'og-total'); tot.appendChild(el('small', null, g ? 'Total' : 'Pick a gift')); tot.appendChild(el('b', null, g ? price(total()) : '—'));
     row.appendChild(q); row.appendChild(tot); body.appendChild(row);
-    var go = el('button', 'og-btn', g ? 'Continue · ' + money(total()) : 'Pick a gift'); go.type = 'button'; go.disabled = !g;
-    go.addEventListener('click', function () { S.step = 'pay'; S.key = uuid(); renderPay(); });
-    foot.appendChild(go);
+    var short = coinMode() && g ? total() - S.data.wallet.balance : 0;
+    if (short > 0) {
+      // not enough OBI COINS: say how many are missing and offer to add them (the gift stays chosen while they do)
+      body.appendChild(el('div', 'og-short', 'You need ' + num(short) + ' more OBI COINS for this gift.'));
+      var add = el('button', 'og-btn', 'Add OBI COINS'); add.type = 'button'; add.addEventListener('click', function () { addCoins(total()); }); foot.appendChild(add);
+    } else {
+      var go = el('button', 'og-btn', g ? 'Continue · ' + price(total()) : 'Pick a gift'); go.type = 'button'; go.disabled = !g;
+      go.addEventListener('click', function () { S.step = 'pay'; S.key = uuid(); if (coinMode()) { renderConfirm(); } else { renderPay(); } });
+      foot.appendChild(go);
+    }
+  }
+
+  // ------------------------------------------------------------------ OBI COINS: balance, confirm, add coins
+  function balanceBar() {
+    var b = el('div', 'og-bal'); b.appendChild(coinIcon()); b.appendChild(el('span', null, 'Your balance'));
+    b.appendChild(el('b', null, num(S.data.wallet.balance) + ' OBI COINS'));
+    var add = el('button', null, '+ Add'); add.type = 'button'; add.addEventListener('click', function () { addCoins(0); }); b.appendChild(add);
+    return b;
+  }
+  function anonSwitch() {
+    var sw = el('div', 'og-switch' + (S.anon ? ' on' : '')); sw.setAttribute('role', 'switch'); sw.tabIndex = 0; sw.setAttribute('aria-checked', S.anon ? 'true' : 'false');
+    var swt = el('div'); swt.appendChild(el('b', null, 'Send anonymously')); swt.appendChild(el('small', null, 'The organizer and other viewers will not see your name.')); sw.appendChild(swt); sw.appendChild(el('i'));
+    function flip() { S.anon = !S.anon; sw.classList.toggle('on', S.anon); sw.setAttribute('aria-checked', S.anon ? 'true' : 'false'); }
+    sw.addEventListener('click', flip); sw.addEventListener('keydown', function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); } });
+    return sw;
+  }
+  function renderConfirm(errorText) {
+    var g = selected(), d = S.data, bal = d.wallet.balance, cost = total();
+    header(d.organizer, 'Confirm your gift');
+    body.textContent = ''; foot.textContent = '';
+    var sum = el('div', 'og-sum'); sum.appendChild(art(g));
+    var tx = el('div'); tx.appendChild(el('b', null, (S.qty > 1 ? S.qty + ' × ' : '') + g.name)); tx.appendChild(el('small', null, 'to ' + d.organizer.name)); sum.appendChild(tx);
+    var pr = el('div', 'og-price'); pr.appendChild(coinIcon()); pr.appendChild(document.createTextNode(num(cost))); sum.appendChild(pr); body.appendChild(sum);
+    var lines = el('div', 'og-lines');
+    [['Price', num(cost) + ' OBI COINS', ''], ['Your balance', num(bal) + ' OBI COINS', ''], ['Balance after this gift', num(bal - cost) + ' OBI COINS', 'after']].forEach(function (l) {
+      var r = el('div', 'og-ln' + (l[2] ? ' ' + l[2] : '')); r.appendChild(el('span', null, l[0])); r.appendChild(el('b', null, l[1])); lines.appendChild(r);
+    });
+    body.appendChild(lines);
+    body.appendChild(anonSwitch());
+    var err = el('div', 'og-err', errorText || ''); err.setAttribute('role', 'alert'); body.appendChild(err);
+    var label = 'Send gift · ' + num(cost) + ' OBI COINS';
+    var send = el('button', 'og-btn', label); send.type = 'button';
+    send.addEventListener('click', function () {
+      send.disabled = true; send.textContent = 'Sending…'; err.textContent = '';
+      var mine = S;
+      api({ action: 'start', organizer_id: S.opts.organizerId, post_id: S.opts.postId || null, gift_id: g.id, quantity: S.qty, anonymous: S.anon, key: S.key }).then(function (r) {
+        if (S !== mine) { return; }
+        if (r._status === 401) { close(); if (S && S.opts.loginUrl) { window.location.href = S.opts.loginUrl; } return; }
+        if (r.insufficient) { S.data.wallet.balance = r.balance; S.step = 'pick'; renderPick(); return; }
+        if (!r.ok) { send.disabled = false; send.textContent = label; err.textContent = r.error || 'We could not send the gift. Nothing was taken from your wallet. Please try again.'; return; }
+        S.step = 'done'; finish({ status: 'PAID', delivery: r.delivery, balance_after: r.balance_after });
+      }, function () { send.disabled = false; send.textContent = label; err.textContent = 'Connection problem. If your balance did not change, please try again.'; });
+    });
+    foot.appendChild(send);
+    var back = el('button', 'og-btn line', 'Back'); back.type = 'button'; back.addEventListener('click', function () { S.step = 'pick'; renderPick(); }); foot.appendChild(back);
+  }
+  function softHide() { shade.classList.remove('on'); sheet.classList.remove('on'); document.body.classList.remove('og-open'); }
+  function addCoins(needed) {
+    if (!window.ObCoins) { window.location.href = '/wallet.php'; return; }
+    var keep = S;   // the gift in progress stays exactly as it is while they add coins
+    softHide();
+    ObCoins.open({
+      needed: needed, doneLabel: 'Back to my gift',
+      onClose: function () { if (S === keep) { refreshAfterCoins(); } },
+      onDone: function () { if (S === keep && sheet.classList.contains('on')) { refreshAfterCoins(); } },
+      onNotice: function (m) { if (keep && keep.opts.onNotice) { keep.opts.onNotice(m); } }
+    });
+  }
+  function refreshAfterCoins() {
+    if (!S || S.refreshing) { return; }
+    S.refreshing = true; show();
+    api({ action: 'catalog', organizer_id: S.opts.organizerId, post_id: S.opts.postId || null }).then(function (r) {
+      if (!S) { return; }
+      S.refreshing = false;
+      if (r.ok && r.gifts) { var sel = S.sel, q = S.qty; S.data = r; S.sel = sel; S.qty = q; }
+      S.step = 'pick'; renderPick();
+    }, function () { if (S) { S.refreshing = false; S.step = 'pick'; renderPick(); } });
   }
 
   // ------------------------------------------------------------------ step 2: confirm and pay
@@ -204,6 +285,7 @@
   // ------------------------------------------------------------------ step 4: delivered or failed
   function finish(r) {
     var delivery = r.delivery;
+    if (r.balance_after != null && S.data && S.data.wallet) { S.data.wallet.balance = r.balance_after; }
     var wasOpen = sheet.classList.contains('on');
     S.step = 'done';
     var host = S.opts.fxHost;
@@ -215,6 +297,7 @@
     var st = el('div', 'og-state'); st.appendChild(art(g));
     st.appendChild(el('h3', null, 'Gift delivered!'));
     st.appendChild(el('p', null, delivery ? delivery.message : 'Thank you for supporting the organizer.'));
+    if (coinMode() && r.balance_after != null) { st.appendChild(el('p', 'og-note', 'Your balance is now ' + num(r.balance_after) + ' OBI COINS.')); }
     body.appendChild(st);
     var done = el('button', 'og-btn', 'Done'); done.type = 'button'; done.addEventListener('click', close); foot.appendChild(done);
     setTimeout(function () { if (S && S.step === 'done' && sheet.classList.contains('on')) { close(); } }, 2300);   // then the sheet steps aside so the animation can be seen

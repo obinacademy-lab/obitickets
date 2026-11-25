@@ -64,6 +64,7 @@ include __DIR__ . '/includes/header.php';
 ?>
 <link rel="stylesheet" href="/assets/css/app-dark.css?v=<?= @filemtime(__DIR__ . '/assets/css/app-dark.css') ?: time() ?>">
 <link rel="stylesheet" href="/assets/css/me-app.css?v=<?= @filemtime(__DIR__ . '/assets/css/me-app.css') ?: time() ?>">
+<?php $coinsShow = function_exists('coins_menu_visible') && coins_menu_visible($uid); if ($coinsShow): ?><link rel="stylesheet" href="/assets/css/coins.css?v=<?= @filemtime(__DIR__ . '/assets/css/coins.css') ?: time() ?>"><?php endif; ?>
 
 <div class="mp<?= $cover !== '' ? ' has-cover' : '' ?>">
   <?php if ($cover !== ''): ?><div class="mp-cover" style="background-image:url('<?= htmlspecialchars($cover, ENT_QUOTES) ?>')" aria-hidden="true"></div><?php endif; ?>
@@ -91,6 +92,7 @@ include __DIR__ . '/includes/header.php';
 
     <div class="mp-actions">
       <a class="mp-edit" href="/profile.php">Edit Profile</a>
+      <?php if ($coinsShow): ?><a class="mp-sq" href="/wallet.php" aria-label="OBI COINS wallet, <?= number_format(coin_wallet($uid)['balance']) ?> OBI COINS"><i class="oc-coin" style="--s:28px" aria-hidden="true"></i></a><?php endif; ?>
       <a class="mp-sq" href="/settings.php" aria-label="Account settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="4"/><path d="M3 21c0-3.9 3.1-6.5 7-6.5 1.2 0 2.3.2 3.3.7"/><circle cx="18" cy="17" r="2.3"/><path d="M18 13.2v1.5M18 19.3v1.5M21.3 15.1l-1.3.8M16 18.1l-1.3.8M21.3 18.9l-1.3-.8M16 15.9l-1.3-.8"/></svg></a>
     </div>
 

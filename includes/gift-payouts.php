@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * OB GIFTS, phase 5: automatic gift withdrawals through ioTec disbursement.
+ * OBI GIFTS, phase 5: automatic gift withdrawals through ioTec disbursement.
  *
  * Owner rules (D2, 11/24): an organizer withdraws their gift earnings any time, sent automatically with no admin click, smallest
  * withdrawal UGX 5,000, one withdrawal open at a time, and a withdrawal is sent once. ioTec's fees are paid by obitickets, never by the organizer.
@@ -180,6 +180,9 @@ function gift_withdraw_request(int $organizerId, int $actorId, int $amount, stri
     if (!gift_withdraw_enabled()) {
         return $fail('Withdrawing gift money is not open yet.');
     }
+    if (gift_recipient_status($organizerId) === 'SUSPENDED') {
+        return $fail('Your gift withdrawals are on hold while your account is under review. Please contact support.');
+    }
     $destination = trim($destination);
     if ($amount <= 0) {
         return $fail('Enter a whole number of shillings greater than zero.');
@@ -303,7 +306,7 @@ function gift_withdraw_send(int $withdrawalId, ?callable $sender = null): array
     } catch (Throwable $e) {
         // could not even record the attempt: nothing was sent, but never guess; an admin decides
         error_log('[gift] could not record payout attempt for withdrawal ' . $withdrawalId . ': ' . $e->getMessage());
-        gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' needs a check', 'Gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . ') could not be recorded before sending. NOTHING was sent. Check it in Admin > OB Gifts > Withdrawals.');
+        gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' needs a check', 'Gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . ') could not be recorded before sending. NOTHING was sent. Check it in Admin > OBI GIFTS > Withdrawals.');
         return ['ok' => false, 'message' => 'Could not start the withdrawal. An admin has been told.'];
     }
 
@@ -322,7 +325,7 @@ function gift_withdraw_send(int $withdrawalId, ?callable $sender = null): array
         $pdo->prepare('UPDATE gift_payouts SET failure_reason = ? WHERE withdrawal_id = ?')->execute([$note, $withdrawalId]);
         $pdo->prepare('UPDATE gift_withdrawals SET reason = ? WHERE id = ?')->execute([mb_substr($note, 0, 250), $withdrawalId]);
         error_log('[gift] unclear outcome for withdrawal ' . $withdrawalId . ': ' . $e->getMessage());
-        gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' needs a check', 'We could not confirm whether ioTec sent gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . '). It stays "processing" and will NOT be sent again. Check it in the ioTec portal, then mark it paid or failed in Admin > OB Gifts > Withdrawals.');
+        gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' needs a check', 'We could not confirm whether ioTec sent gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . '). It stays "processing" and will NOT be sent again. Check it in the ioTec portal, then mark it paid or failed in Admin > OBI GIFTS > Withdrawals.');
         return ['ok' => true, 'message' => 'Sent to ioTec, waiting for confirmation.', 'state' => 'processing'];
     }
 
@@ -454,7 +457,7 @@ function gift_withdraw_poll(int $withdrawalId, ?callable $checker = null, ?calla
                     $note = 'STUCK: ioTec has no record of this withdrawal. Check it in the ioTec portal, then mark it failed or paid.';
                     db()->prepare('UPDATE gift_payouts SET failure_reason = ? WHERE withdrawal_id = ?')->execute([$note, $withdrawalId]);
                     db()->prepare('UPDATE gift_withdrawals SET reason = ? WHERE id = ?')->execute([mb_substr($note, 0, 250), $withdrawalId]);
-                    gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' is stuck', 'ioTec has no record of gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . '). Check the ioTec portal, then mark it paid or failed in Admin > OB Gifts > Withdrawals.');
+                    gift_wd_alert_admins('Gift withdrawal #' . $withdrawalId . ' is stuck', 'ioTec has no record of gift withdrawal #' . $withdrawalId . ' (UGX ' . number_format((int) $w['amount_ugx']) . '). Check the ioTec portal, then mark it paid or failed in Admin > OBI GIFTS > Withdrawals.');
                 }
                 return 'PROCESSING';
             }
@@ -521,7 +524,7 @@ function gift_withdraw_send_waiting(int $limit = 20, ?callable $sender = null): 
  */
 function gift_withdraw_history(int $organizerId, int $limit = 25): array
 {
-    $stmt = db()->prepare('SELECT id, reference, amount_ugx, method, destination, status, requested_at, completed_at FROM gift_withdrawals WHERE organizer_id = ? ORDER BY id DESC LIMIT ' . max(1, min(200, $limit)));
+    $stmt = db()->prepare('SELECT id, reference, amount_ugx, method, destination, status, reason, requested_at, completed_at FROM gift_withdrawals WHERE organizer_id = ? ORDER BY id DESC LIMIT ' . max(1, min(200, $limit)));
     $stmt->execute([$organizerId]);
     $out = [];
     foreach ($stmt->fetchAll() as $r) {
@@ -533,7 +536,9 @@ function gift_withdraw_history(int $organizerId, int $limit = 25): array
         };
         $out[] = ['id' => (int) $r['id'], 'reference' => (string) $r['reference'], 'amount' => (int) $r['amount_ugx'], 'method' => (string) $r['method'],
                   'destination' => (string) $r['destination'], 'status' => $s, 'label' => $label, 'tone' => $tone,
-                  'when' => (string) $r['requested_at'], 'done' => $r['completed_at'] !== null ? (string) $r['completed_at'] : null, 'note' => null];
+                  'when' => (string) $r['requested_at'], 'done' => $r['completed_at'] !== null ? (string) $r['completed_at'] : null,
+                  // when a person at obitickets settled it by hand, the organizer sees that decision (never ioTec's technical messages)
+                  'note' => str_starts_with((string) $r['reason'], 'Checked by an admin') ? (string) $r['reason'] : null];
     }
     return $out;
 }

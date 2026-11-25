@@ -1,5 +1,5 @@
 <?php
-// OB GIFTS core (migration 045, ADR-001). Viewers pay UGX through ioTec mobile money to send a virtual gift to an event
+// OBI GIFTS core (migration 045, ADR-001). Viewers pay UGX through ioTec mobile money to send a virtual gift to an event
 // organizer; the organizer gets 60% and obitickets 40% (read from gift_commission_config at purchase time).
 //
 // HARD RULES (owner, 11/24):
@@ -117,7 +117,8 @@ function gift_recipient_error(int $organizerId, int $senderId, ?int $postId = nu
     $stmt = db()->prepare("SELECT role, account_status FROM users WHERE id = ?");
     $stmt->execute([$organizerId]);
     $org = $stmt->fetch();
-    if (!$org || $org['role'] !== 'ORGANIZER' || $org['account_status'] !== 'ACTIVE') {
+    $override = gift_recipient_status($organizerId);   // SUSPENDED | APPROVED | null: set by an admin on the eligibility screen
+    if ($override === 'SUSPENDED' || !$org || $org['account_status'] !== 'ACTIVE' || ($org['role'] !== 'ORGANIZER' && $override !== 'APPROVED')) {
         return 'This organizer cannot receive gifts right now.';
     }
     if ($senderId === $organizerId) {
@@ -139,7 +140,7 @@ function gift_recipient_error(int $organizerId, int $senderId, ?int $postId = nu
     $live = db()->prepare("SELECT 1 FROM event_moments m JOIN event_posts p ON p.id = m.post_id JOIN events e ON e.id = p.event_id
                            WHERE e.organizer_id = ? AND e.status = 'PUBLISHED' AND p.status = 'PUBLISHED' AND m.is_draft = 0 LIMIT 1");
     $live->execute([$organizerId]);
-    if (!$live->fetchColumn()) {
+    if ($override !== 'APPROVED' && !$live->fetchColumn()) {
         return 'This organizer cannot receive gifts yet.';
     }
     return null;
@@ -186,6 +187,9 @@ function gift_start(array $sender, int $organizerId, int $giftId, int $quantity,
     $fail = static fn (string $e): array => ['ok' => false, 'error' => $e];
     if (!gifts_ready()) {
         return $fail('Gifts are not available yet.');
+    }
+    if (function_exists('coins_enabled') && coins_enabled()) {
+        return $fail('OBI GIFTS are paid with OBI COINS now. Add OBI COINS to your wallet, then send the gift.');   // owner decision 1 (ADR-002): coins replace the direct payment
     }
     // A developer's computer holds real ioTec keys: it must NEVER start a real payment request (it could prompt a stranger's phone).
     // Without an injected collector or the pretend mode (gift_collect_fn), a development computer refuses before anything is created.
@@ -308,6 +312,26 @@ function gift_ledger_add(PDO $pdo, ?int $txId, string $account, string $entry, i
     return (int) $pdo->lastInsertId();
 }
 
+/**
+ * The money rows of a delivered gift, written inside the caller's transaction: the gift ledger (the payer's account is debited, obitickets and the
+ * organizer are credited, plus the ioTec fee rows when known) and the organizer's UGX gift balance. $debitAccount is SENDER_CLEARING for a gift paid
+ * directly in UGX and COIN_LIABILITY for a gift paid with OBI COINS.
+ */
+function gift_post_delivery(PDO $pdo, int $txId, int $orgId, int $gross, int $platform, int $organizer, ?int $fee, string $debitAccount): void
+{
+    $hold = (int) GIFT_HOLD_HOURS;
+    gift_ledger_add($pdo, $txId, $debitAccount, 'DEBIT', $gross, 'GIFT');
+    gift_ledger_add($pdo, $txId, 'PLATFORM_COMMISSION', 'CREDIT', $platform, 'GIFT');
+    gift_ledger_add($pdo, $txId, 'ORGANIZER:' . $orgId, 'CREDIT', $organizer, 'GIFT');
+    if ($fee !== null) {
+        gift_ledger_add($pdo, $txId, 'PLATFORM_COMMISSION', 'DEBIT', $fee, 'FEE', null, 'ioTec collection fee, paid by obitickets');
+        gift_ledger_add($pdo, $txId, 'GATEWAY_FEE', 'CREDIT', $fee, 'FEE');
+    }
+    gift_balance_row($pdo, $orgId);
+    $pdo->prepare('UPDATE gift_balances SET ' . ($hold > 0 ? 'pending_ugx = pending_ugx + ?' : 'available_ugx = available_ugx + ?') . ', total_earned_ugx = total_earned_ugx + ? WHERE organizer_id = ?')
+        ->execute([$organizer, $organizer, $orgId]);
+}
+
 function gift_balance_row(PDO $pdo, int $organizerId): void
 {
     $pdo->prepare('INSERT INTO gift_balances (organizer_id) VALUES (?) ON DUPLICATE KEY UPDATE organizer_id = organizer_id')->execute([$organizerId]);
@@ -344,16 +368,7 @@ function gift_settle(int $txId, ?string $message = null, ?int $gatewayFee = null
                            paid_at = NOW(), delivered_at = NOW(), available_at = NOW() + INTERVAL $hold HOUR, released_at = " . ($hold > 0 ? 'NULL' : 'NOW()') . ' WHERE id = ?')
             ->execute([$message !== null ? mb_substr($message, 0, 250) : null, $fee, $txId]);
 
-        gift_ledger_add($pdo, $txId, 'SENDER_CLEARING', 'DEBIT', $gross, 'GIFT');
-        gift_ledger_add($pdo, $txId, 'PLATFORM_COMMISSION', 'CREDIT', $platform, 'GIFT');
-        gift_ledger_add($pdo, $txId, 'ORGANIZER:' . $orgId, 'CREDIT', $organizer, 'GIFT');
-        if ($fee !== null) {
-            gift_ledger_add($pdo, $txId, 'PLATFORM_COMMISSION', 'DEBIT', $fee, 'FEE', null, 'ioTec collection fee, paid by obitickets');
-            gift_ledger_add($pdo, $txId, 'GATEWAY_FEE', 'CREDIT', $fee, 'FEE');
-        }
-        gift_balance_row($pdo, $orgId);
-        $pdo->prepare('UPDATE gift_balances SET ' . ($hold > 0 ? 'pending_ugx = pending_ugx + ?' : 'available_ugx = available_ugx + ?') . ', total_earned_ugx = total_earned_ugx + ? WHERE organizer_id = ?')
-            ->execute([$organizer, $organizer, $orgId]);
+        gift_post_delivery($pdo, $txId, $orgId, $gross, $platform, $organizer, $fee, 'SENDER_CLEARING');
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -403,10 +418,11 @@ function gift_notify_delivered(int $txId): void
             return;
         }
         $label = ((int) $t['quantity'] > 1 ? (int) $t['quantity'] . ' x ' : '') . $t['gift_name'];
-        create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (UGX ' . number_format((int) $t['gross_ugx']) . ') was delivered. Thank you for supporting the organizer.', null);
+        $paidText = ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? number_format((int) $t['coins_spent']) . ' OBI COINS' : 'UGX ' . number_format((int) $t['gross_ugx']);
+        create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (' . $paidText . ') was delivered. Thank you for supporting the organizer.', null);
         $big = (int) $t['gross_ugx'] >= GIFT_BIG_GIFT_UGX;
-        create_notification((int) $t['recipient_organizer_id'], 'gift', $big ? 'You received a big gift!' : 'You received a gift',
-            gift_sender_label($t) . ' sent you ' . $label . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', '/org-gifts.php?tab=history');
+        create_notification((int) $t['recipient_organizer_id'], 'gift', $big ? 'You received a big OBI GIFT!' : 'You received an OBI GIFT',
+            gift_sender_label($t) . ' sent you ' . $label . (($t['payment_source'] ?? 'DIRECT') === 'COINS' ? ' (' . number_format((int) $t['coins_spent']) . ' OBI COINS)' : '') . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', '/org-gifts.php?tab=history');
     } catch (Throwable $e) {
         error_log('[gift] notification failed: ' . $e->getMessage());
     }
@@ -581,6 +597,9 @@ function gift_reverse(int $txId, int $adminId, string $reason): array
         $pdo->prepare('UPDATE gift_balances SET ' . ($tx['released_at'] !== null ? 'available_ugx = available_ugx - ?' : 'pending_ugx = pending_ugx - ?') . ', total_earned_ugx = total_earned_ugx - ? WHERE organizer_id = ?')
             ->execute([$organizer, $organizer, $orgId]);
         $pdo->prepare("UPDATE gift_transactions SET payment_status = 'REFUNDED', delivery_status = 'REVERSED', refunded_at = NOW() WHERE id = ?")->execute([$txId]);
+        if (($tx['payment_source'] ?? 'DIRECT') === 'COINS') {
+            coin_wallet_apply($pdo, (int) $tx['sender_id'], 'GIFT_REFUND', (int) $tx['coins_spent'], 'CRF-' . $txId, 'gift', $txId, 'Gift reversed: ' . mb_substr($reason, 0, 120), $adminId);
+        }
         $debt = (int) $pdo->query('SELECT available_ugx FROM gift_balances WHERE organizer_id = ' . $orgId)->fetchColumn();
         $pdo->commit();
     } catch (Throwable $e) {
@@ -595,7 +614,11 @@ function gift_reverse(int $txId, int $adminId, string $reason): array
         gift_log($txId, 'organizer_gift_debt', 'organizer ' . $orgId . ' gift balance is now UGX ' . $debt . ', paid back from future gifts');
     }
     try {
-        create_notification((int) $tx['sender_id'], 'gift', 'Gift refunded', 'Your gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was refunded. Our team will send the money back to your phone.', null);
+        if (($tx['payment_source'] ?? 'DIRECT') === 'COINS') {
+            create_notification((int) $tx['sender_id'], 'gift', 'Gift refunded', 'Your gift was reversed and ' . number_format((int) $tx['coins_spent']) . ' OBI COINS were returned to your wallet.', '/wallet.php');
+        } else {
+            create_notification((int) $tx['sender_id'], 'gift', 'Gift refunded', 'Your gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was refunded. Our team will send the money back to your phone.', null);
+        }
         create_notification($orgId, 'gift', 'A gift was reversed', 'A gift of UGX ' . number_format((int) $tx['gross_ugx']) . ' was reversed (' . $reason . '). UGX ' . number_format($organizer) . ' was taken off your gift earnings.', null);
     } catch (Throwable $e) {
         error_log('[gift] reversal notification failed: ' . $e->getMessage());
@@ -687,6 +710,9 @@ function gift_reconcile(): array
         if ($r['status'] !== 'PAID' && (int) $r['n'] > 0) {
             $problems[] = $ref . ': ' . $r['status'] . ' but money was recorded in the ledger';
         }
+    }
+    if (function_exists('coin_reconcile')) {
+        $problems = array_merge($problems, coin_reconcile());   // wallets, purchases and gifts sent with OBI COINS (includes/coins.php)
     }
     return $problems;
 }
@@ -1002,10 +1028,12 @@ function gift_phone_hint(array $user): string
 }
 
 /** What the viewer's catalogue shows for one gift. */
-function gift_public_shape(array $g): array
+function gift_public_shape(array $g, bool $coins = false): array
 {
     return ['id' => (int) $g['id'], 'name' => $g['name'], 'description' => $g['description'], 'emoji' => $g['emoji'], 'image' => $g['image_path'],
-            'anim' => $g['animation_type'], 'animAsset' => $g['animation_asset'], 'price' => (int) $g['price_ugx']];
+            'anim' => $g['animation_type'], 'animAsset' => $g['animation_asset'],
+            // with OBI COINS on a gift costs coins (never a UGX price beside it); the old direct payment shows the UGX price
+            'price' => $coins ? (int) $g['price_coins'] : (int) $g['price_ugx'], 'unit' => $coins ? 'coins' : 'ugx'];
 }
 
 // ---- pretend payments for testing on a developer's own computer ONLY.

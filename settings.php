@@ -16,6 +16,7 @@ $ic = [
     'lock'   => '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     'bell'   => '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
     'ticket' => '<path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3a3 3 0 0 0 0 6v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3a3 3 0 0 0 0-6z"/>',
+    'coin'   => '<circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.6-.8-1.6-1.2-2.8-1.2-1.7 0-2.8.9-2.8 2.1 0 3 5.7 1.6 5.7 4.4 0 1.3-1.2 2.2-2.9 2.2-1.2 0-2.3-.5-2.9-1.3M12 6.5V8M12 16v1.5"/>',
     'heart'  => '<path d="M12 20.5s-7.5-4.6-9.3-9.4C1.5 7.6 3.9 4.5 7.2 4.5c1.9 0 3.6 1 4.8 2.6 1.2-1.6 2.9-2.6 4.8-2.6 3.3 0 5.7 3.1 4.5 6.6-1.8 4.8-9.3 9.4-9.3 9.4z"/>',
     'grid'   => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     'star'   => '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
@@ -51,6 +52,9 @@ $groups = [
         ['/refunds.php', 'doc', 'Refund policy', null],
     ],
 ];
+if (function_exists('coins_menu_visible') && coins_menu_visible($uid)) {
+    $groups['Activity'][] = ['/wallet.php', 'coin', 'OBI COINS wallet', number_format(coin_wallet($uid)['balance']) . ' OBI COINS'];
+}
 if ($isAdmin) {
     $groups['Organizer'] = [['/admin.php', 'shield', 'Admin', null]];
 }

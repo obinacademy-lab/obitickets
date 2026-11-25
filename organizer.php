@@ -230,6 +230,7 @@ $opLive = (bool) $events['upcoming'];
 <script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script>
 <?php if (!empty($giftsOn)): $giftLogin = '/login.php?next=' . rawurlencode('/organizer.php?slug=' . ($organizer['slug'] ?? '')); ?>
 <link rel="stylesheet" href="/assets/css/gifts.css?v=<?= @filemtime(__DIR__ . '/assets/css/gifts.css') ?: time() ?>">
+<?php if (function_exists('coins_enabled') && coins_enabled()): ?><link rel="stylesheet" href="/assets/css/coins.css?v=<?= @filemtime(__DIR__ . '/assets/css/coins.css') ?: time() ?>"><script src="/assets/js/coins.js?v=<?= @filemtime(__DIR__ . '/assets/js/coins.js') ?: time() ?>" defer></script><?php endif; ?>
 <script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

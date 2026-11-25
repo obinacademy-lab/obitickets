@@ -1,4 +1,4 @@
-/* OB Gifts (phase 3): the gift sheet and the gift animations. Dark, red and white like the rest of the feed.
+/* OBI GIFTS (phase 3): the gift sheet and the gift animations. Dark, red and white like the rest of the feed.
    Everything here is prefixed og- so it cannot touch other screens. */
 :root { --og-bg:#141011; --og-card:#1D1518; --og-card2:#241A1E; --og-line:#2F2327; --og-red:#F0313F; --og-gold:#FBBF24; --og-mute:#A89AA0; --og-ok:#34D399; }
 
@@ -189,3 +189,22 @@
   .og-tile::before { opacity:0; }
   .og-tile.on::after { background:var(--og-red); }
 }
+
+/* OBI COINS mode (ADR-002 phase 4) */
+.og-c { --s:14px; display:inline-block; width:var(--s); height:var(--s); border-radius:50%; vertical-align:-2px; margin-right:4px; flex:none;
+  background:radial-gradient(circle at 32% 26%, #FFF0B8, #FBBF24 52%, #B7791F); box-shadow:inset 0 0 0 2px rgba(255,255,255,.38); }
+.og-price .og-c { --s:20px; vertical-align:-4px; }
+.og-tile em.c { display:flex; align-items:center; justify-content:center; }
+.og-bal { display:flex; align-items:center; gap:8px; margin:0 0 12px; padding:9px 10px 9px 12px; border-radius:14px; background:var(--og-card); border:1px solid var(--og-line); font-size:13px; }
+.og-bal .og-c { --s:18px; margin:0; }
+.og-bal span { color:var(--og-mute); font-weight:600; }
+.og-bal b { margin-left:auto; font-variant-numeric:tabular-nums; }
+.og-bal button { border:0; border-radius:99px; padding:7px 12px; background:var(--og-red); color:#fff; font:800 12px/1 inherit; cursor:pointer; }
+.og-short { margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.35); font-size:13px; line-height:1.4; }
+.og-lines { background:var(--og-card); border:1px solid var(--og-line); border-radius:16px; padding:4px 14px; margin-bottom:12px; }
+.og-ln { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--og-line); font-size:14px; }
+.og-ln:first-child { border-top:0; }
+.og-ln span { color:var(--og-mute); }
+.og-ln b { font-variant-numeric:tabular-nums; text-align:right; }
+.og-ln.after b { color:var(--og-gold); }
+

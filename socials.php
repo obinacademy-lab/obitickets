@@ -290,8 +290,9 @@ include __DIR__ . '/includes/header.php';
     'stickers' => SOCIALS_STICKERS,
     'canSave' => function_exists('post_saves_ready') && post_saves_ready(),
     'canBoost' => function_exists('post_boosts_ready') && post_boosts_ready(),
-    'canGift' => !empty($giftsOn),   // OB Gifts: the Gift button shows only when Admin switched gifts on
+    'canGift' => !empty($giftsOn),   // OBI GIFTS: the Gift button shows only when Admin switched gifts on
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<?php if (!empty($giftsOn) && function_exists('coins_enabled') && coins_enabled()): ?><link rel="stylesheet" href="/assets/css/coins.css?v=<?= @filemtime(__DIR__ . '/assets/css/coins.css') ?: time() ?>"><script src="/assets/js/coins.js?v=<?= @filemtime(__DIR__ . '/assets/js/coins.js') ?: time() ?>" defer></script><?php endif; ?>
 <?php if (!empty($giftsOn)): ?><script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script><?php endif; ?>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>

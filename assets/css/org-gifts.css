@@ -1,4 +1,4 @@
-/* Gifts & Support (OB Gifts, phase 4), organizer dashboard. Only used by /org-gifts.php. */
+/* Gifts & Support (OBI GIFTS, phase 4), organizer dashboard. Only used by /org-gifts.php. */
 .og-note{border-radius:14px; padding:13px 16px; margin-bottom:18px; font-size:.9rem; line-height:1.45}
 .og-note-warn{background:var(--warn-bg,#fff7e6); color:var(--warn,#8a5a00); border:1px solid var(--warn-border,#f3d99b)}
 
@@ -53,3 +53,11 @@
 /* grid cards may shrink below their widest line (long one-line text truncates instead of widening the page on phones) */
 .org-shell .admin-grid-2 > .admin-card{min-width:0}
 .org-shell .admin-kpi-grid > .admin-kpi-card{min-width:0}
+
+/* OBI COINS mark (phase 5) */
+.og-coin { display:inline-block; width:20px; height:20px; border-radius:50%; background:radial-gradient(circle at 32% 26%, #FFF0B8, #FBBF24 52%, #B7791F); box-shadow:inset 0 0 0 2px rgba(255,255,255,.4), 0 4px 10px -4px rgba(251,191,36,.7); }
+.admin-kpi-ic .og-coin { width:22px; height:22px; }
+/* four cards per row, never three-and-one: 4 wide, 2x2 on tablets and phones, 1 column on very narrow screens */
+.org-shell .og-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1000px){.org-shell .og-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:340px){.org-shell .og-kpis{grid-template-columns:minmax(0,1fr)}}

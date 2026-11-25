@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
 
-// OB GIFTS MANAGEMENT (phase 2): the gift catalogue, the 40/60 revenue split with its history, and the master switch.
+// OBI GIFTS MANAGEMENT (phase 2): the gift catalogue, the 40/60 revenue split with its history, and the master switch.
 // Gifts are separate from tickets: nothing on this page reads or changes orders, tickets or ticket payouts.
 $admin = require_admin_permission('gifts.view');
 $adminId = (int) $admin['id'];
@@ -61,7 +61,7 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $go('/admin-gifts.php', 'Cannot switch gifts on: the ioTec keys are missing from the server config.');
         }
         gift_set_enabled($adminId, $turnOn);
-        $go('/admin-gifts.php', $turnOn ? 'OB Gifts is switched ON.' : 'OB Gifts is switched OFF.');
+        $go('/admin-gifts.php', $turnOn ? 'OBI GIFTS is switched ON.' : 'OBI GIFTS is switched OFF.');
     } elseif ($action === 'save_gift') {
         $gid = (int) ($_POST['id'] ?? 0) ?: null;
         $res = gift_admin_save($adminId, $gid, $_POST, $_FILES['image'] ?? null, $_FILES['animation'] ?? null, !empty($_POST['remove_image']), !empty($_POST['remove_animation']));
@@ -103,12 +103,12 @@ $switchSetting = $ready && get_setting('gifts_enabled', '0') === '1';
 $switchLive = $ready && gifts_enabled();
 $fv = static fn (string $k, $default = '') => $form[$k] ?? $default;   // a form value: what was typed (after an error) or the saved one
 
-$pageTitle = 'OB Gifts';
+$pageTitle = 'OBI GIFTS';
 render_admin_head('gifts');
 ?>
 
 <div class="admin-page-head">
-  <div><h1>OB Gifts</h1><p>Virtual gifts viewers send to organizers. The catalogue and the revenue split live here. Gifts are completely separate from tickets.</p></div>
+  <div><h1>OBI GIFTS</h1><p>Virtual gifts viewers send to organizers. The catalogue and the revenue split live here. Gifts are completely separate from tickets.</p></div>
 </div>
 
 <?php if ($flash): ?><span data-flash="<?= $h($flash) ?>" hidden></span><?php endif; ?>
@@ -131,7 +131,7 @@ render_admin_head('gifts');
     </p>
   </div>
   <?php if ($canManage): ?>
-    <form method="post" data-confirm="<?= $switchLive || $switchSetting ? 'Switch OB Gifts OFF?' : 'Switch OB Gifts ON? Viewers will be able to buy gifts with real money.' ?>">
+    <form method="post" data-confirm="<?= $switchLive || $switchSetting ? 'Switch OBI GIFTS OFF?' : 'Switch OBI GIFTS ON? Viewers will be able to buy gifts with real money.' ?>">
       <?= csrf_field() ?><input type="hidden" name="action" value="toggle_switch"><?php if (!$switchSetting): ?><input type="hidden" name="on" value="1"><?php endif; ?>
       <button type="submit" class="btn <?= $switchSetting ? 'btn-line' : 'btn-purple' ?>"><?= $switchSetting ? 'Switch OFF' : 'Switch ON' ?></button>
     </form>

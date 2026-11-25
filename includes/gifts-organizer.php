@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * OB GIFTS, phase 4: what an ORGANIZER sees about the gifts sent to them (earnings, history, analytics).
+ * OBI GIFTS, phase 4: what an ORGANIZER sees about the gifts sent to them (earnings, history, analytics).
  *
  * Rules every function here follows:
  *  - It is scoped to ONE organizer (recipient_organizer_id = ?), always, so one organizer can never read another's gifts.
@@ -33,7 +33,13 @@ function gift_org_has_activity(int $organizerId): bool
     return false;
 }
 
-/** Whether the "Gifts & Support" page should be offered in this organizer's menu. */
+/** Are the OBI COINS columns on the gift tables there (migration 046)? Before it runs, every number here still works and coins read as 0. */
+function gift_org_coins_ready(): bool
+{
+    return function_exists('coins_ready') && coins_ready();
+}
+
+/** Whether the OBI GIFTS & earnings page should be offered in this organizer's menu. */
 function gift_org_menu_visible(int $organizerId): bool
 {
     return gifts_ready() && (gifts_enabled() || gift_org_has_activity($organizerId));
@@ -98,14 +104,26 @@ function gift_org_summary(int $organizerId): array
             COALESCE(SUM(CASE WHEN payment_status = 'SUCCESSFUL' AND paid_at >= ? THEN organizer_ugx ELSE 0 END), 0) AS week_ugx,
             COALESCE(SUM(CASE WHEN payment_status = 'REFUNDED' THEN 1 ELSE 0 END), 0) AS reversed,
             COALESCE(SUM(CASE WHEN payment_status = 'REFUNDED' THEN organizer_ugx ELSE 0 END), 0) AS reversed_ugx,
-            COALESCE(MAX(CASE WHEN payment_status = 'SUCCESSFUL' THEN gross_ugx END), 0) AS biggest_ugx
+            COALESCE(MAX(CASE WHEN payment_status = 'SUCCESSFUL' THEN gross_ugx END), 0) AS biggest_ugx,
+            COALESCE(SUM(CASE WHEN payment_status = 'SUCCESSFUL' THEN gross_ugx ELSE 0 END), 0) AS gross_ugx,
+            " . (gift_org_coins_ready() ? "COALESCE(SUM(CASE WHEN payment_status = 'SUCCESSFUL' AND payment_source = 'COINS' THEN coins_spent ELSE 0 END), 0)" : '0') . " AS coins_received
         FROM gift_transactions WHERE recipient_organizer_id = ?");
     $stmt->execute([$monthStart, $monthStart, $weekStart, $organizerId]);
     $r = $stmt->fetch() ?: [];
     $balance = gift_balance($organizerId);
+    $wd = $pdo->prepare("SELECT COUNT(*) c FROM gift_withdrawals WHERE organizer_id = ? AND status = 'PAID'");
+    $wd->execute([$organizerId]);
+    $coinSum = gift_org_coins_ready() ? "COALESCE(SUM(CASE WHEN t.payment_source = 'COINS' THEN t.coins_spent ELSE 0 END), 0)" : '0';
+    $pop = $pdo->prepare("SELECT g.name, g.emoji, COUNT(*) gifts, SUM(t.quantity) units, $coinSum coins FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id
+                           WHERE t.recipient_organizer_id = ? AND t.payment_status = 'SUCCESSFUL' GROUP BY g.id, g.name, g.emoji ORDER BY gifts DESC, units DESC, g.id LIMIT 3");
+    $pop->execute([$organizerId]);
 
     return [
         'balance' => $balance,
+        'gross_ugx' => (int) ($r['gross_ugx'] ?? 0),
+        'coins_received' => (int) ($r['coins_received'] ?? 0),
+        'withdrawn_count' => (int) $wd->fetchColumn(),
+        'popular' => array_map(static fn ($p) => ['name' => $p['name'], 'emoji' => $p['emoji'], 'gifts' => (int) $p['gifts'], 'units' => (int) $p['units'], 'coins' => (int) $p['coins']], $pop->fetchAll()),
         'month_ugx' => (int) ($r['month_ugx'] ?? 0),
         'month_gifts' => (int) ($r['month_gifts'] ?? 0),
         'week_ugx' => (int) ($r['week_ugx'] ?? 0),
@@ -151,7 +169,8 @@ function gift_org_history(int $organizerId, array $f = [], int $limit = 25): arr
         $args[] = (int) $f['before'];
     }
 
-    $sql = "SELECT t.id, t.reference, t.paid_at, t.quantity, t.gross_ugx, t.organizer_ugx, t.is_anonymous, t.payment_status, t.post_id,
+    $coinSel = gift_org_coins_ready() ? 't.coins_spent, t.payment_source' : "NULL AS coins_spent, 'DIRECT' AS payment_source";
+    $sql = "SELECT t.id, t.reference, t.paid_at, t.quantity, t.gross_ugx, t.organizer_ugx, t.is_anonymous, t.payment_status, t.post_id, $coinSel,
                    g.name AS gift_name, g.emoji, u.name AS sender_name, e.title AS event_title
             FROM gift_transactions t
             JOIN gift_catalog g ON g.id = t.gift_id
@@ -172,6 +191,8 @@ function gift_org_history(int $organizerId, array $f = [], int $limit = 25): arr
     foreach ($rows as &$row) {
         $row['supporter'] = !empty($row['is_anonymous']) ? 'Anonymous supporter' : gift_first_name($row['sender_name']);
         $row['reversed'] = $row['payment_status'] === 'REFUNDED';
+        $row['coins'] = ($row['payment_source'] ?? 'DIRECT') === 'COINS' ? (int) $row['coins_spent'] : null;
+        unset($row['coins_spent'], $row['payment_source']);
         $row['where'] = $row['post_id'] ? ($row['event_title'] ?: 'A video') : 'Your profile';
         unset($row['sender_name']);   // the full name never leaves this function
     }
@@ -190,9 +211,10 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
     $from = date('Y-m-d 00:00:00', time() - ($days - 1) * 86400);
     $prevFrom = date('Y-m-d 00:00:00', time() - (2 * $days - 1) * 86400);
     $ok = "t.recipient_organizer_id = ? AND t.payment_status = 'SUCCESSFUL'";
+    $coinSumT = gift_org_coins_ready() ? "COALESCE(SUM(CASE WHEN t.payment_source = 'COINS' THEN t.coins_spent ELSE 0 END), 0)" : '0';
 
     // totals now and for the period before
-    $tot = $pdo->prepare("SELECT COUNT(*) gifts, COALESCE(SUM(organizer_ugx),0) ugx, COALESCE(SUM(quantity),0) units, COUNT(DISTINCT sender_id) supporters
+    $tot = $pdo->prepare("SELECT COUNT(*) gifts, COALESCE(SUM(organizer_ugx),0) ugx, COALESCE(SUM(quantity),0) units, COUNT(DISTINCT sender_id) supporters, $coinSumT coins
                           FROM gift_transactions t WHERE $ok AND t.paid_at >= ?");
     $tot->execute([$organizerId, $from]);
     $now = $tot->fetch() ?: [];
@@ -215,7 +237,7 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
     }
 
     // which gifts earn the most
-    $g = $pdo->prepare("SELECT g.name, g.emoji, COUNT(*) gifts, SUM(t.quantity) units, SUM(t.organizer_ugx) ugx
+    $g = $pdo->prepare("SELECT g.name, g.emoji, COUNT(*) gifts, SUM(t.quantity) units, $coinSumT coins, SUM(t.organizer_ugx) ugx
                         FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE $ok AND t.paid_at >= ?
                         GROUP BY g.id, g.name, g.emoji ORDER BY ugx DESC LIMIT 10");
     $g->execute([$organizerId, $from]);
@@ -255,6 +277,7 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
         'days' => $days,
         'gifts' => $gifts,
         'units' => (int) ($now['units'] ?? 0),
+        'coins' => (int) ($now['coins'] ?? 0),
         'ugx' => $nowUgx,
         'supporters' => (int) ($now['supporters'] ?? 0),
         'repeat_supporters' => (int) $rep->fetchColumn(),
@@ -262,7 +285,7 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
         'prev_ugx' => $prevUgx,
         'change_pct' => $prevUgx > 0 ? (int) round(($nowUgx - $prevUgx) / $prevUgx * 100) : null,
         'series' => $series,
-        'by_gift' => array_map(static fn ($r) => ['name' => $r['name'], 'emoji' => $r['emoji'], 'gifts' => (int) $r['gifts'], 'units' => (int) $r['units'], 'ugx' => (int) $r['ugx']], $byGift),
+        'by_gift' => array_map(static fn ($r) => ['name' => $r['name'], 'emoji' => $r['emoji'], 'gifts' => (int) $r['gifts'], 'units' => (int) $r['units'], 'coins' => (int) $r['coins'], 'ugx' => (int) $r['ugx']], $byGift),
         'by_video' => $byVideo,
         'top_supporters' => $top,
         'anonymous' => ['gifts' => (int) ($anon['gifts'] ?? 0), 'ugx' => (int) ($anon['ugx'] ?? 0)],

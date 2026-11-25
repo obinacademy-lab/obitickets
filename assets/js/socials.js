@@ -321,7 +321,7 @@
     fol.setAttribute('aria-label', (d.org.following ? 'Following ' : 'Follow ') + d.org.name); fol.setAttribute('aria-pressed', d.org.following ? 'true' : 'false');
     if (D.me && D.me === d.org.id) { fol.hidden = true; }
     fw.appendChild(fol);
-    // OB Gifts: only when Admin switched gifts on, and never on your own videos
+    // OBI GIFTS: only when Admin switched gifts on, and never on your own videos
     var gift = null;
     if (D.canGift && window.ObGifts && !(D.me && D.me === d.org.id)) {
       gift = railButton('Send a gift', IC.gift, 'Gift', true, 'fd-gift');
