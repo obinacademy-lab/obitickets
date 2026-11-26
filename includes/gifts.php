@@ -307,7 +307,8 @@ function gift_start(array $sender, int $organizerId, int $giftId, int $quantity,
             $pdo->rollBack();
             return $fail('You have gift payments waiting for approval on your phone. Approve or wait a few minutes.');
         }
-        $day = $pdo->prepare("SELECT COALESCE(SUM(gross_ugx), 0) FROM gift_transactions WHERE sender_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR AND payment_status IN ('PENDING','PROCESSING','SUCCESSFUL')");
+        $day = $pdo->prepare("SELECT COALESCE(SUM(gross_ugx), 0) FROM gift_transactions WHERE sender_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR AND payment_status IN ('PENDING','PROCESSING','SUCCESSFUL')"
+            . (function_exists('coins_ready') && coins_ready() ? " AND payment_source = 'DIRECT'" : ''));
         $day->execute([$senderId]);
         if ((int) $day->fetchColumn() + $gross > GIFT_DAILY_CAP_UGX) {
             $pdo->rollBack();

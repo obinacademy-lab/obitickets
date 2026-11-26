@@ -21,8 +21,9 @@ const COIN_PENDING_EXPIRY_MINUTES = 10;
 const COIN_OPEN_PURCHASE_LIMIT = 3;        // payment prompts a user may have waiting at once
 const COIN_PHONE_HOURLY_LIMIT = 6;         // prompts to one phone number per hour
 const COIN_MIN_PURCHASE_UGX = 500;
-const COIN_MAX_PURCHASE_UGX = 1000000;     // one purchase (raised from 500,000 on 11/26 so 1,000,000-coin packages and amounts fit)
-const COIN_DAILY_PURCHASE_CAP_UGX = 2000000;   // per user per 24 hours (raised from 1,000,000 on 11/26)
+// Owner 11/26: no upper limit on what one person buys (packages or a typed amount). The limits on payment PROMPTS below stay (they stop a
+// stranger's phone being flooded). COIN_CUSTOM_MAX_COINS only refuses nonsense input, it is not a business limit.
+const COIN_CUSTOM_MAX_COINS = 100000000;
 const COIN_CUSTOM_SLUG = 'custom-amount';  // the hidden package row every "any amount" purchase is recorded under (migration 050)
 // phase 7: abuse limits (the same ideas as the ticket payment guard in payguard.php, measured by the database clock)
 const COIN_STARTS_PER_10_MIN = 4;          // purchases one account may start in 10 minutes
@@ -159,11 +160,49 @@ function coin_rate_set(int $adminId, string $ugxPerCoin, string $reason, ?string
     return ['ok' => true, 'version' => $v];
 }
 
-// ---------------------------------------------------------------------------------------------------- any amount (11/26)
+// ---------------------------------------------------------------------------------------------------- the coin price (11/26)
 
 /**
- * "Buy any amount": on/off and the UGX price of one OBI COIN for it, both set by an admin (Admin > OBI COINS > Packages).
- * The price is "UGX per coin x 10,000" like the accounting rate (whole numbers only). Off, or no price, or no hidden package row = not offered.
+ * THE price of one OBI COIN in UGX x 10,000 (Admin > OBI COINS > Packages > Coin price), or null while it was never set.
+ * One number drives everything: every package's price, the price of a typed amount, and the accounting rate gifts are valued at,
+ * so what buyers pay and what organizers are credited can never drift apart. Stored in the setting coin_custom_price_e4.
+ */
+function coin_price_e4(): ?int
+{
+    $e4 = (int) get_setting('coin_custom_price_e4', '0');
+    return $e4 > 0 ? $e4 : null;
+}
+
+/**
+ * Admin: sets the coin price. In one go: the price is stored, every package is repriced (coins x price, rounded up), "any amount" is
+ * switched on or off, and if the accounting rate differs a new rate version starts now (gifts and purchases made before keep theirs). Audited.
+ * @return array{ok:bool, error?:string, repriced?:int}
+ */
+function coin_admin_set_price(int $adminId, string $ugxPerCoin, bool $customOn, ?string $reason = null): array
+{
+    $e4 = coin_parse_rate($ugxPerCoin);
+    if ($e4 === null) {
+        return ['ok' => false, 'error' => 'Enter the price of one OBI COIN in UGX, a number above zero with at most 4 decimals (for example 100).'];
+    }
+    $before = coin_price_e4();
+    $text = rtrim(rtrim(number_format($e4 / 10000, 4, '.', ''), '0'), '.');
+    $rate = coin_rate_current();
+    if ($rate === null || (int) $rate['rate_e4'] !== $e4) {
+        $r = coin_rate_set($adminId, $text, $reason !== null && trim($reason) !== '' ? $reason : 'Coin price set to UGX ' . $text . ' in Admin');
+        if (!$r['ok']) {
+            return $r;
+        }
+    }
+    set_setting($adminId, 'coin_custom_price_e4', (string) $e4);
+    set_setting($adminId, 'coin_custom_enabled', $customOn ? '1' : '0');
+    $st = db()->prepare('UPDATE coin_packages SET price_ugx = (coins * ? + 9999) DIV 10000 WHERE slug <> ?');
+    $st->execute([$e4, COIN_CUSTOM_SLUG]);
+    log_admin_action($adminId, 'coins.price', 'coin_price', null, ['from' => $before, 'to' => $e4, 'ugx_per_coin' => $text, 'any_amount' => $customOn, 'packages_repriced' => $st->rowCount()]);
+    return ['ok' => true, 'repriced' => $st->rowCount()];
+}
+
+/**
+ * "Buy any amount": on/off and the coin price it is sold at. Off, or no price, or no hidden package row = not offered.
  * @return array{on:bool, price_e4:?int, package_id:?int, min_coins:int, max_coins:int}
  */
 function coin_custom_settings(): array
@@ -176,9 +215,9 @@ function coin_custom_settings(): array
         $pkgId = ($v = $st->fetchColumn()) ? (int) $v : null;
     }
     $on = get_setting('coin_custom_enabled', '0') === '1' && $e4 > 0 && $pkgId !== null;
-    // the fewest and most coins a person may ask for, so the price stays between the smallest and largest single payment
-    $min = $e4 > 0 ? (int) ceil(COIN_MIN_PURCHASE_UGX * 10000 / $e4) : 0;
-    $max = $e4 > 0 ? intdiv(COIN_MAX_PURCHASE_UGX * 10000, $e4) : 0;
+    // the fewest coins: the smallest mobile money payment. No business maximum (owner 11/26); COIN_CUSTOM_MAX_COINS only stops nonsense input.
+    $min = $e4 > 0 ? max(1, (int) ceil(COIN_MIN_PURCHASE_UGX * 10000 / $e4)) : 0;
+    $max = $e4 > 0 ? COIN_CUSTOM_MAX_COINS : 0;
     return ['on' => $on, 'price_e4' => $e4 > 0 ? $e4 : null, 'package_id' => $pkgId, 'min_coins' => $min, 'max_coins' => $max];
 }
 
@@ -188,21 +227,10 @@ function coin_custom_price(int $coins, int $priceE4): int
     return intdiv($coins * $priceE4 + 9999, 10000);
 }
 
-/** Admin: switch "any amount" on or off and set its price per coin. Audited. */
+/** Kept for older callers: the same as setting the coin price. */
 function coin_admin_set_custom(int $adminId, bool $on, string $ugxPerCoin): array
 {
-    $e4 = coin_parse_rate($ugxPerCoin);
-    if ($e4 === null) {
-        return ['ok' => false, 'error' => 'Enter the price of one OBI COIN in UGX, a number above zero with at most 4 decimals (for example 1).'];
-    }
-    if (coin_custom_settings()['package_id'] === null) {
-        return ['ok' => false, 'error' => 'Run migration 050 first (it adds the hidden "Custom amount" package).'];
-    }
-    $before = coin_custom_settings();
-    set_setting($adminId, 'coin_custom_price_e4', (string) $e4);
-    set_setting($adminId, 'coin_custom_enabled', $on ? '1' : '0');
-    log_admin_action($adminId, 'coins.custom', 'coin_custom', null, ['from' => ['on' => $before['on'], 'price_e4' => $before['price_e4']], 'to' => ['on' => $on, 'price_e4' => $e4]]);
-    return ['ok' => true];
+    return coin_admin_set_price($adminId, $ugxPerCoin, $on);
 }
 
 // ---------------------------------------------------------------------------------------------------- packages
@@ -241,12 +269,15 @@ function coin_admin_save_package(int $adminId, ?int $id, array $in): array
     if ($bonus === false || $bonus < 0 || $bonus > 100000000) {
         return ['ok' => false, 'error' => 'Bonus OBI COINS must be a whole number, or empty for none.'];
     }
+    // once the coin price is set, a package always costs coins x coin price (bonus coins are free); before that, the typed price is used
     $priceRaw = trim((string) ($in['price_ugx'] ?? ''));
     $price = null;
-    if ($priceRaw !== '') {
+    if (($cp = coin_price_e4()) !== null) {
+        $price = coin_custom_price((int) $coins, $cp);
+    } elseif ($priceRaw !== '') {
         $price = filter_var($priceRaw, FILTER_VALIDATE_INT);
-        if ($price === false || $price < 1 || $price > COIN_MAX_PURCHASE_UGX) {
-            return ['ok' => false, 'error' => 'The UGX price must be a whole number from 1 to ' . number_format(COIN_MAX_PURCHASE_UGX) . '.'];
+        if ($price === false || $price < 1) {
+            return ['ok' => false, 'error' => 'The UGX price must be a whole number above zero.'];
         }
     }
     $active = !empty($in['is_active']) ? 1 : 0;
@@ -456,7 +487,7 @@ function coin_purchase_start(array $user, int $packageId, string $phone, ?string
         }
     }
     $price = (int) $pkg['price_ugx'];
-    if ($price < COIN_MIN_PURCHASE_UGX || $price > COIN_MAX_PURCHASE_UGX) {
+    if ($price < COIN_MIN_PURCHASE_UGX) {
         return $fail('That package cannot be bought right now.');
     }
     $idem = $idempotencyKey !== null && $idempotencyKey !== '' ? mb_substr($idempotencyKey, 0, 64) : null;
@@ -500,12 +531,6 @@ function coin_purchase_start(array $user, int $packageId, string $phone, ?string
         $usedNumbers = $numbers->fetchAll(PDO::FETCH_COLUMN);
         if (count($usedNumbers) >= COIN_DISTINCT_PHONES_PER_HOUR && !in_array($phoneN0, $usedNumbers, true)) {
             return $throttle('Please use a mobile money number you already tried, or wait a while before using a different one.');
-        }
-        $day = $pdo->prepare("SELECT COALESCE(SUM(price_ugx), 0) FROM coin_purchases WHERE user_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR AND payment_status IN ('PENDING','PROCESSING','SUCCESSFUL')");
-        $day->execute([$userId]);
-        if ((int) $day->fetchColumn() + $price > COIN_DAILY_PURCHASE_CAP_UGX) {
-            $pdo->rollBack();
-            return $fail('You have reached the daily limit for buying OBI COINS (UGX ' . number_format(COIN_DAILY_PURCHASE_CAP_UGX) . '). Try again tomorrow.');
         }
         $phoneN = iotec_normalize_phone($phone);
         $byPhone = $pdo->prepare('SELECT COUNT(*) FROM coin_purchases WHERE phone = ? AND created_at > NOW() - INTERVAL 1 HOUR');
@@ -798,9 +823,7 @@ function coin_gift_send(array $sender, int $organizerId, int $giftId, int $quant
     if ($unitUgx < 1) {
         return $fail('That gift cannot be sent right now.');
     }
-    if ($gross > GIFT_MAX_PAYMENT_UGX) {
-        return $fail('A single gift can be worth at most UGX ' . number_format(GIFT_MAX_PAYMENT_UGX) . '. Choose fewer.');
-    }
+
     $idem = $idempotencyKey !== null && $idempotencyKey !== '' ? mb_substr($idempotencyKey, 0, 64) : null;
 
     $pdo = db();
@@ -815,12 +838,7 @@ function coin_gift_send(array $sender, int $organizerId, int $giftId, int $quant
                 return ['ok' => true, 'id' => (int) $row['id'], 'reference' => $row['reference'], 'gross' => (int) $row['gross_ugx'], 'coins' => (int) $row['coins_spent'], 'reused' => true, 'balance_after' => coin_wallet($senderId)['balance']];
             }
         }
-        $day = $pdo->prepare("SELECT COALESCE(SUM(gross_ugx), 0) FROM gift_transactions WHERE sender_id = ? AND created_at >= NOW() - INTERVAL 24 HOUR AND payment_status IN ('PENDING','PROCESSING','SUCCESSFUL')");
-        $day->execute([$senderId]);
-        if ((int) $day->fetchColumn() + $gross > GIFT_DAILY_CAP_UGX) {
-            $pdo->rollBack();
-            return $fail('You have reached the daily gift limit. Try again tomorrow.');
-        }
+        // no value or daily limit on coin gifts (owner 11/26): the coins were already paid for; the per-minute limit below still stops runaway taps
         $fast = $pdo->prepare("SELECT COUNT(*) FROM gift_transactions WHERE sender_id = ? AND payment_source = 'COINS' AND created_at > NOW() - INTERVAL 1 MINUTE");
         $fast->execute([$senderId]);
         if ((int) $fast->fetchColumn() >= COIN_GIFTS_PER_MINUTE) {

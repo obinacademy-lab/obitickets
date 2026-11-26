@@ -134,7 +134,8 @@
       var c = coins(), okay = c >= cu.min && c <= cu.max;
       go.disabled = !okay;
       hint.classList.toggle('bad', c > 0 && !okay);
-      hint.textContent = c === 0 ? 'From ' + num(cu.min) + ' to ' + num(cu.max) + ' OBI COINS.' : (okay ? 'You pay ' + money(price(c)) + ' for ' + num(c) + ' OBI COINS.' : 'Choose between ' + num(cu.min) + ' and ' + num(cu.max) + ' OBI COINS.');
+      var range = cu.max >= 100000000 ? 'at least ' + num(cu.min) + ' OBI COINS' : 'between ' + num(cu.min) + ' and ' + num(cu.max) + ' OBI COINS';   // no maximum since 11/26
+      hint.textContent = c === 0 ? 'Any number of OBI COINS, ' + range + '.' : (okay ? 'You pay ' + money(price(c)) + ' for ' + num(c) + ' OBI COINS.' : 'Choose ' + range + '.');
     }
     inp.addEventListener('input', function () {
       var c = coins(), at = inp.value.length - inp.selectionStart;

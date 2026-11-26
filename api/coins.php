@@ -31,7 +31,7 @@ try {
                 'enabled' => coins_enabled(),
                 'wallet' => coin_wallet($uid),
                 'packages' => array_map('coin_package_public', coin_packages_active()),
-                'limits' => ['min' => COIN_MIN_PURCHASE_UGX, 'max' => COIN_MAX_PURCHASE_UGX, 'daily' => COIN_DAILY_PURCHASE_CAP_UGX],
+                'limits' => ['min' => COIN_MIN_PURCHASE_UGX, 'max' => null, 'daily' => null],
                 // "any amount": the browser shows the price as a guide; the server works it out again when the purchase starts
                 'custom' => ($cs = coin_custom_settings())['on'] ? ['priceE4' => $cs['price_e4'], 'min' => $cs['min_coins'], 'max' => $cs['max_coins']] : null,
                 'phone' => coin_phone_hint($user),

@@ -44,7 +44,8 @@ try {
                 'gifts' => array_map(static fn ($g) => gift_public_shape($g, $coinsMode), gift_catalog_for($coinsMode)),
                 'categories' => GIFT_CATEGORIES,
                 'wallet' => $coinsMode ? ['balance' => coin_wallet($uid)['balance']] : null,
-                'limits' => ['min' => GIFT_MIN_UGX, 'max' => GIFT_MAX_PAYMENT_UGX, 'daily' => GIFT_DAILY_CAP_UGX, 'maxQty' => GIFT_MAX_QUANTITY],
+                // with OBI COINS there is no value limit on a gift (the coins were paid for): the wallet balance is the limit
+                'limits' => ['min' => GIFT_MIN_UGX, 'max' => $coinsMode ? 999999999999 : GIFT_MAX_PAYMENT_UGX, 'daily' => $coinsMode ? null : GIFT_DAILY_CAP_UGX, 'maxQty' => GIFT_MAX_QUANTITY],
                 'phone' => $coinsMode ? '' : gift_phone_hint($user),
             ]);
 

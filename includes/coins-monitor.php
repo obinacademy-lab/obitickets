@@ -250,8 +250,8 @@ function coin_admin_verification(): array
 
     // ---- limits in force (information)
     $L = 'Limits in force';
-    $line($L, 'Buying OBI COINS', 'pass', 'At most ' . COIN_STARTS_PER_10_MIN . ' payments per account per 10 minutes; ' . COIN_OPEN_PURCHASE_LIMIT . ' waiting at once; ' . COIN_FAILS_IN_A_ROW . ' failures in a row pause the account ' . COIN_FAILS_PAUSE_MINUTES . ' minutes; ' . COIN_DISTINCT_PHONES_PER_HOUR . ' different numbers an hour; ' . COIN_PHONE_HOURLY_LIMIT . ' prompts per number an hour; UGX ' . number_format(COIN_DAILY_PURCHASE_CAP_UGX) . ' a day.');
-    $line($L, 'Sending gifts', 'pass', 'At most ' . COIN_GIFTS_PER_MINUTE . ' gifts a minute per account; UGX ' . number_format(GIFT_DAILY_CAP_UGX) . ' of gifts a day; one gift can be worth at most UGX ' . number_format(GIFT_MAX_PAYMENT_UGX) . '; a repeat tap is the same gift (never charged twice).');
+    $line($L, 'Buying OBI COINS', 'pass', 'At most ' . COIN_STARTS_PER_10_MIN . ' payments per account per 10 minutes; ' . COIN_OPEN_PURCHASE_LIMIT . ' waiting at once; ' . COIN_FAILS_IN_A_ROW . ' failures in a row pause the account ' . COIN_FAILS_PAUSE_MINUTES . ' minutes; ' . COIN_DISTINCT_PHONES_PER_HOUR . ' different numbers an hour; ' . COIN_PHONE_HOURLY_LIMIT . ' prompts per number an hour; no upper limit on the amount (owner 11/26).');
+    $line($L, 'Sending gifts', 'pass', 'At most ' . COIN_GIFTS_PER_MINUTE . ' gifts a minute per account; no value limit on gifts paid with OBI COINS (they were already paid for); a repeat tap is the same gift (never charged twice).');
     $line($L, 'Looking at a payment', 'pass', 'ioTec is asked about the same payment at most once every ' . COIN_POLL_MIN_SECONDS . ' seconds per visitor. Refusals by these limits count towards the IP blocker when it is switched on.');
     $line($L, 'Screens on phones', 'pass', 'Wallet, recharge sheet, gift sheet, OBI GIFTS & earnings and the admin screens were checked at 320 and 375 pixels wide with no sideways scrolling (11/25).');
 

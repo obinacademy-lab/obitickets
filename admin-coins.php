@@ -29,9 +29,9 @@ $editingPackage = null;   // package being edited, [] = new
 if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = (string) ($_POST['action'] ?? '');
-    if (in_array($action, ['toggle_coins', 'save_package', 'recipient', 'save_custom'], true) && !$canManage) { $deny('You do not have permission to manage OBI COINS.'); }
+    if (in_array($action, ['toggle_coins', 'save_package', 'recipient'], true) && !$canManage) { $deny('You do not have permission to manage OBI COINS.'); }
     if (in_array($action, ['wallet_status', 'reverse_purchase', 'recheck_payments'], true) && !$canRefund) { $deny('You do not have permission to freeze wallets or reverse purchases.'); }
-    if (in_array($action, ['set_rate', 'adjust'], true) && !$canMoney) { $deny('Only the top-level admin can change the rate or add and remove OBI COINS.'); }
+    if (in_array($action, ['set_rate', 'adjust', 'save_custom'], true) && !$canMoney) { $deny('Only the top-level admin can change the rate or add and remove OBI COINS.'); }
 
     if ($action === 'run_books' && !$canManage) { $deny('You do not have permission to run the books check.'); }
 
@@ -50,8 +50,8 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
         log_admin_action($adminId, 'coins.switch', 'setting', null, ['on' => $turnOn]);
         $go('/admin-coins.php', $turnOn ? 'OBI COINS is switched ON. Gifts are now paid with OBI COINS.' : 'OBI COINS is switched OFF.');
     } elseif ($action === 'save_custom') {
-        $res = coin_admin_set_custom($adminId, !empty($_POST['on']), (string) ($_POST['ugx_per_coin'] ?? ''));
-        $go('/admin-coins.php?tab=packages', $res['ok'] ? (!empty($_POST['on']) ? '"Any amount" is ON.' : '"Any amount" is OFF.') : $res['error']);
+        $res = coin_admin_set_price($adminId, (string) ($_POST['ugx_per_coin'] ?? ''), !empty($_POST['on']));
+        $go('/admin-coins.php?tab=packages', $res['ok'] ? 'Coin price saved: 1 OBI COIN = UGX ' . trim((string) $_POST['ugx_per_coin']) . '. ' . (int) $res['repriced'] . ' packages repriced.' : $res['error']);
     } elseif ($action === 'save_package') {
         $pid = (int) ($_POST['id'] ?? 0) ?: null;
         $res = coin_admin_save_package($adminId, $pid, $_POST);
@@ -62,6 +62,22 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $tab = 'packages';
         $editingPackage = $pid ? (coin_package_find($pid) ?: []) : [];
         $form = $_POST;
+    } elseif ($action === 'set_rate' && coin_price_e4() !== null) {
+        // with a coin price set, the rate always equals it: changing the rate here changes the coin price (and every package) at once,
+        // so what people pay and what organizers are credited never drift apart (owner 11/26)
+        if (($_POST['when'] ?? 'now') === 'later') {
+            $error = 'The rate now follows the coin price and changes straight away. Leave "When does it start?" on "Right now".';
+            $tab = 'rate';
+            $form = $_POST;
+        } else {
+            $res = coin_admin_set_price($adminId, (string) ($_POST['ugx_per_coin'] ?? ''), coin_custom_settings()['on'], (string) ($_POST['reason'] ?? ''));
+            if ($res['ok']) {
+                $go('/admin-coins.php?tab=rate', 'Saved: 1 OBI COIN = UGX ' . trim((string) $_POST['ugx_per_coin']) . ' for buying and for valuing new gifts. ' . (int) $res['repriced'] . ' packages repriced.');
+            }
+            $error = $res['error'];
+            $tab = 'rate';
+            $form = $_POST;
+        }
     } elseif ($action === 'set_rate') {
         $res = coin_rate_set($adminId, (string) ($_POST['ugx_per_coin'] ?? ''), (string) ($_POST['reason'] ?? ''), ($_POST['when'] ?? 'now') === 'later' ? (string) ($_POST['effective_from'] ?? '') : null);
         if ($res['ok']) {
@@ -249,8 +265,13 @@ render_admin_head('gifts');
             <div class="admin-form-row"><label>Bonus OBI COINS (optional)</label><input type="number" name="bonus_coins" min="0" step="1" value="<?= $h($fv('bonus_coins', $editingPackage['bonus_coins'] ?? 0)) ?>"></div>
           </div>
           <div>
-            <div class="admin-form-row"><label>Price in UGX</label><input type="number" name="price_ugx" min="1" max="<?= COIN_MAX_PURCHASE_UGX ?>" step="1" value="<?= $h($fv('price_ugx', $editingPackage['price_ugx'] ?? '')) ?>" placeholder="Not set yet"></div>
-            <p class="muted" style="font-size:.8rem; margin:-4px 0 12px">What the person pays by mobile money, between UGX 1 and UGX <?= number_format(COIN_MAX_PURCHASE_UGX) ?>. A new price applies to <b>new purchases only</b>; every purchase keeps the price it was bought at. A package cannot be shown without a price.</p>
+            <?php if (($cpE4 = coin_price_e4()) !== null): ?>
+              <div class="admin-form-row"><label>Price in UGX</label><div style="padding:10px 0; font-weight:700"><?= !empty($editingPackage['coins']) ? $ugx(coin_custom_price((int) $editingPackage['coins'], $cpE4)) : 'Worked out when you save' ?></div></div>
+              <p class="muted" style="font-size:.8rem; margin:-4px 0 12px">Worked out automatically: OBI COINS &times; the coin price (1 OBI COIN = UGX <?= $h($rateText($cpE4)) ?>). Bonus coins are free. Change the coin price at the top of this page.</p>
+            <?php else: ?>
+              <div class="admin-form-row"><label>Price in UGX</label><input type="number" name="price_ugx" min="1" step="1" value="<?= $h($fv('price_ugx', $editingPackage['price_ugx'] ?? '')) ?>" placeholder="Not set yet"></div>
+              <p class="muted" style="font-size:.8rem; margin:-4px 0 12px">Set the coin price at the top of this page and every package is priced from it automatically.</p>
+            <?php endif; ?>
             <div class="admin-form-row"><label>Order (smaller shows first)</label><input type="number" name="sort_order" step="1" value="<?= $h($fv('sort_order', $editingPackage['sort_order'] ?? 100)) ?>"></div>
             <label style="display:flex; align-items:center; gap:8px; margin:6px 0 8px"><input type="checkbox" name="is_active" value="1" <?= ($form ? !empty($form['is_active']) : !empty($editingPackage['is_active'])) ? 'checked' : '' ?>> Shown to people (can be bought)</label>
             <label style="display:flex; align-items:center; gap:8px; margin:0 0 14px"><input type="checkbox" name="is_featured" value="1" <?= ($form ? !empty($form['is_featured']) : !empty($editingPackage['is_featured'])) ? 'checked' : '' ?>> Highlighted as the popular choice</label>
@@ -262,17 +283,19 @@ render_admin_head('gifts');
   <?php endif; ?>
   <?php $cs = coin_custom_settings(); $pkgs = array_values(array_filter($pkgs, static fn ($p) => $p['slug'] !== COIN_CUSTOM_SLUG)); ?>
   <div class="admin-card" style="margin-bottom:18px">
-    <h3 style="margin:0 0 6px">Any amount: <span class="admin-badge <?= $cs['on'] ? 'admin-badge-success' : 'admin-badge-muted' ?>"><?= $cs['on'] ? 'ON' : 'OFF' ?></span></h3>
-    <p class="muted" style="font-size:.84rem; margin:0 0 12px">People can type the number of OBI COINS they want instead of picking a package. They pay that number &times; the price per coin below (rounded up to a whole shilling), between UGX <?= number_format(COIN_MIN_PURCHASE_UGX) ?> and UGX <?= number_format(COIN_MAX_PURCHASE_UGX) ?> per payment<?php if ($cs['price_e4']): ?>, so from <?= number_format($cs['min_coins']) ?> to <?= number_format($cs['max_coins']) ?> OBI COINS<?php endif; ?>. At most UGX <?= number_format(COIN_DAILY_PURCHASE_CAP_UGX) ?> per person per 24 hours, packages included.</p>
+    <h3 style="margin:0 0 6px">Coin price: <?= $cs['price_e4'] ? '1 OBI COIN = UGX ' . $h($rateText((int) $cs['price_e4'])) : '<span class="admin-badge admin-badge-muted">not set</span>' ?></h3>
+    <p class="muted" style="font-size:.84rem; margin:0 0 12px">This one number sets <b>everything</b>: the price of every package below (coins &times; price, rounded up to a whole shilling), the price when people type their own number of OBI COINS, and what a gift is worth when the organizer's share is worked out (the accounting rate). Changing it applies to <b>new</b> purchases and gifts only; past ones keep their price. No upper limit on how many coins someone buys (the smallest payment is UGX <?= number_format(COIN_MIN_PURCHASE_UGX) ?>).</p>
     <?php if ($cs['package_id'] === null): ?>
       <p style="margin:0">Run <b>migration/050_obi_coins_big.sql</b> first.</p>
-    <?php elseif ($canManage): ?>
-      <form method="post" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+    <?php elseif ($canMoney): ?>
+      <form method="post" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap" data-confirm="Change the coin price? Every package is repriced, and new gifts are valued at the new price. Past purchases and gifts keep theirs.">
         <?= csrf_field() ?><input type="hidden" name="action" value="save_custom">
-        <div class="admin-form-row" style="margin:0"><label>Price of 1 OBI COIN (UGX)</label><input type="text" name="ugx_per_coin" inputmode="decimal" value="<?= $h($cs['price_e4'] ? rtrim(rtrim(number_format($cs['price_e4'] / 10000, 4, '.', ''), '0'), '.') : '') ?>" style="width:140px" required></div>
-        <label style="display:flex; align-items:center; gap:8px; margin:0 0 10px"><input type="checkbox" name="on" value="1" <?= $cs['on'] ? 'checked' : '' ?>> Allow any amount</label>
-        <button class="btn btn-purple" type="submit" style="margin-bottom:6px">Save</button>
+        <div class="admin-form-row" style="margin:0"><label>1 OBI COIN = UGX</label><input type="text" name="ugx_per_coin" inputmode="decimal" value="<?= $h($cs['price_e4'] ? $rateText((int) $cs['price_e4']) : '') ?>" style="width:140px" required></div>
+        <label style="display:flex; align-items:center; gap:8px; margin:0 0 10px"><input type="checkbox" name="on" value="1" <?= $cs['on'] ? 'checked' : '' ?>> Let people type any number of OBI COINS</label>
+        <button class="btn btn-purple" type="submit" style="margin-bottom:6px">Save the coin price</button>
       </form>
+    <?php else: ?>
+      <p class="muted" style="margin:0">Only the top-level admin can change the coin price.</p>
     <?php endif; ?>
   </div>
   <div class="admin-card">
@@ -315,7 +338,7 @@ render_admin_head('gifts');
       <div class="admin-kpi-card"><div class="admin-kpi-card-top"><span class="lbl">Example: a gift worth 1,000 coins</span></div><span class="num" style="font-size:1.4rem"><?= $ugx($exUgx) ?></span><span class="sub">organizer <?= $ugx($exSplit['organizer']) ?> &middot; obitickets <?= $ugx($exSplit['platform']) ?></span></div>
     <?php endif; ?>
   </div>
-  <p class="muted" style="margin:0 0 18px; font-size:.86rem">The accounting rate says how many UGX one OBI COIN is worth <b>when a gift is valued</b>, to work out the organizer's earnings and the revenue split. People never see it: they only see coin prices. It is not the price people pay for coins (that is set per package).</p>
+  <p class="muted" style="margin:0 0 18px; font-size:.86rem">The accounting rate says how many UGX one OBI COIN is worth <b>when a gift is valued</b>, to work out the organizer's earnings and the revenue split.<?php if (coin_price_e4() !== null): ?> <b>It always equals the coin price</b> (what people pay for one OBI COIN): saving a new rate here also reprices every package, exactly like the coin price on the <a href="/admin-coins.php?tab=packages">Packages</a> tab.<?php endif; ?></p>
 
   <div class="admin-grid-2">
     <div class="admin-card">
