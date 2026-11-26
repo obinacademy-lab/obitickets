@@ -70,53 +70,186 @@
 .og-ring.ok { background:#12231D; color:var(--og-ok); } .og-ring.bad { background:#2A1416; color:#FF6B76; }
 @keyframes ogSpin { to { transform:rotate(360deg); } }
 
-/* ------------------------------------------------------------------ the animation layer (sits on top of the video, never stops it) */
-.og-fx { position:absolute; inset:0; z-index:9; pointer-events:none; overflow:hidden; }
-.og-fx-msg { position:absolute; left:50%; top:16%; transform:translate(-50%, -14px); max-width:86%; padding:9px 16px; border-radius:999px; background:rgba(12,8,10,.78); color:#fff; font:800 14px/1.3 'Plus Jakarta Sans', system-ui, sans-serif; text-align:center; opacity:0;
-  animation:ogMsg 4.4s ease both; box-shadow:0 8px 28px rgba(0,0,0,.45); }
-@keyframes ogMsg { 0% { opacity:0; transform:translate(-50%, -14px); } 10%, 82% { opacity:1; transform:translate(-50%, 0); } 100% { opacity:0; transform:translate(-50%, -8px); } }
-.og-fx .og-big { position:absolute; display:grid; place-items:center; font-size:92px; line-height:1; filter:drop-shadow(0 10px 24px rgba(0,0,0,.5)); }
-.og-fx .og-big img { max-width:150px; max-height:130px; display:block; }
-.og-fx .og-x-qty { position:absolute; right:-8px; bottom:-6px; background:var(--og-red); color:#fff; border-radius:99px; padding:2px 9px; font:800 15px 'Plus Jakarta Sans', sans-serif; }
+/* ------------------------------------------------------------------ the animation layer (sits on top of the video, never stops it)
+   ADR-004: one player for 36 gifts. --dur is the gift's length, --hs the size of the gift (bigger for Premium/Elite). Every timing below is a
+   share of --dur, so a 2 second Thumbs Up and a 10 second OBI Universe use the same rules. The whole layer fades out at the end. */
+.og-fx { position:absolute; inset:0; z-index:9; pointer-events:none; overflow:hidden; perspective:900px; animation:ogFxOut var(--dur, 3s) linear both; }
+@keyframes ogFxOut { 0%, 93% { opacity:1; } 100% { opacity:0; } }
+.og-fx > * { position:absolute; }
+.og-fx .og-big { left:50%; top:42%; width:var(--hs, 140px); height:var(--hs, 140px); margin:calc(var(--hs, 140px) / -2) 0 0 calc(var(--hs, 140px) / -2);
+  display:grid; place-items:center; font-size:calc(var(--hs, 140px) * .68); line-height:1; filter:drop-shadow(0 14px 26px rgba(0,0,0,.5));
+  animation-duration:var(--dur, 3s); animation-fill-mode:both; animation-timing-function:cubic-bezier(.3,1.25,.5,1); z-index:2; }
+.og-fx .og-big svg, .og-fx .og-big img { width:100%; height:100%; display:block; object-fit:contain; }
+.og-fx .og-x-qty { position:absolute; right:2%; bottom:4%; background:var(--og-red); color:#fff; border-radius:99px; padding:2px 10px; font:800 16px 'Plus Jakarta Sans', sans-serif; }
 
-/* pop: arrives with a bounce */
-.og-a-pop .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.6s cubic-bezier(.2,1.4,.4,1) both; }
-@keyframes ogPop { 0% { transform:scale(.1) rotate(-14deg); opacity:0; } 14% { transform:scale(1.25) rotate(6deg); opacity:1; } 24% { transform:scale(1) rotate(0); } 82% { transform:scale(1); opacity:1; } 100% { transform:scale(.8) translateY(-30px); opacity:0; } }
-/* float: many small ones rise */
-.og-a-float .og-bit { position:absolute; bottom:-60px; font-size:36px; opacity:0; animation:ogFloat var(--d, 3s) ease-out var(--t, 0s) both; filter:drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
-.og-a-float .og-bit img { height:40px; display:block; }
-@keyframes ogFloat { 0% { transform:translate(0, 0) scale(.5); opacity:0; } 12% { opacity:1; } 50% { transform:translate(var(--x, 18px), -42vh) scale(1.05); } 100% { transform:translate(calc(var(--x, 18px) * -1), -86vh) scale(.9); opacity:0; } }
-/* sparkle: sparks fly out around it */
-.og-a-sparkle .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.8s cubic-bezier(.2,1.4,.4,1) both; }
-.og-a-sparkle .og-spark { position:absolute; left:50%; top:42%; font-size:22px; color:#FFE9A8; opacity:0; animation:ogSpark 2.2s ease-out var(--t, 0s) infinite; }
-@keyframes ogSpark { 0% { transform:rotate(var(--a)) translateX(30px) scale(.2); opacity:0; } 30% { opacity:1; } 100% { transform:rotate(var(--a)) translateX(var(--r, 130px)) scale(1.1); opacity:0; } }
-/* glow: drops in with a halo */
-.og-a-glow .og-big { left:50%; top:40%; margin:-46px 0 0 -46px; animation:ogDrop 3.8s cubic-bezier(.2,1.3,.4,1) both; }
-.og-a-glow .og-big::before { content:''; position:absolute; inset:-34px; border-radius:50%; background:radial-gradient(circle, rgba(251,191,36,.7), rgba(251,191,36,0) 68%); animation:ogHalo 1.6s ease-in-out infinite; z-index:-1; }
-@keyframes ogDrop { 0% { transform:translateY(-70vh) scale(.6); opacity:0; } 22% { transform:translateY(0) scale(1.1); opacity:1; } 30% { transform:translateY(0) scale(1); } 84% { opacity:1; } 100% { transform:translateY(-20px) scale(.9); opacity:0; } }
-@keyframes ogHalo { 0%, 100% { transform:scale(.85); opacity:.7; } 50% { transform:scale(1.2); opacity:1; } }
-/* fly: lifts off from bottom left to top right */
-.og-a-fly .og-big { left:6%; bottom:6%; animation:ogFly 3.6s cubic-bezier(.45,.05,.55,.95) both; }
-.og-a-fly .og-trail { position:absolute; left:6%; bottom:6%; width:10px; height:10px; border-radius:50%; background:#FFB36B; opacity:0; animation:ogFlyTrail 3.6s linear var(--t) both; }
+/* how the gift arrives */
+.og-e-pop .og-big, .og-fx .og-hero-pop { animation-name:ogPop; }
+@keyframes ogPop { 0% { transform:scale(.1) rotate(-14deg); opacity:0; } 14% { transform:scale(1.2) rotate(6deg); opacity:1; } 22% { transform:scale(1) rotate(0); } 86% { transform:scale(1); opacity:1; } 100% { transform:scale(.85) translateY(-30px); opacity:0; } }
+.og-e-drop .og-big { animation-name:ogDrop; }
+@keyframes ogDrop { 0% { transform:translateY(-70vh) scale(.6); opacity:0; } 20% { transform:translateY(0) scale(1.1); opacity:1; } 28% { transform:translateY(0) scale(1); } 86% { opacity:1; } 100% { transform:translateY(-20px) scale(.9); opacity:0; } }
+.og-e-shake .og-big { animation-name:ogShake; }
+@keyframes ogShake { 0% { transform:scale(.2); opacity:0; } 12% { transform:scale(1.15); opacity:1; } 18% { transform:scale(1) rotate(0); } 24% { transform:rotate(-9deg) scale(1.05); } 30% { transform:rotate(9deg) scale(.97); } 36% { transform:rotate(-9deg) scale(1.05); } 42% { transform:rotate(9deg) scale(.97); } 48%, 86% { transform:rotate(0) scale(1); opacity:1; } 100% { transform:translateY(-24px) scale(.9); opacity:0; } }
+.og-e-rise .og-big { animation-name:ogRise; }
+@keyframes ogRise { 0% { transform:translateY(55vh) scale(.7); opacity:0; } 18% { transform:translateY(-4%) scale(1.08); opacity:1; } 26% { transform:translateY(0) scale(1); } 86% { opacity:1; transform:translateY(0) scale(1); } 100% { transform:translateY(-6%) scale(.92); opacity:0; } }
+.og-e-bounce .og-big { animation-name:ogBounce; animation-timing-function:ease-in; }
+@keyframes ogBounce { 0% { transform:translateY(-65vh); opacity:0; } 6% { opacity:1; } 13% { transform:translateY(0) scale(1.1, .86); } 19% { transform:translateY(-70px) scale(1); } 25% { transform:translateY(0) scale(1.06, .92); } 30% { transform:translateY(-26px); } 35%, 86% { transform:translateY(0) scale(1); opacity:1; } 100% { transform:scale(1.15); opacity:0; } }
+.og-e-spin .og-big { animation-name:ogSpin; }
+@keyframes ogSpin { 0% { transform:scale(.1) rotateY(0); opacity:0; } 18% { transform:scale(1.1) rotateY(540deg); opacity:1; } 26% { transform:scale(1) rotateY(720deg); } 58% { transform:scale(1) rotateY(720deg); } 70% { transform:scale(1.04) rotateY(1080deg); } 86% { transform:scale(1) rotateY(1080deg); opacity:1; } 100% { transform:scale(.9) rotateY(1080deg); opacity:0; } }
+.og-e-beat .og-big { animation-name:ogBeatIn; }
+@keyframes ogBeatIn { 0% { transform:scale(.2); opacity:0; } 10% { transform:scale(1.15); opacity:1; } 16% { transform:scale(1); } 24% { transform:scale(1.12); } 30% { transform:scale(1); } 38% { transform:scale(1.12); } 44% { transform:scale(1); } 52% { transform:scale(1.12); } 58% { transform:scale(1); } 66% { transform:scale(1.12); } 72%, 86% { transform:scale(1); opacity:1; } 100% { transform:scale(.9); opacity:0; } }
+.og-e-nova .og-big { animation-name:ogNova; }
+@keyframes ogNova { 0% { transform:scale(.05); opacity:0; } 10% { transform:scale(.32); opacity:1; } 18% { transform:scale(.26) rotate(8deg); } 24% { transform:scale(.3) rotate(-8deg); } 30% { transform:scale(1.6) rotate(0); } 38% { transform:scale(1); } 86% { transform:scale(1); opacity:1; } 100% { transform:scale(1.35); opacity:0; } }
+.og-e-universe .og-big { animation-name:ogUniverse; animation-timing-function:cubic-bezier(.2,.9,.3,1); }
+@keyframes ogUniverse { 0% { transform:scale(.02) rotate(-200deg); opacity:0; } 18% { transform:scale(1.15) rotate(0); opacity:1; } 26% { transform:scale(1); } 70% { transform:scale(1.03); } 78% { transform:scale(1.28); } 84% { transform:scale(1); } 92% { opacity:1; } 100% { transform:scale(2); opacity:0; } }
+/* crossing the screen: centred, then moved by translate (works for a phone-sized video or the whole page) */
+.og-e-fly .og-big { left:6%; top:auto; bottom:6%; margin:0; animation-name:ogFly; animation-timing-function:cubic-bezier(.45,.05,.55,.95); }
 @keyframes ogFly { 0% { transform:translate(0, 0) rotate(0) scale(.7); opacity:0; } 10% { opacity:1; } 100% { transform:translate(78vw, -78vh) rotate(8deg) scale(1.25); opacity:0; } }
-@keyframes ogFlyTrail { 0% { transform:translate(0,0); opacity:0; } 14% { opacity:.9; } 100% { transform:translate(calc(78vw * var(--k, .8)), calc(-78vh * var(--k, .8))); opacity:0; } }
-/* confetti: a pop and a shower */
-.og-a-confetti .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogPop 3.8s cubic-bezier(.2,1.4,.4,1) both; }
-.og-a-confetti .og-bit { position:absolute; top:-18px; width:9px; height:15px; opacity:0; animation:ogConfetti var(--d, 3s) linear var(--t, 0s) both; }
+.og-e-drive .og-big { top:auto; bottom:16%; animation-name:ogDriveBy; animation-timing-function:cubic-bezier(.4,0,.4,1); }
+@keyframes ogDriveBy { 0% { transform:translateX(-95vw); } 28% { transform:translateX(0) translateY(-5px); } 40% { transform:translateX(0); } 62% { transform:translateX(4vw) translateY(-4px); } 100% { transform:translateX(100vw); } }
+.og-e-drive .og-big, .og-e-sail .og-big, .og-e-hop .og-big { margin-top:0; }
+.og-e-jet .og-big { animation-name:ogJet; animation-timing-function:cubic-bezier(.4,0,.6,1); }
+@keyframes ogJet { 0% { transform:translate(-95vw, 30vh) rotate(-6deg) scale(.8); } 45% { transform:translate(0, 0) rotate(-6deg) scale(1.05); } 60% { transform:translate(8vw, -6vh) rotate(-8deg) scale(1.1); } 100% { transform:translate(100vw, -60vh) rotate(-10deg) scale(1.3); } }
+.og-e-sail .og-big { top:auto; bottom:12%; animation-name:ogSail; animation-timing-function:ease-in-out; }
+@keyframes ogSail { 0% { transform:translateX(-95vw); } 26% { transform:translateX(0) rotate(-3deg); } 36% { transform:translateY(-8px) rotate(2deg); } 46% { transform:translateY(0) rotate(-2deg); } 56% { transform:translateY(-8px) rotate(2deg); } 68% { transform:translateX(0) rotate(-2deg); } 100% { transform:translateX(100vw) rotate(0); } }
+.og-e-hop .og-big { top:auto; bottom:14%; animation-name:ogHop; animation-timing-function:linear; }
+@keyframes ogHop { 0% { transform:translate(-90vw, 0) rotate(0); } 14% { transform:translate(-55vw, -30vh) rotate(180deg); } 28% { transform:translate(-25vw, 0) rotate(360deg); } 42% { transform:translate(-6vw, -20vh) rotate(540deg); } 54% { transform:translate(0, 0) rotate(700deg); } 76% { transform:translate(0, -8vh) rotate(720deg) scale(1.08); } 86% { transform:translate(10vw, 0) rotate(820deg); } 100% { transform:translate(100vw, -10vh) rotate(1200deg); } }
+.og-e-dragon .og-big { animation-name:ogDragon; animation-timing-function:ease-in-out; }
+@keyframes ogDragon { 0% { transform:translate(-95vw, 22vh) scale(.7); } 22% { transform:translate(-8vw, -6vh) scale(1); } 34% { transform:translate(0, 0) scale(1.05); } 48% { transform:translate(0, -3vh) scale(1.08); } 62% { transform:translate(2vw, 1vh) scale(1.05); } 76% { transform:translate(12vw, -4vh) scale(1); } 100% { transform:translate(100vw, -30vh) scale(.8); } }
+/* many small ones float up (heart, balloons, music notes) */
+.og-fx .og-floater { bottom:-70px; width:calc(var(--hs, 140px) * .38); height:calc(var(--hs, 140px) * .38); font-size:calc(var(--hs, 140px) * .3); line-height:1; display:grid; place-items:center; opacity:0; animation:ogFloat var(--d, 3s) ease-out var(--t, 0s) both; filter:drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+.og-fx .og-floater svg, .og-fx .og-floater img { width:100%; height:100%; display:block; }
+@keyframes ogFloat { 0% { transform:translate(0, 0) scale(.5); opacity:0; } 12% { opacity:1; } 50% { transform:translate(var(--x, 18px), -42vh) scale(1.05); } 100% { transform:translate(calc(var(--x, 18px) * -1), -86vh) scale(.9); opacity:0; } }
+
+/* effects around the gift (all centred on the gift's spot: 50% / 42%) */
+.og-fx .og-halo { left:50%; top:42%; width:calc(var(--hs) * 1.9); height:calc(var(--hs) * 1.9); margin:calc(var(--hs) * -.95) 0 0 calc(var(--hs) * -.95); border-radius:50%; background:radial-gradient(circle, rgba(251,191,36,.6), rgba(251,191,36,0) 66%); animation:ogHaloFx 1.6s ease-in-out infinite; }
+@keyframes ogHaloFx { 0%, 100% { transform:scale(.85); opacity:.6; } 50% { transform:scale(1.15); opacity:1; } }
+.og-fx .og-spark { left:50%; top:42%; font-size:22px; color:#FFE9A8; opacity:0; animation:ogSpark 2.2s ease-out var(--t, 0s) infinite; }
+@keyframes ogSpark { 0% { transform:rotate(var(--a)) translateX(30px) scale(.2); opacity:0; } 30% { opacity:1; } 100% { transform:rotate(var(--a)) translateX(var(--r, 130px)) scale(1.1); opacity:0; } }
+.og-fx .og-conf { top:-18px; width:9px; height:15px; opacity:0; animation:ogConfetti var(--d, 3s) linear var(--t, 0s) both; }
 @keyframes ogConfetti { 0% { transform:translateY(0) rotate(0); opacity:1; } 100% { transform:translate(var(--x, 0), 108vh) rotate(var(--r, 540deg)); opacity:1; } }
-/* drive: crosses the lower part of the video */
-.og-a-drive .og-big { left:0; bottom:18%; animation:ogDrive 3.6s cubic-bezier(.4,0,.4,1) both; font-size:104px; }
-@keyframes ogDrive { 0% { transform:translateX(-30vw); } 25% { transform:translateX(18vw) translateY(-6px); } 45% { transform:translateX(34vw) translateY(0); } 70% { transform:translateX(56vw) translateY(-5px); } 100% { transform:translateX(120vw); } }
-/* jet: a big fly-by with a contrail */
-.og-a-jet .og-big { left:-20%; bottom:8%; font-size:124px; animation:ogJet 3.4s cubic-bezier(.4,0,.6,1) both; }
-.og-a-jet .og-contrail { position:absolute; left:0; bottom:calc(8% + 56px); height:6px; width:0; border-radius:99px; background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85)); animation:ogContrail 3.4s ease-out both; transform-origin:left; transform:rotate(-24deg); }
-@keyframes ogJet { 0% { transform:translate(0, 0) rotate(-6deg); } 100% { transform:translate(150vw, -62vh) rotate(-6deg) scale(1.3); } }
+.og-fx .og-trail { left:6%; bottom:6%; width:10px; height:10px; border-radius:50%; background:#FFB36B; opacity:0; animation:ogFlyTrail var(--dur) linear var(--t) both; }
+@keyframes ogFlyTrail { 0% { transform:translate(0,0); opacity:0; } 14% { opacity:.9; } 100% { transform:translate(calc(78vw * var(--k, .8)), calc(-78vh * var(--k, .8))); opacity:0; } }
+.og-fx .og-contrail { left:0; top:58%; height:6px; width:0; border-radius:99px; background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.85)); animation:ogContrail var(--dur) ease-out both; transform-origin:left; transform:rotate(-22deg); }
 @keyframes ogContrail { 0% { width:0; opacity:0; } 20% { opacity:1; } 100% { width:130%; opacity:0; } }
-/* reduced motion: a simple fade, nothing flies */
-.og-fx.og-still .og-big { left:50%; top:42%; margin:-46px 0 0 -46px; animation:ogFade 3.6s ease both !important; transform:none; }
+.og-fx .og-cloud { left:-40%; width:130px; height:38px; border-radius:40px; background:rgba(255,255,255,.16); box-shadow:30px -12px 0 6px rgba(255,255,255,.12); animation:ogCloud var(--dur) linear var(--t) both; }
+@keyframes ogCloud { from { transform:translateX(0); } to { transform:translateX(180vw); } }
+.og-fx .og-dust { left:var(--x); bottom:15%; width:26px; height:26px; border-radius:50%; background:rgba(210,200,190,.45); opacity:0; animation:ogDust 1s ease-out var(--t) both; }
+@keyframes ogDust { 0% { transform:scale(.3); opacity:.8; } 100% { transform:scale(2.4) translateY(-10px); opacity:0; } }
+.og-fx .og-line { left:50%; top:42%; width:24px; height:5px; margin:-2.5px 0 0 -12px; border-radius:4px; background:#FFE08A; animation:ogLine .45s ease-out infinite alternate; }
+@keyframes ogLine { from { transform:rotate(var(--a)) translateX(calc(var(--hs) * .52)); opacity:.3; } to { transform:rotate(var(--a)) translateX(calc(var(--hs) * .7)); opacity:1; } }
+.og-fx .og-ember { bottom:18%; width:var(--s, 6px); height:var(--s, 6px); border-radius:50%; background:radial-gradient(circle, #FFF7B0, #FFB21A 50%, rgba(226,55,12,0) 75%); opacity:0; animation:ogEmber 1.8s ease-out var(--t, 0s) infinite; }
+@keyframes ogEmber { 0% { transform:translate(0, 0) scale(1); opacity:0; } 15% { opacity:1; } 100% { transform:translate(var(--x, 0), -45vh) scale(.3); opacity:0; } }
+.og-fx .og-rays { left:50%; top:42%; width:calc(var(--hs) * 2.8); height:calc(var(--hs) * 2.8); margin:calc(var(--hs) * -1.4) 0 0 calc(var(--hs) * -1.4); border-radius:50%;
+  background:repeating-conic-gradient(from 0deg, rgba(255,222,130,.42) 0deg 7deg, rgba(255,222,130,0) 7deg 22deg);
+  -webkit-mask:radial-gradient(circle, #000 18%, rgba(0,0,0,0) 70%); mask:radial-gradient(circle, #000 18%, rgba(0,0,0,0) 70%); animation:ogRot 9s linear infinite, ogIn var(--dur) ease both; }
+@keyframes ogRot { to { transform:rotate(360deg); } }
+@keyframes ogIn { 0% { opacity:0; } 15%, 85% { opacity:1; } 100% { opacity:0; } }
+.og-fx .og-burst { width:0; height:0; }
+.og-fx .og-burst::before { content:''; position:absolute; left:-30px; top:-30px; width:60px; height:60px; border-radius:50%; background:radial-gradient(circle, #fff, var(--c) 40%, rgba(0,0,0,0) 70%); opacity:0; animation:ogBurstFlash 1.3s ease-out var(--t) both; }
+.og-fx .og-burst i { position:absolute; left:-3px; top:-3px; width:6px; height:6px; border-radius:50%; background:var(--c); box-shadow:0 0 8px var(--c); opacity:0; animation:ogBurstDot 1.4s cubic-bezier(.1,.7,.3,1) var(--t) both; }
+@keyframes ogBurstFlash { 0% { transform:scale(.2); opacity:0; } 10% { opacity:1; } 100% { transform:scale(1.6); opacity:0; } }
+@keyframes ogBurstDot { 0% { transform:rotate(var(--a)) translateX(0); opacity:0; } 8% { opacity:1; } 80% { opacity:1; } 100% { transform:rotate(var(--a)) translateX(78px) translateY(14px); opacity:0; } }
+.og-fx .og-spot { top:-8%; width:34%; height:118%; background:linear-gradient(to bottom, rgba(255,240,180,.55), rgba(255,240,180,0) 88%); clip-path:polygon(44% 0, 56% 0, 100% 100%, 0 100%); transform-origin:50% 0; animation:ogSweep 2.4s ease-in-out infinite alternate, ogIn var(--dur) ease both; }
+.og-fx .og-spot.l { left:2%; --sw:-14deg; } .og-fx .og-spot.r { right:2%; --sw:14deg; animation-delay:-1.2s, 0s; }
+@keyframes ogSweep { from { transform:rotate(var(--sw)); } to { transform:rotate(calc(var(--sw) * -1)); } }
+.og-fx .og-ringfx { left:50%; top:42%; width:var(--hs); height:var(--hs); margin:calc(var(--hs) / -2) 0 0 calc(var(--hs) / -2); border-radius:50%; border:3px solid rgba(251,191,36,.85); opacity:0; animation:ogRingOut 1.2s ease-out var(--t) both; }
+@keyframes ogRingOut { 0% { transform:scale(.6); opacity:1; } 100% { transform:scale(2.5); opacity:0; } }
+.og-fx .og-note { bottom:10%; font:700 28px/1 system-ui, sans-serif; opacity:0; text-shadow:0 4px 12px rgba(0,0,0,.4); animation:ogNote 2.6s ease-out var(--t) both; }
+@keyframes ogNote { 0% { transform:translate(0, 0) scale(.6); opacity:0; } 15% { opacity:1; } 100% { transform:translate(var(--x, 0), -60vh) scale(1.1) rotate(-12deg); opacity:0; } }
+.og-fx .og-flash { inset:0; background:#fff; opacity:0; animation:ogFlash .5s ease-out var(--t) both; }
+@keyframes ogFlash { 0% { opacity:0; } 15% { opacity:.42; } 100% { opacity:0; } }
+.og-fx .og-waves { left:-10%; right:-10%; bottom:0; height:20%; background:radial-gradient(22px 12px at 22px 0, rgba(0,0,0,0) 96%, rgba(56,189,248,.55)) 0 0 / 44px 100% repeat-x, linear-gradient(rgba(56,189,248,0), rgba(14,90,160,.55)); animation:ogWave .9s linear infinite, ogIn var(--dur) ease both; }
+@keyframes ogWave { from { background-position:0 0, 0 0; } to { background-position:44px 0, 0 0; } }
+.og-fx .og-fireball { left:calc(50% + var(--hs) * .42); top:calc(42% - var(--hs) * .2); width:calc(var(--hs) * .9); height:calc(var(--hs) * .5); border-radius:50% 50% 50% 0; background:radial-gradient(ellipse at 15% 70%, #FFF7B0, #FFB21A 35%, #E2370C 60%, rgba(226,55,12,0) 75%); opacity:0; transform-origin:0 70%; animation:ogFire var(--dur) ease-out both; }
+@keyframes ogFire { 0%, 36% { transform:scale(.1); opacity:0; } 42% { transform:scale(1); opacity:1; } 52% { transform:scale(1.3) translateX(14px); opacity:.9; } 60%, 100% { transform:scale(1.6) translateX(40px); opacity:0; } }
+.og-fx .og-orbit { left:50%; top:42%; width:calc(var(--hs) * 1.7); height:calc(var(--hs) * 1.7); margin:calc(var(--hs) * -.85) 0 0 calc(var(--hs) * -.85); border-radius:50%; border:2px dashed rgba(251,191,36,.7); animation:ogOrbit 3s linear infinite, ogIn var(--dur) ease both; z-index:3; }
+.og-fx .og-orbit i { position:absolute; left:50%; top:-7px; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:#fff; box-shadow:0 0 12px #FBBF24, 0 0 4px #fff; }
+@keyframes ogOrbit { from { transform:rotateX(70deg) rotateZ(0); } to { transform:rotateX(70deg) rotateZ(360deg); } }
+.og-fx .og-shock { left:50%; top:42%; width:var(--hs); height:var(--hs); margin:calc(var(--hs) / -2) 0 0 calc(var(--hs) / -2); border-radius:50%; border:6px solid #fff; box-shadow:0 0 30px #A78BFA, inset 0 0 30px #F472B6; opacity:0; animation:ogShock var(--dur) ease-out both; }
+@keyframes ogShock { 0%, 28% { transform:scale(.1); opacity:0; } 30% { transform:scale(.3); opacity:1; } 52%, 100% { transform:scale(4.2); opacity:0; } }
+.og-fx .og-glare { inset:0; background:radial-gradient(circle at 50% 42%, rgba(255,255,255,.75), rgba(255,255,255,0) 60%); opacity:0; animation:ogGlare var(--dur) ease-out both; }
+@keyframes ogGlare { 0%, 28% { opacity:0; } 31% { opacity:.75; } 46%, 100% { opacity:0; } }
+.og-fx .og-nebula { inset:0; background:radial-gradient(ellipse at 50% 42%, rgba(124,58,237,.6), rgba(29,78,216,.38) 40%, rgba(5,8,30,.82) 78%); animation:ogIn var(--dur) ease both; }
+.og-fx .og-star { width:var(--s, 3px); height:var(--s, 3px); border-radius:50%; background:#fff; box-shadow:0 0 6px #fff, 0 0 12px #A5B4FC; opacity:0; animation:ogTwinkleFx 1.6s ease-in-out var(--t, 0s) infinite; }
+@keyframes ogTwinkleFx { 0%, 100% { opacity:0; transform:scale(.4); } 50% { opacity:1; transform:scale(1.2); } }
+.og-fx .og-galaxy { left:50%; top:42%; width:calc(var(--hs) * 2.3); height:calc(var(--hs) * 2.3); margin:calc(var(--hs) * -1.15) 0 0 calc(var(--hs) * -1.15); border-radius:50%;
+  background:conic-gradient(from 0deg, rgba(125,211,252,0), rgba(125,211,252,.55) 12%, rgba(192,132,252,0) 30%, rgba(192,132,252,.55) 46%, rgba(253,230,138,0) 64%, rgba(253,230,138,.5) 80%, rgba(125,211,252,0));
+  -webkit-mask:radial-gradient(circle, rgba(0,0,0,.2) 12%, #000 30%, rgba(0,0,0,0) 70%); mask:radial-gradient(circle, rgba(0,0,0,.2) 12%, #000 30%, rgba(0,0,0,0) 70%); animation:ogRot 7s linear infinite, ogIn var(--dur) ease both; }
+.og-sigfx .og-big { filter:drop-shadow(0 0 22px rgba(167,139,250,.85)) drop-shadow(0 0 40px rgba(251,191,36,.35)); }
+.og-fx.c-elite .og-big { filter:drop-shadow(0 0 18px rgba(251,191,36,.55)) drop-shadow(0 14px 26px rgba(0,0,0,.5)); }
+
+/* the banner: gift, from whom, to whom, value (it carries the mute switch: the only part of the layer that takes a tap) */
+.og-fx .og-ban { left:50%; top:14%; z-index:5; display:flex; align-items:center; gap:10px; width:max-content; max-width:min(92%, 420px); box-sizing:border-box; padding:7px 8px 7px 7px; border-radius:18px;
+  background:rgba(14,9,12,.84); border:1px solid rgba(255,255,255,.12); box-shadow:0 10px 30px rgba(0,0,0,.45); color:#fff; font:13px/1.3 'Plus Jakarta Sans', system-ui, sans-serif;
+  animation:ogBan var(--dur, 3s) ease both; }
+@keyframes ogBan { 0% { opacity:0; transform:translate(-50%, -12px); } 8%, 90% { opacity:1; transform:translate(-50%, 0); } 100% { opacity:0; transform:translate(-50%, -8px); } }
+.og-ban-art { width:42px; height:42px; flex:none; display:grid; place-items:center; font-size:30px; line-height:1; }
+.og-ban-art svg, .og-ban-art img { width:100%; height:100%; display:block; object-fit:contain; }
+.og-ban-tx { min-width:0; flex:1; }
+.og-ban-tx b { display:block; font-size:14.5px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-ban-tx small { display:block; color:#DCD2D6; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-ban-sig, .og-ban-val { white-space:nowrap; }
+.og-ban-sig { display:block; font-style:normal; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#C4B5FD; }
+.og-ban-val { display:flex; align-items:center; font-weight:800; color:var(--og-gold); font-size:12.5px; }
+.og-ban-val .og-c { --s:13px; }
+.og-ban.c-everyday { padding:5px 6px 5px 5px; } .og-ban.c-everyday .og-ban-art { width:32px; height:32px; }
+.og-ban.c-premium { border-color:rgba(251,191,36,.35); }
+.og-ban.c-elite { border-color:rgba(251,191,36,.6); background:linear-gradient(135deg, rgba(48,28,8,.9), rgba(14,9,12,.9)); }
+.og-ban.c-elite b { color:#FFE08A; }
+.og-ban.sig { border:1.5px solid transparent; background:linear-gradient(rgba(18,11,44,.92), rgba(18,11,44,.92)) padding-box, linear-gradient(90deg, #A78BFA, #FBBF24, #38BDF8) border-box; }
+.og-ban.sig b { background:linear-gradient(90deg, #E9D5FF, #FDE68A, #BAE6FD); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.og-ban-snd { position:relative; inset:auto; margin:0; padding:0; pointer-events:auto; flex:none; width:34px; height:34px; border:0; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; display:grid; place-items:center; cursor:pointer; }
+.og-ban-snd.off { color:#FF8A92; }
+
+/* reduced motion: a calm fade with the banner, nothing flies or flashes */
+.og-fx.og-still { animation:none; }
+.og-fx.og-still .og-big { left:50%; top:42%; bottom:auto; margin:calc(var(--hs, 140px) / -2) 0 0 calc(var(--hs, 140px) / -2); animation:ogFade var(--dur, 3s) ease both !important; transform:none; }
 @keyframes ogFade { 0% { opacity:0; } 14%, 84% { opacity:1; } 100% { opacity:0; } }
-.og-fx.og-still .og-bit, .og-fx.og-still .og-spark, .og-fx.og-still .og-trail, .og-fx.og-still .og-contrail { display:none; }
+.og-fx.og-still .og-ban { animation:ogFade var(--dur, 3s) ease both; transform:translateX(-50%); }
 @media (prefers-reduced-motion: reduce) { .og-sheet, .og-shade { transition:none; } .og-spin { animation-duration:3s; } }
+
+/* ------------------------------------------------------------------ ADR-004 sheet: category tabs, signature card, chosen-gift bar */
+.og-tabs { position:sticky; top:0; z-index:3; display:flex; gap:6px; overflow-x:auto; margin:0 -16px 6px; padding:2px 16px 8px; background:var(--og-bg); scrollbar-width:none; }
+.og-tabs::-webkit-scrollbar { display:none; }
+.og-tab { flex:none; height:34px; padding:0 12px; border-radius:99px; border:1.5px solid var(--og-line); background:var(--og-card); color:var(--og-mute); font:800 13px 'Plus Jakarta Sans', system-ui, sans-serif; cursor:pointer; white-space:nowrap; }
+.og-tab.on { background:#fff; color:#141011; border-color:#fff; }
+.og-tab.elite.on { background:linear-gradient(90deg, #FDE68A, #F6B91E); border-color:#F6B91E; }
+.og-grid { padding-top:8px; }
+.og-art.svg { height:46px; } .og-art.svg svg { width:48px; height:46px; display:block; }
+.og-tile.c-elite { background:linear-gradient(170deg, #2A1F12, var(--og-card) 70%); border-color:#4A3A1C; }
+.og-tile.sig { border-color:transparent; background:linear-gradient(165deg, #2A1747, #141033) padding-box, linear-gradient(135deg, #A78BFA, #FBBF24, #38BDF8) border-box; }
+.og-tile.sig.on { box-shadow:0 0 0 1px #A78BFA inset, 0 8px 26px -8px rgba(167,139,250,.8); }
+.og-sig { position:absolute; top:-7px; left:50%; transform:translateX(-50%); z-index:2; padding:3px 6px; border-radius:99px; background:linear-gradient(90deg, #A78BFA, #FBBF24); color:#1A0F2E; font:900 8.5px/1 'Plus Jakarta Sans', sans-serif; letter-spacing:.08em; white-space:nowrap; }
+.og-feat { position:absolute; top:4px; left:18px; font-size:10px; color:var(--og-gold); }
+.og-pv-ic { position:absolute; top:7px; left:8px; width:0; height:0; border-left:6px solid rgba(255,255,255,.4); border-top:4px solid transparent; border-bottom:4px solid transparent; }
+.og-tile.short em { color:var(--og-mute); }
+.og-tile.short .og-art { opacity:.6; }
+.og-tile.c-elite .og-art::before, .og-tile.sig .og-art::before { content:''; position:absolute; z-index:-1; width:54px; height:54px; border-radius:50%; background:radial-gradient(circle, rgba(251,191,36,.55), rgba(251,191,36,0) 66%); animation:ogHalo 3s ease-in-out infinite; animation-delay:calc(var(--ph, 0s) - var(--i, 0) * .4s); }
+.og-tile.sig .og-art::before { background:radial-gradient(circle, rgba(167,139,250,.75), rgba(167,139,250,0) 66%); }
+.og-tile.a-clap .og-art, .og-tile.a-unbox .og-art, .og-tile.a-finale .og-art { animation-name:ogWobble; animation-duration:3s; }
+.og-tile.a-flame .og-art, .og-tile.a-fireworks .og-art, .og-tile.a-flash .og-art, .og-tile.a-throne .og-art, .og-tile.a-nova .og-art, .og-tile.a-universe .og-art, .og-tile.a-castle .og-art { animation-name:ogPulse; animation-duration:3s; }
+.og-tile.a-spin .og-art, .og-tile.a-globe .og-art { animation-name:ogSway; animation-duration:3s; }
+.og-tile.a-beat .og-art { animation-name:ogBeat; animation-duration:1.5s; }
+.og-tile.a-bounce .og-art { animation-name:ogHover; animation-duration:2s; }
+.og-tile.a-sail .og-art, .og-tile.a-dragon .og-art { animation-name:ogGlide; animation-duration:3s; }
+.og-selbar { display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:7px 8px 7px 10px; border-radius:16px; background:var(--og-card); border:1px solid var(--og-line); }
+.og-selbar .og-art { flex:none; width:46px; height:42px; animation:ogBob 3s ease-in-out infinite; }
+.og-selbar .og-art.svg svg { width:46px; height:42px; }
+.og-selbar.sig { border-color:transparent; background:linear-gradient(var(--og-card), var(--og-card)) padding-box, linear-gradient(90deg, #A78BFA, #FBBF24, #38BDF8) border-box; }
+.og-seltx { flex:1; min-width:0; }
+.og-seltx b { display:block; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-seltx small { display:block; color:var(--og-mute); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-mini { flex:none; height:36px; padding:0 13px; border-radius:99px; border:1.5px solid var(--og-line); background:var(--og-card2); color:#fff; font:800 12.5px 'Plus Jakarta Sans', system-ui, sans-serif; cursor:pointer; }
+.og-mini.ic { width:36px; padding:0; display:grid; place-items:center; }
+.og-gorow { display:flex; align-items:center; gap:10px; }
+.og-gorow .og-btn { flex:1; width:auto; min-width:0; padding:0 8px; font-size:14px; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.og-gorow .og-qty button { width:32px; height:32px; }
+.og-gorow .og-qty span { min-width:26px; }
+.og-foot .og-short { margin:0 0 10px; }
+.og-snd { display:grid; place-items:center; }
+.og-snd.off { color:#FF8A92; }
+@media (max-width:360px) { .og-selbar .og-mini:not(.ic) { padding:0 10px; } .og-gorow .og-btn { font-size:14px; } }
+@media (prefers-reduced-motion: reduce) { .og-selbar .og-art, .og-tile .og-art::before { animation:none !important; } }
 
 .og-toast { position:fixed; z-index:99; left:50%; bottom:calc(88px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); max-width:88%; padding:11px 18px; border-radius:999px; background:rgba(12,8,10,.92); color:#fff; font:700 14px/1.3 'Plus Jakarta Sans', system-ui, sans-serif; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.5); transition:opacity .4s; }
 .og-toast.off { opacity:0; }

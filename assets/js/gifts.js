@@ -24,11 +24,18 @@
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }, function () { return { error: 'Something went wrong.', _status: r.status }; }); });
   }
-  function art(g) {
-    var a = el('span', 'og-art');
-    if (g.image) { var i = el('img'); i.alt = ''; i.src = g.image; a.appendChild(i); } else { a.textContent = g.emoji || '🎁'; }
-    return a;
+  // the picture of a gift: an uploaded picture (Admin) wins, then the built-in drawing (gift-art.js), then the emoji.
+  // If an uploaded picture fails to load, the drawing or emoji takes its place.
+  function fillArt(box, g, src) {
+    function fallback() {
+      box.textContent = '';
+      if (window.ObGiftArt && g.slug && ObGiftArt.has(g.slug)) { box.innerHTML = ObGiftArt.svg(g.slug); box.classList.add('svg'); }   // fixed drawings from gift-art.js, never user text
+      else { box.textContent = g.emoji || '🎁'; }
+    }
+    if (src) { var i = el('img'); i.alt = ''; i.src = src; i.addEventListener('error', fallback); box.appendChild(i); } else { fallback(); }
+    return box;
   }
+  function art(g) { return fillArt(el('span', 'og-art'), g, g.image); }
   function uuid() { try { return crypto.randomUUID(); } catch (e) { return String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10); } }
   function method(phone) {
     var d = String(phone || '').replace(/\D/g, '');
@@ -56,7 +63,20 @@
     var tx = el('div', 'og-head-tx'); tx.appendChild(el('small', null, 'OBI GIFTS'));
     var b = el('b', null, title); b.id = 'ogTitle'; tx.appendChild(b);
     var x = el('button', 'og-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', close);
-    head.appendChild(av); head.appendChild(tx); head.appendChild(x);
+    head.appendChild(av); head.appendChild(tx);
+    if (window.ObGiftSound) { head.appendChild(soundButton('og-x og-snd')); }
+    head.appendChild(x);
+  }
+  // the gift sound switch (on by default, remembered on this device)
+  var SPK_ON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+  var SPK_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  function soundButton(cls) {
+    var b = el('button', cls); b.type = 'button';
+    function paint() { var on = ObGiftSound.isOn(); b.innerHTML = on ? SPK_ON : SPK_OFF; b.setAttribute('aria-pressed', on ? 'false' : 'true'); b.setAttribute('aria-label', on ? 'Mute gift sounds' : 'Turn gift sounds on'); b.title = on ? 'Gift sounds on' : 'Gift sounds off'; b.classList.toggle('off', !on); }
+    b.addEventListener('click', function (e) { e.stopPropagation(); ObGiftSound.set(!ObGiftSound.isOn()); if (ObGiftSound.isOn()) { ObGiftSound.unlock(); } });
+    b.classList.add('og-sndsw'); b._paint = paint; paint();
+    if (!soundButton.hooked) { soundButton.hooked = true; ObGiftSound.onChange(function () { Array.prototype.forEach.call(document.querySelectorAll('.og-sndsw'), function (x) { if (x._paint) { x._paint(); } }); }); }
+    return b;
   }
   function show() {
     build();
@@ -75,6 +95,7 @@
   // ------------------------------------------------------------------ open and load
   function open(opts) {
     build();
+    if (window.ObGiftSound) { ObGiftSound.unlock(); }   // opened by a tap: the browser now allows the gift sound later
     if (S && S.step === 'wait') { S.closedWhileWaiting = false; }   // reopening shows the waiting screen again
     else { S = { opts: opts, step: 'load', data: null, sel: null, qty: 1, anon: false, phone: '', key: null, tx: null, timer: null, started: 0, closedWhileWaiting: false }; }
     show();
@@ -102,42 +123,90 @@
   // ------------------------------------------------------------------ step 1: pick a gift
   function selected() { var d = S.data; for (var i = 0; i < d.gifts.length; i++) { if (d.gifts[i].id === S.sel) { return d.gifts[i]; } } return null; }
   function total() { var g = selected(); return g ? g.price * S.qty : 0; }
+  var CATS = [['ALL', 'All Gifts'], ['EVERYDAY', 'Everyday'], ['POPULAR', 'Popular'], ['PREMIUM', 'Premium'], ['ELITE', 'Elite']];
+  function inTab(g) { return !S.tab || S.tab === 'ALL' || g.category === S.tab; }
   function renderPick() {
     header(S.data.organizer, S.data.organizer.name);
+    var keepScroll = S.entered ? body.scrollTop : 0;
     body.textContent = ''; foot.textContent = '';
-    var first = !S.entered; S.entered = true;   // the cards pop in when the sheet opens, not again on every tap
+    var first = !S.entered; S.entered = true;   // the cards pop in when the sheet opens (or a tab changes), not again on every tap
+    var gifts = S.data.gifts, coins = coinMode(), bal = coins ? S.data.wallet.balance : Infinity;
+    if (coins) { body.appendChild(balanceBar()); }
+    // category tabs (ADR-004): All Gifts, Everyday, Popular, Premium, Elite (a tab with no gifts is left out)
+    var present = {}; gifts.forEach(function (x) { present[x.category] = 1; });
+    if (Object.keys(present).length > 1) {
+      var tabs = el('div', 'og-tabs'); tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Gift categories');
+      CATS.forEach(function (c) {
+        if (c[0] !== 'ALL' && !present[c[0]]) { return; }
+        var on = (S.tab || 'ALL') === c[0];
+        var b = el('button', 'og-tab' + (on ? ' on' : '') + (c[0] === 'ELITE' ? ' elite' : ''), c[1]); b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.addEventListener('click', function () { if (on) { return; } S.tab = c[0]; S.entered = false; renderPick(); body.scrollTop = 0; });
+        tabs.appendChild(b);
+      });
+      body.appendChild(tabs);
+      var onTab = tabs.querySelector('.on');
+      if (onTab && onTab.offsetLeft + onTab.offsetWidth > tabs.clientWidth) { tabs.scrollLeft = onTab.offsetLeft - 16; }   // keep the chosen tab in view
+    }
     var grid = el('div', 'og-grid' + (first ? ' og-enter' : '')); grid.setAttribute('role', 'listbox'); grid.setAttribute('aria-label', 'Gifts');
     grid.style.setProperty('--ph', '-' + ((Date.now() / 1000) % 6).toFixed(2) + 's');   // the grid is rebuilt on every tap: keep the loops where they were
-    S.data.gifts.forEach(function (g, idx) {
-      var t = el('button', 'og-tile a-' + String(g.anim || 'pop').replace(/[^a-z]/g, '') + (g.id === S.sel ? ' on' : '')); t.style.setProperty('--i', String(idx)); t.type = 'button'; t.setAttribute('role', 'option'); t.setAttribute('aria-selected', g.id === S.sel ? 'true' : 'false');
-      t.setAttribute('aria-label', g.name + ', ' + price(g.price));
+    var idx = 0;
+    gifts.forEach(function (g) {
+      if (!inTab(g)) { return; }
+      var cls = 'og-tile a-' + String(g.anim || 'pop').replace(/[^a-z]/g, '') + ' c-' + String(g.category || '').toLowerCase() + (g.id === S.sel ? ' on' : '') + (g.signature ? ' sig' : '') + (coins && g.price > bal ? ' short' : '');
+      var t = el('button', cls); t.style.setProperty('--i', String(Math.min(idx++, 16))); t.type = 'button'; t.setAttribute('role', 'option'); t.setAttribute('aria-selected', g.id === S.sel ? 'true' : 'false');
+      t.setAttribute('aria-label', g.name + ', ' + price(g.price) + (g.signature ? ', signature gift' : ''));
+      if (g.signature) { t.appendChild(el('span', 'og-sig', 'SIGNATURE')); } else if (g.featured) { t.appendChild(el('span', 'og-feat', '★')); }
+      var pvi = el('span', 'og-pv-ic'); pvi.setAttribute('aria-hidden', 'true'); t.appendChild(pvi);   // "this gift is animated"
       t.appendChild(art(g)); t.appendChild(el('b', null, g.name));
-      var pe = el('em', null, coinMode() ? num(g.price) : money(g.price)); if (coinMode()) { pe.classList.add('c'); pe.insertBefore(coinIcon(), pe.firstChild); } t.appendChild(pe);
+      var pe = el('em', null, coins ? num(g.price) : money(g.price)); if (coins) { pe.classList.add('c'); pe.insertBefore(coinIcon(), pe.firstChild); } t.appendChild(pe);
       t.addEventListener('click', function () { S.sel = g.id; if (S.qty * g.price > S.data.limits.max) { S.qty = Math.max(1, Math.floor(S.data.limits.max / g.price)); } renderPick(); });
       grid.appendChild(t);
     });
-    if (coinMode()) { body.appendChild(balanceBar()); }
     body.appendChild(grid);
+    body.scrollTop = keepScroll;
+
+    // the bottom bar: the chosen gift with Preview and its sound, then quantity and Continue
     var g = selected();
-    var row = el('div', 'og-row');
-    var q = el('div', 'og-qty'); var minus = el('button', null, '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Fewer'); var n = el('span', null, String(S.qty));
-    var plus = el('button', null, '+'); plus.type = 'button'; plus.setAttribute('aria-label', 'More');
-    minus.disabled = !g || S.qty <= 1; plus.disabled = !g || (S.qty + 1) * g.price > S.data.limits.max || S.qty >= S.data.limits.maxQty;
-    minus.addEventListener('click', function () { if (S.qty > 1) { S.qty--; renderPick(); } });
-    plus.addEventListener('click', function () { S.qty++; renderPick(); });
-    q.appendChild(minus); q.appendChild(n); q.appendChild(plus);
-    var tot = el('div', 'og-total'); tot.appendChild(el('small', null, g ? 'Total' : 'Pick a gift')); tot.appendChild(el('b', null, g ? price(total()) : '—'));
-    row.appendChild(q); row.appendChild(tot); body.appendChild(row);
-    var short = coinMode() && g ? total() - S.data.wallet.balance : 0;
+    if (g) {
+      var sel = el('div', 'og-selbar' + (g.signature ? ' sig' : ''));
+      sel.appendChild(art(g));
+      var tx = el('div', 'og-seltx'); tx.appendChild(el('b', null, g.name));
+      var catName = (S.data.categories && S.data.categories[g.category]) || g.category || '';
+      tx.appendChild(el('small', null, (g.signature ? 'Signature gift' : catName) + ' · ' + price(g.price))); sel.appendChild(tx);
+      var pv = el('button', 'og-mini', 'Preview'); pv.type = 'button'; pv.setAttribute('aria-label', 'Preview the ' + g.name + ' animation');
+      pv.addEventListener('click', function () { preview(g); }); sel.appendChild(pv);
+      if (window.ObGiftSound) {
+        var sp = el('button', 'og-mini ic'); sp.type = 'button'; sp.innerHTML = SPK_ON; sp.setAttribute('aria-label', 'Hear the ' + g.name + ' sound');
+        sp.addEventListener('click', function () { if (!ObGiftSound.isOn()) { ObGiftSound.set(true); } ObGiftSound.unlock(); ObGiftSound.play(g.sound, g.soundAsset); });
+        sel.appendChild(sp);
+      }
+      foot.appendChild(sel);
+    }
+    var row = el('div', 'og-gorow');
+    if (g) {
+      var q = el('div', 'og-qty'); var minus = el('button', null, '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Fewer'); var n = el('span', null, String(S.qty));
+      var plus = el('button', null, '+'); plus.type = 'button'; plus.setAttribute('aria-label', 'More');
+      minus.disabled = S.qty <= 1; plus.disabled = (S.qty + 1) * g.price > S.data.limits.max || S.qty >= S.data.limits.maxQty;
+      minus.addEventListener('click', function () { if (S.qty > 1) { S.qty--; renderPick(); } });
+      plus.addEventListener('click', function () { S.qty++; renderPick(); });
+      q.appendChild(minus); q.appendChild(n); q.appendChild(plus); row.appendChild(q);
+    }
+    var short = coins && g ? total() - S.data.wallet.balance : 0;
     if (short > 0) {
       // not enough OBI COINS: say how many are missing and offer to add them (the gift stays chosen while they do)
-      body.appendChild(el('div', 'og-short', 'You need ' + num(short) + ' more OBI COINS for this gift.'));
-      var add = el('button', 'og-btn', 'Add OBI COINS'); add.type = 'button'; add.addEventListener('click', function () { addCoins(total()); }); foot.appendChild(add);
+      foot.insertBefore(el('div', 'og-short', 'You need ' + num(short) + ' more OBI COINS for this gift.'), foot.firstChild);
+      var add = el('button', 'og-btn', 'Add OBI COINS'); add.type = 'button'; add.addEventListener('click', function () { addCoins(total()); }); row.appendChild(add);
     } else {
       var go = el('button', 'og-btn', g ? 'Continue · ' + price(total()) : 'Pick a gift'); go.type = 'button'; go.disabled = !g;
       go.addEventListener('click', function () { S.step = 'pay'; S.key = uuid(); if (coinMode()) { renderConfirm(); } else { renderPay(); } });
-      foot.appendChild(go);
+      row.appendChild(go);
     }
+    foot.appendChild(row);
+  }
+  // plays the gift's animation and sound without sending anything (the banner says Preview)
+  function preview(g) {
+    if (window.ObGiftSound) { ObGiftSound.unlock(); }
+    play(document.body, { gift: g, quantity: 1, preview: true, coins: coinMode() ? g.price : null, recipient: S.data.organizer.name }, true);
   }
 
   // ------------------------------------------------------------------ OBI COINS: balance, confirm, add coins
@@ -316,45 +385,136 @@
   }
 
   // ------------------------------------------------------------------ the animation (never pauses the video)
+  // ADR-004: one player for all 36 gifts. Each style = how the gift arrives + light effects around it. The category sets the size and how
+  // many effects (Everyday small and quick ... Elite big and long); the gift's own length (ms) sets the timing. Gifts play one after another
+  // (a short queue), never on top of each other. The banner shows the gift, who sent it, to whom, and its value. Only transform and
+  // opacity move (cheap on phones). "Reduce motion" shows a calm fade with the banner instead.
   var COLORS = ['#F0313F', '#FBBF24', '#34D399', '#38BDF8', '#A78BFA', '#FB7185', '#FFFFFF'];
+  var STY = {
+    pop: ['pop', ['halo']], float: ['float', []], sparkle: ['pop', ['sparks']], glow: ['drop', ['halo', 'sparks']], fly: ['fly', ['trail']],
+    confetti: ['pop', ['confetti']], drive: ['drive', ['dust']], jet: ['jet', ['contrail', 'clouds']], clap: ['shake', ['lines', 'sparks']],
+    flame: ['rise', ['embers', 'halo']], unbox: ['bounce', ['rays', 'confetti']], spin: ['spin', ['rays', 'sparks']], fireworks: ['pop', ['bursts']],
+    stage: ['rise', ['spots', 'sparks']], beat: ['beat', ['rings', 'notes']], bounce: ['hop', ['rings']], flash: ['pop', ['flashes', 'sparks']],
+    sail: ['sail', ['waves', 'sparks']], castle: ['rise', ['bursts', 'rays']], dragon: ['dragon', ['embers', 'fireball']], globe: ['spin', ['orbit', 'sparks']],
+    throne: ['drop', ['rays', 'halo', 'sparks']], nova: ['nova', ['shock', 'rays', 'sparks']], finale: ['pop', ['bursts', 'confetti', 'rays']],
+    universe: ['universe', ['nebula', 'stars', 'galaxy', 'rays', 'bursts']]
+  };
+  var POWER = { EVERYDAY: 0.6, POPULAR: 1, PREMIUM: 1.4, ELITE: 1.9 };
+  var SIZE = { EVERYDAY: 110, POPULAR: 140, PREMIUM: 170, ELITE: 210 };
+  var MS = { EVERYDAY: 2000, POPULAR: 3200, PREMIUM: 5000, ELITE: 8000 };
+  var queue = [], playing = false, current = null;
+  function isBack(k) { return k === 'nebula' || k === 'galaxy' || k === 'rays' || k === 'halo'; }
+
   function bigArt(g, qty) {
-    var b = el('div', 'og-big');
-    var src = g.animAsset || g.image;
-    if (src) { var i = el('img'); i.alt = ''; i.src = src; b.appendChild(i); } else { b.textContent = g.emoji || '🎁'; }
+    var b = fillArt(el('div', 'og-big'), g, g.animAsset || g.image);
     if (qty > 1) { b.appendChild(el('span', 'og-x-qty', '×' + qty)); }
     return b;
   }
-  function bit(g, cls) {
-    var b = el('span', cls);
-    if (g.animAsset || g.image) { var i = el('img'); i.alt = ''; i.src = g.animAsset || g.image; b.appendChild(i); } else { b.textContent = g.emoji || '🎁'; }
-    return b;
-  }
+  function bit(g, cls) { return fillArt(el('span', cls), g, g.animAsset || g.image); }
   function rnd(a, b) { return a + Math.random() * (b - a); }
-  function play(host, d) {
-    if (!d || !d.gift) { return; }
-    host = host || document.body;
-    if (host !== document.body && getComputedStyle(host).position === 'static') { host.style.position = 'relative'; }
-    var g = d.gift, kind = g.anim || 'pop';
-    var fx = el('div', 'og-fx og-a-' + kind + (reduce ? ' og-still' : '')); fx.setAttribute('aria-hidden', 'true');
-    if (host === document.body) { fx.style.position = 'fixed'; fx.style.zIndex = '95'; }
-    var i;
-    if (kind === 'float' && !reduce) {
-      for (i = 0; i < 11; i++) { var b = bit(g, 'og-bit'); b.style.left = rnd(34, 92).toFixed(0) + '%'; b.style.setProperty('--t', rnd(0, 1.2).toFixed(2) + 's'); b.style.setProperty('--d', rnd(2.4, 3.4).toFixed(2) + 's'); b.style.setProperty('--x', rnd(-26, 26).toFixed(0) + 'px'); fx.appendChild(b); }
-      if (d.quantity > 1) { fx.appendChild(bigArt(g, d.quantity)); fx.lastChild.style.cssText = 'left:50%;top:44%;margin:-46px 0 0 -46px;animation:ogPop 3.4s both'; }
-    } else {
-      fx.appendChild(bigArt(g, d.quantity));
-      if (!reduce) {
-        if (kind === 'sparkle') { for (i = 0; i < 14; i++) { var s = el('span', 'og-spark', '✦'); s.style.setProperty('--a', (i * 360 / 14).toFixed(0) + 'deg'); s.style.setProperty('--r', rnd(100, 170).toFixed(0) + 'px'); s.style.setProperty('--t', rnd(0, 1.2).toFixed(2) + 's'); fx.appendChild(s); } }
-        if (kind === 'confetti') { for (i = 0; i < 34; i++) { var c = el('span', 'og-bit'); c.style.left = rnd(0, 100).toFixed(0) + '%'; c.style.background = COLORS[i % COLORS.length]; c.style.setProperty('--t', rnd(0.2, 1.6).toFixed(2) + 's'); c.style.setProperty('--d', rnd(2.2, 3.4).toFixed(2) + 's'); c.style.setProperty('--x', rnd(-60, 60).toFixed(0) + 'px'); c.style.setProperty('--r', rnd(300, 900).toFixed(0) + 'deg'); fx.appendChild(c); } }
-        if (kind === 'fly') { for (i = 0; i < 7; i++) { var t = el('span', 'og-trail'); t.style.setProperty('--t', (i * 0.07).toFixed(2) + 's'); t.style.setProperty('--k', (0.82 - i * 0.05).toFixed(2)); fx.appendChild(t); } }
-        if (kind === 'jet') { fx.appendChild(el('div', 'og-contrail')); }
+  function part(fx, cls, css, vars) {
+    var p = el('span', cls);
+    if (css) { p.style.cssText = css; }
+    if (vars) { for (var k in vars) { if (Object.prototype.hasOwnProperty.call(vars, k)) { p.style.setProperty(k, vars[k]); } } }
+    fx.appendChild(p); return p;
+  }
+  function effects(fx, g, list, power, sec) {
+    var i, n;
+    list.forEach(function (kind) {
+      switch (kind) {
+        case 'halo': part(fx, 'og-halo'); break;
+        case 'sparks': n = Math.round(14 * power); for (i = 0; i < n; i++) { part(fx, 'og-spark', null, { '--a': (i * 360 / n).toFixed(0) + 'deg', '--r': rnd(90, 90 + 80 * power).toFixed(0) + 'px', '--t': rnd(0, Math.min(1.4, sec * 0.4)).toFixed(2) + 's' }).textContent = '✦'; } break;
+        case 'confetti': n = Math.round(34 * power); for (i = 0; i < n; i++) { part(fx, 'og-bit og-conf', 'left:' + rnd(0, 100).toFixed(0) + '%;background:' + COLORS[i % COLORS.length], { '--t': rnd(0.1, sec * 0.45).toFixed(2) + 's', '--d': rnd(2.2, 3.4).toFixed(2) + 's', '--x': rnd(-60, 60).toFixed(0) + 'px', '--r': rnd(300, 900).toFixed(0) + 'deg' }); } break;
+        case 'trail': for (i = 0; i < 7; i++) { part(fx, 'og-trail', null, { '--t': (i * 0.07).toFixed(2) + 's', '--k': (0.82 - i * 0.05).toFixed(2) }); } break;
+        case 'contrail': part(fx, 'og-contrail'); break;
+        case 'clouds': for (i = 0; i < 4; i++) { part(fx, 'og-cloud', 'top:' + rnd(12, 70).toFixed(0) + '%', { '--t': (i * sec * 0.18).toFixed(2) + 's' }); } break;
+        case 'dust': for (i = 0; i < 8; i++) { part(fx, 'og-dust', null, { '--t': (sec * 0.15 + i * 0.12).toFixed(2) + 's', '--x': (i * 9).toFixed(0) + 'vw' }); } break;
+        case 'lines': for (i = 0; i < 6; i++) { part(fx, 'og-line', null, { '--a': (i * 60 - 90).toFixed(0) + 'deg' }); } break;
+        case 'embers': n = Math.round(22 * power); for (i = 0; i < n; i++) { part(fx, 'og-ember', 'left:' + rnd(25, 75).toFixed(0) + '%', { '--t': rnd(0, sec * 0.7).toFixed(2) + 's', '--x': rnd(-40, 40).toFixed(0) + 'px', '--s': rnd(4, 9).toFixed(0) + 'px' }); } break;
+        case 'rays': part(fx, 'og-rays'); break;
+        case 'bursts': n = Math.round(3 * power); for (i = 0; i < n; i++) { burst(fx, rnd(12, 88), rnd(12, 55), COLORS[i % COLORS.length], (sec * 0.15 + i * (sec * 0.7 / Math.max(n, 1))).toFixed(2) + 's'); } break;
+        case 'spots': part(fx, 'og-spot l'); part(fx, 'og-spot r'); break;
+        case 'rings': n = Math.max(2, Math.round(3 * power)); for (i = 0; i < n; i++) { part(fx, 'og-ringfx', null, { '--t': (sec * 0.12 + i * (sec * 0.7 / n)).toFixed(2) + 's' }); } break;
+        case 'notes': n = Math.round(12 * power); for (i = 0; i < n; i++) { part(fx, 'og-note', 'left:' + rnd(20, 80).toFixed(0) + '%;color:' + COLORS[i % COLORS.length], { '--t': rnd(0, sec * 0.7).toFixed(2) + 's', '--x': rnd(-40, 40).toFixed(0) + 'px' }).textContent = i % 2 ? '♪' : '♫'; } break;
+        case 'flashes': for (i = 0; i < 3; i++) { part(fx, 'og-flash', null, { '--t': (sec * 0.2 + i * 0.7).toFixed(2) + 's' }); } break;
+        case 'waves': part(fx, 'og-waves'); break;
+        case 'fireball': part(fx, 'og-fireball'); break;
+        case 'orbit': part(fx, 'og-orbit').appendChild(el('i')); break;
+        case 'shock': part(fx, 'og-shock'); part(fx, 'og-glare'); break;
+        case 'nebula': part(fx, 'og-nebula'); break;
+        case 'stars': n = Math.round(30 * power); for (i = 0; i < n; i++) { part(fx, 'og-star', 'left:' + rnd(2, 98).toFixed(1) + '%;top:' + rnd(2, 92).toFixed(1) + '%', { '--t': rnd(0, 2).toFixed(2) + 's', '--s': rnd(2, 5).toFixed(1) + 'px' }); } break;
+        case 'galaxy': part(fx, 'og-galaxy'); break;
       }
-    }
-    if (d.message) { fx.appendChild(el('div', 'og-fx-msg', d.message)); }
-    host.appendChild(fx);
-    setTimeout(function () { if (fx.parentNode) { fx.parentNode.removeChild(fx); } }, 4700);
+    });
+  }
+  function burst(fx, x, y, col, delay) {
+    var b = part(fx, 'og-burst', 'left:' + x.toFixed(0) + '%;top:' + y.toFixed(0) + '%', { '--t': delay, '--c': col }), i;
+    for (i = 0; i < 14; i++) { var d = el('i'); d.style.setProperty('--a', (i * 360 / 14).toFixed(0) + 'deg'); b.appendChild(d); }
+  }
+  function banner(fx, d, g, cat, isPreview) {
+    var b = el('div', 'og-ban c-' + cat.toLowerCase() + (g.signature ? ' sig' : ''));
+    b.appendChild(fillArt(el('span', 'og-ban-art'), g, g.image));
+    var tx = el('div', 'og-ban-tx');
+    var top = el('b', null, (d.quantity > 1 ? d.quantity + ' × ' : '') + g.name); tx.appendChild(top);
+    if (g.signature) { tx.appendChild(el('em', 'og-ban-sig', isPreview ? 'Signature gift · preview' : 'Signature gift')); } else if (isPreview) { tx.appendChild(el('em', 'og-ban-sig', 'Preview')); }
+    var who = d.sender && d.recipient ? d.sender + ' → ' + d.recipient : (d.recipient ? 'To ' + d.recipient : (d.message || ''));
+    if (who) { tx.appendChild(el('small', null, who)); }
+    if (d.coins) { var v = el('span', 'og-ban-val'); v.appendChild(coinIcon()); v.appendChild(document.createTextNode(num(d.coins) + ' OBI COINS')); tx.appendChild(v); }
+    b.appendChild(tx);
+    if (window.ObGiftSound) { b.appendChild(soundButton('og-ban-snd')); }   // mute right on the animation (the only part that takes taps)
+    if (d.message && !isPreview) { b.setAttribute('aria-label', d.message); }
+    fx.appendChild(b);
   }
 
+  function play(host, d, isPreview) {
+    if (!d || !d.gift) { return; }
+    if (isPreview) {   // a new preview replaces the one showing (and any waiting previews)
+      queue = queue.filter(function (q) { return !q[2]; });
+      if (current && current.preview) { current.finish(); return play(host, d, isPreview); }
+    }
+    queue.push([host, d, isPreview]);
+    if (queue.length > 6) { queue.splice(1, queue.length - 6); }   // a burst of gifts: keep the newest few
+    if (!playing) { next(); }
+  }
+  function next() {
+    var item = queue.shift();
+    if (!item) { playing = false; return; }
+    playing = true;
+    run(item[0], item[1], item[2]);
+  }
+  function run(host, d, isPreview) {
+    host = host || document.body;
+    if (host !== document.body && getComputedStyle(host).position === 'static') { host.style.position = 'relative'; }
+    var g = d.gift, kind = STY[g.anim] ? g.anim : 'pop', sty = STY[kind];
+    var cat = POWER[g.category] ? g.category : 'POPULAR';
+    var ms = Math.max(1000, Math.min(12000, Number(g.ms) || MS[cat])), sec = ms / 1000;
+    var size = g.signature ? 240 : SIZE[cat];
+    var fx = el('div', 'og-fx og-e-' + sty[0] + ' og-k-' + kind + ' c-' + cat.toLowerCase() + (g.signature ? ' og-sigfx' : '') + (reduce ? ' og-still' : ''));
+    fx.setAttribute('aria-hidden', 'true');
+    fx.style.setProperty('--dur', sec + 's'); fx.style.setProperty('--hs', 'min(' + size + 'px, 62vw)');
+    if (host === document.body) { fx.style.position = 'fixed'; fx.style.zIndex = '95'; }
+    var i;
+    if (reduce) {
+      fx.appendChild(bigArt(g, d.quantity));
+    } else {
+      effects(fx, g, sty[1].filter(isBack), POWER[cat], sec);   // backdrops first (behind the gift)
+      if (sty[0] === 'float') {
+        var nb = Math.round(11 * POWER[cat] + 3);
+        for (i = 0; i < nb; i++) { var b = bit(g, 'og-bit og-floater'); b.style.left = rnd(30, 92).toFixed(0) + '%'; b.style.setProperty('--t', rnd(0, sec * 0.35).toFixed(2) + 's'); b.style.setProperty('--d', rnd(sec * 0.55, sec * 0.8).toFixed(2) + 's'); b.style.setProperty('--x', rnd(-26, 26).toFixed(0) + 'px'); fx.appendChild(b); }
+        if (d.quantity > 1 || cat !== 'EVERYDAY') { var big = bigArt(g, d.quantity); big.classList.add('og-hero-pop'); fx.appendChild(big); }
+      } else {
+        fx.appendChild(bigArt(g, d.quantity));
+      }
+      effects(fx, g, sty[1].filter(function (k) { return !isBack(k); }), POWER[cat], sec);
+    }
+    banner(fx, d, g, cat, isPreview);
+    host.appendChild(fx);
+    if (window.ObGiftSound) { ObGiftSound.play(g.sound, g.soundAsset); }
+    var done = false;
+    function finish() { if (done) { return; } done = true; current = null; if (fx.parentNode) { fx.parentNode.removeChild(fx); } next(); }
+    current = { preview: !!isPreview, finish: finish };
+    setTimeout(finish, ms + 450);
+  }
   // a small notice for pages that have no toast of their own (the feed passes its own)
   function notice(text) {
     var n = el('div', 'og-toast', text); n.setAttribute('role', 'status'); document.body.appendChild(n);

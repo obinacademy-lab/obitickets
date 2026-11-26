@@ -790,6 +790,7 @@ function coin_gift_send(array $sender, int $organizerId, int $giftId, int $quant
             ->execute([$reference, $idem, $senderId, $organizerId, $giftId, $postId, $quantity, $unitUgx, $gross, $split['platform'], $split['organizer'], $cfg['version'],
                 $anonymous ? 1 : 0, $coins, $unitCoins, $rate['rate_e4']]);
         $txId = (int) $pdo->lastInsertId();
+        gift_snapshot_name($pdo, $txId, (string) $gift['name']);
         gift_post_delivery($pdo, $txId, $organizerId, $gross, $split['platform'], $split['organizer'], null, 'COIN_LIABILITY');
         coin_wallet_apply($pdo, $senderId, 'GIFT_SPEND', -$coins, 'CSP-' . $txId, 'gift', $txId, 'Sent ' . $gift['name'] . ($quantity > 1 ? ' x ' . $quantity : '') . ' (' . $reference . ')');
         $after = (int) $pdo->query('SELECT balance FROM coin_wallets WHERE user_id = ' . $senderId)->fetchColumn();

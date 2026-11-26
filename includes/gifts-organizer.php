@@ -251,14 +251,31 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
     $byGift = $g->fetchAll();
 
     // which videos earn the most (gifts sent from the profile have no video)
-    $v = $pdo->prepare("SELECT t.post_id, COALESCE(e.title, '') title, COUNT(*) gifts, SUM(t.organizer_ugx) ugx
+    $v = $pdo->prepare("SELECT t.post_id, COALESCE(e.title, '') title, COUNT(*) gifts, SUM(t.organizer_ugx) ugx, $coinSumT coins
                         FROM gift_transactions t LEFT JOIN event_posts p ON p.id = t.post_id LEFT JOIN events e ON e.id = p.event_id
                         WHERE $ok AND t.paid_at >= ? GROUP BY t.post_id, e.title ORDER BY ugx DESC LIMIT 8");
     $v->execute([$organizerId, $from]);
     $byVideo = [];
     foreach ($v->fetchAll() as $r) {
-        $byVideo[] = ['title' => $r['post_id'] ? ($r['title'] !== '' ? $r['title'] : 'A video') : 'Your profile', 'gifts' => (int) $r['gifts'], 'ugx' => (int) $r['ugx']];
+        $byVideo[] = ['title' => $r['post_id'] ? ($r['title'] !== '' ? $r['title'] : 'A video') : 'Your profile', 'gifts' => (int) $r['gifts'], 'ugx' => (int) $r['ugx'], 'coins' => (int) $r['coins']];
     }
+
+    // by category (ADR-004): Everyday, Popular, Premium, Elite
+    $c = $pdo->prepare("SELECT g.id, MAX(g.price_coins) price_coins, MAX(g.price_ugx) price_ugx" . (gifts_v49() ? ", MAX(g.category) category" : "") . ", COUNT(*) n_gifts, SUM(t.quantity) n_units, $coinSumT n_coins, SUM(t.organizer_ugx) n_ugx
+                        FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE $ok AND t.paid_at >= ? GROUP BY g.id");
+    $c->execute([$organizerId, $from]);
+    $byCat = [];
+    foreach (GIFT_CATEGORIES as $k => $label) { $byCat[$k] = ['label' => $label, 'gifts' => 0, 'units' => 0, 'coins' => 0, 'ugx' => 0]; }
+    foreach ($c->fetchAll() as $r) {
+        $k = gift_category_of($r);
+        $byCat[$k]['gifts'] += (int) $r['n_gifts']; $byCat[$k]['units'] += (int) $r['n_units']; $byCat[$k]['coins'] += (int) $r['n_coins']; $byCat[$k]['ugx'] += (int) $r['n_ugx'];
+    }
+
+    // the single most valuable gift in the period
+    $hv = $pdo->prepare("SELECT g.name, g.emoji, t.quantity, t.organizer_ugx, t.gross_ugx, t.is_anonymous, t.paid_at, " . (gift_org_coins_ready() ? 't.coins_spent' : 'NULL') . " coins
+                         FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE $ok AND t.paid_at >= ? ORDER BY t.gross_ugx DESC, t.id DESC LIMIT 1");
+    $hv->execute([$organizerId, $from]);
+    $best = $hv->fetch() ?: null;
 
     // top supporters: people who did not hide their name, one line each; anonymous supporters are only ever added up together
     $s = $pdo->prepare("SELECT t.sender_id, MAX(u.name) name, COUNT(*) gifts, SUM(t.organizer_ugx) ugx
@@ -294,6 +311,8 @@ function gift_org_analytics(int $organizerId, int $days = 30): array
         'series' => $series,
         'by_gift' => array_map(static fn ($r) => ['name' => $r['name'], 'emoji' => $r['emoji'], 'gifts' => (int) $r['gifts'], 'units' => (int) $r['units'], 'coins' => (int) $r['coins'], 'ugx' => (int) $r['ugx']], $byGift),
         'by_video' => $byVideo,
+        'by_category' => $byCat,
+        'best_gift' => $best ? ['name' => $best['name'], 'emoji' => $best['emoji'], 'quantity' => (int) $best['quantity'], 'ugx' => (int) $best['organizer_ugx'], 'coins' => $best['coins'] !== null ? (int) $best['coins'] : null, 'at' => $best['paid_at']] : null,
         'top_supporters' => $top,
         'anonymous' => ['gifts' => (int) ($anon['gifts'] ?? 0), 'ugx' => (int) ($anon['ugx'] ?? 0)],
     ];

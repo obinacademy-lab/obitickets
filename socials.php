@@ -301,7 +301,7 @@ include __DIR__ . '/includes/header.php';
     'canGift' => !empty($giftsOn),   // OBI GIFTS: the Gift button shows only when Admin switched gifts on
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <?php if (!empty($giftsOn) && function_exists('coins_enabled') && coins_enabled()): ?><link rel="stylesheet" href="/assets/css/coins.css?v=<?= @filemtime(__DIR__ . '/assets/css/coins.css') ?: time() ?>"><script src="/assets/js/coins.js?v=<?= @filemtime(__DIR__ . '/assets/js/coins.js') ?: time() ?>" defer></script><?php endif; ?>
-<?php if (!empty($giftsOn)): ?><script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script><?php endif; ?>
+<?php if (!empty($giftsOn)): ?><script src="/assets/js/gift-art.js?v=<?= @filemtime(__DIR__ . '/assets/js/gift-art.js') ?: time() ?>" defer></script><script src="/assets/js/gift-sound.js?v=<?= @filemtime(__DIR__ . '/assets/js/gift-sound.js') ?: time() ?>" defer></script><script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script><?php endif; ?>
 <script src="/assets/js/socials.js?v=<?= @filemtime(__DIR__ . '/assets/js/socials.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 

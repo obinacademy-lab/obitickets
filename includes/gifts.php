@@ -104,6 +104,66 @@ function gift_catalog_active(): array
     return db()->query('SELECT * FROM gift_catalog WHERE is_active = 1 ORDER BY sort_order, id')->fetchAll();
 }
 
+// ---------------------------------------------------------------------------------------------------- 36 gifts (ADR-004)
+
+const GIFT_CATEGORIES = ['EVERYDAY' => 'Everyday', 'POPULAR' => 'Popular', 'PREMIUM' => 'Premium', 'ELITE' => 'Elite'];
+const GIFT_CATEGORY_MS = ['EVERYDAY' => 2000, 'POPULAR' => 3200, 'PREMIUM' => 5000, 'ELITE' => 8000];   // animation length when a gift has none of its own
+// built-in sounds, made by the browser itself (assets/js/gift-sound.js): nothing to license, nothing to download
+const GIFT_SOUNDS = [
+    'pop' => 'Soft pop', 'heart' => 'Warm pop', 'clap' => 'Applause', 'chime' => 'Bright chime', 'whoosh' => 'Flame whoosh', 'sparkle' => 'Sparkle',
+    'balloon' => 'Balloon pop', 'sweet' => 'Sweet bells', 'unwrap' => 'Surprise', 'melody' => 'Melody', 'crystal' => 'Crystal shimmer', 'mic' => 'Ta-da',
+    'popper' => 'Party popper', 'medal' => 'Medal ding', 'royal' => 'Royal fanfare', 'fanfare' => 'Victory fanfare', 'boom' => 'Fireworks',
+    'launch' => 'Rocket launch', 'crowd' => 'Cheering crowd', 'party' => 'Party tune', 'drum' => 'Drum roll', 'dj' => 'DJ beat', 'kick' => 'Goal kick',
+    'engine' => 'Engine rev', 'shutter' => 'Camera shutter', 'tick' => 'Ticking watch', 'jet' => 'Jet take-off', 'horn' => 'Ship horn',
+    'roar' => 'Dragon roar', 'tour' => 'World tour', 'nova' => 'Supernova', 'finale' => 'Grand finale', 'cosmic' => 'Cosmic (signature)',
+];
+const GIFT_SOUND_MAX_BYTES = 400 * 1024;   // an uploaded sound file (MP3, OGG or WAV)
+
+/** True once migration 049 ran (category, sound, length, signature). The code works with or without it. */
+function gifts_v49(): bool
+{
+    static $ok = null;
+    if ($ok === null) {
+        try { $ok = (bool) db()->query("SHOW COLUMNS FROM gift_catalog LIKE 'is_signature'")->fetch(); } catch (Throwable $e) { $ok = false; }
+    }
+    return $ok;
+}
+
+/** The gift's category: its own, or (before migration 049) from its price. */
+function gift_category_of(array $g): string
+{
+    if (!empty($g['category']) && isset(GIFT_CATEGORIES[$g['category']])) {
+        return $g['category'];
+    }
+    $c = (int) ($g['price_coins'] ?? $g['price_ugx'] ?? 0);
+    return $c >= 125000 ? 'ELITE' : ($c >= 20000 ? 'PREMIUM' : ($c >= 2500 ? 'POPULAR' : 'EVERYDAY'));
+}
+
+/** How long the gift's animation runs, in milliseconds (1 to 12 seconds). */
+function gift_duration_ms(array $g): int
+{
+    $ms = (int) ($g['duration_ms'] ?? 0);
+    return $ms >= 1000 && $ms <= 12000 ? $ms : GIFT_CATEGORY_MS[gift_category_of($g)];
+}
+
+/** Keeps the gift's name on the transaction, so history shows what was sent even after a rename. */
+function gift_snapshot_name(PDO $pdo, int $txId, string $name): void
+{
+    if (gifts_v49()) {
+        $pdo->prepare('UPDATE gift_transactions SET gift_name_snapshot = ? WHERE id = ?')->execute([mb_substr($name, 0, 60), $txId]);
+    }
+}
+
+/**
+ * The gifts a viewer may pick. With OBI COINS: every active gift that has a coin price. With the old direct mobile money payment:
+ * only gifts of UGX 500 or more (smaller ones are coins only, ADR-004).
+ * @return list<array>
+ */
+function gift_catalog_for(bool $coinsMode): array
+{
+    return array_values(array_filter(gift_catalog_active(), static fn ($g) => $coinsMode ? (int) ($g['price_coins'] ?? 0) > 0 : (int) $g['price_ugx'] >= GIFT_MIN_UGX));
+}
+
 function gift_find(int $giftId, bool $activeOnly = false): ?array
 {
     $stmt = db()->prepare('SELECT * FROM gift_catalog WHERE id = ?' . ($activeOnly ? ' AND is_active = 1' : ''));
@@ -218,6 +278,9 @@ function gift_start(array $sender, int $organizerId, int $giftId, int $quantity,
     }
     $unit = (int) $gift['price_ugx'];
     $gross = $unit * $quantity;
+    if ($unit < GIFT_MIN_UGX) {
+        return $fail('This gift can only be sent with OBI COINS.');   // ADR-004: gifts under UGX 500 are coins only, never a direct payment
+    }
     if ($gross < GIFT_MIN_UGX) {
         return $fail('The smallest gift payment is UGX ' . number_format(GIFT_MIN_UGX) . '.');
     }
@@ -267,6 +330,7 @@ function gift_start(array $sender, int $organizerId, int $giftId, int $quantity,
             ->execute([$reference, $idem, $senderId, $organizerId, $giftId, $postId, $quantity, $unit, $gross, $split['platform'], $split['organizer'],
                 $cfg['version'], $method, $phoneN, $anonymous ? 1 : 0]);
         $txId = (int) $pdo->lastInsertId();
+        gift_snapshot_name($pdo, $txId, (string) $gift['name']);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -413,7 +477,7 @@ function gift_public_message(int $txId): ?string
 function gift_notify_delivered(int $txId): void
 {
     try {
-        $stmt = db()->prepare('SELECT t.*, g.name AS gift_name FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE t.id = ?');
+        $stmt = db()->prepare('SELECT t.*, g.name AS gift_name, g.price_coins, g.price_ugx' . (gifts_v49() ? ', g.category, g.is_signature' : '') . ' FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE t.id = ?');
         $stmt->execute([$txId]);
         $t = $stmt->fetch();
         if (!$t) {
@@ -423,7 +487,10 @@ function gift_notify_delivered(int $txId): void
         $paidText = ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? number_format((int) $t['coins_spent']) . ' OBI COINS' : 'UGX ' . number_format((int) $t['gross_ugx']);
         create_notification((int) $t['sender_id'], 'gift', 'Gift sent', 'Your ' . $label . ' (' . $paidText . ') was delivered. Thank you for supporting the organizer.', ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? '/wallet.php' : null);
         $big = (int) $t['gross_ugx'] >= GIFT_BIG_GIFT_UGX;
-        create_notification((int) $t['recipient_organizer_id'], 'gift', $big ? 'You received a big OBI GIFT!' : 'You received an OBI GIFT',
+        $cat = gift_category_of($t);
+        // the bigger the gift, the louder the title (ADR-004): the signature gift and Elite gifts get their own
+        $title = !empty($t['is_signature']) ? 'You received ' . $t['gift_name'] . '!' : ($cat === 'ELITE' ? 'You received an Elite OBI GIFT: ' . $t['gift_name'] . '!' : ($big ? 'You received a big OBI GIFT!' : 'You received an OBI GIFT'));
+        create_notification((int) $t['recipient_organizer_id'], 'gift', $title,
             gift_sender_label($t) . ' sent you ' . $label . (($t['payment_source'] ?? 'DIRECT') === 'COINS' ? ' (' . number_format((int) $t['coins_spent']) . ' OBI COINS)' : '') . '. UGX ' . number_format((int) $t['organizer_ugx']) . ' was added to your gift earnings.', '/org-gifts.php?tab=history');
     } catch (Throwable $e) {
         error_log('[gift] notification failed: ' . $e->getMessage());
@@ -732,6 +799,11 @@ function gift_reconcile(): array
 const GIFT_ANIMATIONS = [
     'float' => 'Floating (rises up the screen)', 'pop' => 'Pop in', 'sparkle' => 'Sparkle', 'glow' => 'Glow',
     'fly' => 'Fly across', 'confetti' => 'Confetti', 'drive' => 'Drive across', 'jet' => 'Jet fly-by',
+    // ADR-004
+    'clap' => 'Clapping', 'flame' => 'Flames and embers', 'unbox' => 'Gift box opens', 'spin' => 'Spin and shine', 'fireworks' => 'Fireworks',
+    'stage' => 'Spotlights', 'beat' => 'Beat pulses', 'bounce' => 'Bounce across', 'flash' => 'Camera flashes', 'sail' => 'Sail across',
+    'castle' => 'Rise with fireworks', 'dragon' => 'Dragon fly-by', 'globe' => 'Globe and orbit', 'throne' => 'Descend in light',
+    'nova' => 'Supernova blast', 'finale' => 'Grand finale show', 'universe' => 'Cosmic (signature)',
 ];
 const GIFT_IMAGE_MAX_BYTES = 1024 * 1024;       // 1 MB for the picture
 const GIFT_ANIM_MAX_BYTES = 2 * 1024 * 1024;    // 2 MB for an animated file
@@ -787,9 +859,62 @@ function gift_handle_upload(array $file, string $kind = 'image', ?callable $move
     return [true, '/uploads/gifts/' . $name, null];
 }
 
+/** Writes the ADR-004 fields. Only one gift can be the signature gift: marking one clears the others. */
+function gift_save_v49(PDO $pdo, int $giftId, string $category, string $soundStyle, ?string $soundAsset, ?int $durationMs, int $signature, int $featured): void
+{
+    if ($signature === 1) {
+        $pdo->prepare('UPDATE gift_catalog SET is_signature = 0 WHERE id <> ? AND is_signature = 1')->execute([$giftId]);
+    }
+    $pdo->prepare('UPDATE gift_catalog SET category = ?, sound_style = ?, sound_asset = ?, duration_ms = ?, is_signature = ?, is_featured = ? WHERE id = ?')
+        ->execute([$category, $soundStyle !== '' ? $soundStyle : null, $soundAsset, $durationMs, $signature, $featured, $giftId]);
+}
+
+/**
+ * Stores an uploaded gift sound. The real type is read from the file's first bytes (never the browser's claim): MP3, OGG or WAV only,
+ * at most GIFT_SOUND_MAX_BYTES, under a random name.
+ * @return array{0: bool, 1: ?string, 2: ?string} [ok, public path or null, error]
+ */
+function gift_handle_sound_upload(array $file, ?callable $mover = null): array
+{
+    if (!isset($file['error']) || $file['error'] === UPLOAD_ERR_NO_FILE) {
+        return [true, null, null];
+    }
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return [false, null, 'There was a problem uploading the sound. Please try again.'];
+    }
+    if ((int) $file['size'] > GIFT_SOUND_MAX_BYTES || (int) $file['size'] < 64) {
+        return [false, null, 'Please use a sound file under ' . (GIFT_SOUND_MAX_BYTES / 1024) . ' KB.'];
+    }
+    if ($mover === null && !is_uploaded_file($file['tmp_name'])) {
+        return [false, null, 'That upload could not be verified. Please try again.'];
+    }
+    $head = (string) @file_get_contents($file['tmp_name'], false, null, 0, 12);
+    $ext = null;
+    if (str_starts_with($head, 'ID3') || (strlen($head) > 1 && ord($head[0]) === 0xFF && (ord($head[1]) & 0xE0) === 0xE0)) {
+        $ext = 'mp3';
+    } elseif (str_starts_with($head, 'OggS')) {
+        $ext = 'ogg';
+    } elseif (str_starts_with($head, 'RIFF') && substr($head, 8, 4) === 'WAVE') {
+        $ext = 'wav';
+    }
+    if ($ext === null) {
+        return [false, null, 'Please upload an MP3, OGG or WAV sound.'];
+    }
+    $dir = __DIR__ . '/../uploads/gifts';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        return [false, null, 'Could not prepare storage for the file. Please try again.'];
+    }
+    $name = bin2hex(random_bytes(16)) . '.' . $ext;
+    $moved = $mover !== null ? $mover($file['tmp_name'], $dir . '/' . $name) : move_uploaded_file($file['tmp_name'], $dir . '/' . $name);
+    if (!$moved) {
+        return [false, null, 'Could not save the sound. Please try again.'];
+    }
+    return [true, '/uploads/gifts/' . $name, null];
+}
+
 function gift_delete_upload(?string $publicPath): void
 {
-    if ($publicPath && preg_match('#^/uploads/gifts/[a-f0-9]{32}\.(png|webp|gif|jpg)$#', $publicPath)) {
+    if ($publicPath && preg_match('#^/uploads/gifts/[a-f0-9]{32}\.(png|webp|gif|jpg|mp3|ogg|wav)$#', $publicPath)) {
         $full = __DIR__ . '/../public' . $publicPath;
         if (is_file($full)) {
             @unlink($full);
@@ -810,7 +935,7 @@ function gift_slugify(string $name): string
  * @param array $in name, description, emoji, price_ugx, animation_type, sort_order, is_active
  * @return array{ok:bool, error?:string, id?:int}
  */
-function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFile = null, ?array $animFile = null, bool $removeImage = false, bool $removeAnim = false, ?callable $mover = null): array
+function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFile = null, ?array $animFile = null, bool $removeImage = false, bool $removeAnim = false, ?callable $mover = null, ?array $soundFile = null, bool $removeSound = false): array
 {
     $fail = static fn (string $e): array => ['ok' => false, 'error' => $e];
     $name = trim((string) ($in['name'] ?? ''));
@@ -822,9 +947,32 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         return $fail('The price must be a whole number of shillings.');
     }
     $price = (int) $priceRaw;
-    if ($price < GIFT_MIN_UGX || $price > GIFT_MAX_PAYMENT_UGX) {
-        return $fail('The price must be between UGX ' . number_format(GIFT_MIN_UGX) . ' and UGX ' . number_format(GIFT_MAX_PAYMENT_UGX) . '.');
+    // ADR-004: a price under UGX 500 is allowed, but such a gift is coins only (never offered for a direct mobile money payment)
+    if ($price < 1 || $price > GIFT_MAX_PAYMENT_UGX) {
+        return $fail('The price must be between UGX 1 and UGX ' . number_format(GIFT_MAX_PAYMENT_UGX) . '. Under UGX ' . number_format(GIFT_MIN_UGX) . ' the gift can only be sent with OBI COINS.');
     }
+    // ADR-004 fields. Each one is only changed when it was sent; otherwise the gift keeps what it had (a new gift gets a sensible default).
+    // The admin form sends v49_form=1, so an unticked box there means "no" (a missing box elsewhere means "unchanged").
+    $v49 = gifts_v49();
+    $prev = $giftId !== null ? gift_find($giftId) : null;
+    $category = array_key_exists('category', $in) ? strtoupper(trim((string) $in['category'])) : ($prev ? gift_category_of($prev) : gift_category_of(['price_coins' => $in['price_coins'] ?? null, 'price_ugx' => $price]));
+    $soundStyle = array_key_exists('sound_style', $in) ? trim((string) $in['sound_style']) : (string) ($prev['sound_style'] ?? ($prev ? '' : 'pop'));
+    $durRaw = array_key_exists('duration_s', $in) ? trim((string) $in['duration_s']) : (!empty($prev['duration_ms']) ? (string) round((int) $prev['duration_ms'] / 1000, 1) : '');
+    $boxes = !empty($in['v49_form']);
+    $signature = $boxes || array_key_exists('is_signature', $in) ? (!empty($in['is_signature']) ? 1 : 0) : (int) ($prev['is_signature'] ?? 0);
+    $featured = $boxes || array_key_exists('is_featured', $in) ? (!empty($in['is_featured']) ? 1 : 0) : (int) ($prev['is_featured'] ?? 0);
+    if ($v49) {
+        if (!isset(GIFT_CATEGORIES[$category])) {
+            return $fail('Pick a category: Everyday, Popular, Premium or Elite.');
+        }
+        if ($soundStyle !== '' && !isset(GIFT_SOUNDS[$soundStyle])) {
+            return $fail('Pick one of the sounds.');
+        }
+        if ($durRaw !== '' && (!preg_match('/^\d{1,2}(\.\d)?$/', $durRaw) || (float) $durRaw < 1 || (float) $durRaw > 12)) {
+            return $fail('The animation length must be between 1 and 12 seconds.');
+        }
+    }
+    $durationMs = $durRaw !== '' ? (int) round((float) $durRaw * 1000) : null;
     // the price in OBI COINS (only when the coin tables exist and the form sent it); empty = no coin price, so the gift is not offered while OBI COINS is on
     $coinsGiven = array_key_exists('price_coins', $in) && function_exists('coins_ready') && coins_ready();
     $priceCoins = null;
@@ -870,11 +1018,19 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         gift_delete_upload($newImage);
         return $fail((string) $errA);
     }
+    [$okS, $newSound, $errS] = $soundFile !== null && $v49 ? gift_handle_sound_upload($soundFile, $mover) : [true, null, null];
+    if (!$okS) {
+        gift_delete_upload($newImage);
+        gift_delete_upload($newAnim);
+        return $fail((string) $errS);
+    }
+    $soundAsset = $newSound ?? ($removeSound ? null : ($old['sound_asset'] ?? null));
     $image = $newImage ?? ($removeImage ? null : ($old['image_path'] ?? null));
     $animAsset = $newAnim ?? ($removeAnim ? null : ($old['animation_asset'] ?? null));
     if ($emoji === '' && $image === null) {
         gift_delete_upload($newImage);
         gift_delete_upload($newAnim);
+        gift_delete_upload($newSound);
         return $fail('Add an emoji or upload a picture so viewers can see the gift.');
     }
 
@@ -891,7 +1047,10 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         if ($coinsGiven) {
             $pdo->prepare('UPDATE gift_catalog SET price_coins = ? WHERE id = ?')->execute([$priceCoins, $id]);
         }
-        log_admin_action($adminId, 'gift.catalog.create', 'gift_catalog', $id, ['name' => $name, 'price' => $price, 'price_coins' => $priceCoins, 'active' => $active]);
+        if ($v49) {
+            gift_save_v49($pdo, $id, $category, $soundStyle, $soundAsset, $durationMs, $signature, $featured);
+        }
+        log_admin_action($adminId, 'gift.catalog.create', 'gift_catalog', $id, ['name' => $name, 'price' => $price, 'price_coins' => $priceCoins, 'active' => $active, 'category' => $category, 'signature' => $signature]);
         return ['ok' => true, 'id' => $id];
     }
     $pdo->prepare('UPDATE gift_catalog SET name = ?, description = ?, emoji = ?, image_path = ?, animation_type = ?, animation_asset = ?, price_ugx = ?, is_active = ?, sort_order = ? WHERE id = ?')
@@ -903,6 +1062,18 @@ function gift_admin_save(int $adminId, ?int $giftId, array $in, ?array $imageFil
         gift_delete_upload($old['animation_asset'] ?? null);
     }
     $changes = [];
+    if ($v49) {
+        gift_save_v49($pdo, (int) $giftId, $category, $soundStyle, $soundAsset, $durationMs, $signature, $featured);
+        if (($newSound !== null || $removeSound) && ($old['sound_asset'] ?? null) !== $soundAsset) {
+            gift_delete_upload($old['sound_asset'] ?? null);
+            $changes['sound_asset'] = 'changed';
+        }
+        foreach (['category' => $category, 'sound_style' => $soundStyle !== '' ? $soundStyle : null, 'duration_ms' => $durationMs, 'is_signature' => $signature, 'is_featured' => $featured] as $k => $v) {
+            if ((string) ($old[$k] ?? '') !== (string) ($v ?? '')) {
+                $changes[$k] = [$old[$k] ?? null, $v];
+            }
+        }
+    }
     if ($coinsGiven) {
         $pdo->prepare('UPDATE gift_catalog SET price_coins = ? WHERE id = ?')->execute([$priceCoins, $giftId]);
         if (($old['price_coins'] ?? null) !== null ? (int) $old['price_coins'] !== $priceCoins : $priceCoins !== null) {
@@ -1029,14 +1200,22 @@ function gift_audit_recent(int $limit = 20): array
  */
 function gift_delivery_payload(int $txId): ?array
 {
-    $stmt = db()->prepare('SELECT t.*, g.name AS gift_name, g.emoji, g.image_path, g.animation_type, g.animation_asset FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id WHERE t.id = ?');
+    $stmt = db()->prepare("SELECT t.*, g.*, t.id AS tx_id, g.name AS gift_name, COALESCE(NULLIF(op.org_name, ''), u.name) AS org_name
+                           FROM gift_transactions t JOIN gift_catalog g ON g.id = t.gift_id JOIN users u ON u.id = t.recipient_organizer_id
+                           LEFT JOIN organizer_profiles op ON op.user_id = t.recipient_organizer_id WHERE t.id = ?");
     $stmt->execute([$txId]);
     $t = $stmt->fetch();
     if (!$t || $t['payment_status'] !== 'SUCCESSFUL') {
         return null;
     }
+    $coins = ($t['payment_source'] ?? 'DIRECT') === 'COINS' ? (int) $t['coins_spent'] : null;
     return [
-        'gift' => ['name' => $t['gift_name'], 'emoji' => $t['emoji'], 'image' => $t['image_path'], 'anim' => $t['animation_type'], 'animAsset' => $t['animation_asset']],
+        'gift' => ['slug' => $t['slug'], 'name' => $t['gift_name'], 'emoji' => $t['emoji'], 'image' => $t['image_path'], 'anim' => $t['animation_type'], 'animAsset' => $t['animation_asset'],
+                   'category' => gift_category_of($t), 'ms' => gift_duration_ms($t), 'sound' => $t['sound_style'] ?? null, 'soundAsset' => $t['sound_asset'] ?? null,
+                   'signature' => !empty($t['is_signature'])],
+        'sender' => gift_sender_label($t),
+        'recipient' => $t['org_name'],
+        'coins' => $coins,
         'quantity' => (int) $t['quantity'],
         'gross' => (int) $t['gross_ugx'],
         'anonymous' => (int) $t['is_anonymous'] === 1,
@@ -1061,8 +1240,10 @@ function gift_phone_hint(array $user): string
 /** What the viewer's catalogue shows for one gift. */
 function gift_public_shape(array $g, bool $coins = false): array
 {
-    return ['id' => (int) $g['id'], 'name' => $g['name'], 'description' => $g['description'], 'emoji' => $g['emoji'], 'image' => $g['image_path'],
+    return ['id' => (int) $g['id'], 'slug' => $g['slug'], 'name' => $g['name'], 'description' => $g['description'], 'emoji' => $g['emoji'], 'image' => $g['image_path'],
             'anim' => $g['animation_type'], 'animAsset' => $g['animation_asset'],
+            'category' => gift_category_of($g), 'ms' => gift_duration_ms($g), 'sound' => $g['sound_style'] ?? null, 'soundAsset' => $g['sound_asset'] ?? null,
+            'signature' => !empty($g['is_signature']), 'featured' => !empty($g['is_featured']),
             // with OBI COINS on a gift costs coins (never a UGX price beside it); the old direct payment shows the UGX price
             'price' => $coins ? (int) $g['price_coins'] : (int) $g['price_ugx'], 'unit' => $coins ? 'coins' : 'ugx'];
 }

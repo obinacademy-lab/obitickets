@@ -531,15 +531,34 @@ $sharePctText = rtrim(rtrim(number_format($sharePct, 2), '0'), '.');
     </div>
   </div>
 
+  <div class="admin-grid-2" style="margin-top:20px">
+    <div class="admin-card">
+      <h3 style="margin-bottom:14px">Gifts by category</h3>
+      <?php if ($an['gifts'] === 0): ?><p class="muted" style="margin:0">Nothing yet.</p><?php else: $topC = max(1, ...array_column($an['by_category'], 'ugx')); foreach ($an['by_category'] as $c): ?>
+        <div class="og-rank">
+          <div class="og-rank-top"><span><?= htmlspecialchars($c['label']) ?> <small class="muted">&times; <?= (int) $c['units'] ?><?= $c['coins'] > 0 ? ' &middot; ' . number_format($c['coins']) . ' OBI COINS' : '' ?></small></span><strong class="mono"><?= og_ugx($c['ugx']) ?></strong></div>
+          <div class="og-rank-bar"><i style="width:<?= $c['ugx'] > 0 ? max(2, round($c['ugx'] / $topC * 100)) : 0 ?>%"></i></div>
+        </div>
+      <?php endforeach; endif; ?>
+    </div>
+    <div class="admin-card">
+      <h3 style="margin-bottom:14px">Your biggest gift</h3>
+      <?php if (!$an['best_gift']): ?><p class="muted" style="margin:0">Nothing yet.</p><?php else: $b = $an['best_gift']; ?>
+        <div class="og-line"><span class="og-rankno" aria-hidden="true"><?= htmlspecialchars((string) $b['emoji']) ?></span><span class="og-line-main"><strong><?= $b['quantity'] > 1 ? (int) $b['quantity'] . ' &times; ' : '' ?><?= htmlspecialchars($b['name']) ?></strong><small><?= htmlspecialchars(date('j M, H:i', strtotime((string) $b['at']))) ?><?= $b['coins'] ? ' &middot; ' . number_format($b['coins']) . ' OBI COINS' : '' ?></small></span><span class="og-line-amt"><?= og_ugx($b['ugx']) ?></span></div>
+        <p class="muted" style="margin:10px 0 0; font-size:.82rem">Your <?= htmlspecialchars((string) gift_org_share_percent()) ?>% share of the single most valuable gift in this time.</p>
+      <?php endif; ?>
+    </div>
+  </div>
+
   <div class="admin-card" style="margin-top:20px">
     <h3 style="margin-bottom:14px">Where gifts come from</h3>
     <?php if (!$an['by_video']): ?><p class="muted" style="margin:0">Nothing yet.</p><?php else: ?>
       <div class="admin-table-wrap" style="border:none; box-shadow:none;">
         <table class="admin-table">
-          <thead><tr><th>Video / event</th><th style="text-align:right">Gifts</th><th style="text-align:right">Your share</th></tr></thead>
+          <thead><tr><th>Video / event</th><th style="text-align:right">Gifts</th><th style="text-align:right">OBI COINS</th><th style="text-align:right">Your share</th></tr></thead>
           <tbody>
             <?php foreach ($an['by_video'] as $v): ?>
-              <tr><td><?= htmlspecialchars($v['title']) ?></td><td class="mono" style="text-align:right"><?= (int) $v['gifts'] ?></td><td class="mono" style="text-align:right"><?= og_ugx($v['ugx']) ?></td></tr>
+              <tr><td><?= htmlspecialchars($v['title']) ?></td><td class="mono" style="text-align:right"><?= (int) $v['gifts'] ?></td><td class="mono" style="text-align:right"><?= $v['coins'] > 0 ? number_format($v['coins']) : '&ndash;' ?></td><td class="mono" style="text-align:right"><?= og_ugx($v['ugx']) ?></td></tr>
             <?php endforeach; ?>
           </tbody>
         </table>
