@@ -21,8 +21,9 @@ const COIN_PENDING_EXPIRY_MINUTES = 10;
 const COIN_OPEN_PURCHASE_LIMIT = 3;        // payment prompts a user may have waiting at once
 const COIN_PHONE_HOURLY_LIMIT = 6;         // prompts to one phone number per hour
 const COIN_MIN_PURCHASE_UGX = 500;
-const COIN_MAX_PURCHASE_UGX = 500000;      // one purchase
-const COIN_DAILY_PURCHASE_CAP_UGX = 1000000;   // per user per 24 hours
+const COIN_MAX_PURCHASE_UGX = 1000000;     // one purchase (raised from 500,000 on 11/26 so 1,000,000-coin packages and amounts fit)
+const COIN_DAILY_PURCHASE_CAP_UGX = 2000000;   // per user per 24 hours (raised from 1,000,000 on 11/26)
+const COIN_CUSTOM_SLUG = 'custom-amount';  // the hidden package row every "any amount" purchase is recorded under (migration 050)
 // phase 7: abuse limits (the same ideas as the ticket payment guard in payguard.php, measured by the database clock)
 const COIN_STARTS_PER_10_MIN = 4;          // purchases one account may start in 10 minutes
 const COIN_FAILS_IN_A_ROW = 3;             // this many failed or expired purchases in a row pause the account...
@@ -158,6 +159,52 @@ function coin_rate_set(int $adminId, string $ugxPerCoin, string $reason, ?string
     return ['ok' => true, 'version' => $v];
 }
 
+// ---------------------------------------------------------------------------------------------------- any amount (11/26)
+
+/**
+ * "Buy any amount": on/off and the UGX price of one OBI COIN for it, both set by an admin (Admin > OBI COINS > Packages).
+ * The price is "UGX per coin x 10,000" like the accounting rate (whole numbers only). Off, or no price, or no hidden package row = not offered.
+ * @return array{on:bool, price_e4:?int, package_id:?int, min_coins:int, max_coins:int}
+ */
+function coin_custom_settings(): array
+{
+    $e4 = (int) get_setting('coin_custom_price_e4', '0');
+    $pkgId = null;
+    if (coins_ready()) {
+        $st = db()->prepare('SELECT id FROM coin_packages WHERE slug = ?');
+        $st->execute([COIN_CUSTOM_SLUG]);
+        $pkgId = ($v = $st->fetchColumn()) ? (int) $v : null;
+    }
+    $on = get_setting('coin_custom_enabled', '0') === '1' && $e4 > 0 && $pkgId !== null;
+    // the fewest and most coins a person may ask for, so the price stays between the smallest and largest single payment
+    $min = $e4 > 0 ? (int) ceil(COIN_MIN_PURCHASE_UGX * 10000 / $e4) : 0;
+    $max = $e4 > 0 ? intdiv(COIN_MAX_PURCHASE_UGX * 10000, $e4) : 0;
+    return ['on' => $on, 'price_e4' => $e4 > 0 ? $e4 : null, 'package_id' => $pkgId, 'min_coins' => $min, 'max_coins' => $max];
+}
+
+/** What a chosen number of coins costs in UGX (whole shillings, rounded up so obitickets never sells below the set price). */
+function coin_custom_price(int $coins, int $priceE4): int
+{
+    return intdiv($coins * $priceE4 + 9999, 10000);
+}
+
+/** Admin: switch "any amount" on or off and set its price per coin. Audited. */
+function coin_admin_set_custom(int $adminId, bool $on, string $ugxPerCoin): array
+{
+    $e4 = coin_parse_rate($ugxPerCoin);
+    if ($e4 === null) {
+        return ['ok' => false, 'error' => 'Enter the price of one OBI COIN in UGX, a number above zero with at most 4 decimals (for example 1).'];
+    }
+    if (coin_custom_settings()['package_id'] === null) {
+        return ['ok' => false, 'error' => 'Run migration 050 first (it adds the hidden "Custom amount" package).'];
+    }
+    $before = coin_custom_settings();
+    set_setting($adminId, 'coin_custom_price_e4', (string) $e4);
+    set_setting($adminId, 'coin_custom_enabled', $on ? '1' : '0');
+    log_admin_action($adminId, 'coins.custom', 'coin_custom', null, ['from' => ['on' => $before['on'], 'price_e4' => $before['price_e4']], 'to' => ['on' => $on, 'price_e4' => $e4]]);
+    return ['ok' => true];
+}
+
 // ---------------------------------------------------------------------------------------------------- packages
 
 /** Packages a user can buy right now: active AND priced. */
@@ -214,6 +261,9 @@ function coin_admin_save_package(int $adminId, ?int $id, array $in): array
         $before = coin_package_find($id);
         if (!$before) {
             return ['ok' => false, 'error' => 'That package does not exist.'];
+        }
+        if ($before['slug'] === COIN_CUSTOM_SLUG) {
+            return ['ok' => false, 'error' => 'This row records "any amount" purchases and cannot be edited. Change "Any amount" above instead.'];
         }
         $pdo->prepare('UPDATE coin_packages SET name = ?, description = ?, coins = ?, bonus_coins = ?, price_ugx = ?, is_active = ?, is_featured = ?, sort_order = ? WHERE id = ?')
             ->execute([$name, $desc, $coins, $bonus, $price, $active, $featured, $sort, $id]);
@@ -372,7 +422,7 @@ function coin_adjust(int $adminId, int $userId, int $coins, string $reason): arr
  * @param callable|null $collect test hook with the signature of iotec_initiate_collection(); null = real ioTec (refused on a development computer)
  * @return array{ok:bool, error?:string, id?:int, reference?:string, price?:int, coins?:int, bonus?:int, reused?:bool}
  */
-function coin_purchase_start(array $user, int $packageId, string $phone, ?string $idempotencyKey = null, ?string $method = null, ?callable $collect = null): array
+function coin_purchase_start(array $user, int $packageId, string $phone, ?string $idempotencyKey = null, ?string $method = null, ?callable $collect = null, ?int $customCoins = null): array
 {
     $fail = static fn (string $e): array => ['ok' => false, 'error' => $e];
     if (!coins_ready() || !coins_enabled()) {
@@ -389,9 +439,21 @@ function coin_purchase_start(array $user, int $packageId, string $phone, ?string
     if ($method === null) {
         return $fail('Use an MTN or Airtel mobile money number.');
     }
-    $pkg = coin_package_find($packageId, true);
-    if (!$pkg) {
-        return $fail('That package is not available.');
+    if ($customCoins !== null) {
+        // "any amount": the price comes from the admin's price per coin, worked out here (never from the browser)
+        $cs = coin_custom_settings();
+        if (!$cs['on']) {
+            return $fail('Buying any amount is not available right now. Please pick a package.');
+        }
+        if ($customCoins < $cs['min_coins'] || $customCoins > $cs['max_coins']) {
+            return $fail('Choose between ' . number_format($cs['min_coins']) . ' and ' . number_format($cs['max_coins']) . ' OBI COINS.');
+        }
+        $pkg = ['id' => $cs['package_id'], 'name' => 'Custom amount', 'coins' => $customCoins, 'bonus_coins' => 0, 'price_ugx' => coin_custom_price($customCoins, (int) $cs['price_e4'])];
+    } else {
+        $pkg = coin_package_find($packageId, true);
+        if (!$pkg || $pkg['slug'] === COIN_CUSTOM_SLUG) {
+            return $fail('That package is not available.');
+        }
     }
     $price = (int) $pkg['price_ugx'];
     if ($price < COIN_MIN_PURCHASE_UGX || $price > COIN_MAX_PURCHASE_UGX) {

@@ -32,6 +32,8 @@ try {
                 'wallet' => coin_wallet($uid),
                 'packages' => array_map('coin_package_public', coin_packages_active()),
                 'limits' => ['min' => COIN_MIN_PURCHASE_UGX, 'max' => COIN_MAX_PURCHASE_UGX, 'daily' => COIN_DAILY_PURCHASE_CAP_UGX],
+                // "any amount": the browser shows the price as a guide; the server works it out again when the purchase starts
+                'custom' => ($cs = coin_custom_settings())['on'] ? ['priceE4' => $cs['price_e4'], 'min' => $cs['min_coins'], 'max' => $cs['max_coins']] : null,
                 'phone' => coin_phone_hint($user),
                 'open' => $open ? ['id' => (int) $open['id'], 'price' => (int) $open['price_ugx'], 'coins' => (int) $open['coins'] + (int) $open['bonus_coins'], 'phone' => coin_phone_display($open['phone'])] : null,
             ]);
@@ -49,7 +51,8 @@ try {
                 trim((string) ($body['phone'] ?? '')),
                 isset($body['key']) ? (string) $body['key'] : null,
                 isset($body['method']) ? (string) $body['method'] : null,
-                gift_collect_fn()
+                gift_collect_fn(),
+                isset($body['custom_coins']) ? (int) $body['custom_coins'] : null
             );
             if (!$res['ok']) {
                 if (!empty($res['throttled']) && function_exists('ipguard_note')) {

@@ -29,7 +29,7 @@ $editingPackage = null;   // package being edited, [] = new
 if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = (string) ($_POST['action'] ?? '');
-    if (in_array($action, ['toggle_coins', 'save_package', 'recipient'], true) && !$canManage) { $deny('You do not have permission to manage OBI COINS.'); }
+    if (in_array($action, ['toggle_coins', 'save_package', 'recipient', 'save_custom'], true) && !$canManage) { $deny('You do not have permission to manage OBI COINS.'); }
     if (in_array($action, ['wallet_status', 'reverse_purchase', 'recheck_payments'], true) && !$canRefund) { $deny('You do not have permission to freeze wallets or reverse purchases.'); }
     if (in_array($action, ['set_rate', 'adjust'], true) && !$canMoney) { $deny('Only the top-level admin can change the rate or add and remove OBI COINS.'); }
 
@@ -49,6 +49,9 @@ if ($ready && $_SERVER['REQUEST_METHOD'] === 'POST') {
         coin_set_enabled($adminId, $turnOn);
         log_admin_action($adminId, 'coins.switch', 'setting', null, ['on' => $turnOn]);
         $go('/admin-coins.php', $turnOn ? 'OBI COINS is switched ON. Gifts are now paid with OBI COINS.' : 'OBI COINS is switched OFF.');
+    } elseif ($action === 'save_custom') {
+        $res = coin_admin_set_custom($adminId, !empty($_POST['on']), (string) ($_POST['ugx_per_coin'] ?? ''));
+        $go('/admin-coins.php?tab=packages', $res['ok'] ? (!empty($_POST['on']) ? '"Any amount" is ON.' : '"Any amount" is OFF.') : $res['error']);
     } elseif ($action === 'save_package') {
         $pid = (int) ($_POST['id'] ?? 0) ?: null;
         $res = coin_admin_save_package($adminId, $pid, $_POST);
@@ -257,6 +260,21 @@ render_admin_head('gifts');
       </form>
     </div>
   <?php endif; ?>
+  <?php $cs = coin_custom_settings(); $pkgs = array_values(array_filter($pkgs, static fn ($p) => $p['slug'] !== COIN_CUSTOM_SLUG)); ?>
+  <div class="admin-card" style="margin-bottom:18px">
+    <h3 style="margin:0 0 6px">Any amount: <span class="admin-badge <?= $cs['on'] ? 'admin-badge-success' : 'admin-badge-muted' ?>"><?= $cs['on'] ? 'ON' : 'OFF' ?></span></h3>
+    <p class="muted" style="font-size:.84rem; margin:0 0 12px">People can type the number of OBI COINS they want instead of picking a package. They pay that number &times; the price per coin below (rounded up to a whole shilling), between UGX <?= number_format(COIN_MIN_PURCHASE_UGX) ?> and UGX <?= number_format(COIN_MAX_PURCHASE_UGX) ?> per payment<?php if ($cs['price_e4']): ?>, so from <?= number_format($cs['min_coins']) ?> to <?= number_format($cs['max_coins']) ?> OBI COINS<?php endif; ?>. At most UGX <?= number_format(COIN_DAILY_PURCHASE_CAP_UGX) ?> per person per 24 hours, packages included.</p>
+    <?php if ($cs['package_id'] === null): ?>
+      <p style="margin:0">Run <b>migration/050_obi_coins_big.sql</b> first.</p>
+    <?php elseif ($canManage): ?>
+      <form method="post" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap">
+        <?= csrf_field() ?><input type="hidden" name="action" value="save_custom">
+        <div class="admin-form-row" style="margin:0"><label>Price of 1 OBI COIN (UGX)</label><input type="text" name="ugx_per_coin" inputmode="decimal" value="<?= $h($cs['price_e4'] ? rtrim(rtrim(number_format($cs['price_e4'] / 10000, 4, '.', ''), '0'), '.') : '') ?>" style="width:140px" required></div>
+        <label style="display:flex; align-items:center; gap:8px; margin:0 0 10px"><input type="checkbox" name="on" value="1" <?= $cs['on'] ? 'checked' : '' ?>> Allow any amount</label>
+        <button class="btn btn-purple" type="submit" style="margin-bottom:6px">Save</button>
+      </form>
+    <?php endif; ?>
+  </div>
   <div class="admin-card">
     <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px">
       <h3 style="margin:0">Recharge packages</h3>

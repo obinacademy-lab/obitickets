@@ -102,7 +102,9 @@
       var short = Math.max(0, S.opts.needed - (d.wallet.balance || 0));
       body.appendChild(el('div', 'oc-note-top', 'You need ' + num(short) + ' more OBI COINS for this gift. Your balance is ' + num(d.wallet.balance) + '.'));
     }
-    if (!d.packages.length) { body.appendChild(el('div', 'oc-loading', 'No packages are available right now.')); }
+    var needMore = S.opts.needed ? Math.max(0, S.opts.needed - (d.wallet.balance || 0)) : 0;
+    if (d.custom && needMore > 0) { body.appendChild(customBox(needMore)); }   // short for a gift: the exact amount comes first, already filled in
+    if (!d.packages.length && !d.custom) { body.appendChild(el('div', 'oc-loading', 'No packages are available right now.')); }
     d.packages.forEach(function (p) {
       var b = el('button', 'oc-pk-row' + (p.featured ? ' hot' : '')); b.type = 'button';
       b.appendChild(coin(34));
@@ -111,7 +113,40 @@
       b.addEventListener('click', function () { S.pkg = p; S.step = 'pay'; S.key = uuid(); renderPay(); });
       body.appendChild(b);
     });
+    if (d.custom && !(needMore > 0)) { body.appendChild(customBox(0)); }
     var c = el('button', 'oc-btn line', 'Close'); c.type = 'button'; c.addEventListener('click', close); foot.appendChild(c);
+  }
+
+  // "any amount": the person types how many OBI COINS they want. The price shown is a guide; the server works it out again.
+  function customBox(prefill) {
+    var cu = S.data.custom;
+    var box = el('div', 'oc-custom');
+    var lab = el('label', null, prefill > 0 ? 'Buy exactly what you need, or any number of OBI COINS' : 'Or enter the number of OBI COINS you want'); lab.setAttribute('for', 'ocCustom'); box.appendChild(lab);
+    var row = el('div', 'oc-custom-row');
+    var inp = el('input'); inp.id = 'ocCustom'; inp.type = 'text'; inp.inputMode = 'numeric'; inp.autocomplete = 'off'; inp.placeholder = 'e.g. ' + num(Math.min(cu.max, 200000));
+    if (prefill > 0) { inp.value = num(Math.min(cu.max, Math.max(cu.min, prefill))); }
+    var go = el('button', 'oc-btn', 'Continue'); go.type = 'button';
+    row.appendChild(inp); row.appendChild(go); box.appendChild(row);
+    var hint = el('div', 'oc-custom-hint'); box.appendChild(hint);
+    function coins() { var v = parseInt(String(inp.value).replace(/[^\d]/g, ''), 10); return isNaN(v) ? 0 : v; }
+    function price(c) { return Math.ceil(c * cu.priceE4 / 10000); }
+    function paint() {
+      var c = coins(), okay = c >= cu.min && c <= cu.max;
+      go.disabled = !okay;
+      hint.classList.toggle('bad', c > 0 && !okay);
+      hint.textContent = c === 0 ? 'From ' + num(cu.min) + ' to ' + num(cu.max) + ' OBI COINS.' : (okay ? 'You pay ' + money(price(c)) + ' for ' + num(c) + ' OBI COINS.' : 'Choose between ' + num(cu.min) + ' and ' + num(cu.max) + ' OBI COINS.');
+    }
+    inp.addEventListener('input', function () {
+      var c = coins(), at = inp.value.length - inp.selectionStart;
+      inp.value = c ? num(Math.min(c, 99999999)) : '';   // show 497,500 as it is typed
+      var pos = Math.max(0, inp.value.length - at); try { inp.setSelectionRange(pos, pos); } catch (e) { /* ignore */ }
+      paint();
+    });
+    function choose() { var c = coins(); if (c < cu.min || c > cu.max) { return; } S.pkg = { id: 0, custom: true, name: 'Custom amount', coins: c, bonus: 0, total: c, price: price(c) }; S.step = 'pay'; S.key = uuid(); renderPay(); }
+    go.addEventListener('click', choose);
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); choose(); } });
+    paint();
+    return box;
   }
 
   // ------------------------------------------------------------------ step 2: see what you get, see what you pay, pay
@@ -145,7 +180,9 @@
       if (!method(inp.value)) { err.textContent = 'Enter a valid MTN or Airtel number, like 0772 123 456.'; err.hidden = false; return; }
       pay.disabled = true; pay.textContent = 'Sending the request…'; err.hidden = true;
       var mine = S;
-      api({ action: 'start', package_id: p.id, phone: inp.value, key: S.key, method: method(inp.value) }).then(function (r) {
+      var req = { action: 'start', package_id: p.id, phone: inp.value, key: S.key, method: method(inp.value) };
+      if (p.custom) { req.custom_coins = p.coins; }
+      api(req).then(function (r) {
         if (S !== mine) { return; }
         if (r._status === 401) { location.href = '/login.php?next=' + encodeURIComponent(location.pathname + location.search); return; }
         if (!r.ok) { renderPay(r.error || 'Something went wrong. Please try again.'); return; }
@@ -153,7 +190,7 @@
       }, function () { if (S === mine) { renderPay('Could not reach the server. Nothing was charged. Please try again.'); } });
     });
     foot.appendChild(pay);
-    if (S.data && S.data.packages.length > 1 && !S.opts.packageId) {
+    if (S.data && (S.data.packages.length > 1 || S.data.custom) && !S.opts.packageId) {
       var back = el('button', 'oc-btn line', 'Back'); back.type = 'button'; back.addEventListener('click', function () { S.step = 'pick'; renderPick(); }); foot.appendChild(back);
     }
   }

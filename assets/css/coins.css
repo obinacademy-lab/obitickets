@@ -133,3 +133,13 @@
 .oc-row .amt.rev { color:var(--oc-mute); text-decoration:line-through; }
 .oc-row .amt.rev small { text-decoration:none; color:var(--oc-gold); }
 
+
+/* "any amount" (11/26): type the number of OBI COINS */
+.oc-custom { margin:4px 0 10px; padding:12px; border-radius:16px; border:1.5px dashed rgba(251,191,36,.45); background:rgba(251,191,36,.05); }
+.oc-custom label { display:block; font-weight:800; font-size:13.5px; margin-bottom:8px; }
+.oc-custom-row { display:flex; gap:8px; }
+.oc-custom-row input { flex:1; min-width:0; padding:13px 14px; border-radius:14px; border:1.5px solid var(--oc-line); background:var(--oc-card); color:#fff; font:700 17px/1 inherit; font-variant-numeric:tabular-nums; }
+.oc-custom-row input:focus { outline:0; border-color:var(--oc-gold); }
+.oc-custom-row .oc-btn { width:auto; flex:none; padding:0 18px; margin:0; }
+.oc-custom-hint { margin-top:7px; font-size:12.5px; color:var(--oc-mute); }
+.oc-custom-hint.bad { color:#FF8A92; font-weight:700; }
