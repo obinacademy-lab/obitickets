@@ -101,6 +101,7 @@ require_once __DIR__ . '/market-payouts.php';
 require_once __DIR__ . '/market-seller.php';
 require_once __DIR__ . '/market-emails.php';
 require_once __DIR__ . '/market-admin.php';
+require_once __DIR__ . '/followup-hub.php';
 
 ipguard_enforce(); // a blocked address stops here, before anything is tracked or rendered
 track_site_visit();

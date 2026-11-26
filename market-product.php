@@ -20,6 +20,19 @@ $own = $p && $user && (int) $user['id'] === (int) $p['seller_id'];
 $modeText = $p ? match ($p['delivery_mode']) { 'DELIVERY' => 'Delivery only', 'COLLECTION' => 'Collection only', default => 'Delivery or collection' } : '';
 
 $pageTitle = ($p ? $p['name'] . ' — ' : '') . 'OBI MARKET — obitickets';
+// link previews (WhatsApp, Facebook, ...): the product picture, its price and store
+$shareUrl = $p ? rtrim(APP_URL, '/') . '/market-product.php?id=' . (int) $p['id'] : '';
+if ($p) {
+    $ogUrl = $shareUrl;
+    $pageDescription = 'UGX ' . number_format((int) $p['price_from']) . ' · ' . $p['store'] . ' on OBI MARKET. ' . mb_substr(trim((string) $p['description']), 0, 140);
+    $ogMain = market_img($p['images'][0] ?? '');
+    if ($ogMain !== '' && ($ogSize = @getimagesize(__DIR__ . $ogMain))) {
+        $ogImage = rtrim(APP_URL, '/') . $ogMain;
+        [$ogImageW, $ogImageH] = [(int) $ogSize[0], (int) $ogSize[1]];
+        $ogImageType = (string) $ogSize['mime'];
+        $ogImageAlt = (string) $p['name'];
+    }
+}
 $bodyClass = 'classic-page app-dark mk-page';
 $hideWhatsApp = true;
 $rcTabForce = 'discover';
@@ -79,6 +92,17 @@ include __DIR__ . '/includes/header.php';
         <li><svg width="17" height="17" aria-hidden="true"><use href="#ic-pin"/></svg><span><b><?= $h($modeText) ?></b><?php if ($p['delivery_mode'] !== 'COLLECTION'): ?> &middot; delivery fee <?= (int) $p['delivery_fee'] > 0 ? 'UGX ' . $num($p['delivery_fee']) : 'free' ?><?php endif; ?><?php if (!empty($p['delivery_note'])): ?><br><small><?= $h($p['delivery_note']) ?></small><?php endif; ?></span></li>
         <li><svg width="17" height="17" aria-hidden="true"><use href="#ic-shield"/></svg><span><b>Pay with MTN or Airtel</b><br><small>The seller is paid only after you confirm you received your order.</small></span></li>
       </ul>
+      <section class="mk-share" aria-label="Share this product">
+        <h3>Share this product</h3>
+        <div class="mk-share-row">
+          <a class="mk-sh wa" href="https://wa.me/?text=<?= rawurlencode($p['name'] . ' - UGX ' . number_format((int) $p['price_from']) . ' on OBI MARKET: ' . $shareUrl) ?>" target="_blank" rel="noopener" data-share="whatsapp"><i><svg width="20" height="20" aria-hidden="true"><use href="#ic-whatsapp"/></svg></i><span>WhatsApp</span></a>
+          <a class="mk-sh fb" href="https://www.facebook.com/sharer/sharer.php?u=<?= rawurlencode($shareUrl) ?>" target="_blank" rel="noopener" data-share="facebook"><i><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-7.5h2.5l.4-3h-2.9V8.6c0-.9.3-1.5 1.5-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2.4H8v3h2.6V21z"/></svg></i><span>Facebook</span></a>
+          <button type="button" class="mk-sh ig" data-share="instagram"><i><svg width="20" height="20" aria-hidden="true"><use href="#ic-instagram"/></svg></i><span>Instagram</span></button>
+          <button type="button" class="mk-sh tt" data-share="tiktok"><i><svg width="20" height="20" aria-hidden="true"><use href="#ic-tiktok"/></svg></i><span>TikTok</span></button>
+          <button type="button" class="mk-sh cp" data-share="copy"><i><svg width="20" height="20" aria-hidden="true"><use href="#ic-share"/></svg></i><span>Copy link</span></button>
+        </div>
+        <p class="mk-share-msg" id="mkShareMsg" role="status" aria-live="polite" hidden></p>
+      </section>
 
       <?php if (trim((string) $p['description']) !== ''): ?><section class="mk-desc"><h3>About this product</h3><p><?= nl2br($h($p['description'])) ?></p></section><?php endif; ?>
       <?php if (!empty($p['events'])): ?>
@@ -87,7 +111,7 @@ include __DIR__ . '/includes/header.php';
       <?php if (trim((string) $p['policies']) !== ''): ?><section class="mk-desc"><h3>Store policies</h3><p><?= nl2br($h($p['policies'])) ?></p></section><?php endif; ?>
     </div>
   </article>
-  <script type="application/json" id="mkData"><?= json_encode(['id' => $p['id'], 'variants' => $p['variants'], 'max' => MARKET_MAX_QTY_LINE, 'canBuy' => $open && !$own && $p['in_stock'], 'signedIn' => $user !== null, 'next' => '/market-product.php?id=' . (int) $p['id']], JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+  <script type="application/json" id="mkData"><?= json_encode(['id' => $p['id'], 'variants' => $p['variants'], 'max' => MARKET_MAX_QTY_LINE, 'canBuy' => $open && !$own && $p['in_stock'], 'signedIn' => $user !== null, 'share' => ['url' => $shareUrl, 'title' => (string) $p['name'], 'text' => $p['name'] . ' - UGX ' . number_format((int) $p['price_from']) . ' on OBI MARKET', 'image' => market_img($p['images'][0] ?? '')], 'next' => '/market-product.php?id=' . (int) $p['id']], JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
   <script src="/assets/js/market.js?v=<?= @filemtime(__DIR__ . '/assets/js/market.js') ?: time() ?>" defer></script>
 <?php endif; ?>
 </div>

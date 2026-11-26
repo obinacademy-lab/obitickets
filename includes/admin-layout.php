@@ -37,6 +37,7 @@ function render_admin_head(string $active): void
             ['key' => 'tickets', 'label' => 'Tickets', 'href' => '/admin-tickets.php', 'icon' => 'ic-ticket', 'perm' => 'tickets.view'],
             ['key' => 'checkin', 'label' => 'Check-In', 'href' => '/admin-checkin.php', 'icon' => 'ic-check', 'perm' => 'tickets.checkin'],
             ['key' => 'orders', 'label' => 'Orders', 'href' => '/admin-orders.php', 'icon' => 'ic-bolt', 'perm' => 'orders.view'],
+            ['key' => 'followups', 'label' => 'Failed payments', 'href' => '/admin-followups.php', 'icon' => 'ic-phone', 'perm' => 'orders.view'],
         ]],
         ['label' => 'Finance', 'items' => [
             ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/admin-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $stats['pending_payouts'] ?: null],

@@ -41,6 +41,7 @@ function render_organizer_head(string $active, array $orgContext): void
             ['orders', 'Orders', '/org-orders.php', 'tickets.view'],
             ['transactions', 'Payments', '/org-transactions.php', 'transactions.view'],
             ['refunds', 'Refunds', '/org-refunds.php', 'refunds.view'],
+            ['followups', 'Failed payments', '/org-followups.php', 'tickets.view'],
         ]],
         // OBI MARKET (merchandise): the seller's store, products, orders, earnings and store settings.
         ['key' => 'market', 'label' => 'OBI MARKET', 'icon' => 'ic-hanger', 'group' => 'Main', 'tabs' => [

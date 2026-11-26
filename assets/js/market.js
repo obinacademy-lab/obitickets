@@ -226,5 +226,53 @@
     }
   }
 
-  product(); cart(); checkout(); order();
+  // ------------------------------------------------------------------ share a product
+  // WhatsApp and Facebook are plain links (their share pages). Instagram and TikTok have no web share link at all, so on phones the system share
+  // sheet opens with the product picture (Instagram and TikTok are in it); everywhere the link is also copied so it can be pasted in a post,
+  // story, message or bio, and on a computer the app's site opens next to it.
+  function share() {
+    var s = D.share, box = $('mkShareMsg');
+    if (!s || !document.querySelector('.mk-share')) { return; }
+    function note(text) { if (box) { box.textContent = text; box.hidden = false; } }
+    function copy() {
+      if (navigator.clipboard && navigator.clipboard.writeText) { return navigator.clipboard.writeText(s.url).then(function () { return true; }, function () { return false; }); }
+      return Promise.resolve(false);
+    }
+    var names = { instagram: 'Instagram', tiktok: 'TikTok' };
+    var sites = { instagram: 'https://www.instagram.com/', tiktok: 'https://www.tiktok.com/upload' };
+    Array.prototype.forEach.call(document.querySelectorAll('.mk-share [data-share]'), function (b) {
+      var kind = b.getAttribute('data-share');
+      if (kind === 'whatsapp' || kind === 'facebook') { return; }   // ordinary links
+      b.addEventListener('click', function () {
+        if (kind === 'copy') {
+          copy().then(function (ok) { note(ok ? 'Link copied. Paste it anywhere to share this product.' : 'Copy this link: ' + s.url); });
+          return;
+        }
+        var app = names[kind];
+        var copied = copy();   // first, while the tap still counts: the link is ready to paste
+        if (navigator.share) {
+          var go = function (data) {
+            return navigator.share(data).then(function () { note('Shared. If ' + app + ' did not keep the link, paste it: it is copied.'); }, function (e) {
+              if (!e || e.name !== 'AbortError') { copied.then(function (ok) { note(ok ? 'Link copied. Open ' + app + ' and paste it in your post, story or bio.' : 'Copy this link: ' + s.url); }); }
+            });
+          };
+          if (s.image && navigator.canShare && window.fetch) {
+            fetch(s.image).then(function (r) { return r.blob(); }).then(function (blob) {
+              var file = new File([blob], 'obi-market-product.' + (blob.type === 'image/png' ? 'png' : (blob.type === 'image/webp' ? 'webp' : 'jpg')), { type: blob.type || 'image/jpeg' });
+              return go(navigator.canShare({ files: [file] }) ? { files: [file], title: s.title, text: s.text + ' ' + s.url } : { title: s.title, text: s.text, url: s.url });
+            }, function () { return go({ title: s.title, text: s.text, url: s.url }); });
+          } else {
+            go({ title: s.title, text: s.text, url: s.url });
+          }
+          return;
+        }
+        copied.then(function (ok) {
+          note(ok ? 'Link copied. ' + app + ' is opening: paste the link in your post, story or bio.' : 'Copy this link and paste it in ' + app + ': ' + s.url);
+          window.open(sites[kind], '_blank', 'noopener');
+        });
+      });
+    });
+  }
+
+  product(); cart(); checkout(); order(); share();
 })();
