@@ -20,9 +20,9 @@ const ADMIN_ROLES = [
 const ADMIN_PERMISSIONS = [
     // OBI GIFTS: gifts.view = see it, gifts.manage = edit the catalogue and the master switch, gifts.refund = reverse a gift and record the sender's refund. gifts.commission (change the
     // revenue split) is deliberately NOT here: only the top-level admin (SUPER_ADMIN) has it.
-    'FINANCE_ADMIN' => ['dashboard.view', 'orders.view', 'orders.refund', 'payouts.view', 'payouts.process', 'promo.view', 'promo.manage', 'settings.view', 'gifts.view', 'gifts.manage', 'gifts.refund'],
+    'FINANCE_ADMIN' => ['dashboard.view', 'orders.view', 'orders.refund', 'payouts.view', 'payouts.process', 'promo.view', 'promo.manage', 'settings.view', 'gifts.view', 'gifts.manage', 'gifts.refund', 'market.view', 'market.manage', 'market.refund'],
     'EVENT_MANAGER' => ['dashboard.view', 'events.view', 'events.manage', 'categories.manage', 'organizers.view', 'organizers.verify'],
-    'SUPPORT_AGENT' => ['dashboard.view', 'customers.view', 'customers.manage', 'orders.view', 'tickets.view', 'contact.view', 'contact.manage'],
+    'SUPPORT_AGENT' => ['dashboard.view', 'customers.view', 'customers.manage', 'orders.view', 'tickets.view', 'contact.view', 'contact.manage', 'market.view'],
     'MARKETING_MANAGER' => ['dashboard.view', 'promo.view', 'promo.manage', 'events.view'],
     'CHECKIN_STAFF' => ['dashboard.view', 'tickets.view', 'tickets.checkin'],
 ];

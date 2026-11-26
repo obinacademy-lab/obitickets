@@ -910,7 +910,7 @@ function market_checkout_settle(int $checkoutId, ?string $message = null, ?int $
 {
     $pdo = db();
     $pdo->beginTransaction();
-    $paidOrders = [];
+    $paidOrders = []; $refundOwed = [];
     try {
         $st = $pdo->prepare('SELECT * FROM market_checkouts WHERE id = ? FOR UPDATE');
         $st->execute([$checkoutId]);
@@ -959,6 +959,7 @@ function market_checkout_settle(int $checkoutId, ?string $message = null, ?int $
                 $pdo->prepare("UPDATE market_orders SET payment_status = 'PAID', paid_at = NOW(), fulfilment = 'REFUND_REQUESTED', earnings_state = 'NONE', seller_note = ? WHERE id = ?")
                     ->execute(['Paid after the checkout expired and the stock was gone: refund owed', $orderId]);
                 market_history_add($pdo, $orderId, $o['fulfilment'], 'REFUND_REQUESTED', null, 'SYSTEM', 'Paid after the checkout expired and the stock was gone: refund owed');
+                $refundOwed[] = ['id' => $orderId, 'number' => (string) $o['order_number'], 'total' => (int) $o['total_ugx'], 'customer' => (int) $c['user_id']];
                 continue;
             }
             foreach ($itemsByOrder[$orderId] as $i) {
@@ -990,6 +991,17 @@ function market_checkout_settle(int $checkoutId, ?string $message = null, ?int $
         throw $e;
     }
     // after the money is safely recorded: tell people (a failure here never undoes the sale)
+    foreach ($refundOwed as $ro) {
+        // the customer paid after the checkout expired and the goods were gone: nobody sells anything, but money is owed back, so the customer and the admins hear about it
+        try {
+            create_notification($ro['customer'], 'market_order', 'Your payment arrived too late for order ' . $ro['number'], 'The items sold out before your payment reached us, so UGX ' . number_format($ro['total']) . ' will be refunded to your phone.', '/market-order.php?id=' . $ro['id']);
+            if (function_exists('gift_wd_alert_admins')) {
+                gift_wd_alert_admins('OBI MARKET: a refund is owed on ' . $ro['number'], 'The customer paid UGX ' . number_format($ro['total']) . ' after the checkout expired and the items were gone. Send the money back and mark it sent in OBI MARKET > Refunds (order #' . $ro['id'] . ').');
+            }
+        } catch (Throwable $e) {
+            error_log('[market] refund-owed notification failed: ' . $e->getMessage());
+        }
+    }
     foreach ($paidOrders as $po) {
         try {
             create_notification($po['seller_id'], 'market_order', 'New merchandise order ' . $po['number'], 'UGX ' . number_format($po['total']) . ' from a customer on OBI MARKET.', '/org-market-order.php?id=' . $po['id']);

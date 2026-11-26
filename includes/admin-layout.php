@@ -42,6 +42,7 @@ function render_admin_head(string $active): void
             ['key' => 'payouts', 'label' => 'Payouts', 'href' => '/admin-payouts.php', 'icon' => 'ic-cash', 'perm' => 'payouts.view', 'badge' => $stats['pending_payouts'] ?: null],
             ['key' => 'refunds', 'label' => 'Refunds', 'href' => '/admin-refunds.php', 'icon' => 'ic-x', 'perm' => 'orders.refund', 'badge' => $stats['pending_refund_requests'] ?: null],
             ['key' => 'gifts', 'label' => 'OBI GIFTS', 'href' => '/admin-gifts.php', 'icon' => 'ic-heart', 'perm' => 'gifts.view'],
+            ['key' => 'market', 'label' => 'OBI MARKET', 'href' => '/admin-market.php', 'icon' => 'ic-hanger', 'perm' => 'market.view', 'badge' => (function_exists('market_admin_badge') && admin_can('market.view') ? market_admin_badge() : 0) ?: null],
         ]],
         ['label' => 'Marketing', 'items' => [
             ['key' => 'promo', 'label' => 'Promo Codes', 'href' => '/admin-promo.php', 'icon' => 'ic-tag', 'perm' => 'promo.view'],

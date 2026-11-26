@@ -73,7 +73,7 @@ function market_order_set_status(int $sellerId, int $orderId, string $to, ?strin
             $pdo->rollBack();
             return ['ok' => false, 'error' => 'That order does not exist.'];
         }
-        if ($o['payment_status'] !== 'PAID' || in_array($o['fulfilment'], ['PENDING_PAYMENT', 'CANCELLED', 'REFUNDED', 'COMPLETED'], true)) {
+        if (!in_array($o['payment_status'], ['PAID', 'PARTIALLY_REFUNDED'], true) || in_array($o['fulfilment'], ['PENDING_PAYMENT', 'CANCELLED', 'REFUNDED', 'COMPLETED'], true)) {
             $pdo->rollBack();
             return ['ok' => false, 'error' => 'This order cannot be changed any more.'];
         }
@@ -384,6 +384,29 @@ function market_order_refund(int $adminId, int $orderId, int $merchAmount, bool 
 function market_refund_mark_paid(int $adminId, int $orderId, int $amount): array
 {
     $o = market_order_find($orderId);
+    if ($o && $o['fulfilment'] === 'REFUND_REQUESTED' && $o['payment_status'] === 'PAID' && (int) $o['refunded_ugx'] === 0 && $o['earnings_state'] === 'NONE') {
+        // the customer paid after the goods were gone: nothing was ever sold, so the whole payment goes back and the order closes as refunded
+        if ($amount !== (int) $o['total_ugx']) {
+            return ['ok' => false, 'error' => 'This customer is owed the whole payment: UGX ' . number_format((int) $o['total_ugx']) . '.'];
+        }
+        $pdo = db();
+        $pdo->beginTransaction();
+        $u = $pdo->prepare("UPDATE market_orders SET payment_status = 'REFUNDED', fulfilment = 'REFUNDED', refunded_ugx = total_ugx, refunded_merch_ugx = merchandise_ugx, refund_paid_ugx = total_ugx WHERE id = ? AND fulfilment = 'REFUND_REQUESTED' AND refunded_ugx = 0");
+        $u->execute([$orderId]);
+        if ($u->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ['ok' => false, 'error' => 'That refund was already handled.'];
+        }
+        market_history_add($pdo, $orderId, 'REFUND_REQUESTED', 'REFUNDED', $adminId, 'ADMIN', 'The payment was sent back to the customer');
+        $pdo->commit();
+        log_admin_action($adminId, 'market.refund.paid', 'market_order', $orderId, ['amount' => $amount, 'late_payment' => true]);
+        try {
+            create_notification((int) $o['customer_id'], 'market_order', 'Your refund was sent', 'UGX ' . number_format($amount) . ' for order ' . $o['order_number'] . ' was sent back to your phone.', '/market-order.php?id=' . $orderId);
+        } catch (Throwable $e) {
+            error_log('[market] refund-sent notification failed: ' . $e->getMessage());
+        }
+        return ['ok' => true];
+    }
     if (!$o || $amount <= 0 || $amount > (int) $o['refunded_ugx'] - (int) $o['refund_paid_ugx']) {
         return ['ok' => false, 'error' => 'That is more than is still owed to this customer.'];
     }
