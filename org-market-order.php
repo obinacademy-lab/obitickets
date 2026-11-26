@@ -103,6 +103,7 @@ render_organizer_head('market-orders', $ctx);
 
   <div style="display:grid; gap:18px">
     <section class="om-card om-who">
+      <?php if (!$canManage): ?><h3>Customer</h3><p><b><?= $h($o['customer_name']) ?></b></p><p class="om-fine">Contact details and the delivery address are shown only to the people who prepare and send orders (the owner and event managers).</p><?php else: ?>
       <h3><?= $o['delivery_method'] === 'COLLECTION' ? 'Collection' : 'Deliver to' ?></h3>
       <?php if ($o['delivery_method'] === 'COLLECTION'): ?>
         <p><b><?= $h($o['customer_name']) ?></b> will collect this order.</p>
@@ -115,6 +116,7 @@ render_organizer_head('market-orders', $ctx);
       <h3 style="margin-top:16px">Customer</h3>
       <p><b><?= $h($o['customer_name']) ?></b></p>
       <p><a href="tel:<?= $h(preg_replace('/[^\d+]/', '', (string) $o['customer_phone'])) ?>"><?= $h($o['customer_phone']) ?></a> &middot; <a href="mailto:<?= $h($o['customer_email']) ?>"><?= $h($o['customer_email']) ?></a></p>
+      <?php endif; ?>
     </section>
 
     <section class="om-card om-money">
