@@ -636,3 +636,21 @@ a.so-fan:hover{background:#FDF4F4}
 .so-fan-badge.is-top{background:#FEF3C7; color:#92400E}
 .so-fans-note{margin:0; padding:6px 18px 16px; font-size:.76rem; color:#645A5A}
 
+
+/* who viewed this video (11/27): the owner's list, each with a Message button */
+.so-vw-list{flex:1; min-height:140px; overflow-y:auto; padding:4px 18px 6px; display:grid; gap:4px; align-content:start}
+.so-vw{display:flex; align-items:center; gap:10px; padding:6px 4px; border-radius:12px}
+.so-vw-who{flex:1; min-width:0; display:flex; align-items:center; gap:10px; color:inherit; text-decoration:none}
+.so-vw .so-av{flex:none; width:42px; height:42px; border-radius:50%; background:#FDECEC; color:#991B1B; display:grid; place-items:center; font:700 .8rem 'Outfit',sans-serif; overflow:hidden}
+.so-vw .so-av img{width:100%; height:100%; object-fit:cover}
+.so-vw-tx{min-width:0}
+.so-vw-tx b{display:block; font-size:.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.so-vw-tx small{display:block; font-size:.76rem; color:#645A5A; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.so-vw-msg{flex:none; padding:8px 14px; border-radius:99px; background:#F0313F; color:#fff; font:800 .78rem 'Plus Jakarta Sans',sans-serif; text-decoration:none}
+.so-vw-msg:hover{background:#D72634; color:#fff}
+.so-vw-more{justify-self:center; margin:6px 0 4px; padding:8px 18px; border-radius:99px; border:1px solid #E5DADA; background:transparent; color:inherit; font:700 .8rem 'Plus Jakarta Sans',sans-serif; cursor:pointer}
+.so-vw-list .so-cm-none a{color:#F0313F; font-weight:700}
+body.so-v3 .so-vw .so-av{background:#2A1D20; color:#FFB4B4}
+body.so-v3 .so-vw-tx small{color:#A99C9C}
+body.so-v3 .so-vw-more{border-color:rgba(255,255,255,.18)}
+body.so-v3 a.so-vw-who:hover{opacity:.85}

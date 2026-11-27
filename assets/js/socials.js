@@ -62,6 +62,8 @@
     // Boost: an arrow going up with two speed lines under it (filled, like the other buttons)
     boost: ['M12 2.500 20 11h-4.500v5h-7v-5H4z', 'M8.500 17.500h7v1.800h-7z', 'M8.500 20.600h7v1.400h-7z'],
     check: ['M5 12.500l4.500 4.500L19 7.500'],
+    // an eye (filled), for "who viewed this video"
+    eye: ['M12 5C6.500 5 2.700 9.100 1.500 12c1.200 2.900 5 7 10.500 7s9.300-4.100 10.500-7C21.300 9.100 17.500 5 12 5zm0 11.500a4.500 4.500 0 1 1 0-9 4.500 4.500 0 0 1 0 9zm0-2.500a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'],
     plus: ['M12 5v14', 'M5 12h14'],
     // a gift box with a ribbon (filled, like the other buttons)
     gift: ['M3 8a1 1 0 0 1 1-1h7v4H4a1 1 0 0 1-1-1z', 'M13 7h7a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-7z', 'M4 12.5h7V21H6a2 2 0 0 1-2-2z', 'M13 12.5h7V19a2 2 0 0 1-2 2h-5z',
@@ -330,9 +332,16 @@
         window.ObGifts.open({ organizerId: d.org.id, postId: d.id, fxHost: a, loginUrl: D.loginUrl, onNotice: toast });
       });
     }
+    // who viewed it (11/27): only on your own videos, where the Gift button would be
+    var viewers = null;
+    if (D.canViewers && D.me && D.me === d.org.id) {
+      viewers = railButton('See who viewed this video', IC.eye, 'Viewers', true, 'fd-viewers');
+      viewers.addEventListener('click', function () { openViewers(it, viewers); });
+    }
     rail.appendChild(fw);
     rail.appendChild(like); rail.appendChild(boost); rail.appendChild(com); rail.appendChild(sh);
     if (gift) { rail.appendChild(gift); }
+    if (viewers) { rail.appendChild(viewers); }
     rail.appendChild(save);
     a.appendChild(rail);
     it.rail = rail;
@@ -853,6 +862,51 @@
         fansList.appendChild(row);
       });
     });
+  }
+  // ---- who viewed this video (owner only; the server checks it again)
+  var vwList = document.getElementById('soVwList'), vwTitle = document.getElementById('soVwTitle'), vwFor = null;
+  function viewerRow(v) {
+    var row = el('div', 'so-vw');
+    var who = el('a', 'so-vw-who'); who.href = v.url;
+    var av = el('span', 'so-av'); if (v.avatar) { var im = el('img'); im.alt = ''; im.src = v.avatar; av.appendChild(im); } else { av.textContent = v.initials; }
+    who.appendChild(av);
+    var tx = el('span', 'so-vw-tx'); tx.appendChild(el('b', null, v.name));
+    tx.appendChild(el('small', null, 'Viewed ' + v.ago + (v.times > 1 ? ' · ' + v.times + ' times' : '') + (v.followsYou ? ' · Follows you' : '')));
+    who.appendChild(tx);
+    row.appendChild(who);
+    var msg = el('a', 'so-vw-msg', 'Message'); msg.href = v.chat; msg.setAttribute('aria-label', 'Message ' + v.name);
+    row.appendChild(msg);
+    return row;
+  }
+  function loadViewers(it, cursor) {
+    var more = vwList.querySelector('.so-vw-more'); if (more) { more.remove(); }
+    api('/api/socials.php', { action: 'viewers', post_id: it.data.id, cursor: cursor || null }).then(function (r) {
+      if (vwFor !== it) { return; }
+      var loading = vwList.querySelector('.so-cm-none'); if (loading) { loading.remove(); }
+      if (!r || !r.ok) { vwList.appendChild(el('p', 'so-cm-none', (r && r.error) || 'Could not load the viewers.')); return; }
+      if (r.off) {
+        var p = el('p', 'so-cm-none', 'You turned off "Show me in video viewer lists", so you cannot see who viewed your videos either. ');
+        var a = el('a', null, 'Turn it on in Settings'); a.href = '/settings.php#viewers'; p.appendChild(a);
+        vwList.appendChild(p); return;
+      }
+      if (!cursor) { vwTitle.textContent = r.total === 1 ? '1 viewer' : compact(r.total) + ' viewers'; }
+      if (!r.rows.length && !cursor) { vwList.appendChild(el('p', 'so-cm-none', 'No signed-in viewers yet. When people watch this video, they show up here.')); return; }
+      r.rows.forEach(function (v) { vwList.appendChild(viewerRow(v)); });
+      if (r.next) {
+        var b = el('button', 'so-vw-more', 'Show more'); b.type = 'button';
+        b.addEventListener('click', function () { b.disabled = true; b.textContent = 'Loading...'; loadViewers(it, r.next); });
+        vwList.appendChild(b);
+      }
+    }, function () { if (vwFor === it) { vwList.appendChild(el('p', 'so-cm-none', 'Could not load the viewers. Check your connection.')); } });
+  }
+  function openViewers(it, opener) {
+    if (!vwList) { return; }
+    vwFor = it;
+    vwTitle.textContent = 'Viewers';
+    vwList.textContent = '';
+    vwList.appendChild(el('p', 'so-cm-none', 'Loading...'));
+    show('soViewers', opener);
+    loadViewers(it, null);
   }
   function focusComment(id) {
     var node = cmList.querySelector('.so-cm[data-id="' + Number(id) + '"]');

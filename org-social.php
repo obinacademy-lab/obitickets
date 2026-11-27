@@ -363,6 +363,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
               <span class="mu-meta"><?= htmlspecialchars(moment_compact((int) $m['view_count'])) ?> views &middot; <?= (int) $m['reaction_count'] ?> &#10084;&#65039; &middot; <?= (int) $m['comment_count'] ?> &#128172;</span>
             </div>
             <div class="mu-cap"><?= $m['caption'] ? htmlspecialchars($m['caption']) : '<span class="muted">No caption</span>' ?></div>
+            <?php if (function_exists('vv_ready') && vv_ready() && $actor && (int) $organizerId === (int) $actor['id']): ?><a class="mu-viewers" href="/video-viewers.php?post=<?= (int) $m['id'] ?>" style="display:inline-block; margin:2px 0 6px; font-weight:700; font-size:.85rem">&#128065; See who viewed<?= ($vc = vv_count((int) $m['id'])) ? ' (' . number_format($vc) . ')' : '' ?></a><?php endif; ?>
             <details>
               <summary>Edit</summary>
               <form method="post">

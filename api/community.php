@@ -91,6 +91,19 @@ try {
         case 'moment_share':
             // Guests count too; one count per visitor per moment per session keeps the numbers honest.
             $momentId = $intOf($body['id'] ?? 0);
+            // who viewed it (11/27): a signed-in viewer goes on the owner's list; re-watching moves them up at most every 10 minutes
+            if ($action === 'moment_view' && $uid && $momentId > 0 && function_exists('vv_record')) {
+                $seen = $_SESSION['mv_rec'][$momentId] ?? 0;
+                if (time() - (int) $seen >= VV_RECORD_EVERY_SECONDS) {
+                    try {
+                        vv_record($momentId, $uid);
+                    } catch (Throwable $e) {
+                        error_log('[viewers] ' . $e->getMessage());   // never breaks the view counter
+                    }
+                    $_SESSION['mv_rec'][$momentId] = time();
+                    $_SESSION['mv_rec'] = array_slice($_SESSION['mv_rec'], -300, null, true);
+                }
+            }
             $statKey = $action === 'moment_share' ? 'moment_shares' : 'moment_views';
             if (!isset($_SESSION[$statKey]) || !is_array($_SESSION[$statKey])) {
                 $_SESSION[$statKey] = [];

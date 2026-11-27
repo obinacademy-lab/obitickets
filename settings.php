@@ -9,6 +9,16 @@ $isOrganizer = ($user['role'] ?? '') === 'ORGANIZER';
 $isAdmin = ($user['role'] ?? '') === 'ADMIN';
 $unread = function_exists('count_unread_notifications') ? count_unread_notifications($uid) : 0;
 
+// Privacy (11/27): "Show me in video viewer lists". The only switch that is changed on this page itself.
+$vvReady = function_exists('vv_ready') && vv_ready();
+if ($vvReady && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'viewers') {
+    verify_csrf();
+    vv_set_visible($uid, !empty($_POST['on']));
+    header('Location: /settings.php?saved=viewers#viewers');
+    exit;
+}
+$vvOn = $vvReady && vv_visible($uid);
+
 $ic = [
     'user'   => '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
     'at'     => '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
@@ -26,6 +36,7 @@ $ic = [
     'doc'    => '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
     'out'    => '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l-5-5 5-5M5 12h11"/>',
     'trash'  => '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+    'eye'    => '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
 ];
 $svg = static fn (string $k): string => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $ic[$k] . '</svg>';
 
@@ -72,6 +83,19 @@ include __DIR__ . '/includes/header.php';
     <h1>Settings</h1>
   </div>
 
+  <?php if ($vvReady): ?>
+    <h2 class="st-h" id="viewers">Privacy</h2>
+    <div class="st-list">
+      <form method="post" class="st-row st-switch-row"<?= $vvOn ? ' data-confirm="Hide yourself from video viewer lists? You will be removed from the lists you are already in, and you will not see who viewed your own videos either."' : '' ?>>
+        <?= csrf_field() ?><input type="hidden" name="action" value="viewers"><?php if (!$vvOn): ?><input type="hidden" name="on" value="1"><?php endif; ?>
+        <i><?= $svg('eye') ?></i>
+        <span><b>Show me in video viewer lists</b><small><?= $vvOn ? 'On: when you watch a video, the person who posted it can see you watched it and message you.' : 'Off: nobody sees that you watched their video, and you cannot see who watched yours.' ?></small></span>
+        <button type="submit" class="st-switch<?= $vvOn ? ' on' : '' ?>" role="switch" aria-checked="<?= $vvOn ? 'true' : 'false' ?>" aria-label="Show me in video viewer lists"><i></i></button>
+      </form>
+    </div>
+    <?php if (($_GET['saved'] ?? '') === 'viewers'): ?><p class="st-saved" role="status">Saved.</p><?php endif; ?>
+  <?php endif; ?>
+
   <?php foreach ($groups as $label => $rows): ?>
     <h2 class="st-h"><?= htmlspecialchars($label) ?></h2>
     <div class="st-list">
@@ -109,6 +133,14 @@ include __DIR__ . '/includes/header.php';
   .st-danger > i{background:rgba(240,49,63,.12); color:#FF6B76}
   .st-row:focus-visible{outline:3px solid #fff; outline-offset:-3px}
   .st-foot{margin:22px 0 0; text-align:center; color:var(--ad-mute); font-size:12.5px}
+  .st-switch-row{display:flex; align-items:center; gap:14px; min-height:58px; padding:10px 14px; margin:0; color:#fff}
+  .st-switch{flex:none; width:48px; height:28px; border:0; border-radius:99px; background:rgba(255,255,255,.18); position:relative; cursor:pointer; padding:0}
+  .st-switch i{position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:transform .2s}
+  .st-switch.on{background:#F0313F}
+  .st-switch.on i{transform:translateX(20px)}
+  .st-switch:focus-visible{outline:3px solid #fff; outline-offset:2px}
+  .st-saved{margin:8px 2px 0; font-size:12.5px; color:#34D399; font-weight:700}
 </style>
+<script>document.querySelectorAll('form.st-switch-row[data-confirm]').forEach(function (f) { f.addEventListener('submit', function (e) { if (!window.confirm(f.getAttribute('data-confirm'))) { e.preventDefault(); } }); });</script>
 <script src="/assets/js/app-dark.js?v=<?= @filemtime(__DIR__ . '/assets/js/app-dark.js') ?: time() ?>" defer></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

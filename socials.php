@@ -231,6 +231,12 @@ include __DIR__ . '/includes/header.php';
   <p class="so-fans-note">Ranked by the gifts sent on this video. Anonymous gifts are never shown.</p>
 </section>
 
+<section class="so-sheet" id="soViewers" role="dialog" aria-modal="true" aria-labelledby="soVwTitle" hidden>
+  <header><h2 id="soVwTitle">Viewers</h2><button type="button" class="so-x" data-so-close aria-label="Close viewers"><svg width="18" height="18" aria-hidden="true"><use href="#ic-x"/></svg></button></header>
+  <div class="so-vw-list" id="soVwList" aria-live="polite"></div>
+  <p class="so-fans-note">Only you can see this list. People who are not signed in, or who turned off &ldquo;Show me in video viewer lists&rdquo; in Settings, are not shown.</p>
+</section>
+
 <section class="so-sheet" id="soComments" role="dialog" aria-modal="true" aria-labelledby="soCmTitle" hidden>
   <header><h2 id="soCmTitle">Comments</h2><button type="button" class="so-x" data-so-close aria-label="Close comments"><svg width="18" height="18" aria-hidden="true"><use href="#ic-x"/></svg></button></header>
   <div class="so-cm-list" id="soCmList" aria-live="polite"></div>
@@ -299,6 +305,7 @@ include __DIR__ . '/includes/header.php';
     'canSave' => function_exists('post_saves_ready') && post_saves_ready(),
     'canBoost' => function_exists('post_boosts_ready') && post_boosts_ready(),
     'canGift' => !empty($giftsOn),   // OBI GIFTS: the Gift button shows only when Admin switched gifts on
+    'canViewers' => $uid && function_exists('vv_ready') && vv_ready(),   // the Viewers button on your own videos (11/27)
 ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 <?php if (!empty($giftsOn) && function_exists('coins_enabled') && coins_enabled()): ?><link rel="stylesheet" href="/assets/css/coins.css?v=<?= @filemtime(__DIR__ . '/assets/css/coins.css') ?: time() ?>"><script src="/assets/js/coins.js?v=<?= @filemtime(__DIR__ . '/assets/js/coins.js') ?: time() ?>" defer></script><?php endif; ?>
 <?php if (!empty($giftsOn)): ?><script src="/assets/js/gift-art.js?v=<?= @filemtime(__DIR__ . '/assets/js/gift-art.js') ?: time() ?>" defer></script><script src="/assets/js/gift-sound.js?v=<?= @filemtime(__DIR__ . '/assets/js/gift-sound.js') ?: time() ?>" defer></script><script src="/assets/js/gifts.js?v=<?= @filemtime(__DIR__ . '/assets/js/gifts.js') ?: time() ?>" defer></script><?php endif; ?>

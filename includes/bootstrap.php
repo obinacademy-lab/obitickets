@@ -69,6 +69,7 @@ require_once __DIR__ . '/landing.php';
 require_once __DIR__ . '/home-stories.php';
 require_once __DIR__ . '/discover.php';
 require_once __DIR__ . '/social.php';
+require_once __DIR__ . '/video-viewers.php';
 require_once __DIR__ . '/features.php';
 require_once __DIR__ . '/share-image.php';
 require_once __DIR__ . '/organizer.php';

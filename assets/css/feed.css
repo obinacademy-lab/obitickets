@@ -366,3 +366,6 @@ body.so-v3 .so-tabs{gap:20px; font-size:16.5px}
   animation:fdRing 2.2s linear infinite, fdBlink 1.1s ease-in-out infinite}
 @keyframes fdBlink{0%,100%{opacity:1} 50%{opacity:.55}}
 @media (prefers-reduced-motion:reduce){ .fd-cta::before{animation:none} }
+
+/* the Follow + is hidden on your own videos (the script sets hidden; the grid display above used to override it) */
+.fd-follow[hidden]{display:none !important}

@@ -86,6 +86,17 @@ try {
             $ev->execute([(int) $post['event_id']]);
             json_response(['ok' => true, 'fans' => gift_top_fans_post((int) $post['id'], (int) $ev->fetchColumn(), GIFT_FANS_LIST)]);
 
+        case 'viewers':
+            // who viewed this video: only its owner (11/27); vv_list checks that and leaves out blocked and hidden people
+            if (!$user) {
+                json_response(['error' => 'Please log in.', 'login' => true], 401);
+            }
+            $res = vv_list((int) ($body['post_id'] ?? 0), $uid, isset($body['cursor']) ? (string) $body['cursor'] : null);
+            if (!$res['ok']) {
+                json_response(['error' => $res['error']], 403);
+            }
+            json_response($res);
+
         case 'comment_add':
             if (!$user) {
                 json_response(['error' => 'Please log in to comment.', 'login' => true], 401);
