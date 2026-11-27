@@ -274,12 +274,13 @@
         // Heavy SHORT phone videos are made lighter, so they load fast for people on mobile data. Long ones go up as they are.
         // 11/27: heavy videos up to the 10-minute limit are made lighter (video-shrink.js), not only short ones: on a slow
         // connection sending fewer megabytes is the only real speed-up, and the pieces go up while it is made
+        // Owner 11/27: videos go up EXACTLY as recorded, full quality and size: never re-made in the browser (a browser-made copy
+        // could not play on many phones). Big ones go up in pieces, a few at once, with the screen kept on.
         var secs = Math.min(S.duration, cfg.maxSeconds);
-        var plan = window.obiLightenPlan ? window.obiLightenPlan(file, secs) : { shrink: canShrink && file.size > SOFT_VIDEO_BYTES && S.duration <= SHRINK_MAX_SECONDS, videoBits: 2000000, audioBits: 128000 };
-        var heavy = plan.shrink;
+        var plan = { shrink: false };
+        var heavy = false;
         S.needsPrep = heavy; S.plan = plan;
-        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter' + (plan.estimate ? ' (about ' + mb(plan.estimate) + ')' : '') + ' and send it at the same time, so it uploads much faster and plays smoothly on phones. It takes about as long as the video (' + Math.floor(secs / 60) + ':' + ('0' + Math.floor(secs % 60)).slice(-2) + '). Keep this screen open.');
-        else if (file.size > PIECES_FROM) notice('This video is ' + mb(file.size) + '. It uploads in parts, so keep this page open until it says ready.');
+        if (file.size > PIECES_FROM) notice('This video is ' + mb(file.size) + '. It uploads at full quality, in parts. Keep this page open, with the screen on, until it says ready. On a slow connection big videos take a while.');
         paintStatus();
         if (S.needsPrep) {
           // 11/27: the lighter video is sent WHILE it is being made (piece by piece), instead of after: the wait is about the

@@ -51,3 +51,16 @@ echo date('c') . " OBI MARKET orders auto-confirmed: {$mkAuto}, withdrawals chec
 // OBI MARKET emails (queued when an order was paid or its status changed): the seller's "new order" email, the customer's confirmation, retries of anything that failed
 $mkMail = market_email_send_queued(100);
 echo date('c') . " OBI MARKET emails: sent {$mkMail['sent']}, skipped {$mkMail['skipped']}, retrying {$mkMail['retry']}, failed {$mkMail['failed']}, waiting {$mkMail['waiting']}\n";
+
+// Videos recorded by a browser before 11/27 were saved as "fragmented" MP4s that many phones cannot play: rewrite them as normal MP4s
+// (same picture and sound, same address). A few per run; nothing to do once they are all fixed.
+if (function_exists('moment_repair_fragmented')) {
+    try {
+        $vr = moment_repair_fragmented(5);
+        if ($vr['fixed'] || $vr['failed']) {
+            echo date('c') . " videos repaired: {$vr['fixed']}, could not repair: {$vr['failed']}\n";
+        }
+    } catch (Throwable $e) {
+        echo date('c') . ' video repair failed: ' . $e->getMessage() . "\n";
+    }
+}

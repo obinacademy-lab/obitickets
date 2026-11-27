@@ -520,7 +520,57 @@ function moment_store_media(array $file, bool $isUpload = true): array
     if (!$moved) {
         return ['ok' => false, 'error' => "We couldn't save that file. Please try again."];
     }
+    // 11/27: a video a browser recorded is a "fragmented" MP4 that many phones cannot play from a link: rewrite it as a normal MP4
+    // (same picture and sound bytes, no quality change). Any other file is left exactly as it was uploaded.
+    if ($type === 'VIDEO' && $ext === 'mp4' && function_exists('mp4_defragment_in_place')) {
+        try {
+            $fix = mp4_defragment_in_place($dir . '/' . $name);
+            if (!$fix['ok']) {
+                error_log('[moments] could not rewrite a fragmented MP4 (' . $name . '): ' . ($fix['error'] ?? '?'));
+            }
+        } catch (Throwable $e) {
+            error_log('[moments] mp4 rewrite: ' . $e->getMessage());
+        }
+    }
     return ['ok' => true, 'type' => $type, 'path' => '/uploads/moments/' . $name];
+}
+
+/**
+ * Repairs videos already posted that are fragmented MP4s (made by a browser before 11/27): each is rewritten as a normal MP4 in
+ * place, same address, same quality. Run by the background job (cron/process-gifts.php); a few per run so a run stays short.
+ * @return array{checked:int, fixed:int, failed:int}
+ */
+function moment_repair_fragmented(int $limit = 5): array
+{
+    $out = ['checked' => 0, 'fixed' => 0, 'failed' => 0];
+    if (!moments_ready() || !function_exists('mp4_is_fragmented')) {
+        return $out;
+    }
+    $rows = db()->query("SELECT post_id, media_path FROM event_moments WHERE media_type = 'VIDEO' AND media_path LIKE '/uploads/moments/%.mp4' ORDER BY post_id DESC")->fetchAll();
+    foreach ($rows as $r) {
+        if ($out['fixed'] + $out['failed'] >= $limit) {
+            break;
+        }
+        if (!preg_match('#^/uploads/moments/[a-f0-9]{32}\.mp4$#', (string) $r['media_path'])) {
+            continue;
+        }
+        $path = __DIR__ . '/../public' . $r['media_path'];
+        $out['checked']++;
+        if (!is_file($path) || !mp4_is_fragmented($path)) {
+            continue;
+        }
+        $fix = mp4_defragment_in_place($path);
+        if ($fix['ok'] && !empty($fix['changed'])) {
+            $out['fixed']++;
+            if (!empty($fix['seconds'])) {
+                db()->prepare('UPDATE event_moments SET duration_seconds = ? WHERE post_id = ? AND (duration_seconds IS NULL OR duration_seconds = 0)')->execute([(int) round($fix['seconds']), (int) $r['post_id']]);
+            }
+        } else {
+            $out['failed']++;
+            error_log('[moments] repair of post ' . (int) $r['post_id'] . ' failed: ' . ($fix['error'] ?? '?'));
+        }
+    }
+    return $out;
 }
 
 /** A small JPEG cover frame the browser captured from the video. Optional; returns null path on any problem. */

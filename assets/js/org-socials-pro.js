@@ -152,7 +152,8 @@
     function failed(text) { busy = false; pub.disabled = false; prog.hidden = true; say(text || 'The upload did not finish. Please try again.'); }
     // 11/27: a heavy video is made lighter (720p, its own shape) and sent WHILE that happens: far fewer megabytes to send.
     // If the browser cannot, or sending along the way fails, the original goes up as before.
-    var plan = (/^video\//.test(file.type) && duration && window.obiLightenPlan && window.obiShrinkVideo && window.obiChunkStream) ? window.obiLightenPlan(file, Math.min(duration, maxSeconds)) : { shrink: false };
+    // Owner 11/27: videos go up exactly as recorded (full quality and size); the "make it lighter" path below stays switched off
+    var plan = { shrink: false };
     if (plan.shrink) {
       var live = null, url = URL.createObjectURL(file), secs = Math.min(duration, maxSeconds), pct = 0;
       var paint = function () { var up = live && live.total() ? live.sent() / live.total() : 0; var n = Math.min(99, Math.round(pct * up * 100)); bar.style.width = n + '%'; progT.textContent = 'Making it lighter and uploading… ' + Math.round(pct * 100) + '% (' + mb(live ? live.sent() : 0) + ' sent)'; };
