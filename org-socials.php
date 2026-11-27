@@ -292,7 +292,7 @@ $canPost = $status['can_post'] && $events;
   }
 })();
 </script>
-<script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
+<script src="/assets/js/video-shrink.js?v=<?= @filemtime(__DIR__ . '/assets/js/video-shrink.js') ?: time() ?>"></script><script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
 <script src="/assets/js/org-socials-pro.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-socials-pro.js') ?: time() ?>"></script>
 <?php endif; ?>
 

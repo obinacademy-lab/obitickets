@@ -32,6 +32,8 @@
     });
   }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  // keep the phone screen on while pieces go up (video-shrink.js): a sleeping screen pauses the upload
+  function awake() { var on = false; return { hold: function () { if (!on && window.obiKeepAwake) { on = true; window.obiKeepAwake.hold(); } }, release: function () { if (on) { on = false; window.obiKeepAwake.release(); } } }; }
 
   // one piece, retried up to 4 times on a weak signal (never on "not allowed")
   function sendPiece(csrf, id, offset, blob, onLoaded) {
@@ -67,7 +69,8 @@
   window.obiChunkUpload = function (file, o) {
     o = o || {};
     var signal = o.signal || {};
-    var id;
+    var id, keep = awake();
+    keep.hold();
     return post({ csrf_token: o.csrf, action: 'start', event_id: o.eventId, size: file.size, type: file.type || 'video/mp4', duration: o.duration != null ? String(o.duration) : null })
       .then(function (r) {
         id = r.id;
@@ -94,11 +97,13 @@
         return pool(par, nextJob);
       })
       .then(function () {
+        keep.release();
         if (signal.cancelled) { throw new Error('Upload cancelled.'); }
         if (o.onProgress) { o.onProgress(1); }
         return id;
       })
       .catch(function (err) {
+        keep.release();
         if (id && signal.cancelled) { post({ csrf_token: o.csrf, action: 'cancel', id: id }).catch(function () {}); }
         throw err;
       });
@@ -109,7 +114,8 @@
     o = o || {};
     var id = null, size = DEFAULT_PIECE, par = DEFAULT_PARALLEL, failure = null, cancelled = false, ended = false;
     var buffer = [], bufBytes = 0, nextOffset = 0, total = 0, sent = 0;
-    var queue = [], running = 0, waiters = [];
+    var queue = [], running = 0, waiters = [], keep = awake();
+    keep.hold();
     var started = post({ csrf_token: o.csrf, action: 'start', stream: '1', size: '0', event_id: o.eventId, type: o.type || 'video/mp4', duration: o.duration != null ? String(o.duration) : null })
       .then(function (r) { id = r.id; size = r.chunk || DEFAULT_PIECE; par = Math.max(1, Math.min(6, r.parallel || DEFAULT_PARALLEL)); cut(false); pump(); },
             function (err) { failure = err; settle(); });
@@ -153,10 +159,10 @@
           if (failure) { throw failure; }
           if (cancelled) { throw new Error('Upload cancelled.'); }
           return post({ csrf_token: o.csrf, action: 'finish', id: id, size: String(total) });
-        }).then(function () { return id; });
+        }).then(function () { keep.release(); return id; }, function (err) { keep.release(); throw err; });
       },
       cancel: function () {
-        cancelled = true;
+        cancelled = true; keep.release();
         if (id) { post({ csrf_token: o.csrf, action: 'cancel', id: id }).catch(function () {}); }
       },
       failed: function () { return failure; },

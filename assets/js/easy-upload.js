@@ -272,9 +272,13 @@
         if (tooLong) { showError('This video is ' + Math.floor(S.duration / 60) + ':' + ('0' + Math.floor(S.duration % 60)).slice(-2) + ' long. Videos can be up to ' + Math.round(cfg.maxSeconds / 60) + ' minutes. Trim it in your gallery first, then try again.'); return; }
         if (tooBig) { showError('This video is ' + mb(file.size) + '. Videos can be up to ' + mb(cfg.maxTotal) + '. Save it at a lower quality or trim it, then try again.'); return; }
         // Heavy SHORT phone videos are made lighter, so they load fast for people on mobile data. Long ones go up as they are.
-        var heavy = canShrink && file.size > SOFT_VIDEO_BYTES && S.duration <= SHRINK_MAX_SECONDS;
-        S.needsPrep = heavy;
-        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones, and send it while we do. It takes about as long as the video.');
+        // 11/27: heavy videos up to the 10-minute limit are made lighter (video-shrink.js), not only short ones: on a slow
+        // connection sending fewer megabytes is the only real speed-up, and the pieces go up while it is made
+        var secs = Math.min(S.duration, cfg.maxSeconds);
+        var plan = window.obiLightenPlan ? window.obiLightenPlan(file, secs) : { shrink: canShrink && file.size > SOFT_VIDEO_BYTES && S.duration <= SHRINK_MAX_SECONDS, videoBits: 2000000, audioBits: 128000 };
+        var heavy = plan.shrink;
+        S.needsPrep = heavy; S.plan = plan;
+        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter' + (plan.estimate ? ' (about ' + mb(plan.estimate) + ')' : '') + ' and send it at the same time, so it uploads much faster and plays smoothly on phones. It takes about as long as the video (' + Math.floor(secs / 60) + ':' + ('0' + Math.floor(secs % 60)).slice(-2) + '). Keep this screen open.');
         else if (file.size > PIECES_FROM) notice('This video is ' + mb(file.size) + '. It uploads in parts, so keep this page open until it says ready.');
         paintStatus();
         if (S.needsPrep) {
@@ -282,7 +286,8 @@
           // length of the video, not the video plus the upload. If sending along the way fails, it is sent the old way at the end.
           var live = null;
           var streamable = !!window.obiChunkStream;
-          S.shrinker = shrinkVideo(url, Math.min(S.duration, cfg.maxSeconds), function (p) {
+          var shrinkWith = window.obiShrinkVideo ? function (u, s, prog, data) { return window.obiShrinkVideo(u, { seconds: s, videoBits: plan.videoBits, audioBits: plan.audioBits, fit: 'cover916', onProgress: prog, onData: data }); } : shrinkVideo;
+          S.shrinker = shrinkWith(url, Math.min(S.duration, cfg.maxSeconds), function (p) {
             S.prep = Math.round(p * 100);
             if (live && live.total() > 0) { S.up = Math.min(99, Math.round(S.prep * live.sent() / live.total())); }
             paintStatus();

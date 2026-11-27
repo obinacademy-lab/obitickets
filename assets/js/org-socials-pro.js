@@ -150,6 +150,38 @@
     if (poster) { fd.append('poster', poster, 'cover.jpg'); }
     busy = true; pub.disabled = true; say(''); prog.hidden = false; bar.style.width = '0%'; progT.textContent = 'Uploading… 0%';
     function failed(text) { busy = false; pub.disabled = false; prog.hidden = true; say(text || 'The upload did not finish. Please try again.'); }
+    // 11/27: a heavy video is made lighter (720p, its own shape) and sent WHILE that happens: far fewer megabytes to send.
+    // If the browser cannot, or sending along the way fails, the original goes up as before.
+    var plan = (/^video\//.test(file.type) && duration && window.obiLightenPlan && window.obiShrinkVideo && window.obiChunkStream) ? window.obiLightenPlan(file, Math.min(duration, maxSeconds)) : { shrink: false };
+    if (plan.shrink) {
+      var live = null, url = URL.createObjectURL(file), secs = Math.min(duration, maxSeconds), pct = 0;
+      var paint = function () { var up = live && live.total() ? live.sent() / live.total() : 0; var n = Math.min(99, Math.round(pct * up * 100)); bar.style.width = n + '%'; progT.textContent = 'Making it lighter and uploading… ' + Math.round(pct * 100) + '% (' + mb(live ? live.sent() : 0) + ' sent)'; };
+      say('This video is ' + mb(file.size) + '. We make it lighter (about ' + mb(plan.estimate) + ') and send it at the same time, so it uploads much faster. It takes about as long as the video (' + mins(secs) + '). Keep this page open.', true);
+      var sh = window.obiShrinkVideo(url, { seconds: secs, videoBits: plan.videoBits, audioBits: plan.audioBits, fit: 'keep',
+        onProgress: function (p) { pct = p; paint(); },
+        onData: function (blob, mime) {
+          if (!live) { live = window.obiChunkStream({ csrf: box.getAttribute('data-csrf'), eventId: evSel.value, duration: Math.round(secs), type: mime.split(';')[0], onSent: paint }); }
+          live.push(blob);
+        } });
+      var whole = function (blob, name) {   // the old way: the original (or the finished lighter file) in pieces
+        progT.textContent = 'Uploading… 0%';
+        window.obiChunkUpload(blob, { csrf: box.getAttribute('data-csrf'), eventId: evSel.value, duration: Math.round(secs),
+          onProgress: function (p) { var n = Math.min(99, Math.round(p * 100)); bar.style.width = n + '%'; progT.textContent = 'Uploading… ' + n + '% of ' + mb(blob.size); }
+        }).then(function (id) { fd.append('chunk_id', id); fd.set('duration', String(Math.round(secs))); progT.textContent = 'Finishing…'; send(); }, function (err) { failed(err && err.message); });
+      };
+      sh.promise.then(function (r) {
+        URL.revokeObjectURL(url);
+        progT.textContent = 'Finishing the upload…';
+        if (!live || live.failed()) { if (live) { live.cancel(); } whole(new File([r.blob], 'video.' + (r.mime.indexOf('mp4') > -1 ? 'mp4' : 'webm'), { type: r.mime.split(';')[0] })); return; }
+        live.end().then(function (id) { fd.append('chunk_id', id); fd.set('duration', String(Math.round(r.duration))); progT.textContent = 'Finishing…'; send(); },
+          function () { live.cancel(); whole(new File([r.blob], 'video.' + (r.mime.indexOf('mp4') > -1 ? 'mp4' : 'webm'), { type: r.mime.split(';')[0] })); });
+      }, function () {   // the browser could not make it lighter: send the original
+        URL.revokeObjectURL(url); if (live) { live.cancel(); }
+        say('');
+        whole(file);
+      });
+      return;
+    }
     if (inPieces) {
       window.obiChunkUpload(file, {
         csrf: box.getAttribute('data-csrf'), eventId: evSel.value, duration: duration != null ? Math.round(duration) : null,

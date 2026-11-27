@@ -413,7 +413,7 @@ $soStatus = function_exists('socials_ready') && socials_ready() ? socials_status
       <?php endif; ?>
       <script src="/assets/js/beat.js?v=<?= @filemtime(__DIR__ . '/assets/js/beat.js') ?: time() ?>"></script>
       <script src="/assets/js/slideshow.js?v=<?= @filemtime(__DIR__ . '/assets/js/slideshow.js') ?: time() ?>"></script>
-      <script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
+      <script src="/assets/js/video-shrink.js?v=<?= @filemtime(__DIR__ . '/assets/js/video-shrink.js') ?: time() ?>"></script><script src="/assets/js/chunk-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/chunk-upload.js') ?: time() ?>"></script>
       <script src="/assets/js/easy-upload.js?v=<?= @filemtime(__DIR__ . '/assets/js/easy-upload.js') ?: time() ?>"></script>
       <script src="/assets/js/org-moments.js?v=<?= @filemtime(__DIR__ . '/assets/js/org-moments.js') ?: time() ?>"></script>
       <?php endif; ?>
