@@ -1,6 +1,6 @@
 <?php
-// Big videos in pieces (11/18): "start" gives an upload id and the piece size, "part" appends the next piece,
-// "cancel" throws the pieces away. The moment itself is then posted to /api/moment-upload.php with chunk_id.
+// Big videos in pieces (11/18): "start" gives an upload id and the piece size, "part" stores one piece (any order, a few at once since
+// 11/27), "finish" closes an upload whose size was not known at the start, "cancel" throws the pieces away. The moment itself is then posted to /api/moment-upload.php with chunk_id.
 // Only people who may post moments for that event can start one. All checks live in includes/moments.php.
 
 require __DIR__ . '/../includes/bootstrap.php';
@@ -34,7 +34,7 @@ try {
             if ($duration > MOMENT_MAX_SECONDS + 1) {
                 json_response(['error' => 'Videos can be up to ' . (MOMENT_MAX_SECONDS / 60) . ' minutes long.'], 400);
             }
-            $r = moment_chunk_start($uid, (int) ($_POST['size'] ?? 0), (string) ($_POST['type'] ?? ''));
+            $r = moment_chunk_start($uid, (int) ($_POST['size'] ?? 0), (string) ($_POST['type'] ?? ''), !empty($_POST['stream']));
             json_response($r, $r['ok'] ? 200 : 400);
 
         case 'part':
@@ -43,6 +43,11 @@ try {
                 json_response(['error' => "We couldn't receive that piece. Please try again."], 400);
             }
             $r = moment_chunk_add($uid, (string) ($_POST['id'] ?? ''), (int) ($_POST['offset'] ?? -1), (string) $piece['tmp_name'], (int) $piece['size']);
+            json_response($r, $r['ok'] ? 200 : 409);
+
+        case 'finish':
+            // an upload that started before its size was known (a video sent while it was being made lighter)
+            $r = moment_chunk_finish($uid, (string) ($_POST['id'] ?? ''), (int) ($_POST['size'] ?? 0));
             json_response($r, $r['ok'] ? 200 : 409);
 
         case 'cancel':

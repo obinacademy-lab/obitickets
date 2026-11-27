@@ -88,7 +88,7 @@
   var sheetEl = null, S = null, sample = null;
 
   function closeSheet() {
-    if (S) { S.dead = true; if (S.chunkSignal) S.chunkSignal.cancelled = true; if (S.xhr) try { S.xhr.abort(); } catch (e) { /* ignore */ } if (S.shrinker) S.shrinker.cancel(); if (S.cycle) clearInterval(S.cycle); (S.urls || []).forEach(function (u) { URL.revokeObjectURL(u); }); }
+    if (S) { S.dead = true; if (S.chunkSignal) { S.chunkSignal.cancelled = true; if (S.chunkSignal.stream) S.chunkSignal.stream.cancel(); } if (S.xhr) try { S.xhr.abort(); } catch (e) { /* ignore */ } if (S.shrinker) S.shrinker.cancel(); if (S.cycle) clearInterval(S.cycle); (S.urls || []).forEach(function (u) { URL.revokeObjectURL(u); }); }
     if (sample) { sample.pause(); sample = null; }
     if (sheetEl) { sheetEl.remove(); sheetEl = null; }
     document.body.classList.remove('eu-open');
@@ -183,7 +183,7 @@
       var h = '';
       if (S.error) { $('.eu-status').innerHTML = ''; $('.eu-hint').textContent = ''; var n = $('.eu-notice'); n.hidden = false; n.className = 'eu-notice bad'; n.textContent = S.error; $('#euPost').disabled = true; return; }
       if (S.needsPrep) h += row(S.prep >= 100 ? 'done' : 'run', S.kind === 'video' ? 'Shrinking for upload' : 'Cropping photos', Math.round(S.prep));
-      if (!S.resumed) h += row(S.up >= 100 ? 'done' : (S.prep >= 100 || !S.needsPrep ? 'run' : 'wait'), cfg.draftReady ? 'Uploading' : 'Getting ready', Math.round(S.up));
+      if (!S.resumed) h += row(S.up >= 100 ? 'done' : (S.prep >= 100 || !S.needsPrep || S.streaming ? 'run' : 'wait'), cfg.draftReady ? 'Uploading' : 'Getting ready', Math.round(S.up));
       $('.eu-status').innerHTML = h;
       $('#euPost').disabled = !S.ready || S.posting;
       $('#euLater').disabled = !S.ready || !cfg.draftReady || S.posting;
@@ -274,15 +274,38 @@
         // Heavy SHORT phone videos are made lighter, so they load fast for people on mobile data. Long ones go up as they are.
         var heavy = canShrink && file.size > SOFT_VIDEO_BYTES && S.duration <= SHRINK_MAX_SECONDS;
         S.needsPrep = heavy;
-        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones. It takes about as long as the video.');
+        if (heavy) notice('This video is ' + mb(file.size) + '. We make it lighter so it uploads fast and plays smoothly on phones, and send it while we do. It takes about as long as the video.');
         else if (file.size > PIECES_FROM) notice('This video is ' + mb(file.size) + '. It uploads in parts, so keep this page open until it says ready.');
         paintStatus();
         if (S.needsPrep) {
-          S.shrinker = shrinkVideo(url, Math.min(S.duration, cfg.maxSeconds), function (p) { S.prep = Math.round(p * 100); paintStatus(); });
+          // 11/27: the lighter video is sent WHILE it is being made (piece by piece), instead of after: the wait is about the
+          // length of the video, not the video plus the upload. If sending along the way fails, it is sent the old way at the end.
+          var live = null;
+          var streamable = !!window.obiChunkStream;
+          S.shrinker = shrinkVideo(url, Math.min(S.duration, cfg.maxSeconds), function (p) {
+            S.prep = Math.round(p * 100);
+            if (live && live.total() > 0) { S.up = Math.min(99, Math.round(S.prep * live.sent() / live.total())); }
+            paintStatus();
+          }, streamable ? function (blob, mime) {
+            if (S.dead) return;
+            if (!live) {
+              live = window.obiChunkStream({ csrf: cfg.csrf, eventId: cfg.eventId, duration: Math.round(Math.min(S.duration, cfg.maxSeconds)), type: mime.split(';')[0] });
+              S.chunkSignal = { cancelled: false, stream: live }; S.streaming = true; S.up = 0;
+            }
+            live.push(blob);
+          } : null);
           S.shrinker.promise.then(function (r) {
             if (S.dead) return; S.prep = 100; S.duration = r.duration; paintStatus();
-            poster(v, function (pb) { sendFiles([['file', r.blob, 'video.' + (r.mime.indexOf('mp4') > -1 ? 'mp4' : 'webm')]], pb, r.duration); });
-          }, function (err) { if (!S.dead) showError(err && err.message ? err.message : "We couldn't shrink this video. Try a shorter one."); });
+            poster(v, function (pb) {
+              var whole = function () { S.streaming = false; sendFiles([['file', r.blob, 'video.' + (r.mime.indexOf('mp4') > -1 ? 'mp4' : 'webm')]], pb, r.duration); };
+              if (!live || live.failed()) { if (live) live.cancel(); whole(); return; }
+              live.end().then(function (id) {
+                if (S.dead) return;
+                S.streaming = false; S.up = 99; paintStatus();
+                sendFilesNow([], pb, r.duration, id);
+              }, function () { if (!S.dead) { live.cancel(); whole(); } });   // sent along the way failed: send the finished file instead
+            });
+          }, function (err) { if (live) live.cancel(); if (!S.dead) showError(err && err.message ? err.message : "We couldn't shrink this video. Try a shorter one."); });
         } else {
           poster(v, function (pb) { sendFiles([['file', file, file.name]], pb, S.duration); });
         }
@@ -388,7 +411,7 @@
   }
 
   /* ---------- shrink / trim a video in the browser (720 x 1280, real time, keeps the sound) ---------- */
-  function shrinkVideo(url, seconds, onProgress) {
+  function shrinkVideo(url, seconds, onProgress, onData) {
     var cancelled = false, rec = null, v = null, ac = null, timer = null;
     var handle = { cancel: function () { cancelled = true; clearInterval(timer); try { if (rec && rec.state !== 'inactive') rec.stop(); } catch (e) { /* ignore */ } if (v) v.pause(); try { if (ac) ac.close(); } catch (e) { /* ignore */ } } };
     handle.promise = new Promise(function (resolve, reject) {
@@ -406,7 +429,7 @@
         var type = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0] || '';
         var chunks = [];
         try { rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 2000000, audioBitsPerSecond: 128000 } : undefined); } catch (e) { reject(new Error("This browser couldn't start recording.")); return; }
-        rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) { chunks.push(e.data); if (onData && !cancelled) onData(e.data, rec.mimeType || type || 'video/webm'); } };
         rec.onstop = function () { if (cancelled) return; clearInterval(timer); resolve({ blob: new Blob(chunks, { type: rec.mimeType || type || 'video/webm' }), mime: rec.mimeType || type || 'video/webm', duration: Math.min(seconds, v.duration || seconds) }); };
         var draw = function () {
           var vw = v.videoWidth, vh = v.videoHeight; if (!vw) return;

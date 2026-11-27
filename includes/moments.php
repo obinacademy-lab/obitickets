@@ -15,6 +15,7 @@ const MOMENT_VIDEO_CAP_BYTES = 1024 * 1024 * 1024;
 const MOMENT_MAX_SECONDS = 600;
 const MOMENT_CHUNK_BYTES = 5 * 1024 * 1024;      // one piece (kept under the server's per-request limit)
 const MOMENT_CHUNK_MAX_OPEN = 3;                 // unfinished uploads one person may have at a time
+const MOMENT_CHUNK_PARALLEL = 3;                 // pieces the browser sends at the same time (11/27: faster on mobile networks)
 const MOMENT_CHUNK_TTL_HOURS = 6;                // unfinished pieces are thrown away after this
 const MOMENT_POSTER_MAX_BYTES = 600 * 1024;
 const MOMENT_RATE_LIMIT = 20; // uploads per hour per person
@@ -55,7 +56,7 @@ function moment_video_max_bytes(): int
 
 // =====================================================================
 // Uploads in pieces (11/18): videos up to MOMENT_VIDEO_CAP_BYTES whatever the server's per-request limit.
-// The browser asks for an upload id, sends the file in order in MOMENT_CHUNK_BYTES pieces, then posts the
+// The browser asks for an upload id, sends the file in MOMENT_CHUNK_BYTES pieces (a few at once since 11/27), then posts the
 // moment as usual with the id instead of the file. Pieces live in private-uploads/chunks (never reachable by
 // URL); the finished file then goes through moment_store_media's normal checks (real type from the bytes, size).
 // =====================================================================
@@ -122,10 +123,14 @@ function moment_chunk_purge(): void
     }
 }
 
-/** @return array{ok:bool, id?:string, chunk?:int, error?:string} */
-function moment_chunk_start(int $userId, int $size, string $mime): array
+/**
+ * Starts an upload in pieces. $size is the file size, or 0 with $stream = true when the browser is still making the file (a video being
+ * made lighter is uploaded while it is recorded; its size is only known at "finish").
+ * @return array{ok:bool, id?:string, chunk?:int, parallel?:int, error?:string}
+ */
+function moment_chunk_start(int $userId, int $size, string $mime, bool $stream = false): array
 {
-    if ($size <= 0) {
+    if ($size <= 0 && !$stream) {
         return ['ok' => false, 'error' => 'Choose a video first.'];
     }
     if ($size > MOMENT_VIDEO_CAP_BYTES) {
@@ -144,15 +149,17 @@ function moment_chunk_start(int $userId, int $size, string $mime): array
     }
     $id = bin2hex(random_bytes(16));
     $dir = $root . '/' . $userId . '-' . $id;
-    if (!@mkdir($dir, 0750) || file_put_contents($dir . '/meta.json', json_encode(['size' => $size, 'received' => 0])) === false) {
+    $meta = ['size' => $stream ? null : $size, 'received' => 0, 'parts' => []];
+    if (!@mkdir($dir, 0750) || file_put_contents($dir . '/meta.json', json_encode($meta)) === false) {
         return ['ok' => false, 'error' => "We couldn't prepare storage. Please try again."];
     }
     touch($dir . '/data');
-    return ['ok' => true, 'id' => $id, 'chunk' => moment_chunk_bytes()];
+    return ['ok' => true, 'id' => $id, 'chunk' => moment_chunk_bytes(), 'parallel' => MOMENT_CHUNK_PARALLEL];
 }
 
 /**
- * Adds the next piece. Pieces must arrive in order ($offset = what we already have); a repeated piece (a retry
+ * Adds one piece at its place in the file. Pieces may arrive in any order (the browser sends a few at once, 11/27), but they may not
+ * overlap, and together they must cover the whole file with no gap (checked when the video is posted). The same piece again (a retry
  * after a dropped connection) is accepted without being written twice.
  * @return array{ok:bool, received?:int, error?:string}
  */
@@ -174,29 +181,88 @@ function moment_chunk_add(int $userId, string $id, int $offset, string $tmpFile,
         if (!$meta) {
             return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
         }
+        $parts = is_array($meta['parts'] ?? null) ? $meta['parts'] : [];
+        if (!$parts && (int) $meta['received'] > 0) {
+            $parts = ['0' => (int) $meta['received']];   // an upload started before 11/27 (one piece after another)
+        }
         $have = (int) $meta['received'];
-        if ($offset + $len <= $have) {
+        $size = $meta['size'] === null ? null : (int) $meta['size'];
+        if (isset($parts[(string) $offset]) && (int) $parts[(string) $offset] === $len) {
             return ['ok' => true, 'received' => $have];   // already have this piece
         }
-        if ($offset !== $have) {
-            return ['ok' => false, 'error' => 'Pieces arrived out of order.', 'received' => $have];
-        }
-        if ($len <= 0 || $len > moment_chunk_bytes() || $have + $len > (int) $meta['size']) {
+        if ($offset < 0 || $len <= 0 || $len > moment_chunk_bytes() || ($size !== null && $offset + $len > $size) || $offset + $len > MOMENT_VIDEO_CAP_BYTES) {
             return ['ok' => false, 'error' => 'That piece is the wrong size.'];
         }
+        foreach ($parts as $o => $l) {
+            if ($offset < (int) $o + (int) $l && (int) $o < $offset + $len) {
+                return ['ok' => false, 'error' => 'That piece overlaps another one.', 'received' => $have];
+            }
+        }
         $in = fopen($tmpFile, 'rb');
-        $out = fopen($dir . '/data', 'ab');
-        $copied = ($in && $out) ? stream_copy_to_stream($in, $out) : false;
+        $out = fopen($dir . '/data', 'c+b');
+        $copied = false;
+        if ($in && $out && fseek($out, $offset) === 0) {
+            $copied = stream_copy_to_stream($in, $out);
+        }
         if ($in) { fclose($in); }
         if ($out) { fclose($out); }
         if ($copied !== $len) {
             return ['ok' => false, 'error' => "We couldn't save that piece. Please try again."];
         }
+        $parts[(string) $offset] = $len;
+        $meta['parts'] = $parts;
         $meta['received'] = $have + $len;
         if (file_put_contents($dir . '/meta.json', json_encode($meta)) === false) {
             return ['ok' => false, 'error' => "We couldn't save that piece. Please try again."];
         }
         return ['ok' => true, 'received' => $meta['received']];
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+/** True when the pieces cover 0 .. $size exactly, with no gap and no overlap. */
+function moment_chunk_complete(array $meta, int $size): bool
+{
+    $parts = is_array($meta['parts'] ?? null) ? $meta['parts'] : [];
+    if (!$parts) {
+        return (int) $meta['received'] === $size;   // an upload started before 11/27
+    }
+    ksort($parts, SORT_NUMERIC);
+    $at = 0;
+    foreach ($parts as $o => $l) {
+        if ((int) $o !== $at) {
+            return false;
+        }
+        $at += (int) $l;
+    }
+    return $at === $size;
+}
+
+/**
+ * "Finish" for an upload whose size was not known at the start (a video uploaded while it was being made lighter): the browser says
+ * how big the file ended up, and the pieces must cover exactly that.
+ * @return array{ok:bool, error?:string}
+ */
+function moment_chunk_finish(int $userId, string $id, int $size): array
+{
+    $dir = moment_chunk_dir($userId, $id);
+    if ($dir === null) {
+        return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
+    }
+    $lock = fopen($dir . '/lock', 'c');
+    if (!$lock || !flock($lock, LOCK_EX)) {
+        return ['ok' => false, 'error' => 'Please try again.'];
+    }
+    try {
+        $meta = moment_chunk_meta($dir);
+        if (!$meta || $size <= 0 || $size > MOMENT_VIDEO_CAP_BYTES || ($meta['size'] !== null && (int) $meta['size'] !== $size) || !moment_chunk_complete($meta, $size)) {
+            return ['ok' => false, 'error' => 'The video did not finish uploading. Please try again.'];
+        }
+        $meta['size'] = $size;
+        file_put_contents($dir . '/meta.json', json_encode($meta));
+        return ['ok' => true];
     } finally {
         flock($lock, LOCK_UN);
         fclose($lock);
@@ -215,10 +281,11 @@ function moment_chunk_file(int $userId, string $id): array
         return ['ok' => false, 'error' => 'That upload has expired. Please start again.'];
     }
     clearstatcache(true, $dir . '/data');
-    if ((int) $meta['received'] !== (int) $meta['size'] || filesize($dir . '/data') !== (int) $meta['size']) {
+    $size = $meta['size'] === null ? -1 : (int) $meta['size'];
+    if ($size <= 0 || (int) $meta['received'] !== $size || !moment_chunk_complete($meta, $size) || filesize($dir . '/data') !== $size) {
         return ['ok' => false, 'error' => 'The video did not finish uploading. Please try again.'];
     }
-    return ['ok' => true, 'dir' => $dir, 'file' => ['name' => 'video', 'tmp_name' => $dir . '/data', 'size' => (int) $meta['size'], 'error' => UPLOAD_ERR_OK]];
+    return ['ok' => true, 'dir' => $dir, 'file' => ['name' => 'video', 'tmp_name' => $dir . '/data', 'size' => $size, 'error' => UPLOAD_ERR_OK]];
 }
 
 /** True once migration 017 has been run (the event page falls back to the old gallery without it). */
